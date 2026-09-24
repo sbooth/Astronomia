@@ -44,7 +44,7 @@ extension CelestialBody {
 	/// The position is not corrected for light travel time or aberration.
 	/// - parameter date: The date and time for which to calculate the position.
 	/// - returns: The heliocentric position vector of the center of the body.
-	func heliocentricVector(_ date: Date = Date()) throws -> Vector {
+	public func heliocentricVector(_ date: Date = Date()) throws -> Vector {
 		let vec = Astronomy_HelioVector(self.toAstroBody(), date.toAstroTime())
 		guard vec.status == ASTRO_SUCCESS else {
 			throw AstronomyEngineError(status: vec.status)
@@ -58,7 +58,7 @@ extension CelestialBody {
 	/// - parameter date: The date and time for which to calculate the position.
 	/// - parameter correctForAberration: Whether to correct for aberration.
 	/// - returns: The geocentric position vector of the center of the body.
-	func geocentricVector(_ date: Date = Date(), correctForAberration: Bool = true) throws -> Vector {
+	public func geocentricVector(_ date: Date = Date(), correctForAberration: Bool = true) throws -> Vector {
 		let aberration = correctForAberration ? ABERRATION : NO_ABERRATION
 		let vec = Astronomy_GeoVector(self.toAstroBody(), date.toAstroTime(), aberration)
 		guard vec.status == ASTRO_SUCCESS else {
