@@ -6,4 +6,4 @@
 //
 
 /// The number of kilometers in one astronomical unit.
-let kilometersPerAstronomicalUnit = 149597870.7
+let kilometersPerAstronomicalUnit = 149_597_870.7
