@@ -21,7 +21,7 @@ public struct ObservationLocation: Hashable {
 	/// The observer's height in meters MSL.
 	public let height: Double
 
-	/// Initializes `self`
+	/// Initializes `self` with the specified latitude, longitude, and height.
 	public init(latitude: Double, longitude: Double, height: Double = 0) {
 		precondition(latitude >= -90)
 		precondition(latitude <= +90)
