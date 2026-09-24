@@ -14,12 +14,12 @@ import CAstronomyEngine
 	@Test func j2000() {
 		#expect(Date.j2000.timeIntervalSinceJ2000 == 0)
 		#expect(Date(timeIntervalSinceJ2000: 0) == Date.j2000)
-		#expect(Date.j2000.timeIntervalSinceReferenceDate == -timeIntervalBetweenJ2000AndReferenceDate)
+		#expect(Date.j2000.timeIntervalSinceReferenceDate == -31579264.184)
 	}
 
 	@Test func astroTime() {
 		let d1 = Date(Astronomy_MakeTime(2000, 1, 1, 12, 0, 0))
-		#expect(d1.timeIntervalSinceReferenceDate + astronomyEngineJ2000Offset < 0.001)
+		#expect(d1.timeIntervalSinceReferenceDate - astronomyEngineJ2000Offset < 0.001)
 		let utc = Astronomy_UtcFromTime(Date.j2000.toAstroTime())
 		#expect(utc.year == 2000)
 		#expect(utc.month == 1)
