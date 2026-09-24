@@ -47,9 +47,9 @@ public enum MoonPhase {
 /// The position of the Moon relative to a particular geographic location and time.
 public struct MoonPosition: Hashable {
 	/// The observation location.
-	let observationLocation: ObservationLocation
+	public let observationLocation: ObservationLocation
 	/// The observation date and time.
-	let observationDate: Date
+	public let observationDate: Date
 	/// The true altitude in degrees relative to the horizon.
 	public let altitude: Double
 	/// The azimuth from true North in degrees.

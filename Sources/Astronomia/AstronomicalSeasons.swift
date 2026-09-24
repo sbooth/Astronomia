@@ -13,19 +13,19 @@ public struct AstronomicalSeasons {
 	/// The March, or northward, equinox.
 	///
 	/// The March equinox is known as the vernal equinox (spring equinox) in the Northern Hemisphere and as the autumnal equinox in the Southern Hemisphere.
-	let marchEquinox: Date
+	public let marchEquinox: Date
 	/// The June, or northern, solstice.
 	///
 	/// The June solstice is known as the summer solstice in the Northern Hemisphere and as the winter solstice in the Southern Hemisphere.
-	let juneSolstice: Date
+	public let juneSolstice: Date
 	/// The September, or southward, equinox.
 	///
 	/// The September equinox is known as the autumnal equinox in the Northern Hemisphere and as the vernal equinox (spring equinox) in the Southern Hemisphere.
-	let septemberEquinox: Date
+	public let septemberEquinox: Date
 	/// The December, or southern, solstice.
 	///
 	/// The December solstice is known as the winter solstice in the Northern Hemisphere and as the summer solstice in the Southern Hemisphere.
-	let decemberSolstice: Date
+	public let decemberSolstice: Date
 }
 
 extension AstronomicalSeasons {

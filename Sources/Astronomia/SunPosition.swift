@@ -11,13 +11,13 @@ import CAstronomyEngine
 /// The position of the sun relative to a particular geographic location and time.
 public struct SunPosition: Hashable {
 	/// The observation location.
-	let observationLocation: ObservationLocation
+	public let observationLocation: ObservationLocation
 	/// The observation date and time.
-	let observationDate: Date
+	public let observationDate: Date
 	/// The true altitude in degrees relative to the horizon.
-	let altitude: Double
+	public let altitude: Double
 	/// The azimuth from true north in degrees.
-	let azimuth: Double
+	public let azimuth: Double
 }
 
 extension SunPosition {
