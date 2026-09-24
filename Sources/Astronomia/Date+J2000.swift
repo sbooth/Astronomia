@@ -24,15 +24,13 @@ extension Date {
 		self.init(timeIntervalSinceReferenceDate: timeInterval - timeIntervalBetweenJ2000AndReferenceDate)
 	}
 
-	/// The epoch J2000.
+	/// The epoch J2000, defined as 12:00:00 TT on 1 January 2000.
 	///
-	/// The J2000 epoch is defined as 12:00:00 TT on 1 January 2000.
-	///
-	/// The following times are equivalent and correpond to the J2000 epoch:
-	/// | Time Standard | Time and Date |
-	/// | -- | --- |
-	/// | TT | 12:00:00 on 1 January 2000 |
-	/// | UTC | 11:58:55.816 on 1 January 2000 |
+	/// The following times are equivalent and correspond to the J2000 epoch:
+	/// | Time Standard | Time | Date |
+	/// | -- | --- | --- |
+	/// | TT | 12:00:00 | 1 January 2000 |
+	/// | UTC | 11:58:55.816 | 1 January 2000 |
 	public static var j2000: Date {
 		Date(timeIntervalSinceReferenceDate: -timeIntervalBetweenJ2000AndReferenceDate)
 	}
