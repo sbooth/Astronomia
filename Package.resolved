@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "castronomyengine",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sbooth/CAstronomyEngine.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "2bed870cb66bfd94569ede20e40d828d5cc044dc"
+      }
+    }
+  ],
+  "version" : 2
+}
