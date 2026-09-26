@@ -7,13 +7,15 @@
 
 import Foundation
 
-/// The number of seconds between epoch J2000 and the reference epoch.
+/// The number of seconds between epoch J2000 and the reference date.
 /// - note: The J2000 epoch is 11:58:55.816 UTC on 1 January 2000.
-/// - note: The reference epoch is 00:00:00 UTC on 1 January 2001.
-let timeIntervalBetweenJ2000AndReferenceDate: Double = 31_579_264.184
+/// - note: The reference date is 00:00:00 UTC on 1 January 2001.
+private let timeIntervalBetweenJ2000AndReferenceDate: TimeInterval = 31_579_264.184
 
 extension Date {
-	/// Returns the number of seconds between `self` and 11:58:55.816 UTC on 1 January 2000.
+	/// The number of seconds between the date value and 11:58:55.816 UTC on 1 January 2000.
+	///
+	/// This ignores leap seconds; it is a UTC-based count, not elapsed TT.
 	public var timeIntervalSinceJ2000: TimeInterval {
 		timeIntervalSinceReferenceDate + timeIntervalBetweenJ2000AndReferenceDate
 	}
@@ -31,34 +33,36 @@ extension Date {
 }
 
 /// The number of seconds in one day.
-let secondsPerDay: Double = 60 * 60 * 24
+private let secondsPerDay: TimeInterval = 60 * 60 * 24
 
 extension Date {
-	/// Returns the number of days between `self` and 11:58:55.816 UTC on 1 January 2000.
+	/// The number of days between the date value  and 11:58:55.816 UTC on 1 January 2000.
+	/// - note: This ignores leap seconds; a day is assumed to contain 86,400 seconds.
 	public var daysSinceJ2000: Double {
 		timeIntervalSinceJ2000 / secondsPerDay
 	}
 
 	/// Creates a date value initialized relative to 11:58:55.816 UTC on 1 January 2000 by a given number of days.
+	/// A day is assumed to contain 86,400 seconds.
 	/// - parameter days: A number of days.
 	public init(daysSinceJ2000 days: Double) {
 		self.init(timeIntervalSinceJ2000: days * secondsPerDay)
 	}
 }
 
-/// The Julian date in UTC for epoch J2000.
-let J2000JD_UTC: Double = 2451544.9992571296
+/// Julian date of the reference date, 00:00:00 UTC on 1 January 2001.
+private let referenceDateJulianDate: Double = 2_451_910.5
 
 extension Date {
-	/// Returns the Julian date in UTC corresponding to `self`.
+	/// Returns the Julian date in UTC corresponding to the date value.
 	public var julianDate: Double {
-		daysSinceJ2000 + J2000JD_UTC
+		timeIntervalSinceReferenceDate / secondsPerDay + referenceDateJulianDate
 	}
 
 	/// Creates a date value initialized to the specified Julian date in UTC.
 	/// - parameter JD: A Julian date in UTC.
 	public init(julianDate JD: Double) {
-		self.init(daysSinceJ2000: JD - J2000JD_UTC)
+		self.init(timeIntervalSinceReferenceDate: (JD -  referenceDateJulianDate) * secondsPerDay)
 	}
 }
 
@@ -68,15 +72,15 @@ import CAstronomyEngine
 ///
 /// Astronomy Engine defines the J2000 epoch as 12:00:00 UTC on 1 January 2000.
 /// A more correct definition is either 11:58:55.816 UTC or 12:00:00 TT, a difference of 64.184 seconds.
-let astronomyEngineJ2000Offset = 64.184
+private let astronomyEngineJ2000Offset = 64.184
 
 extension Date {
-	/// Initializes `self` to the value of `time`.
+	/// Creates a date value initialized to the value of `time`.
 	init(_ time: astro_time_t) {
 		self.init(timeIntervalSinceJ2000: (time.ut * secondsPerDay) + astronomyEngineJ2000Offset)
 	}
 
-	/// Converts `self` to an `astro_time_t` instance.
+	/// Converts the date value to an `astro_time_t` instance.
 	func toAstroTime() -> astro_time_t {
 		Astronomy_TimeFromDays((timeIntervalSinceJ2000 - astronomyEngineJ2000Offset) / secondsPerDay)
 	}
