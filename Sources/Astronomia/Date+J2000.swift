@@ -13,26 +13,20 @@ import Foundation
 let timeIntervalBetweenJ2000AndReferenceDate: Double = 31_579_264.184
 
 extension Date {
-	/// Returns the number of seconds between `self` and the J2000 epoch.
+	/// Returns the number of seconds between `self` and 11:58:55.816 UTC on 1 January 2000.
 	public var timeIntervalSinceJ2000: TimeInterval {
 		timeIntervalSinceReferenceDate + timeIntervalBetweenJ2000AndReferenceDate
 	}
 
-	/// Creates a date value relative to the J2000 epoch.
+	/// Creates a date value initialized relative to 11:58:55.816 UTC on 1 January 2000 by a given number of seconds.
 	/// - parameter timeInterval: A number of seconds.
 	public init(timeIntervalSinceJ2000 timeInterval: TimeInterval) {
 		self.init(timeIntervalSinceReferenceDate: timeInterval - timeIntervalBetweenJ2000AndReferenceDate)
 	}
 
-	/// The epoch J2000, defined as 12:00:00 TT on 1 January 2000.
-	///
-	/// The following times are equivalent and correspond to the J2000 epoch:
-	/// | Time Standard | Time | Date |
-	/// | -- | --- | --- |
-	/// | TT | 12:00:00 | 1 January 2000 |
-	/// | UTC | 11:58:55.816 | 1 January 2000 |
+	/// The epoch J2000, defined as 12:00:00 TT (11:58:55.816 UTC) on 1 January 2000.
 	public static var j2000: Date {
-		Date(timeIntervalSinceReferenceDate: -timeIntervalBetweenJ2000AndReferenceDate)
+		Date(timeIntervalSinceJ2000: 0)
 	}
 }
 
@@ -40,12 +34,12 @@ extension Date {
 let secondsPerDay: Double = 60 * 60 * 24
 
 extension Date {
-	/// Returns the number of days between `self` and the J2000 epoch.
+	/// Returns the number of days between `self` and 11:58:55.816 UTC on 1 January 2000.
 	public var daysSinceJ2000: Double {
 		timeIntervalSinceJ2000 / secondsPerDay
 	}
 
-	/// Creates a date value relative to the J2000 epoch by a given number of days.
+	/// Creates a date value initialized relative to 11:58:55.816 UTC on 1 January 2000 by a given number of days.
 	/// - parameter days: A number of days.
 	public init(daysSinceJ2000 days: Double) {
 		self.init(timeIntervalSinceJ2000: days * secondsPerDay)
