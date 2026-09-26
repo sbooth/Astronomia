@@ -10,7 +10,7 @@ import Foundation
 /// The number of seconds between epoch J2000 and the reference epoch.
 /// - note: The J2000 epoch is 11:58:55.816 UTC on 1 January 2000.
 /// - note: The reference epoch is 00:00:00 UTC on 1 January 2001.
-let timeIntervalBetweenJ2000AndReferenceDate = 31_579_264.184
+let timeIntervalBetweenJ2000AndReferenceDate: Double = 31_579_264.184
 
 extension Date {
 	/// Returns the number of seconds between `self` and the J2000 epoch.
@@ -49,6 +49,22 @@ extension Date {
 	/// - parameter days: A number of days.
 	public init(daysSinceJ2000 days: Double) {
 		self.init(timeIntervalSinceJ2000: days * secondsPerDay)
+	}
+}
+
+/// The Julian date in UTC for epoch J2000.
+let J2000JD_UTC: Double = 2451544.9992571296
+
+extension Date {
+	/// Returns the Julian date in UTC corresponding to `self`.
+	public var julianDate: Double {
+		daysSinceJ2000 + J2000JD_UTC
+	}
+
+	/// Creates a date value initialized to the specified Julian date in UTC.
+	/// - parameter JD: A Julian date in UTC.
+	public init(julianDate JD: Double) {
+		self.init(daysSinceJ2000: JD - J2000JD_UTC)
 	}
 }
 
