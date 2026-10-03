@@ -1,0 +1,153 @@
+//
+// SPDX-FileCopyrightText: 2021 Stephen F. Booth <contact@sbooth.dev>
+// SPDX-License-Identifier: MIT
+//
+// Part of https://github.com/sbooth/Astronomia
+//
+
+import Testing
+@testable import Astronomia
+
+@Suite struct GregorianCalendarTests {
+	@Test func epoch() throws {
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: 1, month: 1, day: 1) == GregorianCalendar.epoch)
+		#expect(GregorianCalendar.dateFromJulianDayNumber(GregorianCalendar.epoch) == (1, 1, 1))
+	}
+
+	@Test func constants() throws {
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: 0, month: 3, day: 1) == 1_721_120)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: 0, month: 2, day: 29) == 1_721_119)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: 1, month: 1, day: 1) == 1_721_426)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: -4713, month: 11, day: 24) == 0)
+	}
+
+	@Test func dateValidation() {
+		#expect(GregorianCalendar.isValid(year: 1600, month: 2, day: 29))
+		#expect(!GregorianCalendar.isValid(year: 1700, month: 2, day: 29))
+	}
+
+	@Test func leapYear() throws {
+		#expect(GregorianCalendar.isLeapYear(4))
+		#expect(!GregorianCalendar.isLeapYear(100))
+		#expect(GregorianCalendar.isLeapYear(1600))
+		#expect(!GregorianCalendar.isLeapYear(1700))
+		#expect(!GregorianCalendar.isLeapYear(1800))
+		#expect(!GregorianCalendar.isLeapYear(1900))
+		#expect(GregorianCalendar.isLeapYear(2000))
+		#expect(!GregorianCalendar.isLeapYear(2100))
+		#expect(GregorianCalendar.isLeapYear(2400))
+		#expect(!GregorianCalendar.isLeapYear(-3))
+		#expect(GregorianCalendar.isLeapYear(-4))
+		#expect(GregorianCalendar.isLeapYear(-8))
+		#expect(!GregorianCalendar.isLeapYear(-100))
+
+		for y in 1583...2500 {
+			let isLeap = GregorianCalendar.isLeapYear(y)
+			let j = try GregorianCalendar.julianDayNumberFrom(year: y, month: 2, day: isLeap ? 29 : 28)
+			let d = GregorianCalendar.dateFromJulianDayNumber(j)
+			#expect(d.month == 2)
+			#expect(d.day == (isLeap ? 29 : 28))
+		}
+	}
+
+	@Test func monthCount() {
+		#expect(GregorianCalendar.numberOfMonthsInYear == 12)
+	}
+
+	@Test func monthLength() {
+		#expect(GregorianCalendar.numberOfDaysIn(month: 2, year: 1600) == 29)
+		#expect(GregorianCalendar.numberOfDaysIn(month: 2, year: 1700) == 28)
+	}
+
+	@Test func yearLength() throws {
+		#expect(GregorianCalendar.numberOfDaysInYear(4) == 366)
+		#expect(GregorianCalendar.numberOfDaysInYear(1581) == 365)
+		#expect(GregorianCalendar.numberOfDaysInYear(1582) == 365)
+		#expect(GregorianCalendar.numberOfDaysInYear(1583) == 365)
+		#expect(GregorianCalendar.numberOfDaysInYear(1600) == 366)
+
+		var sum = 0
+		for m in 1 ... 12 {
+			sum += GregorianCalendar.numberOfDaysIn(month: m, year: 1961)
+		}
+
+		let jan1 = try GregorianCalendar.julianDayNumberFrom(year: 1961, month: 1, day: 1)
+		let dec31 = try GregorianCalendar.julianDayNumberFrom(year: 1961, month: 12, day: 31)
+
+		#expect(GregorianCalendar.numberOfDaysInYear(1961) == sum)
+		#expect(sum == (dec31 - jan1 + 1))
+	}
+
+	@Test func easter() {
+		// Dates from Meeus (1998)
+		#expect(GregorianCalendar.easter(year: 1991) == (3, 31))
+		#expect(GregorianCalendar.easter(year: 1992) == (4, 19))
+		#expect(GregorianCalendar.easter(year: 1993) == (4, 11))
+		#expect(GregorianCalendar.easter(year: 1954) == (4, 18))
+		#expect(GregorianCalendar.easter(year: 2000) == (4, 23))
+		#expect(GregorianCalendar.easter(year: 1818) == (3, 22))
+	}
+
+	@Test func julianDayNumber() throws {
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: -999999, month: 1, day: 1) == -363521074)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: -99999, month: 1, day: 1) == -34802824)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: -9999, month: 1, day: 1) == -1930999)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: 9999, month: 12, day: 31) == 5373484)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: 99999, month: 12, day: 31) == 38245309)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: 999999, month: 12, day: 31) == 366963559)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: -4712, month: 1, day: 1) == 38)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: -4713, month: 11, day: 23) == -1)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: -4713, month: 11, day: 24) == 0)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: -4713, month: 11, day: 25) == 1)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 4) == 2299150)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 15) == 2299161)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: 2000, month: 1, day: 1) == 2451545)
+		#expect(try GregorianCalendar.julianDayNumberFrom(year: -5000, month: 1, day: 1) == -105152)
+
+		#expect(GregorianCalendar.dateFromJulianDayNumber(-363521074) == (-999999, 1, 1))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(-34802824) == (-99999, 1, 1))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(-1930999) == (-9999, 1, 1))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(5373484) == (9999, 12, 31))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(38245309) == (99999, 12, 31))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(366963559) == (999999, 12, 31))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(38) == (-4712, 1, 1))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(-1) == (-4713, 11, 23))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(0) == (-4713, 11, 24))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(1) == (-4713, 11, 25))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(2299150) == (1582, 10, 4))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(2299161) == (1582, 10, 15))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(2451545) == (2000, 1, 1))
+		#expect(GregorianCalendar.dateFromJulianDayNumber(-105152) == (-5000, 1, 1))
+	}
+
+	@Test func range() throws {
+		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+			_ = try GregorianCalendar.julianDayNumberFrom(year: .min, month: 1, day: 1)
+		}
+		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+			_ = try GregorianCalendar.julianDayNumberFrom(year: .max, month: 1, day: 1)
+		}
+		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+			_ = try GregorianCalendar.julianDayNumberFrom(year: 1, month: .min, day: 1)
+		}
+		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+			_ = try GregorianCalendar.julianDayNumberFrom(year: 1, month: .max, day: 1)
+		}
+	}
+
+	@Test func limits() throws {
+		let minDate = GregorianCalendar.dateFromJulianDayNumber(.min)
+		let minJ = try GregorianCalendar.julianDayNumberFromDate(minDate)
+		#expect(minJ == .min)
+
+		let maxDate = GregorianCalendar.dateFromJulianDayNumber(.max)
+		let maxJ = try GregorianCalendar.julianDayNumberFromDate(maxDate)
+		#expect(maxJ == .max)
+
+		_ = GregorianCalendar.isLeapYear(.min)
+		_ = GregorianCalendar.isLeapYear(.max)
+
+		_ = GregorianCalendar.dayOfWeek(.min)
+		_ = GregorianCalendar.dayOfWeek(.max)
+	}
+}
