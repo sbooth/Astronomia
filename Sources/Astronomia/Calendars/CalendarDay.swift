@@ -1,0 +1,175 @@
+//
+// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
+// SPDX-License-Identifier: MIT
+//
+// Part of https://github.com/sbooth/Astronomia
+//
+
+/// The reasons a year, month, and day cannot form a `CalendarDay`.
+public enum CalendarDayError: Error, Hashable, Sendable {
+	/// The date does not exist in the calendar, such as February 30.
+	case invalidDate
+	/// The date is valid but its Julian day number cannot be represented as an `Int`.
+	case julianDayNumberOutOfRange
+}
+
+/// A valid year, month, and day together with the calendar they belong to.
+///
+/// Equality is structural; a Julian date and a Gregorian date denoting the same day are not equal. Use ``isSameDayAs(_:)`` to compare days across calendars.
+public struct CalendarDay: Sendable {
+	/// The arithmetic year number. Year number 0 is 1 BCE.
+	public let year: Int
+	/// The month number from `1` (January) to `12` (December).
+	public let month: Int
+	/// The day number. The first day of the month is day number 1.
+	public let day: Int
+	/// The calendar the year, month, and day belong to.
+	public let calendar: CalendarIdentifier
+	/// The Julian day number of this calendar day.
+	public let julianDayNumber: JulianDayNumber
+
+	/// Creates a calendar day for the specified year, month, and day in the given calendar.
+	/// - throws: `CalendarDayError.invalidDate` if the date does not exist in `calendar`, or `CalendarDayError.julianDayNumberOutOfRange` if its Julian day number cannot be represented as an `Int`.
+	public init(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(CalendarDayError) {
+		guard calendar.isValid(year: year, month: month, day: day) else {
+			throw .invalidDate
+		}
+
+		guard let J = try? calendar.julianDayNumberFrom(year: year, month: month, day: day) else {
+			throw .julianDayNumberOutOfRange
+		}
+
+		self.year = year
+		self.month = month
+		self.day = day
+		self.calendar = calendar
+		self.julianDayNumber = J
+	}
+
+	/// Creates a calendar day from possibly out-of-range month and day values.
+	/// - note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
+	/// - throws: `JulianDayNumberOutOfRangeError` if the Julian day number for the date cannot be represented as an `Int`.
+	public static func normalized(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
+		CalendarDay(julianDayNumber: try calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
+	}
+
+	/// Creates the calendar day corresponding to the specified Julian day number in the given calendar.
+	public init(julianDayNumber J: JulianDayNumber,_ calendar: CalendarIdentifier) {
+		(year, month, day) = calendar.dateFromJulianDayNumber(J)
+		self.calendar = calendar
+		julianDayNumber = J
+	}
+
+	/// The calendar day as a year, month, and day tuple, for interoperability with the static calendar APIs.
+	public var components: YearMonthDay {
+		(year, month, day)
+	}
+
+	/// `true` if this calendar day falls in a leap year of its calendar.
+	public var isInLeapYear: Bool {
+		calendar.isLeapYear(year)
+	}
+
+	/// The number of days in this calendar day's month.
+	public var numberOfDaysInMonth: Int {
+		calendar.numberOfDaysIn(month: month, year: year)
+	}
+
+	/// The day of the week from `1` (Sunday) to `7` (Saturday).
+	/// - note: This is independent of calendar.
+	public var dayOfWeek: Int {
+		JulianCalendar.dayOfWeek(julianDayNumber)
+	}
+
+	/// Returns the same calendar day expressed in another calendar.
+	public func convertedTo(_ other: CalendarIdentifier) -> CalendarDay {
+		other == calendar ? self : CalendarDay(julianDayNumber: julianDayNumber, other)
+	}
+
+	/// Returns `true` if `other` denotes the same day, regardless of calendar.
+	public func isSameDayAs(_ other: CalendarDay) -> Bool {
+		julianDayNumber == other.julianDayNumber
+	}
+
+	/// Returns the calendar day `n` days after (or before, if negative) this calendar day, in the same calendar.
+	/// - throws: `JulianDayNumberOutOfRangeError` if the sum cannot be represented.
+	public func adding(days n: Int) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
+		let (J, overflow) = julianDayNumber.addingReportingOverflow(n)
+		guard !overflow else {
+			throw JulianDayNumberOutOfRangeError()
+		}
+		return CalendarDay(julianDayNumber: J, calendar)
+	}
+
+	/// Returns the number of days from this calendar day to `other`.
+	/// - throws: `JulianDayNumberOutOfRangeError` if the difference cannot be represented.
+	public func days(to other: CalendarDay) throws(JulianDayNumberOutOfRangeError) -> Int {
+		let (difference, overflow) = other.julianDayNumber.subtractingReportingOverflow(julianDayNumber)
+		guard !overflow else {
+			throw JulianDayNumberOutOfRangeError()
+		}
+		return difference
+	}
+}
+
+extension CalendarDay: Hashable {
+	public static func == (lhs: CalendarDay, rhs: CalendarDay) -> Bool {
+		lhs.julianDayNumber == rhs.julianDayNumber && lhs.calendar == rhs.calendar
+	}
+
+	public func hash(into hasher: inout Hasher) {
+		hasher.combine(calendar)
+		hasher.combine(julianDayNumber)
+	}
+}
+
+private extension CalendarIdentifier {
+	/// Tie-breaking order used by `CalendarDay`'s `Comparable` conformance.
+	var sortOrder: Int {
+		switch self {
+		case .julian:
+			return 0
+		case .gregorian:
+			return 1
+		case .julianGregorian:
+			return 2
+		}
+	}
+}
+
+extension CalendarDay: Comparable {
+	/// Chronological order, with ties (the same day in different calendars) broken by calendar.
+	public static func < (lhs: CalendarDay, rhs: CalendarDay) -> Bool {
+		let (l, r) = (lhs.julianDayNumber, rhs.julianDayNumber)
+		return l != r ? l < r : lhs.calendar.sortOrder < rhs.calendar.sortOrder
+	}
+}
+
+extension CalendarDay: CustomStringConvertible {
+	public var description: String {
+		String(format: "%04d-%02d-%02d (%@)", year, month, day, calendar.name)
+	}
+}
+
+extension CalendarDay: Codable {
+	private enum CodingKeys: String, CodingKey {
+		case year, month, day, calendar
+	}
+
+	/// Decodes and validates a calendar day.
+	public init(from decoder: Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		let year = try container.decode(Int.self, forKey: .year)
+		let month = try container.decode(Int.self, forKey: .month)
+		let day = try container.decode(Int.self, forKey: .day)
+		let calendar = try container.decode(CalendarIdentifier.self, forKey: .calendar)
+
+		do throws(CalendarDayError) {
+			self = try CalendarDay(year: year, month: month, day: day, calendar)
+		} catch .invalidDate {
+			throw DecodingError.dataCorruptedError(forKey: .day, in: container, debugDescription: String(format: "%04d-%02d-%02d is not a valid %@ date", year, month, day, calendar.name))
+		} catch .julianDayNumberOutOfRange {
+			throw DecodingError.dataCorruptedError(forKey: .year, in: container, debugDescription: String(format: "The Julian day number for %04d-%02d-%02d (%@) cannot be represented", year, month, day, calendar.name))
+		}
+	}
+}
