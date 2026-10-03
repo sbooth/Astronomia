@@ -147,7 +147,7 @@ extension CalendarDay: Comparable {
 
 extension CalendarDay: CustomStringConvertible {
 	public var description: String {
-		String(format: "%04d-%02d-%02d (%@)", year, month, day, calendar.name)
+		"year: \(year), month: \(month), day: \(day) (\(calendar.name))"
 	}
 }
 
@@ -167,9 +167,9 @@ extension CalendarDay: Codable {
 		do throws(CalendarDayError) {
 			self = try CalendarDay(year: year, month: month, day: day, calendar)
 		} catch .invalidDate {
-			throw DecodingError.dataCorruptedError(forKey: .day, in: container, debugDescription: String(format: "%04d-%02d-%02d is not a valid %@ date", year, month, day, calendar.name))
+			throw DecodingError.dataCorruptedError(forKey: .day, in: container, debugDescription: "year: \(year), month: \(month), day: \(day) is not a valid \(calendar.name) date")
 		} catch .julianDayNumberOutOfRange {
-			throw DecodingError.dataCorruptedError(forKey: .year, in: container, debugDescription: String(format: "The Julian day number for %04d-%02d-%02d (%@) cannot be represented", year, month, day, calendar.name))
+			throw DecodingError.dataCorruptedError(forKey: .year, in: container, debugDescription: "The Julian day number for year: \(year), month: \(month), day: \(day) (\(calendar.name)) cannot be represented")
 		}
 	}
 }
