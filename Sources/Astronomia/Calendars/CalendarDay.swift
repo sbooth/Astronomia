@@ -119,6 +119,9 @@ extension CalendarDay {
 	/// Returns the calendar day the specified number of days before (for negative values) or after (for positive values) this calendar day, in the same calendar.
 	/// - throws: `JulianDayNumberOutOfRangeError` if the resulting calendar day's Julian day number cannot be represented as an `Int`.
 	public func adding(days n: Int) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
+		if n == 0 {
+			return self
+		}
 		let (J, overflow) = julianDayNumber.addingReportingOverflow(n)
 		guard !overflow else {
 			throw JulianDayNumberOutOfRangeError()
