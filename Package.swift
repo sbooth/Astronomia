@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 //
 // SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
 // SPDX-License-Identifier: MIT
