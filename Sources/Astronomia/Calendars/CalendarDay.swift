@@ -7,9 +7,9 @@
 
 /// The reasons a year, month, and day cannot form a `CalendarDay`.
 public enum CalendarDayError: Error, Hashable, Sendable {
-	/// The date does not exist in the calendar, such as February 30.
+	/// The year, month, and day do not form a valid date, such as February 30.
 	case invalidDate
-	/// The date is valid but its Julian day number cannot be represented as an `Int`.
+	/// The year, month, and day form a valid date, but its Julian day number cannot be represented as an `Int`.
 	case julianDayNumberOutOfRange
 }
 
@@ -29,7 +29,9 @@ public struct CalendarDay: Sendable {
 	public let julianDayNumber: JulianDayNumber
 
 	/// Creates a calendar day for the specified year, month, and day in the given calendar.
-	/// - throws: `CalendarDayError.invalidDate` if the date does not exist in `calendar`, or `CalendarDayError.julianDayNumberOutOfRange` if its Julian day number cannot be represented as an `Int`.
+	/// - throws:
+	///   - `CalendarDayError.invalidDate` if the year, month, and day do not form a valid date in the specified calendar.
+	///   - `CalendarDayError.julianDayNumberOutOfRange` if the year, month, and day form a valid date, but its Julian day number cannot be represented as an `Int`.
 	public init(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(CalendarDayError) {
 		guard calendar.isValid(year: year, month: month, day: day) else {
 			throw .invalidDate
@@ -46,13 +48,6 @@ public struct CalendarDay: Sendable {
 		self.julianDayNumber = J
 	}
 
-	/// Creates a calendar day from possibly out-of-range month and day values.
-	/// - note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
-	/// - throws: `JulianDayNumberOutOfRangeError` if the Julian day number for the date cannot be represented as an `Int`.
-	public static func normalized(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
-		CalendarDay(julianDayNumber: try calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
-	}
-
 	/// Creates the calendar day corresponding to the specified Julian day number in the given calendar.
 	public init(julianDayNumber J: JulianDayNumber,_ calendar: CalendarIdentifier) {
 		(year, month, day) = calendar.dateFromJulianDayNumber(J)
@@ -60,14 +55,33 @@ public struct CalendarDay: Sendable {
 		julianDayNumber = J
 	}
 
+	/// Creates a calendar day from possibly out-of-range month and day values.
+	/// - note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
+	/// - throws: `JulianDayNumberOutOfRangeError` if the Julian day number for the year, month, and day cannot be represented as an `Int`.
+	public static func normalized(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
+		CalendarDay(julianDayNumber: try calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
+	}
+}
+
+extension CalendarDay {
 	/// The calendar day as a year, month, and day tuple, for interoperability with the static calendar APIs.
 	public var components: YearMonthDay {
 		(year, month, day)
 	}
+}
 
+extension CalendarDay {
 	/// `true` if this calendar day falls in a leap year of its calendar.
 	public var isInLeapYear: Bool {
 		calendar.isLeapYear(year)
+	}
+}
+
+extension CalendarDay {
+	/// The number of months in one year.
+	/// - note: This is independent of calendar.
+	public var numberOfMonthsInYear: Int {
+		JulianCalendar.numberOfMonthsInYear
 	}
 
 	/// The number of days in this calendar day's month.
@@ -75,12 +89,21 @@ public struct CalendarDay: Sendable {
 		calendar.numberOfDaysIn(month: month, year: year)
 	}
 
+	/// The number of days in this calendar day's year.
+	public var numberOfDaysInYear: Int {
+		calendar.numberOfDaysInYear(year)
+	}
+}
+
+extension CalendarDay {
 	/// The day of the week from `1` (Sunday) to `7` (Saturday).
 	/// - note: This is independent of calendar.
 	public var dayOfWeek: Int {
 		JulianCalendar.dayOfWeek(julianDayNumber)
 	}
+}
 
+extension CalendarDay {
 	/// Returns the same calendar day expressed in another calendar.
 	public func convertedTo(_ other: CalendarIdentifier) -> CalendarDay {
 		other == calendar ? self : CalendarDay(julianDayNumber: julianDayNumber, other)
@@ -90,10 +113,15 @@ public struct CalendarDay: Sendable {
 	public func isSameDayAs(_ other: CalendarDay) -> Bool {
 		julianDayNumber == other.julianDayNumber
 	}
+}
 
-	/// Returns the calendar day `n` days after (or before, if negative) this calendar day, in the same calendar.
-	/// - throws: `JulianDayNumberOutOfRangeError` if the sum cannot be represented.
+extension CalendarDay {
+	/// Returns the calendar day the specified number of days before (for negative values) or after (for positive values) this calendar day, in the same calendar.
+	/// - throws: `JulianDayNumberOutOfRangeError` if the resulting calendar day's Julian day number cannot be represented as an `Int`.
 	public func adding(days n: Int) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
+		if n == 0 {
+			return self
+		}
 		let (J, overflow) = julianDayNumber.addingReportingOverflow(n)
 		guard !overflow else {
 			throw JulianDayNumberOutOfRangeError()
@@ -101,8 +129,8 @@ public struct CalendarDay: Sendable {
 		return CalendarDay(julianDayNumber: J, calendar)
 	}
 
-	/// Returns the number of days from this calendar day to `other`.
-	/// - throws: `JulianDayNumberOutOfRangeError` if the difference cannot be represented.
+	/// Returns the number of days from this calendar day to the specified calendar day.
+	/// - throws: `JulianDayNumberOutOfRangeError` if the difference between the two calendar days' Julian day numbers cannot be represented as an `Int`.
 	public func days(to other: CalendarDay) throws(JulianDayNumberOutOfRangeError) -> Int {
 		let (difference, overflow) = other.julianDayNumber.subtractingReportingOverflow(julianDayNumber)
 		guard !overflow else {
