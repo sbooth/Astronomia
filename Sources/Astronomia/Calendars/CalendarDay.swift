@@ -109,7 +109,7 @@ extension CalendarDay {
 		other == calendar ? self : CalendarDay(julianDayNumber: julianDayNumber, other)
 	}
 
-	/// Returns `true` if `other` denotes the same day, regardless of calendar.
+	/// Returns `true` if the specified calendar day denotes the same day as this calendar day, regardless of calendar.
 	public func isSameDayAs(_ other: CalendarDay) -> Bool {
 		julianDayNumber == other.julianDayNumber
 	}
