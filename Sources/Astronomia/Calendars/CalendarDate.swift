@@ -107,20 +107,21 @@ extension CalendarDate {
 			throw .invalidDayFraction
 		}
 
-		var days = days
 		var fraction = dayFraction + self.dayFraction
-		if fraction >= 1 {
-			fraction -= 1
-			let (d, overflow) = days.addingReportingOverflow(1)
-			guard !overflow else {
-				throw .julianDayNumberOutOfRange
-			}
-			days = d
-		}
 
-		let day: CalendarDay
+		var day: CalendarDay
 		do throws(JulianDayNumberOutOfRangeError) {
-			day = try calendarDay.adding(days: days)
+			if fraction >= 1 {
+				fraction -= 1
+				if days < Int.max {
+					day = try calendarDay.adding(days: days + 1)
+				} else {
+					day = try calendarDay.adding(days: days)
+					day = try day.adding(days: 1)
+				}
+			} else {
+				day = try calendarDay.adding(days: days)
+			}
 		} catch {
 			throw .julianDayNumberOutOfRange
 		}
