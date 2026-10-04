@@ -46,13 +46,6 @@ public struct CalendarDay: Sendable {
 		self.julianDayNumber = J
 	}
 
-	/// Creates a calendar day from possibly out-of-range month and day values.
-	/// - note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
-	/// - throws: `JulianDayNumberOutOfRangeError` if the Julian day number for the date cannot be represented as an `Int`.
-	public static func normalized(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
-		CalendarDay(julianDayNumber: try calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
-	}
-
 	/// Creates the calendar day corresponding to the specified Julian day number in the given calendar.
 	public init(julianDayNumber J: JulianDayNumber,_ calendar: CalendarIdentifier) {
 		(year, month, day) = calendar.dateFromJulianDayNumber(J)
@@ -60,14 +53,33 @@ public struct CalendarDay: Sendable {
 		julianDayNumber = J
 	}
 
+	/// Creates a calendar day from possibly out-of-range month and day values.
+	/// - note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
+	/// - throws: `JulianDayNumberOutOfRangeError` if the Julian day number for the date cannot be represented as an `Int`.
+	public static func normalized(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
+		CalendarDay(julianDayNumber: try calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
+	}
+}
+
+extension CalendarDay {
 	/// The calendar day as a year, month, and day tuple, for interoperability with the static calendar APIs.
 	public var components: YearMonthDay {
 		(year, month, day)
 	}
+}
 
+extension CalendarDay {
 	/// `true` if this calendar day falls in a leap year of its calendar.
 	public var isInLeapYear: Bool {
 		calendar.isLeapYear(year)
+	}
+}
+
+extension CalendarDay {
+	/// The number of months in one year.
+	/// - note: This is independent of calendar.
+	public var numberOfMonthsInYear: Int {
+		JulianCalendar.numberOfMonthsInYear
 	}
 
 	/// The number of days in this calendar day's month.
@@ -75,12 +87,21 @@ public struct CalendarDay: Sendable {
 		calendar.numberOfDaysIn(month: month, year: year)
 	}
 
+	/// The number of days in this calendar day's year.
+	public var numberOfDaysInYear: Int {
+		calendar.numberOfDaysInYear(year)
+	}
+}
+
+extension CalendarDay {
 	/// The day of the week from `1` (Sunday) to `7` (Saturday).
 	/// - note: This is independent of calendar.
 	public var dayOfWeek: Int {
 		JulianCalendar.dayOfWeek(julianDayNumber)
 	}
+}
 
+extension CalendarDay {
 	/// Returns the same calendar day expressed in another calendar.
 	public func convertedTo(_ other: CalendarIdentifier) -> CalendarDay {
 		other == calendar ? self : CalendarDay(julianDayNumber: julianDayNumber, other)
@@ -90,7 +111,9 @@ public struct CalendarDay: Sendable {
 	public func isSameDayAs(_ other: CalendarDay) -> Bool {
 		julianDayNumber == other.julianDayNumber
 	}
+}
 
+extension CalendarDay {
 	/// Returns the calendar day `n` days after (or before, if negative) this calendar day, in the same calendar.
 	/// - throws: `JulianDayNumberOutOfRangeError` if the sum cannot be represented.
 	public func adding(days n: Int) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
