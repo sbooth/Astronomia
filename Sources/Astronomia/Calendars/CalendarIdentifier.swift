@@ -94,18 +94,6 @@ extension CalendarIdentifier {
 }
 
 extension CalendarIdentifier {
-	/// The number of months in one year.
-	public var numberOfMonthsInYear: Int {
-		switch self {
-		case .julian:
-			return JulianCalendar.numberOfMonthsInYear
-		case .gregorian:
-			return GregorianCalendar.numberOfMonthsInYear
-		case .julianGregorian:
-			return JulianGregorianCalendar.numberOfMonthsInYear
-		}
-	}
-
 	/// Returns the number of days in the specified year.
 	public func numberOfDaysInYear(_ Y: Int) -> Int {
 		switch self {
