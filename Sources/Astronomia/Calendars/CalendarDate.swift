@@ -109,24 +109,24 @@ extension CalendarDate {
 
 		var fraction = dayFraction + self.dayFraction
 
-		var day: CalendarDay
+		var calendarDay: CalendarDay
 		do throws(JulianDayNumberOutOfRangeError) {
 			if fraction >= 1 {
 				fraction -= 1
 				if days < Int.max {
-					day = try calendarDay.adding(days: days + 1)
+					calendarDay = try self.calendarDay.adding(days: days + 1)
 				} else {
-					day = try calendarDay.adding(days: days)
-					day = try day.adding(days: 1)
+					calendarDay = try self.calendarDay.adding(days: days)
+					calendarDay = try calendarDay.adding(days: 1)
 				}
 			} else {
-				day = try calendarDay.adding(days: days)
+				calendarDay = try self.calendarDay.adding(days: days)
 			}
 		} catch {
 			throw .julianDayNumberOutOfRange
 		}
 
-		return CalendarDate(calendarDay: day, uncheckedDayFraction: fraction)
+		return CalendarDate(calendarDay: calendarDay, uncheckedDayFraction: fraction)
 	}
 
 	/// Returns the calendar date the specified number of days before (for negative values) or after (for positive values) this calendar date, in the same calendar.
