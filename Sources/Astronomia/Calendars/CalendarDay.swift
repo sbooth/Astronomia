@@ -7,9 +7,9 @@
 
 /// The reasons a year, month, and day cannot form a `CalendarDay`.
 public enum CalendarDayError: Error, Hashable, Sendable {
-	/// The date does not exist in the calendar, such as February 30.
+	/// The year, month, and day do not form a valid date, such as February 30.
 	case invalidDate
-	/// The date is valid but its Julian day number cannot be represented as an `Int`.
+	/// The year, month, and day form a valid date, but its Julian day number cannot be represented as an `Int`.
 	case julianDayNumberOutOfRange
 }
 
