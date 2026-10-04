@@ -81,7 +81,7 @@ extension CalendarDate {
 	public var month: Int {
 		calendarDay.month
 	}
-	
+
 	/// The day number. The first day of the month is day number 1.
 	public var day: Int {
 		calendarDay.day
@@ -90,6 +90,14 @@ extension CalendarDate {
 	/// The calendar the year, month, and day belong to.
 	public var calendar: CalendarIdentifier {
 		calendarDay.calendar
+	}
+
+	/// The Julian day number of this calendar date's day.
+	///
+	/// This is the JDN of the calendar day (the day beginning at noon on that date), regardless of the day fraction.
+	/// For a day fraction below 0.5 it is one greater than the floor of the instant's Julian Date.
+	public var julianDayNumber: JulianDayNumber {
+		calendarDay.julianDayNumber
 	}
 }
 
