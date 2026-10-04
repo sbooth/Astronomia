@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// The reasons a year, month, and day cannot form a calendar day.
+/// The reasons a year, month, and day cannot form a `CalendarDay`.
 public enum CalendarDayError: Error, Hashable, Sendable {
 	/// The year, month, and day do not form a valid date, such as February 30.
 	case invalidDate
