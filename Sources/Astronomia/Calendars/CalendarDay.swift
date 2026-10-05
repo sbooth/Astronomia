@@ -9,7 +9,7 @@
 public enum CalendarDayError: Error, Hashable, Sendable {
 	/// The year, month, and day do not form a valid date, such as February 30.
 	case invalidDate
-	/// The year, month, and day form a valid date, but its Julian day number cannot be represented as an `Int`.
+	/// The year, month, and day form a valid date, but its Julian day number cannot be represented as a `JulianDayNumber`.
 	case julianDayNumberOutOfRange
 }
 
@@ -31,7 +31,7 @@ public struct CalendarDay: Sendable {
 	/// Creates a calendar day for the specified year, month, and day in the given calendar.
 	/// - throws:
 	///   - `CalendarDayError.invalidDate` if the year, month, and day do not form a valid date in the specified calendar.
-	///   - `CalendarDayError.julianDayNumberOutOfRange` if the year, month, and day form a valid date, but its Julian day number cannot be represented as an `Int`.
+	///   - `CalendarDayError.julianDayNumberOutOfRange` if the year, month, and day form a valid date, but its Julian day number cannot be represented as a `JulianDayNumber`.
 	public init(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(CalendarDayError) {
 		guard calendar.isValid(year: year, month: month, day: day) else {
 			throw .invalidDate
@@ -57,7 +57,7 @@ public struct CalendarDay: Sendable {
 
 	/// Creates a calendar day from possibly out-of-range month and day values.
 	/// - note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
-	/// - throws: `JulianDayNumberOutOfRangeError` if the Julian day number for the year, month, and day cannot be represented as an `Int`.
+	/// - throws: `JulianDayNumberOutOfRangeError` if the Julian day number for the year, month, and day cannot be represented as a `JulianDayNumber`.
 	public static func normalized(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
 		CalendarDay(julianDayNumber: try calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
 	}
@@ -117,7 +117,7 @@ extension CalendarDay {
 
 extension CalendarDay {
 	/// Returns the calendar day the specified number of days before (for negative values) or after (for positive values) this calendar day, in the same calendar.
-	/// - throws: `JulianDayNumberOutOfRangeError` if the resulting calendar day's Julian day number cannot be represented as an `Int`.
+	/// - throws: `JulianDayNumberOutOfRangeError` if the resulting calendar day's Julian day number cannot be represented as a `JulianDayNumber`.
 	public func adding(days n: Int) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
 		if n == 0 {
 			return self

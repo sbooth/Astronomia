@@ -13,7 +13,7 @@ public enum CalendarDateError: Error, Hashable, Sendable {
 	case invalidDayFraction
 	/// The year, month, and day do not form a valid date, such as February 30.
 	case invalidDate
-	/// A Julian day number, whether from a year, month, and day or a computed result, cannot be represented as an `Int`.
+	/// A Julian day number, whether from a year, month, and day or a computed result, cannot be represented as a `JulianDayNumber`.
 	case julianDayNumberOutOfRange
 }
 
@@ -44,7 +44,7 @@ public struct CalendarDate: Hashable, Sendable {
 	///   - `CalendarDateError.nonFiniteValue` if the day fraction is not finite.
 	///   - `CalendarDateError.invalidDayFraction` if the day fraction is outside the interval `[0, 1)`.
 	///   - `CalendarDateError.invalidDate` if the year, month, and day do not form a valid date in the specified calendar.
-	///   - `CalendarDateError.julianDayNumberOutOfRange` if the year, month, and day form a valid date, but its Julian day number cannot be represented as an `Int`.
+	///   - `CalendarDateError.julianDayNumberOutOfRange` if the year, month, and day form a valid date, but its Julian day number cannot be represented as a `JulianDayNumber`.
 	public init(year: Int, month: Int, day: Int, dayFraction: Double, _ calendar: CalendarIdentifier) throws(CalendarDateError) {
 		let calendarDay: CalendarDay
 		do throws(CalendarDayError) {
@@ -106,7 +106,7 @@ extension CalendarDate {
 	/// - throws:
 	///   - `CalendarDateError.nonFiniteValue` if the day fraction is not finite.
 	///   - `CalendarDateError.invalidDayFraction` if the day fraction is outside the interval `[0, 1)`.
-	///   - `CalendarDateError.julianDayNumberOutOfRange` if the resulting day's Julian day number cannot be represented as an `Int`.
+	///   - `CalendarDateError.julianDayNumberOutOfRange` if the resulting day's Julian day number cannot be represented as a `JulianDayNumber`.
 	public func adding(days: Int, dayFraction: Double = 0) throws(CalendarDateError) -> CalendarDate {
 		guard dayFraction.isFinite else {
 			throw .nonFiniteValue
@@ -140,7 +140,7 @@ extension CalendarDate {
 	/// Returns the calendar date the specified number of days before (for negative values) or after (for positive values) this calendar date, in the same calendar.
 	/// - throws:
 	///   - `CalendarDateError.nonFiniteValue` if the number of days is not finite.
-	///   - `CalendarDateError.julianDayNumberOutOfRange` if the specified number of days or resulting day's Julian day number cannot be represented as an `Int`.
+	///   - `CalendarDateError.julianDayNumberOutOfRange` if the specified number of days cannot be represented as an `Int`, or the resulting day's Julian day number cannot be represented as a `JulianDayNumber`.
 	public func adding(days n: Double) throws(CalendarDateError) -> CalendarDate {
 		guard n.isFinite else {
 			throw .nonFiniteValue
@@ -157,16 +157,16 @@ extension CalendarDate {
 	/// - note: Day fractions outside `[0, 1)` carry whole days forward or backward from the specified calendar day.
 	/// - throws:
 	///   - `CalendarDateError.nonFiniteValue` if the day fraction is not finite.
-	///   - `CalendarDateError.julianDayNumberOutOfRange` if the day fraction's whole days or resulting day's Julian day number cannot be represented as an `Int`.
+	///   - `CalendarDateError.julianDayNumberOutOfRange` if the day fraction's whole days cannot be represented as an `Int`, or the resulting day's Julian day number cannot be represented as a `JulianDayNumber`.
 	public static func normalized(calendarDay: CalendarDay, dayFraction: Double) throws(CalendarDateError) -> CalendarDate {
 		try CalendarDate(calendarDay: calendarDay, uncheckedDayFraction: 0).adding(days: dayFraction)
 	}
 
 	/// Creates a calendar date from possibly out-of-range month, day, and day fraction values.
-	/// - note: Months roll over into adjacent years, days are counted from the normalized month, and the day fraction carries whole days.
+	/// - note: Months outside `[1, 12]` roll over into earlier or later years, days are counted from the normalized month, and the day fraction carries whole days.
 	/// - throws:
 	///   - `CalendarDateError.nonFiniteValue` if the day fraction is not finite.
-	///   - `CalendarDateError.julianDayNumberOutOfRange` if the normalized calendar day, the day fraction's whole days, or resulting day's Julian day number cannot be represented as an `Int`.
+	///   - `CalendarDateError.julianDayNumberOutOfRange` if the Julian day number for the year, month, and day cannot be represented as a `JulianDayNumber`, the day fraction's whole days cannot be represented as an `Int`, or the resulting day's Julian day number cannot be represented as a `JulianDayNumber`.
 	public static func normalized(year: Int, month: Int, day: Int, dayFraction: Double, _ calendar: CalendarIdentifier) throws(CalendarDateError) -> CalendarDate {
 		let calendarDay: CalendarDay
 		do throws(JulianDayNumberOutOfRangeError) {
@@ -184,7 +184,7 @@ extension CalendarDate {
 		CalendarDate(calendarDay: calendarDay.convertedTo(other), uncheckedDayFraction: dayFraction)
 	}
 
-	/// Returns `true` if the specified calendar date denotes the same day and day fraction, regardless of calendar.
+	/// Returns `true` if the specified calendar date denotes the same day and time of day, regardless of calendar.
 	public func isSameInstantAs(_ other: CalendarDate) -> Bool {
 		calendarDay.isSameDayAs(other.calendarDay) && dayFraction == other.dayFraction
 	}
