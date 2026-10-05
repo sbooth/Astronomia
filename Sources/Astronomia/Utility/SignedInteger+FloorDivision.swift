@@ -23,6 +23,7 @@ extension SignedInteger {
 	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`.
 	///
 	/// ### Example
+	///
 	/// ```swift
 	/// (-10).quotientAndRemainder(dividingBy: 3)
 	/// // (quotient: -3, remainder: -1)
