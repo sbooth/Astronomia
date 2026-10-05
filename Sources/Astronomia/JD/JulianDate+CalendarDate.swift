@@ -6,16 +6,6 @@
 //
 
 extension JulianDate {
-	/// Returns `true` if the magnitude of the specified Julian day number is less than 2^51,
-	/// matching the `|JD| < 2^51` limit of the canonical form.
-	///
-	/// The comparison is done in `Double` so it is correct for any width of `JulianDayNumber`:
-	/// the conversion is exact below 2^53 and monotonic above it, so no value at or beyond
-	/// 2^51 can round below the bound. On 32-bit targets this is always `true`.
-	static func isRepresentable(julianDayNumber J: JulianDayNumber) -> Bool {
-		Double(J).magnitude < 0x1p51
-	}
-
 	/// Creates a Julian Date from a calendar date.
 	///
 	/// The day with Julian day number `J` begins at midnight `J − 0.5`, so the conversion is exact:
@@ -25,18 +15,17 @@ extension JulianDate {
 	///
 	/// - precondition: The magnitude of the calendar date's Julian day number is less than 2^51.
 	public init(_ calendarDate: CalendarDate) {
-		let J = calendarDate.calendarDay.julianDayNumber
-		precondition(Self.isRepresentable(julianDayNumber: J), "Julian day number \(J) cannot be represented exactly")
-		// Exact: |J| < 2^51, so both J and J - 0.5 are representable.
-		self.init(midnight: Double(J) - 0.5, offset: calendarDate.dayFraction)
+		guard let date = Self(validatingCalendarDate: calendarDate) else {
+			preconditionFailure("Julian day number \(calendarDate.julianDayNumber) is outside the supported range")
+		}
+		self = date
 	}
 
 	/// Creates a Julian Date from a calendar date, returning `nil` if the magnitude of its Julian day number is not less than 2^51.
 	public init?(validatingCalendarDate calendarDate: CalendarDate) {
-		guard Self.isRepresentable(julianDayNumber: calendarDate.julianDayNumber) else {
-			return nil
-		}
-		self.init(calendarDate)
+		// Double(J) is exact for |J| < 2^53 and rounds monotonically beyond, so the range check in
+		// the checked initializer is correct for any width of JulianDayNumber, including 32-bit Int.
+		self.init(dayNumber: Double(calendarDate.julianDayNumber), offset: calendarDate.dayFraction)
 	}
 }
 
@@ -47,7 +36,7 @@ extension JulianDate {
 	///
 	/// Neither type records a timescale; the calendar date is in this Julian Date's timescale.
 	///
-	/// - throws: `CalendarDateError.julianDayNumberOutOfRange` if the Julian day number of the day containing this Julian Date cannot be represented as an `Int`.
+	/// - throws: `CalendarDateError.julianDayNumberOutOfRange` if the Julian day number of the day containing this Julian Date cannot be represented as a `JulianDayNumber`.
 	public var calendarDate: CalendarDate {
 		get throws(CalendarDateError) {
 			try calendarDate(.julianGregorian)
@@ -60,9 +49,10 @@ extension JulianDate {
 	///
 	/// Neither type records a timescale; the calendar date is in this Julian Date's timescale.
 	///
-	/// - throws: `CalendarDateError.julianDayNumberOutOfRange` if the Julian day number of the day containing this Julian Date cannot be represented as an `Int`.
+	/// - throws: `CalendarDateError.julianDayNumberOutOfRange` if the Julian day number of the day containing this Julian Date cannot be represented as a `JulianDayNumber`.
+	///   This can happen only when `JulianDayNumber` is narrower than 52 bits, e.g. on 32-bit platforms.
 	public func calendarDate(_ calendar: CalendarIdentifier) throws(CalendarDateError) -> CalendarDate {
-		// Exact for |midnight| < 2^52, where midnight is a true half-integer.
+		// Exact: midnight is a half-integer with |midnight + 0.5| < 2^51.
 		guard let J = JulianDayNumber(exactly: midnight + 0.5) else {
 			throw .julianDayNumberOutOfRange
 		}

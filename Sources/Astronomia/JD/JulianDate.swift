@@ -23,57 +23,81 @@
 /// | 2400000.5 | 50123.2 | MJD | Good |
 /// | 2450123.5 | 0.2 | Date & time | Best |
 ///
-/// The canonical form is exact for `|JD| < 2^51`.
+/// ## Supported range
+///
+/// Every Julian Date lies on a day whose Julian day number `J` (the day beginning
+/// at midnight `J − 0.5`) satisfies `|J| < 2^51`, roughly ±6 × 10^12 years.
+/// Within this range the canonical form is exact. Every initializer and every
+/// arithmetic operation enforces it: trapping APIs trap and failable APIs return
+/// `nil` for results outside it.
 public struct JulianDate: Sendable {
 	/// The Julian Date of the midnight preceding this instant (always a half-integer).
 	public let midnight: Double
 	/// The fraction of a day elapsed since `midnight`, in `[0, 1)`.
 	public let dayFraction: Double
 
+	/// The exclusive upper bound on the magnitude of the Julian day number of any Julian Date.
+	static let julianDayNumberBound: Double = 0x1p51
+
 	/// Creates a Julian Date equal to `jd1 + jd2`, stored in canonical form.
-	/// - precondition: Both parts are finite and the resulting date is finite.
+	/// - precondition: Both parts are finite and the resulting date is within the supported range.
 	public init(jd1: Double, jd2: Double = 0) {
 		precondition(jd1.isFinite && jd2.isFinite, "Julian Date parts must be finite")
+		guard let date = Self(validatingJD1: jd1, jd2: jd2) else {
+			preconditionFailure("Julian Date \(jd1) + \(jd2) is outside the supported range")
+		}
+		self = date
+	}
+
+	/// Creates a Julian Date from an integral Julian day number `J` and an `offset` in days, in `[-1, 2)`,
+	/// measured from midnight `J − 0.5`, returning `nil` if the result is outside the supported range.
+	///
+	/// This is the only initializer that sets the stored properties, so it alone enforces the invariant.
+	///
+	/// `J` need not be exact when it is out of range: rounding is monotonic and the bound is representable,
+	/// so any computed `J` whose true value is out of range is also out of range.
+	init?(dayNumber J: Double, offset: Double) {
+		assert(J == J.rounded(), "Julian day number is not integral")
+		assert(offset >= -1 && offset < 2, "Offset is outside the interval [-1, 2)")
+		var j = J
+		var f = offset
+		if f < 0 {
+			j -= 1
+			f += 1 // [0, 1]; may round to 1
+		} else if f >= 1 {
+			j += 1
+			f -= 1 // Exact (Sterbenz), [0, 1)
+		}
+		if f == 1 {
+			j += 1
+			f = 0
+		}
+		// Also rejects ±infinity.
+		guard j.magnitude < Self.julianDayNumberBound else {
+			return nil
+		}
+		// Exact: j is an integer with |j| < 2^51.
+		self.midnight = j - 0.5
+		self.dayFraction = f
+	}
+}
+
+extension JulianDate {
+	/// Creates a Julian Date from two parts, returning `nil` if either part is not finite or the resulting date is outside the supported range.
+	public init?(validatingJD1 jd1: Double, jd2: Double = 0) {
+		guard jd1.isFinite, jd2.isFinite else {
+			return nil
+		}
 		// Exact: each part minus its nearest integer lies in [-0.5, 0.5].
 		let w1 = jd1.rounded()
 		let w2 = jd2.rounded()
 		// One rounding; g lies in [-1, 1].
 		let g = (jd1 - w1) + (jd2 - w2)
 		let w3 = g.rounded()
+		// The integer sum is exact whenever its true value is in range; otherwise it rounds (or overflows)
+		// to a value that is also out of range, which the checked initializer rejects.
 		// (g - w3) is exact and lies in [-0.5, 0.5]; adding 0.5 rounds once, into [0, 1].
-		self.init(midnight: ((w1 + w2) + w3) - 0.5, offset: (g - w3) + 0.5)
-	}
-
-	/// Combines a half-integer `midnight` with an `offset` in days, in `[-1, 2)`, into canonical form.
-	init(midnight: Double, offset: Double) {
-		precondition(midnight.isFinite, "Julian Date must be finite")
-		assert((midnight + 0.5) == (midnight + 0.5).rounded(), "Midnight is not a half-integer")
-		assert(offset >= -1 && offset < 2, "Offset is outside the interval [-1, 2)")
-		var m = midnight
-		var f = offset
-		if f < 0 {
-			m -= 1
-			f += 1
-		} else if f >= 1 {
-			m += 1
-			f -= 1
-		}
-		if f == 1 {
-			m += 1
-			f = 0
-		}
-		self.midnight = m
-		self.dayFraction = f
-	}
-}
-
-extension JulianDate {
-	/// Creates a Julian Date from two parts, returning `nil` if either part or the resulting date is not finite.
-	public init?(validatingJD1 jd1: Double, jd2: Double = 0) {
-		guard jd1.isFinite, jd2.isFinite, (jd1 + jd2).isFinite else {
-			return nil
-		}
-		self.init(jd1: jd1, jd2: jd2)
+		self.init(dayNumber: (w1 + w2) + w3, offset: (g - w3) + 0.5)
 	}
 }
 
@@ -103,31 +127,31 @@ extension JulianDate {
 
 extension JulianDate {
 	/// Creates a Julian Date from a single value (limited to ~40 µs resolution).
-	/// - precondition: The Julian Date value is finite.
+	/// - precondition: The Julian Date value is finite and within the supported range.
 	public init(julianDate JD: Double) {
 		self.init(jd1: JD, jd2: 0)
 	}
 
 	/// Creates a Julian Date from a Modified Julian Date value.
-	/// - precondition: The Modified Julian Date value is finite.
+	/// - precondition: The Modified Julian Date value is finite and the resulting date is within the supported range.
 	public init(modifiedJulianDate MJD: Double) {
 		self.init(jd1: Self.MJD0_JD, jd2: MJD)
 	}
 
 	/// Creates a Julian Date from a number of elapsed days since J2000.0.
-	/// - precondition: The number of elapsed days is finite.
+	/// - precondition: The number of elapsed days is finite and the resulting date is within the supported range.
 	public init(daysSinceJ2000 days: Double) {
 		self.init(jd1: Self.J2000_JD, jd2: days)
 	}
 
 	/// Creates a Julian Date from a Julian epoch value, e.g. 2000.0.
-	/// - precondition: The epoch value is finite and the resulting date is finite.
+	/// - precondition: The epoch value is finite and the resulting date is finite and within the supported range.
 	public init(julianEpoch epoch: Double) {
 		self.init(jd1: Self.MJD0_JD, jd2: Self.J2000_MJD + (epoch - 2000.0) * Self.daysPerJulianYear)
 	}
 
 	/// Creates a Julian Date from a Besselian epoch value, e.g. 1950.0.
-	/// - precondition: The epoch value is finite and the resulting date is finite.
+	/// - precondition: The epoch value is finite and the resulting date is finite and within the supported range.
 	public init(besselianEpoch epoch: Double) {
 		self.init(jd1: Self.MJD0_JD, jd2: Self.B1900_MJD + (epoch - 1900.0) * Self.daysPerTropicalYear)
 	}
@@ -199,32 +223,51 @@ extension JulianDate {
 }
 
 extension JulianDate {
+	/// Splits a number of seconds into whole days and a fractional-day offset in `[-0.5, 0.5]`, assuming 86,400 seconds per day.
+	///
+	/// `days` is always integral. It is exact whenever its magnitude is less than 2^52, which covers the supported range.
+	static func split(seconds: Double) -> (days: Double, offset: Double) {
+		assert(seconds.isFinite, "Number of seconds must be finite")
+		let r = seconds.remainder(dividingBy: secondsPerDay) // exact, |r| ≤ 43200
+															 // (seconds - r) is a multiple of 86,400 but can round for |seconds| ≥ 2^60;
+															 // rounding the quotient recovers the exact whole-day count.
+		let d = ((seconds - r) / secondsPerDay).rounded()
+		return (d, r / secondsPerDay)
+	}
+}
+
+extension JulianDate {
 	/// Returns the Julian Date offset by a number of days.
-	/// - precondition: The number of days is finite and the resulting date is finite.
+	/// - precondition: The number of days is finite and the resulting date is within the supported range.
 	public func adding(days: Double) -> JulianDate {
 		precondition(days.isFinite, "Number of days must be finite")
 		let wholeDays = days.rounded()
-		// (days - wholeDays) is exact and lies in [-0.5, 0.5], so the offset lies in [-0.5, 1.5).
-		return JulianDate(midnight: midnight + wholeDays, offset: dayFraction + (days - wholeDays))
+		// (midnight + 0.5) is exact. (days - wholeDays) is exact and lies in [-0.5, 0.5], so the offset lies in [-0.5, 1.5].
+		guard let date = JulianDate(dayNumber: (midnight + 0.5) + wholeDays, offset: dayFraction + (days - wholeDays)) else {
+			preconditionFailure("Adding \(days) days to \(self) leaves the supported range")
+		}
+		return date
 	}
 
 	/// Returns the date offset by a number of seconds, assuming 86,400 seconds per day.
-	/// - precondition: The number of seconds is finite and the resulting date is finite.
+	/// - precondition: The number of seconds is finite and the resulting date is within the supported range.
 	public func adding(seconds: Double) -> JulianDate {
 		precondition(seconds.isFinite, "Number of seconds must be finite")
-		let r = seconds.remainder(dividingBy: Self.secondsPerDay) // exact, |r| ≤ 43200
-		let d = (seconds - r) / Self.secondsPerDay                // exact integer
-		return JulianDate(midnight: midnight + d, offset: dayFraction + r / Self.secondsPerDay)
+		let (d, offset) = Self.split(seconds: seconds)
+		guard let date = JulianDate(dayNumber: (midnight + 0.5) + d, offset: dayFraction + offset) else {
+			preconditionFailure("Adding \(seconds) seconds to \(self) leaves the supported range")
+		}
+		return date
 	}
 
 	/// Returns the Julian Date offset by a number of days.
-	/// - precondition: The number of days is finite and the resulting date is finite.
+	/// - precondition: The number of days is finite and the resulting date is within the supported range.
 	public static func + (lhs: JulianDate, days: Double) -> JulianDate {
 		lhs.adding(days: days)
 	}
 
 	/// Returns the Julian Date offset by a number of days.
-	/// - precondition: The number of days is finite and the resulting date is finite.
+	/// - precondition: The number of days is finite and the resulting date is within the supported range.
 	public static func - (lhs: JulianDate, days: Double) -> JulianDate {
 		lhs.adding(days: -days)
 	}
@@ -273,13 +316,13 @@ extension JulianDate: Codable {
 	}
 
 	/// Decodes a Julian Date from any split of `jd1 + jd2`; `jd2` defaults to 0 if absent.
-	/// - throws: `DecodingError.dataCorrupted` if a part or the resulting date is not finite.
+	/// - throws: `DecodingError.dataCorrupted` if a part is not finite or the resulting date is outside the supported range.
 	public init(from decoder: any Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
 		let jd1 = try container.decode(Double.self, forKey: .midnight)
 		let jd2 = try container.decodeIfPresent(Double.self, forKey: .dayFraction) ?? 0
 		guard let date = JulianDate(validatingJD1: jd1, jd2: jd2) else {
-			throw DecodingError.dataCorruptedError(forKey: .midnight, in: container, debugDescription: "Julian Date parts and their sum must be finite (jd1: \(jd1), jd2: \(jd2))")
+			throw DecodingError.dataCorruptedError(forKey: .midnight, in: container, debugDescription: "Julian Date parts must be finite and their sum within the supported range (jd1: \(jd1), jd2: \(jd2))")
 		}
 		self = date
 	}
