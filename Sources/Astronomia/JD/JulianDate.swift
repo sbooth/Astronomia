@@ -36,9 +36,6 @@ public struct JulianDate: Sendable {
 	/// The fraction of a day elapsed since `midnight`, in `[0, 1)`.
 	public let dayFraction: Double
 
-	/// The exclusive upper bound on the magnitude of the Julian day number of any Julian Date.
-	static let julianDayNumberBound: Double = 0x1p51
-
 	/// Creates a Julian Date equal to `jd1 + jd2`, stored in canonical form.
 	/// - precondition: Both parts are finite and the resulting date is within the supported range.
 	public init(jd1: Double, jd2: Double = 0) {
@@ -48,6 +45,28 @@ public struct JulianDate: Sendable {
 		}
 		self = date
 	}
+
+	/// Creates a Julian Date from two parts, returning `nil` if either part is not finite or the resulting date is outside the supported range.
+	public init?(validatingJD1 jd1: Double, jd2: Double = 0) {
+		guard jd1.isFinite, jd2.isFinite else {
+			return nil
+		}
+		// Exact: each part minus its nearest integer lies in [-0.5, 0.5].
+		let w1 = jd1.rounded()
+		let w2 = jd2.rounded()
+		// One rounding; g lies in [-1, 1].
+		let g = (jd1 - w1) + (jd2 - w2)
+		let w3 = g.rounded()
+		// The integer sum is exact whenever its true value is in range; otherwise it rounds (or overflows)
+		// to a value that is also out of range, which the checked initializer rejects.
+		// (g - w3) is exact and lies in [-0.5, 0.5]; adding 0.5 rounds once, into [0, 1].
+		self.init(dayNumber: (w1 + w2) + w3, offset: (g - w3) + 0.5)
+	}
+}
+
+extension JulianDate {
+	/// The exclusive upper bound on the magnitude of the Julian day number of any Julian Date.
+	static let julianDayNumberBound: Double = 0x1p51
 
 	/// Creates a Julian Date from an integral Julian day number `J` and an `offset` in days, in `[-1, 2)`,
 	/// measured from midnight `J − 0.5`, returning `nil` if the result is outside the supported range.
@@ -79,25 +98,6 @@ public struct JulianDate: Sendable {
 		// Exact: j is an integer with |j| < 2^51.
 		self.midnight = j - 0.5
 		self.dayFraction = f
-	}
-}
-
-extension JulianDate {
-	/// Creates a Julian Date from two parts, returning `nil` if either part is not finite or the resulting date is outside the supported range.
-	public init?(validatingJD1 jd1: Double, jd2: Double = 0) {
-		guard jd1.isFinite, jd2.isFinite else {
-			return nil
-		}
-		// Exact: each part minus its nearest integer lies in [-0.5, 0.5].
-		let w1 = jd1.rounded()
-		let w2 = jd2.rounded()
-		// One rounding; g lies in [-1, 1].
-		let g = (jd1 - w1) + (jd2 - w2)
-		let w3 = g.rounded()
-		// The integer sum is exact whenever its true value is in range; otherwise it rounds (or overflows)
-		// to a value that is also out of range, which the checked initializer rejects.
-		// (g - w3) is exact and lies in [-0.5, 0.5]; adding 0.5 rounds once, into [0, 1].
-		self.init(dayNumber: (w1 + w2) + w3, offset: (g - w3) + 0.5)
 	}
 }
 
