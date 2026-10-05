@@ -6,9 +6,15 @@
 //
 
 extension JulianDate {
-	/// The exclusive upper bound on the magnitude of a Julian day number accepted when creating
-	/// a Julian Date from a calendar date, matching the `|JD| < 2^51` limit of the canonical form.
-	static let julianDayNumberMagnitudeLimit: JulianDayNumber.Magnitude = 1 << 51
+	/// Returns `true` if the magnitude of the specified Julian day number is less than 2^51,
+	/// matching the `|JD| < 2^51` limit of the canonical form.
+	///
+	/// The comparison is done in `Double` so it is correct for any width of `JulianDayNumber`:
+	/// the conversion is exact below 2^53 and monotonic above it, so no value at or beyond
+	/// 2^51 can round below the bound. On 32-bit targets this is always `true`.
+	static func isRepresentable(julianDayNumber J: JulianDayNumber) -> Bool {
+		Double(J).magnitude < 0x1p51
+	}
 
 	/// Creates a Julian Date from a calendar date.
 	///
@@ -20,14 +26,14 @@ extension JulianDate {
 	/// - precondition: The magnitude of the calendar date's Julian day number is less than 2^51.
 	public init(_ calendarDate: CalendarDate) {
 		let J = calendarDate.calendarDay.julianDayNumber
-		precondition(J.magnitude < Self.julianDayNumberMagnitudeLimit, "Julian day number \(J) cannot be represented exactly")
+		precondition(Self.isRepresentable(julianDayNumber: J), "Julian day number \(J) cannot be represented exactly")
 		// Exact: |J| < 2^51, so both J and J - 0.5 are representable.
 		self.init(midnight: Double(J) - 0.5, offset: calendarDate.dayFraction)
 	}
 
 	/// Creates a Julian Date from a calendar date, returning `nil` if the magnitude of its Julian day number is not less than 2^51.
 	public init?(validatingCalendarDate calendarDate: CalendarDate) {
-		guard calendarDate.calendarDay.julianDayNumber.magnitude < Self.julianDayNumberMagnitudeLimit else {
+		guard Self.isRepresentable(julianDayNumber: calendarDate.julianDayNumber) else {
 			return nil
 		}
 		self.init(calendarDate)
