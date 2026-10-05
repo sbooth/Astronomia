@@ -29,7 +29,7 @@ public struct CalendarDay: Sendable {
 	public let julianDayNumber: JulianDayNumber
 
 	/// Creates a calendar day for the specified year, month, and day in the given calendar.
-	/// - throws:
+	/// - Throws:
 	///   - ``CalendarDayError/invalidDate`` if the year, month, and day do not form a valid date in the specified calendar.
 	///   - ``CalendarDayError/julianDayNumberOutOfRange`` if the year, month, and day form a valid date, but its Julian day number cannot be represented as a ``JulianDayNumber``.
 	public init(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(CalendarDayError) {
@@ -56,8 +56,8 @@ public struct CalendarDay: Sendable {
 	}
 
 	/// Creates a calendar day from possibly out-of-range month and day values.
-	/// - note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
-	/// - throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the year, month, and day cannot be represented as a ``JulianDayNumber``.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the year, month, and day cannot be represented as a ``JulianDayNumber``.
 	public static func normalized(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
 		CalendarDay(julianDayNumber: try calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
 	}
@@ -79,7 +79,7 @@ extension CalendarDay {
 
 extension CalendarDay {
 	/// The number of months in one year.
-	/// - note: This is independent of calendar.
+	/// - Note: This is independent of calendar.
 	public var numberOfMonthsInYear: Int {
 		JulianCalendar.numberOfMonthsInYear
 	}
@@ -97,7 +97,7 @@ extension CalendarDay {
 
 extension CalendarDay {
 	/// The day of the week from `1` (Sunday) to `7` (Saturday).
-	/// - note: This is independent of calendar.
+	/// - Note: This is independent of calendar.
 	public var dayOfWeek: Int {
 		JulianCalendar.dayOfWeek(julianDayNumber)
 	}
@@ -117,7 +117,7 @@ extension CalendarDay {
 
 extension CalendarDay {
 	/// Returns the calendar day the specified number of days before (for negative values) or after (for positive values) this calendar day, in the same calendar.
-	/// - throws: ``JulianDayNumberOutOfRangeError`` if the resulting calendar day's Julian day number cannot be represented as a ``JulianDayNumber``.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the resulting calendar day's Julian day number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days n: Int) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
 		if n == 0 {
 			return self
@@ -130,7 +130,7 @@ extension CalendarDay {
 	}
 
 	/// Returns the number of days from this calendar day to the specified calendar day.
-	/// - throws: ``JulianDayNumberOutOfRangeError`` if the difference between the two calendar days' Julian day numbers cannot be represented as an `Int`.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the difference between the two calendar days' Julian day numbers cannot be represented as an `Int`.
 	public func days(to other: CalendarDay) throws(JulianDayNumberOutOfRangeError) -> Int {
 		let (difference, overflow) = other.julianDayNumber.subtractingReportingOverflow(julianDayNumber)
 		guard !overflow else {

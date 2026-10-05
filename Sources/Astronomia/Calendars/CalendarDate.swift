@@ -25,7 +25,7 @@ public struct CalendarDate: Hashable, Sendable {
 	public let dayFraction: Double
 
 	/// Creates a calendar date for the specified calendar day and day fraction.
-	/// - throws:
+	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
 	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction is outside the interval `[0, 1)`.
 	public init(calendarDay: CalendarDay, dayFraction: Double) throws(CalendarDateError) {
@@ -40,7 +40,7 @@ public struct CalendarDate: Hashable, Sendable {
 	}
 
 	/// Creates a calendar date for the specified year, month, and day in the given calendar with the specified day fraction.
-	/// - throws:
+	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
 	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction is outside the interval `[0, 1)`.
 	///   - ``CalendarDateError/invalidDate`` if the year, month, and day do not form a valid date in the specified calendar.
@@ -103,7 +103,7 @@ extension CalendarDate {
 
 extension CalendarDate {
 	/// Returns the calendar date the specified number of days plus day fraction before (for negative values) or after (for positive values) this calendar date, in the same calendar.
-	/// - throws:
+	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
 	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction is outside the interval `[0, 1)`.
 	///   - ``CalendarDateError/julianDayNumberOutOfRange`` if the resulting day's Julian day number cannot be represented as a ``JulianDayNumber``.
@@ -138,7 +138,7 @@ extension CalendarDate {
 	}
 
 	/// Returns the calendar date the specified number of days before (for negative values) or after (for positive values) this calendar date, in the same calendar.
-	/// - throws:
+	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the number of days is not finite.
 	///   - ``CalendarDateError/julianDayNumberOutOfRange`` if the specified number of days cannot be represented as an `Int`, or the resulting day's Julian day number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days n: Double) throws(CalendarDateError) -> CalendarDate {
@@ -154,8 +154,8 @@ extension CalendarDate {
 
 extension CalendarDate {
 	/// Creates a calendar date from a possibly out-of-range day fraction.
-	/// - note: Day fractions outside `[0, 1)` carry whole days forward or backward from the specified calendar day.
-	/// - throws:
+	/// - Note: Day fractions outside `[0, 1)` carry whole days forward or backward from the specified calendar day.
+	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
 	///   - ``CalendarDateError/julianDayNumberOutOfRange`` if the day fraction's whole days cannot be represented as an `Int`, or the resulting day's Julian day number cannot be represented as a ``JulianDayNumber``.
 	public static func normalized(calendarDay: CalendarDay, dayFraction: Double) throws(CalendarDateError) -> CalendarDate {
@@ -163,8 +163,8 @@ extension CalendarDate {
 	}
 
 	/// Creates a calendar date from possibly out-of-range month, day, and day fraction values.
-	/// - note: Months outside `[1, 12]` roll over into earlier or later years, days are counted from the normalized month, and the day fraction carries whole days.
-	/// - throws:
+	/// - Note: Months outside `[1, 12]` roll over into earlier or later years, days are counted from the normalized month, and the day fraction carries whole days.
+	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
 	///   - ``CalendarDateError/julianDayNumberOutOfRange`` if the Julian day number for the year, month, and day cannot be represented as a ``JulianDayNumber``, the day fraction's whole days cannot be represented as an `Int`, or the resulting day's Julian day number cannot be represented as a ``JulianDayNumber``.
 	public static func normalized(year: Int, month: Int, day: Int, dayFraction: Double, _ calendar: CalendarIdentifier) throws(CalendarDateError) -> CalendarDate {
