@@ -13,8 +13,8 @@ public struct JulianGregorianCalendar {
 	/// Returns the Julian day number for the specified year, month, and day.
 	///
 	/// Dates before October 15, 1582 are interpreted in the Julian calendar and later dates in the Gregorian calendar.
-	/// - note: Months less than 1 or greater than 12 roll over into adjacent years. The calendar is then chosen by comparing the normalized year and month, together with the unnormalized day, to October 15, 1582, and out-of-range days are counted forward or backward in that calendar. The nonexistent dates October 5–14, 1582 are counted forward from October 4, 1582 in the Julian calendar.
-	/// - throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. The calendar is then chosen by comparing the normalized year and month, together with the unnormalized day, to October 15, 1582, and out-of-range days are counted forward or backward in that calendar. The nonexistent dates October 5–14, 1582 are counted forward from October 4, 1582 in the Julian calendar.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
 		try julianDayNumberFromDate((Y, M, D))
 	}
@@ -22,8 +22,8 @@ public struct JulianGregorianCalendar {
 	/// Returns the Julian day number for the specified date.
 	///
 	/// Dates before October 15, 1582 are interpreted in the Julian calendar and later dates in the Gregorian calendar.
-	/// - note: Months less than 1 or greater than 12 roll over into adjacent years. The calendar is then chosen by comparing the normalized year and month, together with the unnormalized day, to October 15, 1582, and out-of-range days are counted forward or backward in that calendar. The nonexistent dates October 5–14, 1582 are counted forward from October 4, 1582 in the Julian calendar.
-	/// - throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. The calendar is then chosen by comparing the normalized year and month, together with the unnormalized day, to October 15, 1582, and out-of-range days are counted forward or backward in that calendar. The nonexistent dates October 5–14, 1582 are counted forward from October 4, 1582 in the Julian calendar.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
 		// Normalize the month to [1, 12] so no intermediate value can overflow
 		let (q, r) = date.month.flooredQuotientAndRemainder(dividingBy: 12)
@@ -41,7 +41,7 @@ public struct JulianGregorianCalendar {
 	/// Returns the year, month, and day for the specified Julian day number.
 	///
 	/// Julian day numbers less than 2,299,161 (October 15, 1582 in the Gregorian calendar) give dates in the Julian calendar and equal or greater Julian day numbers give dates in the Gregorian calendar.
-	/// - note: Every ``JulianDayNumber`` value is a valid Julian day number.
+	/// - Note: Every ``JulianDayNumber`` value is a valid Julian day number.
 	public static func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
 		J < GregorianCalendar.papalReform ? JulianCalendar.dateFromJulianDayNumber(J) : GregorianCalendar.dateFromJulianDayNumber(J)
 	}
@@ -72,7 +72,7 @@ extension JulianGregorianCalendar {
 	public static let numberOfMonthsInYear = JulianCalendar.numberOfMonthsInYear
 
 	/// Returns the number of days in the specified year.
-	/// - note: This function accounts for the Julian to Gregorian calendar changeover.
+	/// - Note: This function accounts for the Julian to Gregorian calendar changeover.
 	public static func numberOfDaysInYear(_ Y: Int) -> Int {
 		if Y > firstGregorianCalendarDate.year {
 			return GregorianCalendar.numberOfDaysInYear(Y)
@@ -84,7 +84,7 @@ extension JulianGregorianCalendar {
 	}
 
 	/// Returns the number of days in the specified month and year.
-	/// - note: This function accounts for the Julian to Gregorian calendar changeover.
+	/// - Note: This function accounts for the Julian to Gregorian calendar changeover.
 	public static func numberOfDaysIn(month M: Int, year Y: Int) -> Int {
 		if (Y, M) > (firstGregorianCalendarDate.year, firstGregorianCalendarDate.month) {
 			return GregorianCalendar.numberOfDaysIn(month: M, year: Y)
@@ -129,13 +129,13 @@ extension JulianGregorianCalendar {
 
 extension JulianGregorianCalendar {
 	/// Returns the ordinal day (day of year) for the specified year, month, and day.
-	/// - throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
 	public static func ordinalDayFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> Int {
 		try julianDayNumberFrom(year: Y, month: M, day: D) - julianDayNumberFrom(year: Y, month: 1, day: 1) + 1
 	}
 
 	/// Returns the year, month, and day for the specified year and ordinal day.
-	/// - throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
 	public static func dateFrom(year Y: Int, ordinalDay N: Int) throws(JulianDayNumberOutOfRangeError) -> YearMonthDay {
 		try dateFromJulianDayNumber(julianDayNumberFrom(year: Y, month: 1, day: 1) + N - 1)
 	}

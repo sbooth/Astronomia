@@ -16,19 +16,19 @@ extension SignedInteger {
 	/// This differs from Swift's `/` and `%`, which round the quotient toward zero (truncation) and give the remainder the sign of the dividend.
 	/// This is the behavior of `//` and `%` in Python and of `/` and `%` in Ruby.
 	///
-	/// - parameter divisor: The value to divide this value by.
+	/// - Parameter divisor: The value to divide this value by.
 	///
-	/// - returns: The quotient and remainder of the division.
+	/// - Returns: The quotient and remainder of the division.
 	///
-	/// - precondition: `divisor` is not zero and the quotient is representable in `Self`.
+	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`.
 	///
 	/// ### Example
+	///
 	/// ```swift
-	/// // Swift truncating division (-10 / 3) would yield quotient: -3, remainder: -1
-	/// let value = -10
-	/// let result = value.flooredQuotientAndRemainder(dividingBy: 3)
-	/// print(result)
-	/// // Prints (quotient: -4, remainder: 2) because (-4 * 3) + 2 = -10
+	/// (-10).quotientAndRemainder(dividingBy: 3)
+	/// // (quotient: -3, remainder: -1)
+	/// (-10).flooredQuotientAndRemainder(dividingBy: 3)
+	/// // (quotient: -4, remainder: 2)
 	/// ```
 	@inlinable @inline(__always)
 	func flooredQuotientAndRemainder(dividingBy divisor: Self) -> (quotient: Self, remainder: Self) {
@@ -43,11 +43,11 @@ extension SignedInteger {
 	///
 	/// The quotient is rounded toward negative infinity. See ``flooredQuotientAndRemainder(dividingBy:)``.
 	///
-	/// - parameter divisor: The value to divide this value by.
+	/// - Parameter divisor: The value to divide this value by.
 	///
-	/// - returns: The quotient of the division.
+	/// - Returns: The quotient of the division.
 	///
-	/// - precondition: `divisor` is not zero and the quotient is representable in `Self`.
+	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`.
 	@inlinable @inline(__always)
 	func flooredQuotient(dividingBy divisor: Self) -> Self {
 		flooredQuotientAndRemainder(dividingBy: divisor).quotient
@@ -57,11 +57,11 @@ extension SignedInteger {
 	///
 	/// The remainder is zero or has the same sign as the divisor. See ``flooredQuotientAndRemainder(dividingBy:)``.
 	///
-	/// - parameter divisor: The value to divide this value by.
+	/// - Parameter divisor: The value to divide this value by.
 	///
-	/// - returns: The remainder of the division.
+	/// - Returns: The remainder of the division.
 	///
-	/// - precondition: `divisor` is not zero.
+	/// - Precondition: `divisor` is not zero.
 	@inlinable @inline(__always)
 	func flooredRemainder(dividingBy divisor: Self) -> Self {
 		let remainder = self % divisor
