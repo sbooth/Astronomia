@@ -130,7 +130,7 @@ extension CalendarDay {
 	}
 
 	/// Returns the number of days from this calendar day to the specified calendar day.
-	/// - throws: `JulianDayNumberOutOfRangeError` if the difference between the two calendar days' Julian day numbers cannot be represented as a `JulianDayNumber`.
+	/// - throws: `JulianDayNumberOutOfRangeError` if the difference between the two calendar days' Julian day numbers cannot be represented as an `Int`.
 	public func days(to other: CalendarDay) throws(JulianDayNumberOutOfRangeError) -> Int {
 		let (difference, overflow) = other.julianDayNumber.subtractingReportingOverflow(julianDayNumber)
 		guard !overflow else {
