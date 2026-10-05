@@ -163,7 +163,7 @@ extension CalendarDate {
 	}
 
 	/// Creates a calendar date from possibly out-of-range month, day, and day fraction values.
-	/// - note: Months roll over into adjacent years, days are counted from the normalized month, and the day fraction carries whole days.
+	/// - note: Months outside `[1, 12]` roll over into earlier or later years, days are counted from the normalized month, and the day fraction carries whole days.
 	/// - throws:
 	///   - `CalendarDateError.nonFiniteValue` if the day fraction is not finite.
 	///   - `CalendarDateError.julianDayNumberOutOfRange` if the Julian day number for the year, month, and day cannot be represented as a `JulianDayNumber`, the day fraction's whole days cannot be represented as an `Int`, or the resulting day's Julian day number cannot be represented as a `JulianDayNumber`.
@@ -184,7 +184,7 @@ extension CalendarDate {
 		CalendarDate(calendarDay: calendarDay.convertedTo(other), uncheckedDayFraction: dayFraction)
 	}
 
-	/// Returns `true` if the specified calendar date denotes the same day and day fraction, regardless of calendar.
+	/// Returns `true` if the specified calendar date denotes the same day and time of day, regardless of calendar.
 	public func isSameInstantAs(_ other: CalendarDate) -> Bool {
 		calendarDay.isSameDayAs(other.calendarDay) && dayFraction == other.dayFraction
 	}
