@@ -13,7 +13,7 @@
 /// - seealso: [Julian day](https://en.wikipedia.org/wiki/Julian_day)
 public typealias JulianDayNumber = Int
 
-/// An error indicating that a Julian day number cannot be represented as a `JulianDayNumber`.
+/// An error indicating that a Julian day number cannot be represented as a ``JulianDayNumber``.
 public struct JulianDayNumberOutOfRangeError: Error {}
 
 /// A date consisting of a year number, month number, and day number.
