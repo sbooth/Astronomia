@@ -392,6 +392,9 @@ extension JulianDate {
 	/// - Precondition: The specified tolerance is non-negative and not NaN.
 	public func isApproximatelyEqual(to other: JulianDate, toleranceSeconds: Double) -> Bool {
 		precondition(toleranceSeconds >= 0, "Tolerance must be non-negative")
+		if toleranceSeconds == .infinity {
+			return true
+		}
 		guard let i = intervalIfRepresentable(since: other) else {
 			return false
 		}
