@@ -18,6 +18,7 @@ public struct JulianCalendar {
 	public static let epoch: JulianDayNumber = 1_721_424
 
 	/// Returns the Julian day number for the specified year, month, and day.
+	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
 	///   days are counted forward or backward from the normalized year and month.
 	public static func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
@@ -35,6 +36,7 @@ public struct JulianCalendar {
 	private static let eraZeroDayOfBlock = 60
 
 	/// Returns the Julian day number for the specified date.
+	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
 	///   days are counted forward or backward from the normalized year and month.
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
@@ -87,6 +89,7 @@ public struct JulianCalendar {
 	}
 
 	/// Returns the year, month, and day for the specified Julian day number.
+	///
 	/// - Note: Every ``JulianDayNumber`` value is a valid Julian day number.
 	public static func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
 		// `q` and `r` are the floored quotient and remainder of the JDN divided by 1,461
@@ -114,6 +117,7 @@ public struct JulianCalendar {
 extension JulianCalendar {
 	/// Returns a valid year, month, and day for the specified year and possibly
 	/// out-of-range month and day values.
+	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
 	///   days are counted forward or backward from the normalized year and month.
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
@@ -124,6 +128,7 @@ extension JulianCalendar {
 
 	/// Returns a valid year, month, and day for the specified year and possibly
 	/// out-of-range month and day values.
+	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
 	///   days are counted forward or backward from the normalized year and month.
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
@@ -197,6 +202,7 @@ extension JulianCalendar {
 
 extension JulianCalendar {
 	/// Returns the ordinal day (day of year) for the specified year, month, and day.
+	///
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
 	///   represented as a ``JulianDayNumber``.
 	public static func ordinalDayFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> Int {
@@ -204,6 +210,7 @@ extension JulianCalendar {
 	}
 
 	/// Returns the year, month, and day for the specified year and ordinal day.
+	///
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
 	///   represented as a ``JulianDayNumber``.
 	public static func dateFrom(year Y: Int, ordinalDay N: Int) throws(JulianDayNumberOutOfRangeError) -> YearMonthDay {

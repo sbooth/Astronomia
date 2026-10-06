@@ -31,6 +31,7 @@ public struct CalendarDay: Sendable {
 	public let julianDayNumber: JulianDayNumber
 
 	/// Creates a calendar day for the specified year, month, and day in the given calendar.
+	///
 	/// - Throws:
 	///   - ``CalendarDayError/invalidDate`` if the year, month, and day do not form a valid
 	///     date in the specified calendar.
@@ -61,6 +62,7 @@ public struct CalendarDay: Sendable {
 	}
 
 	/// Creates a calendar day from possibly out-of-range month and day values.
+	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
 	///   days are counted forward or backward from the normalized year and month.
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the year, month,
@@ -87,6 +89,7 @@ extension CalendarDay {
 
 extension CalendarDay {
 	/// The number of months in one year.
+	///
 	/// - Note: This is independent of calendar.
 	public var numberOfMonthsInYear: Int {
 		JulianCalendar.numberOfMonthsInYear
@@ -105,6 +108,7 @@ extension CalendarDay {
 
 extension CalendarDay {
 	/// The day of the week from `1` (Sunday) to `7` (Saturday).
+	///
 	/// - Note: This is independent of calendar.
 	public var dayOfWeek: Int {
 		JulianCalendar.dayOfWeek(julianDayNumber)
@@ -127,6 +131,7 @@ extension CalendarDay {
 extension CalendarDay {
 	/// Returns the calendar day the specified number of days before (for negative values) or after
 	/// (for positive values) this calendar day, in the same calendar.
+	///
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the resulting calendar day's Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days n: Int) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
@@ -141,6 +146,7 @@ extension CalendarDay {
 	}
 
 	/// Returns the number of days from this calendar day to the specified calendar day.
+	///
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the difference between the two calendar
 	///   days' Julian day numbers cannot be represented as an `Int`.
 	public func days(to other: CalendarDay) throws(JulianDayNumberOutOfRangeError) -> Int {

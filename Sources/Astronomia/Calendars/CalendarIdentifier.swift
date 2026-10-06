@@ -32,6 +32,7 @@ extension CalendarIdentifier {
 
 extension CalendarIdentifier {
 	/// Returns the Julian day number for the specified date.
+	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
 	///   days are counted forward or backward from the normalized year and month.
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
@@ -41,6 +42,7 @@ extension CalendarIdentifier {
 	}
 
 	/// Returns the Julian day number for the specified date.
+	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
 	///   days are counted forward or backward from the normalized year and month.
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
@@ -57,6 +59,7 @@ extension CalendarIdentifier {
 	}
 
 	/// Returns the year, month, and day for the specified Julian day number.
+	///
 	/// - Note: Every ``JulianDayNumber`` value is a valid Julian day number.
 	public func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
 		switch self {
@@ -73,6 +76,7 @@ extension CalendarIdentifier {
 extension CalendarIdentifier {
 	/// Returns a valid year, month, and day for the specified year and possibly
 	/// out-of-range month and day values.
+	///
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
 	///   represented as a ``JulianDayNumber``.
 	public func normalizedDateFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> YearMonthDay {
@@ -81,6 +85,7 @@ extension CalendarIdentifier {
 
 	/// Returns a valid year, month, and day for the specified year and possibly
 	/// out-of-range month and day values.
+	///
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
 	///   represented as a ``JulianDayNumber``.
 	public func normalizedDate(_ date: YearMonthDay) throws(JulianDayNumberOutOfRangeError) -> YearMonthDay {

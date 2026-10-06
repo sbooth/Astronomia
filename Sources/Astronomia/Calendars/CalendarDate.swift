@@ -27,6 +27,7 @@ public struct CalendarDate: Hashable, Sendable {
 	public let dayFraction: Double
 
 	/// Creates a calendar date for the specified calendar day and day fraction.
+	///
 	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
 	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction is
@@ -44,6 +45,7 @@ public struct CalendarDate: Hashable, Sendable {
 
 	/// Creates a calendar date for the specified year, month, and day in the given calendar
 	/// with the specified day fraction.
+	///
 	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
 	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction is
@@ -112,6 +114,7 @@ extension CalendarDate {
 extension CalendarDate {
 	/// Returns the calendar date the specified number of days plus day fraction before (for
 	/// negative values) or after (for positive values) this calendar date, in the same calendar.
+	///
 	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
 	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction is
@@ -150,6 +153,7 @@ extension CalendarDate {
 
 	/// Returns the calendar date the specified number of days before (for negative values) or after
 	/// (for positive values) this calendar date, in the same calendar.
+	///
 	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the number of days is not finite.
 	///   - ``CalendarDateError/julianDayNumberOutOfRange`` if the specified number of days
@@ -168,6 +172,7 @@ extension CalendarDate {
 
 extension CalendarDate {
 	/// Creates a calendar date from a possibly out-of-range day fraction.
+	///
 	/// - Note: Day fractions outside `[0, 1)` carry whole days forward or backward
 	///   from the specified calendar day.
 	/// - Throws:
@@ -180,6 +185,7 @@ extension CalendarDate {
 	}
 
 	/// Creates a calendar date from possibly out-of-range month, day, and day fraction values.
+	///
 	/// - Note: Months outside `[1, 12]` roll over into earlier or later years, days are counted
 	///   from the normalized month, and the day fraction carries whole days.
 	/// - Throws:

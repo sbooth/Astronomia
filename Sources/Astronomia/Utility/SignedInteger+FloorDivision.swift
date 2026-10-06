@@ -18,12 +18,6 @@ extension SignedInteger {
 	/// the remainder the sign of the dividend. This is the behavior of `//` and `%` in
 	/// Python and of `/` and `%` in Ruby.
 	///
-	/// - Parameter divisor: The value to divide this value by.
-	///
-	/// - Returns: The quotient and remainder of the division.
-	///
-	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`.
-	///
 	/// ### Example
 	///
 	/// ```swift
@@ -32,6 +26,10 @@ extension SignedInteger {
 	/// (-10).flooredQuotientAndRemainder(dividingBy: 3)
 	/// // (quotient: -4, remainder: 2)
 	/// ```
+	///
+	/// - Parameter divisor: The value to divide this value by.
+	/// - Returns: The quotient and remainder of the division.
+	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`.
 	@inlinable @inline(__always)
 	func flooredQuotientAndRemainder(dividingBy divisor: Self) -> (quotient: Self, remainder: Self) {
 		let (quotient, remainder) = quotientAndRemainder(dividingBy: divisor)
@@ -47,9 +45,7 @@ extension SignedInteger {
 	/// ``flooredQuotientAndRemainder(dividingBy:)``.
 	///
 	/// - Parameter divisor: The value to divide this value by.
-	///
 	/// - Returns: The quotient of the division.
-	///
 	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`.
 	@inlinable @inline(__always)
 	func flooredQuotient(dividingBy divisor: Self) -> Self {
@@ -62,9 +58,7 @@ extension SignedInteger {
 	/// ``flooredQuotientAndRemainder(dividingBy:)``.
 	///
 	/// - Parameter divisor: The value to divide this value by.
-	///
 	/// - Returns: The remainder of the division.
-	///
 	/// - Precondition: `divisor` is not zero.
 	@inlinable @inline(__always)
 	func flooredRemainder(dividingBy divisor: Self) -> Self {
