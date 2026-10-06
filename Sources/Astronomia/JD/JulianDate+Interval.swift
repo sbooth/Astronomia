@@ -42,10 +42,7 @@ extension JulianDate.Interval {
 	/// Creates an interval of `days1 + days2` days, apportioned in any convenient way,
 	/// returning `nil` if the result is not finite.
 	public init?(validatingDays1 days1: Double, days2: Double = 0) {
-		var a = JulianDate.Accumulator()
-		a.add(days: days1) // From zero: no rounding.
-		a.add(days: days2)
-		self.init(a)
+		self.init(JulianDate.Accumulator(days1: days1, days2: days2))
 	}
 
 	/// Creates an interval of `days1 + days2` days, apportioned in any convenient way.
@@ -73,10 +70,7 @@ extension JulianDate.Interval {
 	/// Creates an interval of `seconds1 + seconds2` seconds, apportioned in any convenient way
 	/// and assuming 86,400 seconds per day, returning `nil` if the result is not finite.
 	public init?(validatingSeconds1 seconds1: Double, seconds2: Double = 0) {
-		var a = JulianDate.Accumulator()
-		a.add(seconds: seconds1)
-		a.add(seconds: seconds2)
-		self.init(a)
+		self.init(JulianDate.Accumulator(seconds1: seconds1, seconds2: seconds2))
 	}
 
 	/// Creates an interval of `seconds1 + seconds2` seconds, apportioned in any convenient way
@@ -143,18 +137,18 @@ extension JulianDate.Interval: AdditiveArithmetic {
 	/// Returns the sum of this interval and `other`, or `nil` if it overflows. Rounds by at most
 	/// 2^-54 days.
 	public func addingChecked(_ other: Self) -> Self? {
-		var a = JulianDate.Accumulator(self)
-		a.add(days: other.days) // Integral: no rounding.
-		a.add(days: other.fraction)
+		var a = JulianDate.Accumulator()
+		a.add(self)
+		a.add(other)
 		return Self(a)
 	}
 
 	/// Returns the difference of this interval and `other`, or `nil` if it overflows. Rounds by at
 	/// most 2^-54 days.
 	public func subtractingChecked(_ other: Self) -> Self? {
-		var a = JulianDate.Accumulator(self)
-		a.add(days: -other.days) // Integral: no rounding.
-		a.add(days: -other.fraction)
+		var a = JulianDate.Accumulator()
+		a.add(self)
+		a.subtract(other)
 		return Self(a)
 	}
 
@@ -262,9 +256,9 @@ extension JulianDate.Interval: Codable {
 extension JulianDate {
 	/// The interval `self - other`, or `nil` if it overflows. Rounds by at most 2^-54 days.
 	public func intervalIfRepresentable(since other: JulianDate) -> Interval? {
-		var a = Accumulator(self)
-		a.add(days: -other.day) // Integral: no rounding.
-		a.add(days: -other.fraction)
+		var a = Accumulator()
+		a.add(self)
+		a.subtract(other)
 		return Interval(a)
 	}
 
@@ -280,9 +274,9 @@ extension JulianDate {
 	/// Returns the Julian Date offset by `interval`, or `nil` if the result is not finite. Rounds
 	/// by at most 2^-54 days.
 	public func addingIfRepresentable(_ interval: Interval) -> JulianDate? {
-		var a = Accumulator(self)
-		a.add(days: interval.days) // Integral: no rounding.
-		a.add(days: interval.fraction)
+		var a = Accumulator()
+		a.add(self)
+		a.add(interval)
 		return JulianDate(a)
 	}
 
@@ -298,9 +292,9 @@ extension JulianDate {
 	/// Returns the Julian Date offset backward by `interval`, or `nil` if the result is not finite.
 	/// Rounds by at most 2^-54 days.
 	public func subtractingIfRepresentable(_ interval: Interval) -> JulianDate? {
-		var a = Accumulator(self)
-		a.add(days: -interval.days) // Integral: no rounding.
-		a.add(days: -interval.fraction)
+		var a = Accumulator()
+		a.add(self)
+		a.subtract(interval)
 		return JulianDate(a)
 	}
 

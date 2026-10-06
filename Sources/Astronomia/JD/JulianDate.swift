@@ -90,10 +90,7 @@ extension JulianDate {
 	/// Creates a Julian Date from two parts in any split, returning `nil` if the result is not
 	/// finite.
 	public init?(validatingJD1 jd1: Double, jd2: Double = 0) {
-		var a = Accumulator()
-		a.add(days: jd1) // From zero: no rounding.
-		a.add(days: jd2)
-		self.init(a)
+		self.init(Accumulator(days1: jd1, days2: jd2))
 	}
 
 	/// Creates a Julian Date equal to `jd1 + jd2`.
@@ -125,10 +122,8 @@ extension JulianDate {
 	/// - Note: For full precision pass the integral MJD in `mjd1` and the fraction of the day in
 	///   `mjd2`.
 	public init?(validatingMJD1 mjd1: Double, mjd2: Double = 0) {
-		var a = Accumulator()
+		var a = Accumulator(days1: mjd1, days2: mjd2)
 		a.add(days: Self.MJD0_JD)
-		a.add(days: mjd1)
-		a.add(days: mjd2)
 		self.init(a)
 	}
 
@@ -322,9 +317,8 @@ extension JulianDate {
 	///
 	/// For full precision pass whole days in `days1` and the remainder in `days2`.
 	public func addingIfRepresentable(days days1: Double, plus days2: Double = 0) -> JulianDate? {
-		var a = Accumulator(self)
-		a.add(days: days1)
-		a.add(days: days2)
+		var a = Accumulator(days1: days1, days2: days2)
+		a.add(self)
 		return JulianDate(a)
 	}
 
@@ -345,9 +339,8 @@ extension JulianDate {
 	/// For full precision pass whole seconds in `seconds1` and the fraction of a second in
 	/// `seconds2`.
 	public func addingIfRepresentable(seconds seconds1: Double, plus seconds2: Double = 0) -> JulianDate? {
-		var a = Accumulator(self)
-		a.add(seconds: seconds1)
-		a.add(seconds: seconds2)
+		var a = Accumulator(seconds1: seconds1, seconds2: seconds2)
+		a.add(self)
 		return JulianDate(a)
 	}
 

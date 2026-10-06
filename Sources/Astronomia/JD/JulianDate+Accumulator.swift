@@ -6,8 +6,11 @@
 //
 
 extension JulianDate {
-	/// Scratch state for a two-part sum containing an integral `whole` number of days
-	/// plus a `fraction` in the right-open interval [-0.5, 0.5).
+	/// Start a sum that includes a caller-supplied split with ``init(days1:days2:)`` or
+	/// ``init(seconds1:seconds2:)``, and add epochs, dates, and intervals afterwards:
+	/// if the split's parts cancel, anything added before them is absorbed into the larger part
+	/// and lost. Dates and intervals are canonical, so combining them is exact in any order
+	/// whenever the result is small.
 	/// - Note: Adding a non-finite value or overflowing `whole` leaves the accumulator non-finite.
 	struct Accumulator {
 		/// The integral number of whole days, or a non-finite value.
@@ -50,10 +53,11 @@ extension JulianDate {
 		mutating func add(seconds: Double) {
 			// Exact, |r| <= 43,200. NaN for non-finite input, which propagates.
 			let r = seconds.remainder(dividingBy: JulianDate.secondsPerDay)
-			// The rounded quotient is within one day of the true count. The residual
-			// seconds - 86,400 q is exact: it is below 2^17 in magnitude and is an integer
-			// or a multiple of ulp(seconds). It differs from r by exactly -86,400, 0, or 86,400,
-			// which corrects q.
+			// While the day count is below 2^53, the rounded quotient is within one day of it,
+			// so the residual seconds - 86,400 q is exact (below 2^17 in magnitude, and an integer
+			// or a multiple of ulp(seconds)). It differs from r by exactly -86,400, 0, or 86,400,
+			// which corrects q. Beyond 2^53 days the count rounds, with a relative error of
+			// at most 2^-53.
 			let q = (seconds / JulianDate.secondsPerDay).rounded()
 			let residual = seconds.addingProduct(-q, secondsPerDay)
 			add(days: q + ((residual - r) / JulianDate.secondsPerDay).rounded())
@@ -68,16 +72,45 @@ extension JulianDate {
 }
 
 extension JulianDate.Accumulator {
-	/// Creates an accumulator starting at a Julian Date, as days since JD 0.0.
-	init(_ date: JulianDate) {
-		whole = date.day
-		fraction = date.fraction
+	/// Creates an accumulator holding a caller-supplied split `days1 + days2`.
+	init(days1: Double, days2: Double) {
+		self.init()
+		add(days: days1)
+		add(days: days2)
 	}
 
-	/// Creates an accumulator starting at an interval.
-	init(_ interval: JulianDate.Interval) {
-		whole = interval.days
-		fraction = interval.fraction
+	/// Creates an accumulator holding a caller-supplied split `seconds1 + seconds2`, assuming 86,400
+	/// seconds per day. See ``init(days1:days2:)``.
+	init(seconds1: Double, seconds2: Double) {
+		self.init()
+		add(seconds: seconds1)
+		add(seconds: seconds2)
+	}
+}
+
+extension JulianDate.Accumulator {
+	/// Adds a Julian Date, as days since JD 0.0.
+	mutating func add(_ date: JulianDate) {
+		add(days: date.day)
+		add(days: date.fraction)
+	}
+
+	/// Adds an interval.
+	mutating func add(_ interval: JulianDate.Interval) {
+		add(days: interval.days)
+		add(days: interval.fraction)
+	}
+
+	/// Subtracts a Julian Date, as days since JD 0.0, without forming its negation.
+	mutating func subtract(_ date: JulianDate) {
+		add(days: -date.day)
+		add(days: -date.fraction)
+	}
+
+	/// Subtracts an interval without forming its negation.
+	mutating func subtract(_ interval: JulianDate.Interval) {
+		add(days: -interval.days) 
+		add(days: -interval.fraction)
 	}
 }
 
