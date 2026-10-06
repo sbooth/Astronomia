@@ -193,7 +193,13 @@ extension CalendarDay: Comparable {
 
 extension CalendarDay: CustomStringConvertible {
 	public var description: String {
-		"year: \(year), month: \(month), day: \(day) (\(calendar.name))"
+		"\(year)-\(month)-\(day) (\(calendar.name))"
+	}
+}
+
+extension CalendarDay: CustomDebugStringConvertible {
+	public var debugDescription: String {
+		"CalendarDay(year: \(year), month: \(month), day: \(day), calendar: \(calendar.name))"
 	}
 }
 
