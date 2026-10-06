@@ -5,7 +5,8 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// The Gregorian calendar is a solar calendar with 365 days in the year plus an additional leap day in certain years.
+/// The Gregorian calendar is a solar calendar with 365 days in the year plus an
+/// additional leap day in certain years.
 ///
 /// Year numbers are arithmetic and may be positive or negative. Year number 0 is 1 BCE.
 ///
@@ -17,8 +18,10 @@ public struct GregorianCalendar {
 	public static let epoch: JulianDayNumber = 1_721_426
 
 	/// Returns the Julian day number for the specified year, month, and day.
-	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
+	///   days are counted forward or backward from the normalized year and month.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
+	///   represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
 		try julianDayNumberFromDate((Y, M, D))
 	}
@@ -27,17 +30,21 @@ public struct GregorianCalendar {
 
 	/// The number of days in a 400-year era, which is also the length of a block.
 	private static let daysPerEra = 146_097
-	/// The block containing the start of era 0 (March 1, 1 BCE in the proleptic Gregorian calendar, JDN 1,721,120 which is 306 days before `epoch`).
+	/// The block containing the start of era 0 (March 1, 1 BCE in the proleptic Gregorian calendar,
+	/// JDN 1,721,120 which is 306 days before `epoch`).
 	private static let eraZeroBlock = 11
 	/// The day within `eraZeroBlock` on which era 0 begins.
 	private static let eraZeroDayOfBlock = 114_053
 
 	/// Returns the Julian day number for the specified date.
-	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
+	///   days are counted forward or backward from the normalized year and month.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
+	///   represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
 		// Normalize the month in two steps so no intermediate value can overflow.
-		// `m0` is the month in [0, 12) with January = 0; `mp` is the month in [0, 12) with March = 0.
+		// `m0` is the month in [0, 12) with January = 0; `mp` is the month
+		// in [0, 12) with March = 0.
 		let (yc0, m0) = date.month.flooredQuotientAndRemainder(dividingBy: 12)
 		let (yc1, mp) = (m0 - 3).flooredQuotientAndRemainder(dividingBy: 12)
 
@@ -47,7 +54,8 @@ public struct GregorianCalendar {
 			throw JulianDayNumberOutOfRangeError()
 		}
 
-		// `era` is the March-based 400-year era containing `y`; `yoe` is the year of era in [0, 400)
+		// `era` is the March-based 400-year era containing `y`; `yoe` is
+		// the year of era in [0, 400)
 		let (era, yoe) = y.flooredQuotientAndRemainder(dividingBy: 400)
 		// Day of era of the first day of the month, in [0, 146,069)
 		let doe = yoe * 365 + yoe / 4 - yoe / 100 + (153 * mp + 2) / 5
@@ -64,7 +72,8 @@ public struct GregorianCalendar {
 		// `q` and `r` are the floored quotient and remainder of the JDN divided by 146,097
 		let q = era + eraZeroBlock + dayBlocks + carry
 
-		// Compute q × 146,097 + r. For negative q, use (q + 1) × 146,097 + (r - 146,097) so the product can't overflow when the result fits.
+		// Compute q × 146,097 + r. For negative q, use (q + 1) × 146,097 + (r - 146,097) so the
+		// product can't overflow when the result fits.
 		let (blocks, days) = q >= 0 ? (q, r) : (q + 1, r - daysPerEra)
 
 		let (product, multiplyOverflow) = blocks.multipliedReportingOverflow(by: daysPerEra)
@@ -106,16 +115,22 @@ public struct GregorianCalendar {
 }
 
 extension GregorianCalendar {
-	/// Returns a valid year, month, and day for the specified year and possibly out-of-range month and day values.
-	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// Returns a valid year, month, and day for the specified year and possibly
+	/// out-of-range month and day values.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
+	///   days are counted forward or backward from the normalized year and month.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
+	///   represented as a ``JulianDayNumber``.
 	public static func normalizedDateFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> YearMonthDay {
 		try normalizedDate((Y, M, D))
 	}
 
-	/// Returns a valid year, month, and day for the specified year and possibly out-of-range month and day values.
-	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// Returns a valid year, month, and day for the specified year and possibly
+	/// out-of-range month and day values.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
+	///   days are counted forward or backward from the normalized year and month.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
+	///   represented as a ``JulianDayNumber``.
 	public static func normalizedDate(_ date: YearMonthDay) throws(JulianDayNumberOutOfRangeError) -> YearMonthDay {
 		try dateFromJulianDayNumber(julianDayNumberFromDate(date))
 	}
@@ -125,7 +140,8 @@ extension GregorianCalendar {
 	/// The Julian day number for October 15, 1582 in the Gregorian calendar.
 	static let papalReform: JulianDayNumber = 2_299_161
 
-	/// Returns `true` if the specified Julian day number is less than 2,299,161 (October 15, 1582 in the Gregorian calendar).
+	/// Returns `true` if the specified Julian day number is less than 2,299,161 (October 15, 1582
+	/// in the Gregorian calendar).
 	public static func beforePapalReform(_ J: JulianDayNumber) -> Bool {
 		J < papalReform
 	}
@@ -175,7 +191,8 @@ extension GregorianCalendar {
 }
 
 extension GregorianCalendar {
-	/// Returns the day of the week from `1` (Sunday) to `7` (Saturday) for the specified Julian day number.
+	/// Returns the day of the week from `1` (Sunday) to `7` (Saturday) for the
+	/// specified Julian day number.
 	public static func dayOfWeek(_ J: JulianDayNumber) -> Int {
 		JulianCalendar.dayOfWeek(J)
 	}
@@ -183,13 +200,15 @@ extension GregorianCalendar {
 
 extension GregorianCalendar {
 	/// Returns the ordinal day (day of year) for the specified year, month, and day.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
+	///   represented as a ``JulianDayNumber``.
 	public static func ordinalDayFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> Int {
 		try julianDayNumberFrom(year: Y, month: M, day: D) - julianDayNumberFrom(year: Y, month: 1, day: 1) + 1
 	}
 
 	/// Returns the year, month, and day for the specified year and ordinal day.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
+	///   represented as a ``JulianDayNumber``.
 	public static func dateFrom(year Y: Int, ordinalDay N: Int) throws(JulianDayNumberOutOfRangeError) -> YearMonthDay {
 		try dateFromJulianDayNumber(julianDayNumberFrom(year: Y, month: 1, day: 1) + N - 1)
 	}
@@ -199,7 +218,9 @@ extension GregorianCalendar {
 	/// Returns the month and day of Easter in the specified year.
 	public static func easter(year Y: Int) -> (month: Int, day: Int) {
 		let Y = Y.flooredRemainder(dividingBy: 5_700_000)
-		// Based on the algorithm from the Explanatory Supplement to the Astronomical Almanac, 3rd edition, S.E Urban and P.K. Seidelmann eds., (Mill Valley, CA: University Science Books), Chapter 15, pp. 585-624.
+		// Based on the algorithm from the Explanatory Supplement to the Astronomical Almanac,
+		// 3rd edition, S.E. Urban and P.K. Seidelmann eds., (Mill Valley, CA: University Science
+		// Books), Chapter 15, pp. 585-624.
 		let a = Y / 100
 		let b = a - a / 4
 		let c = Y % 19

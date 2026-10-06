@@ -11,7 +11,8 @@ public enum CalendarIdentifier: Hashable, Sendable, Codable, CaseIterable {
 	case julian
 	/// The Gregorian calendar.
 	case gregorian
-	/// A hybrid calendar that uses the Julian calendar for dates on or before October 4, 1582 and the Gregorian calendar for dates on or after October 15, 1582.
+	/// A hybrid calendar that uses the Julian calendar for dates on or before October 4, 1582 and
+	/// the Gregorian calendar for dates on or after October 15, 1582.
 	case julianGregorian
 }
 
@@ -19,11 +20,11 @@ extension CalendarIdentifier {
 	/// A human-readable name for the calendar.
 	public var name: String {
 		switch self {
-		case .julian: 
+		case .julian:
 			return "Julian"
-		case .gregorian: 
+		case .gregorian:
 			return "Gregorian"
-		case .julianGregorian: 
+		case .julianGregorian:
 			return "Julian-Gregorian"
 		}
 	}
@@ -31,15 +32,19 @@ extension CalendarIdentifier {
 
 extension CalendarIdentifier {
 	/// Returns the Julian day number for the specified date.
-	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
+	///   days are counted forward or backward from the normalized year and month.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
+	///   represented as a ``JulianDayNumber``.
 	public func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
 		try julianDayNumberFromDate((Y, M, D))
 	}
 
 	/// Returns the Julian day number for the specified date.
-	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range days are counted forward or backward from the normalized year and month.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
+	///   days are counted forward or backward from the normalized year and month.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
+	///   represented as a ``JulianDayNumber``.
 	public func julianDayNumberFromDate(_ date: YearMonthDay) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
 		switch self {
 		case .julian:
@@ -66,14 +71,18 @@ extension CalendarIdentifier {
 }
 
 extension CalendarIdentifier {
-	/// Returns a valid year, month, and day for the specified year and possibly out-of-range month and day values.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// Returns a valid year, month, and day for the specified year and possibly
+	/// out-of-range month and day values.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
+	///   represented as a ``JulianDayNumber``.
 	public func normalizedDateFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> YearMonthDay {
 		try normalizedDate((Y, M, D))
 	}
 
-	/// Returns a valid year, month, and day for the specified year and possibly out-of-range month and day values.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be represented as a ``JulianDayNumber``.
+	/// Returns a valid year, month, and day for the specified year and possibly
+	/// out-of-range month and day values.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
+	///   represented as a ``JulianDayNumber``.
 	public func normalizedDate(_ date: YearMonthDay) throws(JulianDayNumberOutOfRangeError) -> YearMonthDay {
 		try dateFromJulianDayNumber(julianDayNumberFromDate(date))
 	}
