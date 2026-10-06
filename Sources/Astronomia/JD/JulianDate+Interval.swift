@@ -14,9 +14,9 @@ extension JulianDate {
 	/// [-0.5, 0.5). The resolution is therefore at most 2^-54 days (~5 ps) regardless
 	/// of the interval's length.
 	///
-	/// Subtracting two dates, adding an interval to a date, or adding two intervals rounds by at
-	/// most 2^-54 days. Negation is exact. Scaling rounds by at most 3 × 2^-54 days (~14 ps) for
-	/// any factor. These bounds hold while the whole days involved stay below 2^53 in magnitude.
+	/// Subtracting two dates, adding an interval to a date, or adding or subtracting two intervals
+	/// rounds by at most 2^-54 days. Scaling rounds by at most 3 × 2^-54 days (~14 ps) for any factor.
+	/// These bounds hold while the whole days involved stay below 2^53 in magnitude.
 	///
 	/// Adding or subtracting intervals fails only by overflowing `Double`, at magnitudes near
 	/// 10^308 days; scaling also fails for a non-finite factor. The operators trap in those cases,
@@ -152,7 +152,10 @@ extension JulianDate.Interval: AdditiveArithmetic {
 	/// Returns the difference of this interval and `other`, or `nil` if it overflows. Rounds by at
 	/// most 2^-54 days.
 	public func subtractingChecked(_ other: Self) -> Self? {
-		addingChecked(-other) // Negation is exact.
+		var a = JulianDate.Accumulator(self)
+		a.add(days: -other.days) // Integral: no rounding.
+		a.add(days: -other.fraction)
+		return Self(a)
 	}
 
 	/// The sum of two intervals. Rounds by at most 2^-54 days. See ``addingChecked(_:)``.
@@ -172,16 +175,6 @@ extension JulianDate.Interval: AdditiveArithmetic {
 			preconditionFailure("Interval difference \(lhs) - \(rhs) overflows")
 		}
 		return t
-	}
-
-	/// The negated interval. Exact.
-	public static prefix func - (operand: Self) -> Self {
-		// -(d + f) with f = -0.5 is (1 - d) - 0.5; every other canonical f negates in place.
-		if operand.fraction == -0.5 {
-			return Self(uncheckedDays: 1 - operand.days, fraction: -0.5)
-		}
-		// Adding 0 turns -0.0 into +0.0, so `-zero == zero` holds bit for bit and hashes equal.
-		return Self(uncheckedDays: -operand.days + 0, fraction: -operand.fraction + 0)
 	}
 
 	/// The interval scaled by `factor`, or `nil` if the result is not finite.
@@ -301,6 +294,24 @@ extension JulianDate {
 		}
 		return date
 	}
+
+	/// Returns the Julian Date offset backward by `interval`, or `nil` if the result is not finite.
+	/// Rounds by at most 2^-54 days.
+	public func subtractingIfRepresentable(_ interval: Interval) -> JulianDate? {
+		var a = Accumulator(self)
+		a.add(days: -interval.days) // Integral: no rounding.
+		a.add(days: -interval.fraction)
+		return JulianDate(a)
+	}
+
+	/// Returns the Julian Date offset backward by `interval`. Rounds by at most 2^-54 days.
+	/// - Precondition: The result does not overflow.
+	public func subtracting(_ interval: Interval) -> JulianDate {
+		guard let date = subtractingIfRepresentable(interval) else {
+			preconditionFailure("Subtracting \(interval) from \(self) is not finite")
+		}
+		return date
+	}
 }
 
 extension JulianDate {
@@ -319,7 +330,7 @@ extension JulianDate {
 	/// Returns the Julian Date offset by a negated interval.
 	/// - Precondition: The result does not overflow.
 	public static func - (lhs: JulianDate, rhs: Interval) -> JulianDate {
-		lhs.adding(-rhs)
+		lhs.subtracting(rhs)
 	}
 
 	/// Offsets the Julian Date by an interval.
