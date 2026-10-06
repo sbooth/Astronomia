@@ -53,8 +53,8 @@ public struct CalendarDay: Sendable {
 		self.julianDayNumber = J
 	}
 
-	/// Creates the calendar day corresponding to the specified Julian day
-	/// number in the given calendar.
+	/// Creates the calendar day corresponding to the specified Julian day number
+	/// in the given calendar.
 	public init(julianDayNumber J: JulianDayNumber,_ calendar: CalendarIdentifier) {
 		(year, month, day) = calendar.dateFromJulianDayNumber(J)
 		self.calendar = calendar
@@ -107,7 +107,7 @@ extension CalendarDay {
 }
 
 extension CalendarDay {
-	/// The day of the week from `1` (Sunday) to `7` (Saturday).
+	/// The day of the week from 1 (Sunday) to 7 (Saturday).
 	///
 	/// - Note: This is independent of calendar.
 	public var dayOfWeek: Int {
@@ -121,8 +121,8 @@ extension CalendarDay {
 		other == calendar ? self : CalendarDay(julianDayNumber: julianDayNumber, other)
 	}
 
-	/// Returns `true` if the specified calendar day denotes the same day as this calendar
-	/// day, regardless of calendar.
+	/// Returns `true` if the specified calendar day denotes the same day as this calendar day,
+	/// regardless of calendar.
 	public func isSameDayAs(_ other: CalendarDay) -> Bool {
 		julianDayNumber == other.julianDayNumber
 	}
@@ -132,8 +132,8 @@ extension CalendarDay {
 	/// Returns the calendar day the specified number of days before (for negative values) or after
 	/// (for positive values) this calendar day, in the same calendar.
 	///
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the resulting calendar day's Julian day
-	///   number cannot be represented as a ``JulianDayNumber``.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the resulting calendar day's
+	///   Julian day number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days n: Int) throws(JulianDayNumberOutOfRangeError) -> CalendarDay {
 		if n == 0 {
 			return self
@@ -147,8 +147,8 @@ extension CalendarDay {
 
 	/// Returns the number of days from this calendar day to the specified calendar day.
 	///
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the difference between the two calendar
-	///   days' Julian day numbers cannot be represented as an `Int`.
+	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the difference between the two
+	///   calendar days' Julian day numbers cannot be represented as an `Int`.
 	public func days(to other: CalendarDay) throws(JulianDayNumberOutOfRangeError) -> Int {
 		let (difference, overflow) = other.julianDayNumber.subtractingReportingOverflow(julianDayNumber)
 		guard !overflow else {
