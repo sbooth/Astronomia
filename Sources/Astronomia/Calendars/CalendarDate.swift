@@ -9,7 +9,7 @@
 public enum CalendarDateError: Error, Hashable, Sendable {
 	/// The day fraction or number of days is not finite.
 	case nonFiniteValue
-	/// The day fraction is outside the interval `[0, 1)`.
+	/// The day fraction is outside the right-open interval [0, 1).
 	case invalidDayFraction
 	/// The year, month, and day do not form a valid date, such as February 30.
 	case invalidDate
@@ -18,20 +18,20 @@ public enum CalendarDateError: Error, Hashable, Sendable {
 	case julianDayNumberOutOfRange
 }
 
-/// A calendar day with the fraction of the day since midnight. A calendar
-/// date is timescale-agnostic.
+/// A calendar day with the fraction of the day since midnight.
+/// A calendar date is timescale-agnostic.
 public struct CalendarDate: Hashable, Sendable {
 	/// The calendar day.
 	public let calendarDay: CalendarDay
-	/// Fraction of the day elapsed since midnight in `[0, 1)`.
+	/// Fraction of the day elapsed since midnight in [0, 1).
 	public let dayFraction: Double
 
 	/// Creates a calendar date for the specified calendar day and day fraction.
 	///
 	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
-	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction is
-	///     outside the interval `[0, 1)`.
+	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction
+	///     is outside the right-open interval [0, 1).
 	public init(calendarDay: CalendarDay, dayFraction: Double) throws(CalendarDateError) {
 		guard dayFraction.isFinite else {
 			throw .nonFiniteValue
@@ -48,8 +48,8 @@ public struct CalendarDate: Hashable, Sendable {
 	///
 	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
-	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction is
-	///     outside the interval `[0, 1)`.
+	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction
+	///     is outside the right-open interval [0, 1).
 	///   - ``CalendarDateError/invalidDate`` if the year, month, and day do not form a valid
 	///     date in the specified calendar.
 	///   - ``CalendarDateError/julianDayNumberOutOfRange`` if the year, month, and day form a valid
@@ -74,7 +74,7 @@ extension CalendarDate {
 	/// Creates a calendar date from a calendar day and unchecked day fraction.
 	private init(calendarDay: CalendarDay, uncheckedDayFraction dayFraction: Double) {
 		assert(dayFraction.isFinite, "Day fraction is not finite")
-		assert(dayFraction >= 0 && dayFraction < 1, "Day fraction is outside the interval [0, 1)")
+		assert(dayFraction >= 0 && dayFraction < 1, "Day fraction is outside the right-open interval [0, 1)")
 		self.calendarDay = calendarDay
 		self.dayFraction = dayFraction
 	}
@@ -104,8 +104,8 @@ extension CalendarDate {
 	/// The Julian day number of this calendar date's day.
 	///
 	/// This is the JDN of the calendar day (the day beginning at noon on that date),
-	/// regardless of the day fraction. For a day fraction below 0.5 it is one greater than the
-	/// floor of the instant's Julian Date.
+	/// regardless of the day fraction. For a day fraction below 0.5 it is one greater than
+	/// the floor of the instant's Julian Date.
 	public var julianDayNumber: JulianDayNumber {
 		calendarDay.julianDayNumber
 	}
@@ -117,8 +117,8 @@ extension CalendarDate {
 	///
 	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
-	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction is
-	///     outside the interval `[0, 1)`.
+	///   - ``CalendarDateError/invalidDayFraction`` if the day fraction
+	///     is outside the right-open interval [0, 1).
 	///   - ``CalendarDateError/julianDayNumberOutOfRange`` if the resulting day's Julian day number
 	///     cannot be represented as a ``JulianDayNumber``.
 	public func adding(days: Int, dayFraction: Double = 0) throws(CalendarDateError) -> CalendarDate {
@@ -173,7 +173,7 @@ extension CalendarDate {
 extension CalendarDate {
 	/// Creates a calendar date from a possibly out-of-range day fraction.
 	///
-	/// - Note: Day fractions outside `[0, 1)` carry whole days forward or backward
+	/// - Note: Day fractions outside [0, 1) carry whole days forward or backward
 	///   from the specified calendar day.
 	/// - Throws:
 	///   - ``CalendarDateError/nonFiniteValue`` if the day fraction is not finite.
@@ -211,8 +211,8 @@ extension CalendarDate {
 		CalendarDate(calendarDay: calendarDay.convertedTo(other), uncheckedDayFraction: dayFraction)
 	}
 
-	/// Returns `true` if the specified calendar date denotes the same day and time
-	/// of day, regardless of calendar.
+	/// Returns `true` if the specified calendar date denotes the same day and time of day,
+	/// regardless of calendar.
 	public func isSameInstantAs(_ other: CalendarDate) -> Bool {
 		calendarDay.isSameDayAs(other.calendarDay) && dayFraction == other.dayFraction
 	}
@@ -255,7 +255,7 @@ extension CalendarDate: Codable {
 			case .nonFiniteValue:
 				throw DecodingError.dataCorruptedError(forKey: .dayFraction, in: container, debugDescription: "\(dayFraction) is not finite")
 			case .invalidDayFraction:
-				throw DecodingError.dataCorruptedError(forKey: .dayFraction, in: container, debugDescription: "\(dayFraction) is not in the interval [0, 1)")
+				throw DecodingError.dataCorruptedError(forKey: .dayFraction, in: container, debugDescription: "\(dayFraction) is not in the right-open interval [0, 1)")
 			case .invalidDate:
 				throw DecodingError.dataCorruptedError(forKey: .day, in: container, debugDescription: "year: \(year), month: \(month), day: \(day) is not a valid \(calendar.name) date")
 			case .julianDayNumberOutOfRange:

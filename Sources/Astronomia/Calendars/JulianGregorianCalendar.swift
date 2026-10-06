@@ -5,8 +5,8 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// A hybrid calendar that uses the Julian calendar for dates on or before October 4, 1582 and the
-/// Gregorian calendar for dates on or after October 15, 1582.
+/// A hybrid calendar that uses the Julian calendar for dates on or before October 4, 1582
+/// and the Gregorian calendar for dates on or after October 15, 1582.
 public struct JulianGregorianCalendar {
 	/// The Julian day number for January 1, 1 CE in the Julian calendar.
 	public static let epoch = JulianCalendar.epoch
@@ -17,10 +17,10 @@ public struct JulianGregorianCalendar {
 	/// dates in the Gregorian calendar.
 	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. The calendar
-	///   is then chosen by comparing the normalized year and month, together with the unnormalized
-	///   day, to October 15, 1582, and out-of-range days are counted forward or backward in
-	///   that calendar. The nonexistent dates October 5–14, 1582 are counted forward from
-	///   October 4, 1582 in the Julian calendar.
+	///   is then chosen by comparing the normalized year and month, together with
+	///   the unnormalized day, to October 15, 1582, and out-of-range days are counted forward
+	///   or backward in that calendar. The nonexistent dates October 5–14, 1582 are counted
+	///   forward from October 4, 1582 in the Julian calendar.
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
 	///   represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
@@ -33,10 +33,10 @@ public struct JulianGregorianCalendar {
 	/// dates in the Gregorian calendar.
 	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. The calendar
-	///   is then chosen by comparing the normalized year and month, together with the unnormalized
-	///   day, to October 15, 1582, and out-of-range days are counted forward or backward in
-	///   that calendar. The nonexistent dates October 5–14, 1582 are counted forward from
-	///   October 4, 1582 in the Julian calendar.
+	///   is then chosen by comparing the normalized year and month, together with
+	///   the unnormalized day, to October 15, 1582, and out-of-range days are counted forward
+	///   or backward in that calendar. The nonexistent dates October 5–14, 1582 are counted
+	///   forward from October 4, 1582 in the Julian calendar.
 	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
 	///   represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
@@ -55,9 +55,9 @@ public struct JulianGregorianCalendar {
 
 	/// Returns the year, month, and day for the specified Julian day number.
 	///
-	/// Julian day numbers less than 2,299,161 (October 15, 1582 in the Gregorian calendar)
-	/// give dates in the Julian calendar and equal or greater Julian day numbers give
-	/// dates in the Gregorian calendar.
+	/// Julian day numbers less than 2,299,161 (October 15, 1582 in the Gregorian calendar) give
+	/// dates in the Julian calendar and equal or greater Julian day numbers
+	/// give dates in the Gregorian calendar.
 	///
 	/// - Note: Every ``JulianDayNumber`` value is a valid Julian day number.
 	public static func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
@@ -66,8 +66,8 @@ public struct JulianGregorianCalendar {
 }
 
 extension JulianGregorianCalendar {
-	/// Returns `true` if the specified Julian day number is less than 2,299,161 (October 15, 1582
-	/// in the Gregorian calendar).
+	/// Returns `true` if the specified Julian day number is less than 2,299,161
+	/// (October 15, 1582 in the Gregorian calendar).
 	public static func isJulian(_ J: JulianDayNumber) -> Bool {
 		J < GregorianCalendar.papalReform
 	}
@@ -143,8 +143,8 @@ extension JulianGregorianCalendar {
 }
 
 extension JulianGregorianCalendar {
-	/// Returns the day of the week from `1` (Sunday) to `7` (Saturday) for the
-	/// specified Julian day number.
+	/// Returns the day of the week from 1 (Sunday) to 7 (Saturday)
+	/// for the specified Julian day number.
 	public static func dayOfWeek(_ J: JulianDayNumber) -> Int {
 		JulianCalendar.dayOfWeek(J)
 	}

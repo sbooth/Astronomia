@@ -5,14 +5,14 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// The Gregorian calendar is a solar calendar with 365 days in the year plus an
-/// additional leap day in certain years.
+/// The Gregorian calendar is a solar calendar with 365 days in the year
+/// plus an additional leap day in certain years.
 ///
 /// Year numbers are arithmetic and may be positive or negative. Year number 0 is 1 BCE.
 ///
-/// Months are numbered from `1` (January) to `12` (December).
+/// Months are numbered from 1 (January) to 12 (December).
 ///
-/// Day numbers are always positive and the first day of a month has day number `1`.
+/// Day numbers are always positive and the first day of a month has day number 1.
 public struct GregorianCalendar {
 	/// The Julian day number for January 1, 1 CE in the proleptic Gregorian calendar.
 	public static let epoch: JulianDayNumber = 1_721_426
@@ -45,8 +45,8 @@ public struct GregorianCalendar {
 	///   represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
 		// Normalize the month in two steps so no intermediate value can overflow.
-		// `m0` is the month in [0, 12) with January = 0; `mp` is the month
-		// in [0, 12) with March = 0.
+		// `m0` is the month in [0, 12) with January = 0;
+		// `mp` is the month in [0, 12) with March = 0.
 		let (yc0, m0) = date.month.flooredQuotientAndRemainder(dividingBy: 12)
 		let (yc1, mp) = (m0 - 3).flooredQuotientAndRemainder(dividingBy: 12)
 
@@ -56,8 +56,8 @@ public struct GregorianCalendar {
 			throw JulianDayNumberOutOfRangeError()
 		}
 
-		// `era` is the March-based 400-year era containing `y`; `yoe` is
-		// the year of era in [0, 400)
+		// `era` is the March-based 400-year era containing `y`;
+		// `yoe` is the year of era in [0, 400)
 		let (era, yoe) = y.flooredQuotientAndRemainder(dividingBy: 400)
 		// Day of era of the first day of the month, in [0, 146,069)
 		let doe = yoe * 365 + yoe / 4 - yoe / 100 + (153 * mp + 2) / 5
@@ -74,8 +74,8 @@ public struct GregorianCalendar {
 		// `q` and `r` are the floored quotient and remainder of the JDN divided by 146,097
 		let q = era + eraZeroBlock + dayBlocks + carry
 
-		// Compute q × 146,097 + r. For negative q, use (q + 1) × 146,097 + (r - 146,097) so the
-		// product can't overflow when the result fits.
+		// Compute q × 146,097 + r. For negative q, use (q + 1) × 146,097 + (r - 146,097) so
+		// the product can't overflow when the result fits.
 		let (blocks, days) = q >= 0 ? (q, r) : (q + 1, r - daysPerEra)
 
 		let (product, multiplyOverflow) = blocks.multipliedReportingOverflow(by: daysPerEra)
@@ -145,8 +145,8 @@ extension GregorianCalendar {
 	/// The Julian day number for October 15, 1582 in the Gregorian calendar.
 	static let papalReform: JulianDayNumber = 2_299_161
 
-	/// Returns `true` if the specified Julian day number is less than 2,299,161 (October 15, 1582
-	/// in the Gregorian calendar).
+	/// Returns `true` if the specified Julian day number is less than 2,299,161
+	/// (October 15, 1582 in the Gregorian calendar).
 	public static func beforePapalReform(_ J: JulianDayNumber) -> Bool {
 		J < papalReform
 	}
@@ -196,8 +196,8 @@ extension GregorianCalendar {
 }
 
 extension GregorianCalendar {
-	/// Returns the day of the week from `1` (Sunday) to `7` (Saturday) for the
-	/// specified Julian day number.
+	/// Returns the day of the week from 1 (Sunday) to 7 (Saturday)
+	/// for the specified Julian day number.
 	public static func dayOfWeek(_ J: JulianDayNumber) -> Int {
 		JulianCalendar.dayOfWeek(J)
 	}
@@ -226,8 +226,8 @@ extension GregorianCalendar {
 	public static func easter(year Y: Int) -> (month: Int, day: Int) {
 		let Y = Y.flooredRemainder(dividingBy: 5_700_000)
 		// Based on the algorithm from the Explanatory Supplement to the Astronomical Almanac,
-		// 3rd edition, S.E. Urban and P.K. Seidelmann eds., (Mill Valley, CA: University Science
-		// Books), Chapter 15, pp. 585-624.
+		// 3rd edition, S.E. Urban and P.K. Seidelmann eds.,
+		// (Mill Valley, CA: University Science Books), Chapter 15, pp. 585-624.
 		let a = Y / 100
 		let b = a - a / 4
 		let c = Y % 19
