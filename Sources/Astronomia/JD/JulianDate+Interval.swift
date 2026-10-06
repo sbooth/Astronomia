@@ -178,8 +178,8 @@ extension JulianDate.Interval: AdditiveArithmetic {
 	/// below 2^53.
 	public func multipliedChecked(by factor: Double) -> Self? {
 		var a = JulianDate.Accumulator()
-		a.add(productOf: days, factor)
-		a.add(productOf: fraction, factor)
+		a.add(days: days, multipliedBy: factor)
+		a.add(days: fraction, multipliedBy: factor)
 		return Self(a)
 	}
 
