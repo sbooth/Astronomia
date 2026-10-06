@@ -59,7 +59,7 @@ extension JulianDate {
 			// which corrects q. Beyond 2^53 days the count rounds, with a relative error of
 			// at most 2^-53.
 			let q = (seconds / JulianDate.secondsPerDay).rounded()
-			let residual = seconds.addingProduct(-q, secondsPerDay)
+			let residual = seconds.addingProduct(-q, JulianDate.secondsPerDay)
 			add(days: q + ((residual - r) / JulianDate.secondsPerDay).rounded())
 			add(days: r / JulianDate.secondsPerDay)
 		}
