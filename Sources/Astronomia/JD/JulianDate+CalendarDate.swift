@@ -8,7 +8,8 @@
 extension JulianDate {
 	/// Creates a Julian Date from a calendar date.
 	///
-	/// The day fraction is shifted from midnight to noon, which rounds by at most 2^-55 days.
+	/// The day fraction is shifted from midnight to noon, which rounds by at most 2^-55 days. Julian day
+	/// numbers beyond 2^53 in magnitude round to the nearest representable integer.
 	///
 	/// Neither type records a timescale; the Julian Date is in the calendar date's timescale.
 	public init(_ calendarDate: CalendarDate) {
@@ -43,14 +44,18 @@ extension JulianDate {
 	/// - Throws: ``CalendarDateError/julianDayNumberOutOfRange`` if the Julian day number
 	///   of the day containing this Julian Date cannot be represented as a ``JulianDayNumber``.
 	public func calendarDate(_ calendar: CalendarIdentifier) throws(CalendarDateError) -> CalendarDate {
-		var day = self.day
-		var dayFraction = fraction + 0.5 // [0, 1]; may round up to 1.
-		if dayFraction == 1 {
-			day += 1
-			dayFraction = 0
-		}
-		guard let J = JulianDayNumber(exactly: day) else {
+		guard var J = JulianDayNumber(exactly: day) else {
 			throw .julianDayNumberOutOfRange
+		}
+		var dayFraction = fraction + 0.5 // Exact sum in [0, 1); rounds into [0, 1].
+		if dayFraction == 1 {
+			// Increment as an integer: above 2^53, day + 1 is not representable as a Double.
+			let (nextDay, overflow) = J.addingReportingOverflow(1)
+			guard !overflow else {
+				throw .julianDayNumberOutOfRange
+			}
+			J = nextDay
+			dayFraction = 0
 		}
 		return try CalendarDate(calendarDay: CalendarDay(julianDayNumber: J, calendar), dayFraction: dayFraction)
 	}
