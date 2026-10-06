@@ -177,15 +177,9 @@ extension JulianDate.Interval: AdditiveArithmetic {
 	/// result rounds by at most 3 × 2^-54 days for any factor, while the scaled whole days stay
 	/// below 2^53.
 	public func multipliedChecked(by factor: Double) -> Self? {
-		let hi = days * factor
-		let lo = (-hi).addingProduct(days, factor) // Exact residual.
-		let fhi = fraction * factor
-		let flo = (-fhi).addingProduct(fraction, factor) // Exact residual.
 		var a = JulianDate.Accumulator()
-		a.add(days: hi) // From zero: no rounding.
-		a.add(days: fhi)
-		a.add(days: lo)
-		a.add(days: flo)
+		a.add(productOf: days, factor)
+		a.add(productOf: fraction, factor)
 		return Self(a)
 	}
 

@@ -114,6 +114,16 @@ extension JulianDate.Accumulator {
 	}
 }
 
+extension JulianDate.Accumulator {
+	/// Adds `x * y` days, as the rounded product plus its exact fused multiply-add residual.
+	/// Rounds at most twice, by at most 2^-54 days each.
+	mutating func add(productOf x: Double, _ y: Double) {
+		let p = x * y
+		add(days: p)
+		add(days: (-p).addingProduct(x, y))
+	}
+}
+
 extension JulianDate {
 	/// Creates a Julian Date from an accumulated sum relative to JD 0.0, returning `nil`
 	/// if it is not finite.
