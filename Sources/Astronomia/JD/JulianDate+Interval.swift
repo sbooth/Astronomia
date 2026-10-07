@@ -5,11 +5,10 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-
 extension JulianDate {
 	/// A signed interval between two Julian Dates, stored as an integral number of days plus a
 	/// fractional day.
-	public struct Interval: Sendable, Hashable {
+	public struct Interval: Hashable, Sendable {
 		/// The number of whole days.
 		public let days: Int
 		/// The fractional day, in the right-open interval [-0.5, 0.5).

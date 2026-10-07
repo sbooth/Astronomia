@@ -16,7 +16,7 @@ public enum JulianDateError: Error, Hashable, Sendable {
 
 /// A Julian Date stored as an integral Julian day number plus a signed fraction of a day measured
 /// from noon.
-public struct JulianDate: Sendable, Hashable {
+public struct JulianDate: Hashable, Sendable {
 	/// The Julian day number of the civil day containing this date.
 	public let julianDayNumber: Int
 	/// The fraction of the day from noon, in the right-open interval [-0.5, 0.5).
