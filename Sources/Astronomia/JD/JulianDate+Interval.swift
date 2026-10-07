@@ -60,12 +60,18 @@ extension JulianDate.Interval {
 	/// - Note: For full precision pass whole seconds in `seconds1` and the remainder in `seconds2`.
 	public init(seconds1: Double, seconds2: Double) throws(JulianDateError) {
 		guard seconds1.isFinite, seconds2.isFinite else { throw .nonFiniteInput }
-		guard let (s, e) = twoSum(seconds1, seconds2) else { throw .intervalOutOfRange }
-		let d = (s / JulianDate.secondsPerDay + 0.5).rounded(.down)
-		guard let days = Int(exactly: d) else {
-			throw .intervalOutOfRange
-		}
-		try self.init(days: days, fractionalDay: (s.addingProduct(-d, JulianDate.secondsPerDay) + e) / JulianDate.secondsPerDay)
+		guard let (sum, error) = twoSum(seconds1, seconds2) else { throw .intervalOutOfRange }
+		let extractedDays = (sum / JulianDate.secondsPerDay).rounded()
+		let remainingSeconds = sum.addingProduct(-extractedDays, JulianDate.secondsPerDay) + error
+		let additionalDays = (remainingSeconds / JulianDate.secondsPerDay).rounded()
+		let fractionalSeconds = remainingSeconds.addingProduct(-additionalDays, JulianDate.secondsPerDay)
+		guard let (carry, fraction) = normalizedSum(fractionalSeconds / JulianDate.secondsPerDay, 0),
+			  let (baseDays, dayOffset) = extractedDays.integralParts,
+			  let integerAdjustment = Int(exactly: additionalDays)
+		else { throw .intervalOutOfRange }
+		let (totalAdjustment, overflow) = integerAdjustment.addingReportingOverflow(carry)
+		guard !overflow, let days = baseDays.adding(dayOffset, plus: totalAdjustment) else { throw .intervalOutOfRange }
+		self.init(uncheckedDays: days, fractionalDay: fraction)
 	}
 }
 
