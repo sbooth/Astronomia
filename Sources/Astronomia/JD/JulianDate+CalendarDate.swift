@@ -20,29 +20,13 @@ extension JulianDate {
 	/// Use ``calendarDate(_:)`` for another calendar.
 	///
 	/// - Note: The calendar date is in this Julian Date's timescale.
-	/// - Throws: ``CalendarDateError/julianDayNumberOutOfRange`` if the Julian day number
-	///   of the day containing this Julian Date cannot be represented as a ``JulianDayNumber``.
 	public var calendarDate: CalendarDate {
-		get throws(CalendarDateError) {
-			try calendarDate(.julianGregorian)
-		}
+		calendarDate(.julianGregorian)
 	}
 
 	/// Returns the Julian Date as a calendar date in the specified calendar.
 	/// - Note: The calendar date is in this Julian Date's timescale.
-	/// - Throws: ``CalendarDateError/julianDayNumberOutOfRange`` if the Julian day number
-	///   of the day containing this Julian Date cannot be represented as a ``JulianDayNumber``.
-	public func calendarDate(_ calendar: CalendarIdentifier) throws(CalendarDateError) -> CalendarDate {
-		var J = jdn
-		var dayFraction = fraction + 0.5
-		if dayFraction == 1 {
-			let (next, overflow) = J.addingReportingOverflow(1)
-			guard !overflow else {
-				throw .julianDayNumberOutOfRange
-			}
-			J = next
-			dayFraction = 0
-		}
-		return try CalendarDate(calendarDay: CalendarDay(julianDayNumber: J, calendar), dayFraction: dayFraction)
+	public func calendarDate(_ calendar: CalendarIdentifier) -> CalendarDate {
+		CalendarDate(calendarDay: CalendarDay(julianDayNumber: jdn, calendar), uncheckedDayFraction: fractionSinceMidnight)
 	}
 }

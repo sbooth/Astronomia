@@ -17,7 +17,8 @@ extension JulianDate {
 
 		/// Creates an interval from parts that are already canonical.
 		init(uncheckedDays days: Int, fraction: Double) {
-			assert(fraction >= -0.5 && fraction < 0.5, "Fraction must be in the right-open interval [-0.5, 0.5)")
+			assert(fraction.isFinite, "Fraction must be finite")
+			assert(fraction >= -0.5 && fraction < 0.5, "Fraction is outside the right-open interval [-0.5, 0.5)")
 			self.days = days
 			self.fraction = fraction
 		}

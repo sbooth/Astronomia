@@ -24,7 +24,8 @@ public struct JulianDate: Sendable, Hashable {
 
 	/// Creates a Julian Date from parts that are already canonical.
 	init(uncheckedJDN J: Int, fraction: Double) {
-		assert(fraction >= -0.5 && fraction < 0.5, "Fraction must be in the right-open interval [-0.5, 0.5)")
+		assert(fraction.isFinite, "Fraction must be finite")
+		assert(fraction >= -0.5 && fraction < 0.5, "Fraction is outside the right-open interval [-0.5, 0.5)")
 		self.jdn = J
 		self.fraction = fraction
 	}
@@ -117,6 +118,11 @@ extension JulianDate {
 }
 
 extension JulianDate {
+	/// The fraction of the day from midnight, in the right-open interval [0, 1).
+	var fractionSinceMidnight: Double {
+		min(fraction + 0.5, Double(1).nextDown)
+	}
+
 	/// The Julian Date as a single value.
 	/// - Important: This loses precision.
 	public var julianDate: Double {
@@ -198,16 +204,13 @@ extension JulianDate {
 		case .mjd:
 			return (Self.MJD0_JD, modifiedJulianDate)
 		case .dateAndTime:
-			let fraction = self.fraction + 0.5
-			return fraction == 1 ? (Double(jdn) + 0.5, 0) : (Double(jdn) - 0.5, fraction)
+			return (Double(jdn) - 0.5, fractionSinceMidnight)
 		case .dayAndFraction:
 			return (Double(jdn), fraction)
 		case .fromJ2000:
 			return (differenceAsDouble(jdn, Self.J2000.jdn), fraction)
 		case .fromMJD0:
-			let fraction = self.fraction + 0.5
-			let jdn = differenceAsDouble(self.jdn, Self.MJD0.jdn)
-			return fraction == 1 ? (jdn + 1, 0) : (jdn, fraction)
+			return (differenceAsDouble(jdn, Self.MJD0.jdn), fractionSinceMidnight)
 		}
 	}
 }
