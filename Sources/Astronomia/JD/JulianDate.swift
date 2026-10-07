@@ -329,11 +329,4 @@ extension JulianDate: Codable {
 			}
 		}
 	}
-
-	/// Encodes a Julian Date.
-	public func encode(to encoder: any Encoder) throws {
-		var container = encoder.container(keyedBy: CodingKeys.self)
-		try container.encode(julianDayNumber, forKey: .julianDayNumber)
-		try container.encode(fractionFromNoon, forKey: .fractionFromNoon)
-	}
 }
