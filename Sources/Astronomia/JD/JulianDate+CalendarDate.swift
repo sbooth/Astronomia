@@ -9,7 +9,7 @@ extension JulianDate {
 	/// Creates a Julian Date from a calendar date.
 	/// - Note: The Julian Date is in the calendar date's timescale.
 	public init(_ calendarDate: CalendarDate) {
-		self.init(uncheckedJDN: calendarDate.julianDayNumber, fractionFromNoon: calendarDate.dayFraction - 0.5)
+		self.init(uncheckedJulianDayNumber: calendarDate.julianDayNumber, fractionFromNoon: calendarDate.dayFraction - 0.5)
 	}
 }
 

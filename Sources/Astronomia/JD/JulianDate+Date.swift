@@ -15,7 +15,7 @@ import Foundation
 
 extension JulianDate {
 	/// The `Date` reference epoch, 2001-01-01T00:00:00 UTC.
-	static let referenceDate = JulianDate(uncheckedJDN: 2_451_911, fractionFromNoon: -0.5)
+	static let referenceDate = JulianDate(uncheckedJulianDayNumber: 2_451_911, fractionFromNoon: -0.5)
 
 	/// Creates a UTC-labelled Julian Date from a `Date`.
 	///

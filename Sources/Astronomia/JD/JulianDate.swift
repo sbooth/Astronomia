@@ -17,16 +17,16 @@ public enum JulianDateError: Error, Hashable, Sendable {
 /// A Julian Date stored as an integral Julian day number plus a signed fraction of a day measured
 /// from noon.
 public struct JulianDate: Sendable, Hashable {
-	/// The Julian day number corresponding to the noon boundary.
+	/// The Julian day number of the civil day containing this date.
 	public let julianDayNumber: Int
 	/// The fraction of the day from noon, in the right-open interval [-0.5, 0.5).
 	public let fractionFromNoon: Double
 
 	/// Creates a Julian Date from parts that are already canonical.
-	init(uncheckedJDN J: Int, fractionFromNoon: Double) {
+	init(uncheckedJulianDayNumber julianDayNumber: Int, fractionFromNoon: Double) {
 		assert(fractionFromNoon.isFinite, "Fraction from noon must be finite")
 		assert(fractionFromNoon >= -0.5 && fractionFromNoon < 0.5, "Fraction from noon is outside the right-open interval [-0.5, 0.5)")
-		self.julianDayNumber = J
+		self.julianDayNumber = julianDayNumber
 		self.fractionFromNoon = fractionFromNoon
 	}
 }
@@ -50,21 +50,21 @@ extension JulianDate {
 
 extension JulianDate {
 	/// J2000.0 epoch (JD 2451545.0).
-	public static let J2000 = JulianDate(uncheckedJDN: 2_451_545, fractionFromNoon: 0)
+	public static let J2000 = JulianDate(uncheckedJulianDayNumber: 2_451_545, fractionFromNoon: 0)
 	/// B1900.0 epoch (JD 2415020.31352).
-	public static let B1900 = JulianDate(uncheckedJDN: 2_415_020, fractionFromNoon: 0.313_52)
+	public static let B1900 = JulianDate(uncheckedJulianDayNumber: 2_415_020, fractionFromNoon: 0.313_52)
 	/// Modified Julian Day (MJD) zero (JD 2400000.5).
-	public static let MJD0 = JulianDate(uncheckedJDN: 2_400_001, fractionFromNoon: -0.5)
+	public static let MJD0 = JulianDate(uncheckedJulianDayNumber: 2_400_001, fractionFromNoon: -0.5)
 }
 
 extension JulianDate {
-	/// Creates a Julian Date `fractionalDays` from noon on `julianDayNumber`.
-	public init(julianDayNumber: Int, fractionalDays: Double = 0) throws(JulianDateError) {
-		guard fractionalDays.isFinite else { throw .nonFiniteInput }
-		guard let f = normalizedSum(fractionalDays, 0) else { throw .dateOutOfRange }
+	/// Creates a Julian Date `fractionFromNoon` days from `julianDayNumber`.
+	public init(julianDayNumber: Int, fractionFromNoon: Double = 0) throws(JulianDateError) {
+		guard fractionFromNoon.isFinite else { throw .nonFiniteInput }
+		guard let f = normalizedSum(fractionFromNoon, 0) else { throw .dateOutOfRange }
 		let (n, overflow) = julianDayNumber.addingReportingOverflow(f.integral)
 		guard !overflow else { throw .dateOutOfRange }
-		self.init(uncheckedJDN: n, fractionFromNoon: f.remainder)
+		self.init(uncheckedJulianDayNumber: n, fractionFromNoon: f.remainder)
 	}
 
 	/// Creates a Julian Date equal to `jd1 + jd2` from an IAU SOFA-style two-part Julian Date.
@@ -120,6 +120,8 @@ extension JulianDate {
 extension JulianDate {
 	/// The fraction of the day since midnight, in the right-open interval [0, 1).
 	var fractionSinceMidnight: Double {
+		// The exact value `fractionFromNoon + 0.5` lies in [0, 1) but can round to 1.
+		// Clamping to `1.nextDown` keeps the instant in ``julianDayNumber``.
 		min(fractionFromNoon + 0.5, Double(1).nextDown)
 	}
 
@@ -219,7 +221,7 @@ extension JulianDate {
 	public func adding(days: Int) throws(JulianDateError) -> JulianDate {
 		let (day, overflow) = self.julianDayNumber.addingReportingOverflow(days)
 		guard !overflow else { throw .dateOutOfRange }
-		return JulianDate(uncheckedJDN: day, fractionFromNoon: fractionFromNoon)
+		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: fractionFromNoon)
 	}
 
 	/// Returns a date advanced by the two-part interval `days1 + days2`.
@@ -237,7 +239,7 @@ extension JulianDate {
 		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: 86_400)
 		let (day, overflow) = self.julianDayNumber.addingReportingOverflow(days)
 		guard !overflow else { throw .dateOutOfRange }
-		return try JulianDate(julianDayNumber: day, fractionalDays: fractionFromNoon + Double(remainder) / 86_400)
+		return try JulianDate(julianDayNumber: day, fractionFromNoon: fractionFromNoon + Double(remainder) / 86_400)
 	}
 
 	/// Returns a date advanced by the two-part interval `seconds1 + seconds2`.
