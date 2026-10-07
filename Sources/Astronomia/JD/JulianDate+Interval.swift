@@ -119,7 +119,7 @@ extension JulianDate {
 	}
 
 	public func subtracting(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedSum(fraction + interval.fraction, 0),
+		guard let f = normalizedSum(fraction - interval.fraction, 0),
 			  let day = jdn.subtracting(interval.days, plus: f.integral)
 		else { throw .dateOutOfRange }
 		return JulianDate(uncheckedJDN: day, fraction: f.remainder)
