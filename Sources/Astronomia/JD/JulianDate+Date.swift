@@ -31,7 +31,6 @@ extension JulianDate {
 	/// standard meaning before 1960 and only an approximate one before 1972.
 	///
 	/// - Parameter date: The date to convert.
-	/// - Throws: ``JulianDateError/fractionOutOfRange``
 	public init(_ date: Date) throws(JulianDateError) {
 		self = try Self.referenceDate.adding(seconds: date.timeIntervalSinceReferenceDate)
 	}
