@@ -28,10 +28,10 @@ extension JulianDate.Interval {
 	/// Creates an interval from the specified number of days and fraction of a day.
 	public init(days: Int, fraction: Double = 0) throws(JulianDateError) {
 		guard fraction.isFinite else { throw .nonFiniteInput }
-		guard let f = normalizedTwoSum(fraction, 0) else { throw .intervalOutOfRange }
-		let (n, overflow) = days.addingReportingOverflow(f.whole)
+		guard let f = normalizedSum(fraction, 0) else { throw .intervalOutOfRange }
+		let (n, overflow) = days.addingReportingOverflow(f.integral)
 		guard !overflow else { throw .intervalOutOfRange }
-		self.init(uncheckedDays: n, fraction: f.fraction)
+		self.init(uncheckedDays: n, fraction: f.remainder)
 	}
 
 	/// Creates an interval from a single number of days.
@@ -44,9 +44,9 @@ extension JulianDate.Interval {
 	/// - Note: For full precision pass whole days in `days1` and the remainder in `days2`.
 	public init(days1: Double, days2: Double) throws(JulianDateError) {
 		guard days1.isFinite, days2.isFinite else { throw .nonFiniteInput }
-		guard let sum = normalizedTwoSum(days1, days2) else { throw .intervalOutOfRange }
-		self.days = sum.whole
-		self.fraction = sum.fraction
+		guard let sum = normalizedSum(days1, days2) else { throw .intervalOutOfRange }
+		self.days = sum.integral
+		self.fraction = sum.remainder
 	}
 
 	/// Creates an interval from a single number of seconds.
@@ -105,24 +105,24 @@ extension JulianDate.Interval {
 
 extension JulianDate {
 	public func interval(to other: JulianDate) throws(JulianDateError) -> Interval {
-		guard let f = normalizedTwoSum(other.fraction - fraction, 0),
-			  let days = other.jdn.subtracting(jdn, plus: f.whole)
+		guard let f = normalizedSum(other.fraction - fraction, 0),
+			  let days = other.jdn.subtracting(jdn, plus: f.integral)
 		else { throw .intervalOutOfRange }
-		return Interval(uncheckedDays: days, fraction: f.fraction)
+		return Interval(uncheckedDays: days, fraction: f.remainder)
 	}
 
 	public func adding(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedTwoSum(fraction + interval.fraction, 0),
-			  let day = jdn.adding(interval.days, plus: f.whole)
+		guard let f = normalizedSum(fraction + interval.fraction, 0),
+			  let day = jdn.adding(interval.days, plus: f.integral)
 		else { throw .dateOutOfRange }
-		return JulianDate(uncheckedJDN: day, fraction: f.fraction)
+		return JulianDate(uncheckedJDN: day, fraction: f.remainder)
 	}
 
 	public func subtracting(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedTwoSum(fraction + interval.fraction, 0),
-			  let day = jdn.subtracting(interval.days, plus: f.whole)
+		guard let f = normalizedSum(fraction + interval.fraction, 0),
+			  let day = jdn.subtracting(interval.days, plus: f.integral)
 		else { throw .dateOutOfRange }
-		return JulianDate(uncheckedJDN: day, fraction: f.fraction)
+		return JulianDate(uncheckedJDN: day, fraction: f.remainder)
 	}
 }
 

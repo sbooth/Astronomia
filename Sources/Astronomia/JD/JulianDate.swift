@@ -60,18 +60,18 @@ extension JulianDate {
 	/// Creates a Julian Date `fraction` days from noon of Julian day number `jdn`.
 	public init(jdn: Int, fraction: Double = 0) throws(JulianDateError) {
 		guard fraction.isFinite else { throw .nonFiniteInput }
-		guard let f = normalizedTwoSum(fraction, 0) else { throw .dateOutOfRange }
-		let (n, overflow) = jdn.addingReportingOverflow(f.whole)
+		guard let f = normalizedSum(fraction, 0) else { throw .dateOutOfRange }
+		let (n, overflow) = jdn.addingReportingOverflow(f.integral)
 		guard !overflow else { throw .dateOutOfRange }
-		self.init(uncheckedJDN: n, fraction: f.fraction)
+		self.init(uncheckedJDN: n, fraction: f.remainder)
 	}
 
 	/// Creates a Julian Date equal to `jd1 + jd2` from an IAU SOFA-style two-part Julian Date.
 	public init(jd1: Double, jd2: Double = 0) throws(JulianDateError) {
 		guard jd1.isFinite, jd2.isFinite else { throw .nonFiniteInput }
-		guard let sum = normalizedTwoSum(jd1, jd2) else { throw .dateOutOfRange }
-		self.jdn = sum.whole
-		self.fraction = sum.fraction
+		guard let sum = normalizedSum(jd1, jd2) else { throw .dateOutOfRange }
+		self.jdn = sum.integral
+		self.fraction = sum.remainder
 	}
 
 	/// Creates a Julian Date from a single value.

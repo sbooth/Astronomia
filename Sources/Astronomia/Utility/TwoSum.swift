@@ -17,60 +17,32 @@ func twoSum(_ a: Double, _ b: Double) -> (sum: Double, error: Double)? {
 	return (s, e)
 }
 
-/// Returns `a + b` as an integer plus a fraction in the right-open interval [-0.5, 0.5),
-/// or `nil` if a part is not finite, the integral part of either is not representable as an `Int`,
-/// or the result is not representable.
-func normalizedTwoSum(_ a: Double, _ b: Double) -> (whole: Int, fraction: Double)? {
-#if true
-	let wa = a.rounded()
-	let wb = b.rounded()
-//	guard let ia = Int(exactly: wa), let ib = Int(exactly: wb) else { return nil }
-	guard let ia = Int(exactly: wa), let ib = Int(exactly: wb) else {
-		guard let (s, e) = twoSum(a, b), e == 0, s != a else { return nil }
-		return normalizedTwoSum(s, 0)
+/// Returns `a + b` as an integer plus a remainder in the right-open interval [-0.5, 0.5),
+/// or `nil` if the inputs are non-finite or the result cannot be represented.
+func normalizedSum(_ a: Double, _ b: Double) -> (integral: Int, remainder: Double)? {
+	guard a.isFinite, b.isFinite else {
+		return nil
 	}
+	let aRounded = a.rounded()
+	let bRounded = b.rounded()
+	guard let intA = Int(exactly: aRounded),
+		  let intB = Int(exactly: bRounded)
+	else { return normalizedTwoPartSum(a, b) }
+	let residual = (a - aRounded) + (b - bRounded)
+	guard let (nearest, remainder) = residual.nearestIntegerAndRemainder else { return nil }
+	guard let sum = intA.adding(intB, plus: nearest) else { return nil }
+	return (sum, remainder)
+}
 
-	let g = (a - wa) + (b - wb)
-	var v = g.rounded()
-	var fraction = g - v
-	if fraction == 0.5 {
-		v += 1
-		fraction = -0.5
-	}
-
-	let (low, lowOverflow) = ib.addingReportingOverflow(Int(v))
-	guard !lowOverflow else { return nil }
-	let (whole, overflow) = ia.addingReportingOverflow(low)
-	guard !overflow else { return nil }
-
-	return (whole, fraction + 0.0)
-#else
-	guard let (s, e) = twoSum(a, b) else { return nil }
-
-	let ws = s.rounded()
-	guard let wholeS = Int(exactly: ws) else { return nil }
-
-	let we = e.rounded()
-	guard let wholeE = Int(exactly: we) else { return nil }
-
-	// Exact residual after removing the integral portions.
-	let g = (s - ws) + (e - we)
-
-	var v = g.rounded()
-	var fraction = g - v
-	// Canonical interval is [-0.5, 0.5).
-	// Move +0.5 to the upper whole-number boundary.
-	if fraction == 0.5 {
-		v += 1
-		fraction = -0.5
-	}
-
-	let (wholeWithError, overflowE) = wholeS.addingReportingOverflow(wholeE)
-	guard !overflowE else { return nil }
-
-	let (normalizedWhole, overflowV) = wholeWithError.addingReportingOverflow(Int(v))
-	guard !overflowV else { return nil }
-
-	return (normalizedWhole, fraction + 0.0)
-#endif
+/// ``normalizedSum(_:_:)`` for parts whose nearest integers are not both representable as `Int`.
+private func normalizedTwoPartSum(_ a: Double, _ b: Double) -> (integral: Int, remainder: Double)? {
+	guard let (sum, error) = twoSum(a, b) else { return nil }
+	let roundedSum = sum.rounded()
+	let roundedError = error.rounded()
+	guard let (base, offset) = roundedSum.integralParts, let intError = Int(exactly: roundedError) else { return nil }
+	let residual = (sum - roundedSum) + (error - roundedError)
+	guard let (nearest, remainder) = residual.nearestIntegerAndRemainder else { return nil }
+	let (correction, overflow) = intError.addingReportingOverflow(nearest)
+	guard !overflow, let whole = base.adding(offset, plus: correction) else { return nil }
+	return (whole, remainder)
 }
