@@ -259,11 +259,11 @@ extension CalendarDate: Codable {
 		} catch {
 			switch error {
 			case .nonFiniteValue:
-				throw DecodingError.dataCorruptedError(forKey: .dayFraction, in: container, debugDescription: "\(dayFraction) is not finite")
+				throw DecodingError.dataCorruptedError(forKey: .dayFraction, in: container, debugDescription: "Day fraction must be finite")
 			case .invalidDayFraction:
-				throw DecodingError.dataCorruptedError(forKey: .dayFraction, in: container, debugDescription: "\(dayFraction) is not in the right-open interval [0, 1)")
+				throw DecodingError.dataCorruptedError(forKey: .dayFraction, in: container, debugDescription: "Day fraction is outside the right-open interval [0, 1)")
 			case .invalidDate:
-				throw DecodingError.dataCorruptedError(forKey: .day, in: container, debugDescription: "year: \(year), month: \(month), day: \(day) is not a valid \(calendar.name) date")
+				throw DecodingError.dataCorruptedError(forKey: .day, in: container, debugDescription: "year: \(year), month: \(month), day: \(day) do not form a valid \(calendar.name) date")
 			case .julianDayNumberOutOfRange:
 				throw DecodingError.dataCorruptedError(forKey: .year, in: container, debugDescription: "The Julian day number for year: \(year), month: \(month), day: \(day) (\(calendar.name)) cannot be represented")
 			}
