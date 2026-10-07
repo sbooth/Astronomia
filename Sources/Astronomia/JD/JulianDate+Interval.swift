@@ -175,7 +175,7 @@ extension JulianDate.Interval: Codable {
 			case .dateOutOfRange:
 				preconditionFailure("Unexpected JulianDateError.dateOutOfRange")
 			case .intervalOutOfRange:
-				throw DecodingError.dataCorruptedError(forKey: .days, in: container, debugDescription: "The interval is out of range")
+				throw DecodingError.dataCorruptedError(forKey: .days, in: container, debugDescription: "The interval's whole days are not representable")
 			}
 		}
 	}
