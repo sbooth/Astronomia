@@ -148,6 +148,19 @@ extension JulianDate {
 
 extension JulianDate {
 	/// Ways of dividing a Julian Date between two doubles.
+	///
+	/// A split's `jd1` is exact when it is exactly representable as a `Double`:
+	/// 1. A whole number of days up to 2^53 in magnitude (about 2.5 × 10^13 years), or
+	/// 2. A half-integer (midnight) below 2^52 in magnitude (about 1.2 × 10^13 years).
+	///
+	/// Beyond that, `jd1` is rounded to the nearest `Double`, so `jd1 + jd2` only approximates
+	/// this Julian Date.
+	///
+	/// `jd2` can also round. ``SplitMethod/dateAndTime`` and ``SplitMethod/fromMJD0`` round the
+	/// time of day by up to 2^-54 days; it is exact from midnight to 06:00.
+	///
+	/// ``SplitMethod/julianDate``, ``SplitMethod/j2000`` and ``SplitMethod/mjd`` hold a single
+	/// value, limited by the precision of one `Double`.
 	public enum SplitMethod: Sendable {
 		/// SOFA JD method: `jd1` holds the whole JD, `jd2` is zero.
 		case julianDate
@@ -155,7 +168,7 @@ extension JulianDate {
 		case j2000
 		/// SOFA MJD method: `jd1` is MJD zero (2400000.5), `jd2` is the MJD.
 		case mjd
-		/// SOFA Date and Time method: `jd1` is the JD of the preceding midnight,
+		/// SOFA date and time method: `jd1` is the JD of the preceding midnight,
 		/// `jd2` is the fraction of the day from midnight in the right-open interval [0, 1).
 		case dateAndTime
 		/// `jd1` is the integral Julian day number, `jd2` is the fraction of the day from
