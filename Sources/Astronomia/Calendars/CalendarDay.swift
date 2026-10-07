@@ -219,9 +219,9 @@ extension CalendarDay: Codable {
 		do throws(CalendarDayError) {
 			self = try CalendarDay(year: year, month: month, day: day, calendar)
 		} catch .invalidDate {
-			throw DecodingError.dataCorruptedError(forKey: .day, in: container, debugDescription: "year: \(year), month: \(month), day: \(day) is not a valid \(calendar.name) date")
+			throw DecodingError.dataCorruptedError(forKey: .day, in: container, debugDescription: "year: \(year), month: \(month), day: \(day) do not form a valid \(calendar.name) date")
 		} catch .julianDayNumberOutOfRange {
-			throw DecodingError.dataCorruptedError(forKey: .year, in: container, debugDescription: "The Julian day number for year: \(year), month: \(month), day: \(day) (\(calendar.name)) cannot be represented")
+			throw DecodingError.dataCorruptedError(forKey: .year, in: container, debugDescription: "The Julian day number for year: \(year), month: \(month), day: \(day) cannot be represented in the \(calendar.name) calendar")
 		}
 	}
 }
