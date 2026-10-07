@@ -9,7 +9,7 @@ extension JulianDate {
 	/// Creates a Julian Date from a calendar date.
 	/// - Note: The Julian Date is in the calendar date's timescale.
 	public init(_ calendarDate: CalendarDate) {
-		self.init(uncheckedJDN: calendarDate.julianDayNumber, fraction: calendarDate.dayFraction - 0.5)
+		self.init(uncheckedJDN: calendarDate.julianDayNumber, fractionFromNoon: calendarDate.dayFraction - 0.5)
 	}
 }
 
@@ -27,6 +27,6 @@ extension JulianDate {
 	/// Returns the Julian Date as a calendar date in the specified calendar.
 	/// - Note: The calendar date is in this Julian Date's timescale.
 	public func calendarDate(_ calendar: CalendarIdentifier) -> CalendarDate {
-		CalendarDate(calendarDay: CalendarDay(julianDayNumber: jdn, calendar), uncheckedDayFraction: fractionSinceMidnight)
+		CalendarDate(calendarDay: CalendarDay(julianDayNumber: julianDayNumber, calendar), uncheckedDayFraction: fractionSinceMidnight)
 	}
 }

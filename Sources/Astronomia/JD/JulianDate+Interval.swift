@@ -106,24 +106,24 @@ extension JulianDate.Interval {
 
 extension JulianDate {
 	public func interval(to other: JulianDate) throws(JulianDateError) -> Interval {
-		guard let f = normalizedSum(other.fraction - fraction, 0),
-			  let days = other.jdn.subtracting(jdn, plus: f.integral)
+		guard let f = normalizedSum(other.fractionFromNoon - fractionFromNoon, 0),
+			  let days = other.julianDayNumber.subtracting(julianDayNumber, plus: f.integral)
 		else { throw .intervalOutOfRange }
 		return Interval(uncheckedDays: days, fraction: f.remainder)
 	}
 
 	public func adding(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedSum(fraction + interval.fraction, 0),
-			  let day = jdn.adding(interval.days, plus: f.integral)
+		guard let f = normalizedSum(fractionFromNoon + interval.fraction, 0),
+			  let day = julianDayNumber.adding(interval.days, plus: f.integral)
 		else { throw .dateOutOfRange }
-		return JulianDate(uncheckedJDN: day, fraction: f.remainder)
+		return JulianDate(uncheckedJDN: day, fractionFromNoon: f.remainder)
 	}
 
 	public func subtracting(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedSum(fraction - interval.fraction, 0),
-			  let day = jdn.subtracting(interval.days, plus: f.integral)
+		guard let f = normalizedSum(fractionFromNoon - interval.fraction, 0),
+			  let day = julianDayNumber.subtracting(interval.days, plus: f.integral)
 		else { throw .dateOutOfRange }
-		return JulianDate(uncheckedJDN: day, fraction: f.remainder)
+		return JulianDate(uncheckedJDN: day, fractionFromNoon: f.remainder)
 	}
 }
 

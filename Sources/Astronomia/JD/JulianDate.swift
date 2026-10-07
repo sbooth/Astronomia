@@ -18,16 +18,16 @@ public enum JulianDateError: Error, Hashable, Sendable {
 /// from noon.
 public struct JulianDate: Sendable, Hashable {
 	/// The Julian day number corresponding to the noon boundary.
-	public let jdn: Int
-	/// The fraction of a day from noon of ``jdn``, in the right-open interval [-0.5, 0.5).
-	public let fraction: Double
+	public let julianDayNumber: Int
+	/// The fraction of the day from noon, in the right-open interval [-0.5, 0.5).
+	public let fractionFromNoon: Double
 
 	/// Creates a Julian Date from parts that are already canonical.
-	init(uncheckedJDN J: Int, fraction: Double) {
-		assert(fraction.isFinite, "Fraction must be finite")
-		assert(fraction >= -0.5 && fraction < 0.5, "Fraction is outside the right-open interval [-0.5, 0.5)")
-		self.jdn = J
-		self.fraction = fraction
+	init(uncheckedJDN J: Int, fractionFromNoon: Double) {
+		assert(fractionFromNoon.isFinite, "Fraction from noon must be finite")
+		assert(fractionFromNoon >= -0.5 && fractionFromNoon < 0.5, "Fraction from noon is outside the right-open interval [-0.5, 0.5)")
+		self.julianDayNumber = J
+		self.fractionFromNoon = fractionFromNoon
 	}
 }
 
@@ -50,29 +50,29 @@ extension JulianDate {
 
 extension JulianDate {
 	/// J2000.0 epoch (JD 2451545.0).
-	public static let J2000 = JulianDate(uncheckedJDN: 2_451_545, fraction: 0)
+	public static let J2000 = JulianDate(uncheckedJDN: 2_451_545, fractionFromNoon: 0)
 	/// B1900.0 epoch (JD 2415020.31352).
-	public static let B1900 = JulianDate(uncheckedJDN: 2_415_020, fraction: 0.313_52)
+	public static let B1900 = JulianDate(uncheckedJDN: 2_415_020, fractionFromNoon: 0.313_52)
 	/// Modified Julian Day (MJD) zero (JD 2400000.5).
-	public static let MJD0 = JulianDate(uncheckedJDN: 2_400_001, fraction: -0.5)
+	public static let MJD0 = JulianDate(uncheckedJDN: 2_400_001, fractionFromNoon: -0.5)
 }
 
 extension JulianDate {
-	/// Creates a Julian Date `fraction` days from noon of Julian day number `jdn`.
-	public init(jdn: Int, fraction: Double = 0) throws(JulianDateError) {
-		guard fraction.isFinite else { throw .nonFiniteInput }
-		guard let f = normalizedSum(fraction, 0) else { throw .dateOutOfRange }
-		let (n, overflow) = jdn.addingReportingOverflow(f.integral)
+	/// Creates a Julian Date `fractionalDays` from noon on `julianDayNumber`.
+	public init(julianDayNumber: Int, fractionalDays: Double = 0) throws(JulianDateError) {
+		guard fractionalDays.isFinite else { throw .nonFiniteInput }
+		guard let f = normalizedSum(fractionalDays, 0) else { throw .dateOutOfRange }
+		let (n, overflow) = julianDayNumber.addingReportingOverflow(f.integral)
 		guard !overflow else { throw .dateOutOfRange }
-		self.init(uncheckedJDN: n, fraction: f.remainder)
+		self.init(uncheckedJDN: n, fractionFromNoon: f.remainder)
 	}
 
 	/// Creates a Julian Date equal to `jd1 + jd2` from an IAU SOFA-style two-part Julian Date.
 	public init(jd1: Double, jd2: Double = 0) throws(JulianDateError) {
 		guard jd1.isFinite, jd2.isFinite else { throw .nonFiniteInput }
 		guard let sum = normalizedSum(jd1, jd2) else { throw .dateOutOfRange }
-		self.jdn = sum.integral
-		self.fraction = sum.remainder
+		self.julianDayNumber = sum.integral
+		self.fractionFromNoon = sum.remainder
 	}
 
 	/// Creates a Julian Date from a single value.
@@ -118,27 +118,27 @@ extension JulianDate {
 }
 
 extension JulianDate {
-	/// The fraction of the day from midnight, in the right-open interval [0, 1).
+	/// The fraction of the day since midnight, in the right-open interval [0, 1).
 	var fractionSinceMidnight: Double {
-		min(fraction + 0.5, Double(1).nextDown)
+		min(fractionFromNoon + 0.5, Double(1).nextDown)
 	}
 
 	/// The Julian Date as a single value.
 	/// - Important: This loses precision.
 	public var julianDate: Double {
-		Double(jdn) + fraction
+		Double(julianDayNumber) + fractionFromNoon
 	}
 
 	/// The Modified Julian Date (MJD) as a single value.
 	/// - Note: Use ``parts(_:)`` with ``SplitMethod/fromMJD0`` for full precision.
 	public var modifiedJulianDate: Double {
-		(differenceAsDouble(jdn, Self.MJD0.jdn) + 0.5) + fraction
+		(differenceAsDouble(julianDayNumber, Self.MJD0.julianDayNumber) + 0.5) + fractionFromNoon
 	}
 
 	/// Days from J2000.0 as a single value.
 	/// - Note: Use ``parts(_:)`` with ``SplitMethod/fromJ2000`` for full precision.
 	public var daysSinceJ2000: Double {
-		differenceAsDouble(jdn, Self.J2000.jdn) + (fraction /*- Self.J2000.fraction*/)
+		differenceAsDouble(julianDayNumber, Self.J2000.julianDayNumber) + (fractionFromNoon /*- Self.J2000.fraction*/)
 	}
 
 	/// Julian centuries from J2000.0.
@@ -153,7 +153,7 @@ extension JulianDate {
 
 	/// Besselian epoch.
 	public var besselianEpoch: Double {
-		let days = differenceAsDouble(jdn, Self.B1900.jdn) + (fraction - Self.B1900.fraction)
+		let days = differenceAsDouble(julianDayNumber, Self.B1900.julianDayNumber) + (fractionFromNoon - Self.B1900.fractionFromNoon)
 		return 1900.0 + days / Self.daysPerTropicalYear
 	}
 }
@@ -198,28 +198,28 @@ extension JulianDate {
 	public func parts(_ method: SplitMethod) -> (jd1: Double, jd2: Double) {
 		switch method {
 		case .julianDate:
-			return (Double(jdn) + fraction, 0)
+			return (Double(julianDayNumber) + fractionFromNoon, 0)
 		case .j2000:
 			return (Self.J2000_JD, daysSinceJ2000)
 		case .mjd:
 			return (Self.MJD0_JD, modifiedJulianDate)
 		case .dateAndTime:
-			return (Double(jdn) - 0.5, fractionSinceMidnight)
+			return (Double(julianDayNumber) - 0.5, fractionSinceMidnight)
 		case .dayAndFraction:
-			return (Double(jdn), fraction)
+			return (Double(julianDayNumber), fractionFromNoon)
 		case .fromJ2000:
-			return (differenceAsDouble(jdn, Self.J2000.jdn), fraction)
+			return (differenceAsDouble(julianDayNumber, Self.J2000.julianDayNumber), fractionFromNoon)
 		case .fromMJD0:
-			return (differenceAsDouble(jdn, Self.MJD0.jdn), fractionSinceMidnight)
+			return (differenceAsDouble(julianDayNumber, Self.MJD0.julianDayNumber), fractionSinceMidnight)
 		}
 	}
 }
 
 extension JulianDate {
 	public func adding(days: Int) throws(JulianDateError) -> JulianDate {
-		let (day, overflow) = self.jdn.addingReportingOverflow(days)
+		let (day, overflow) = self.julianDayNumber.addingReportingOverflow(days)
 		guard !overflow else { throw .dateOutOfRange }
-		return JulianDate(uncheckedJDN: day, fraction: fraction)
+		return JulianDate(uncheckedJDN: day, fractionFromNoon: fractionFromNoon)
 	}
 
 	/// Returns a date advanced by the two-part interval `days1 + days2`.
@@ -235,9 +235,9 @@ extension JulianDate {
 extension JulianDate {
 	public func adding(seconds: Int) throws(JulianDateError) -> JulianDate {
 		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: 86_400)
-		let (day, overflow) = self.jdn.addingReportingOverflow(days)
+		let (day, overflow) = self.julianDayNumber.addingReportingOverflow(days)
 		guard !overflow else { throw .dateOutOfRange }
-		return try JulianDate(jdn: day, fraction: fraction + Double(remainder) / 86_400)
+		return try JulianDate(julianDayNumber: day, fractionalDays: fractionFromNoon + Double(remainder) / 86_400)
 	}
 
 	/// Returns a date advanced by the two-part interval `seconds1 + seconds2`.
@@ -261,7 +261,7 @@ extension JulianDate {
 	public func isApproximatelyEqual(to other: JulianDate, toleranceSeconds: Double) -> Bool {
 		precondition(toleranceSeconds >= 0, "Tolerance must be non-negative")
 		guard let interval = try? interval(to: other) else {
-			let days = (Double(jdn) - Double(other.jdn)) + (fraction - other.fraction)
+			let days = (Double(julianDayNumber) - Double(other.julianDayNumber)) + (fractionFromNoon - other.fractionFromNoon)
 			return (days * Self.secondsPerDay).magnitude <= toleranceSeconds
 		}
 		return interval.inSeconds.magnitude <= toleranceSeconds
@@ -270,23 +270,23 @@ extension JulianDate {
 
 extension JulianDate: Comparable {
 	public static func < (lhs: JulianDate, rhs: JulianDate) -> Bool {
-		(lhs.jdn, lhs.fraction) < (rhs.jdn, rhs.fraction)
+		(lhs.julianDayNumber, lhs.fractionFromNoon) < (rhs.julianDayNumber, rhs.fractionFromNoon)
 	}
 }
 
 extension JulianDate: CustomStringConvertible {
 	public var description: String {
-		if fraction == 0 {
-			return "JD \(jdn)"
+		if fractionFromNoon == 0 {
+			return "JD \(julianDayNumber)"
 		} else {
-			return "JD \(jdn) \(fraction < 0 ? "-" : "+") \(abs(fraction))"
+			return "JD \(julianDayNumber) \(fractionFromNoon < 0 ? "-" : "+") \(abs(fractionFromNoon))"
 		}
 	}
 }
 
 extension JulianDate: CustomDebugStringConvertible {
 	public var debugDescription: String {
-		"JulianDate(jdn: \(jdn), fraction: \(fraction))"
+		"JulianDate(julianDayNumber: \(julianDayNumber), fractionFromNoon: \(fractionFromNoon))"
 	}
 }
 
