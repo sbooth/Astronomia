@@ -8,31 +8,31 @@
 
 extension JulianDate {
 	/// A signed interval between two Julian Dates, stored as an integral number of days plus a
-	/// fraction of a day.
+	/// fractional day.
 	public struct Interval: Sendable, Hashable {
 		/// The number of whole days.
 		public let days: Int
-		/// The fraction of a day, in the right-open interval [-0.5, 0.5).
-		public let fraction: Double
+		/// The fractional day, in the right-open interval [-0.5, 0.5).
+		public let fractionalDay: Double
 
 		/// Creates an interval from parts that are already canonical.
-		init(uncheckedDays days: Int, fraction: Double) {
-			assert(fraction.isFinite, "Fraction must be finite")
-			assert(fraction >= -0.5 && fraction < 0.5, "Fraction is outside the right-open interval [-0.5, 0.5)")
+		init(uncheckedDays days: Int, fractionalDay: Double) {
+			assert(fractionalDay.isFinite, "Fractional day must be finite")
+			assert(fractionalDay >= -0.5 && fractionalDay < 0.5, "Fractional day is outside the right-open interval [-0.5, 0.5)")
 			self.days = days
-			self.fraction = fraction
+			self.fractionalDay = fractionalDay
 		}
 	}
 }
 
 extension JulianDate.Interval {
-	/// Creates an interval from the specified number of days and fraction of a day.
-	public init(days: Int, fraction: Double = 0) throws(JulianDateError) {
-		guard fraction.isFinite else { throw .nonFiniteInput }
-		guard let f = normalizedSum(fraction, 0) else { throw .intervalOutOfRange }
+	/// Creates an interval from the specified number of days and fractional day.
+	public init(days: Int, fractionalDay: Double = 0) throws(JulianDateError) {
+		guard fractionalDay.isFinite else { throw .nonFiniteInput }
+		guard let f = normalizedSum(fractionalDay, 0) else { throw .intervalOutOfRange }
 		let (n, overflow) = days.addingReportingOverflow(f.integral)
 		guard !overflow else { throw .intervalOutOfRange }
-		self.init(uncheckedDays: n, fraction: f.remainder)
+		self.init(uncheckedDays: n, fractionalDay: f.remainder)
 	}
 
 	/// Creates an interval from a single number of days.
@@ -47,7 +47,7 @@ extension JulianDate.Interval {
 		guard days1.isFinite, days2.isFinite else { throw .nonFiniteInput }
 		guard let sum = normalizedSum(days1, days2) else { throw .intervalOutOfRange }
 		self.days = sum.integral
-		self.fraction = sum.remainder
+		self.fractionalDay = sum.remainder
 	}
 
 	/// Creates an interval from a single number of seconds.
@@ -65,7 +65,7 @@ extension JulianDate.Interval {
 		guard let days = Int(exactly: d) else {
 			throw .intervalOutOfRange
 		}
-		try self.init(days: days, fraction: (s.addingProduct(-d, JulianDate.secondsPerDay) + e) / JulianDate.secondsPerDay)
+		try self.init(days: days, fractionalDay: (s.addingProduct(-d, JulianDate.secondsPerDay) + e) / JulianDate.secondsPerDay)
 	}
 }
 
@@ -73,19 +73,19 @@ extension JulianDate.Interval {
 	/// The interval in days as a single value.
 	/// - Note: Loses precision for long intervals.
 	public var inDays: Double {
-		Double(days) + fraction
+		Double(days) + fractionalDay
 	}
 
 	/// The interval in seconds as a single value, assuming 86,400 seconds per day.
 	/// - Note: Loses precision for long intervals.
 	public var inSeconds: Double {
-		(fraction * JulianDate.secondsPerDay).addingProduct(Double(days), JulianDate.secondsPerDay)
+		(fractionalDay * JulianDate.secondsPerDay).addingProduct(Double(days), JulianDate.secondsPerDay)
 	}
 
-	/// The interval as an integral number of seconds and a fraction of a second in the right-open
+	/// The interval as an integral number of seconds and a fractional second in the right-open
 	/// interval [-0.5, 0.5), assuming 86,400 seconds per day.
-	public var wholeAndFractionalSeconds: (seconds: Double, fraction: Double) {
-		let s = fraction * JulianDate.secondsPerDay
+	public var wholeAndFractionalSeconds: (seconds: Double, fractionalSecond: Double) {
+		let s = fractionalDay * JulianDate.secondsPerDay
 		var w = s.rounded()
 		var f = s - w
 		if f == 0.5 {
@@ -109,42 +109,42 @@ extension JulianDate {
 		guard let f = normalizedSum(other.fractionFromNoon - fractionFromNoon, 0),
 			  let days = other.julianDayNumber.subtracting(julianDayNumber, plus: f.integral)
 		else { throw .intervalOutOfRange }
-		return Interval(uncheckedDays: days, fraction: f.remainder)
+		return Interval(uncheckedDays: days, fractionalDay: f.remainder)
 	}
 
 	public func adding(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedSum(fractionFromNoon + interval.fraction, 0),
+		guard let f = normalizedSum(fractionFromNoon + interval.fractionalDay, 0),
 			  let day = julianDayNumber.adding(interval.days, plus: f.integral)
 		else { throw .dateOutOfRange }
-		return JulianDate(uncheckedJDN: day, fractionFromNoon: f.remainder)
+		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: f.remainder)
 	}
 
 	public func subtracting(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedSum(fractionFromNoon - interval.fraction, 0),
+		guard let f = normalizedSum(fractionFromNoon - interval.fractionalDay, 0),
 			  let day = julianDayNumber.subtracting(interval.days, plus: f.integral)
 		else { throw .dateOutOfRange }
-		return JulianDate(uncheckedJDN: day, fractionFromNoon: f.remainder)
+		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: f.remainder)
 	}
 }
 
 extension JulianDate.Interval: Comparable {
 	public static func < (lhs: Self, rhs: Self) -> Bool {
-		(lhs.days, lhs.fraction) < (rhs.days, rhs.fraction)
+		(lhs.days, lhs.fractionalDay) < (rhs.days, rhs.fractionalDay)
 	}
 }
 
 extension JulianDate.Interval: CustomStringConvertible {
 	public var description: String {
-		if fraction == 0 {
+		if fractionalDay == 0 {
 			return "\(days) days"
 		} else {
-			return "\(days) \(fraction < 0 ? "-" : "+") \(abs(fraction)) days"
+			return "\(days) \(fractionalDay < 0 ? "-" : "+") \(abs(fractionalDay)) days"
 		}
 	}
 }
 
 extension JulianDate.Interval: CustomDebugStringConvertible {
 	public var debugDescription: String {
-		"JulianDate.Interval(days: \(days), fraction: \(fraction))"
+		"JulianDate.Interval(days: \(days), fractionalDay: \(fractionalDay))"
 	}
 }
