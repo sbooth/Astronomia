@@ -230,7 +230,13 @@ extension CalendarDate: Comparable {
 
 extension CalendarDate: CustomStringConvertible {
 	public var description: String {
-		"year: \(year), month: \(month), day: \(day), dayFraction: \(dayFraction) (\(calendar.name))"
+		"\(year)-\(month)-\(day) +\(dayFraction) (\(calendar.name))"
+	}
+}
+
+extension CalendarDate: CustomDebugStringConvertible {
+	public var debugDescription: String {
+		"CalendarDate(year: \(year), month: \(month), day: \(day), dayFraction: \(dayFraction), calendar: \(calendar.name))"
 	}
 }
 
