@@ -37,4 +37,37 @@ extension BinaryFloatingPoint {
 		}
 		return (i, fraction)
 	}
+
+	/// The value split into its nearest integer and a remainder, or `nil` if the value
+	/// is not finite or the nearest integer is not representable as an `Int`.
+	///
+	/// The result satisfies `self == Self(nearest) + remainder` and `-0.5 <= remainder < 0.5`.
+	var nearestIntegerAndRemainder: (nearest: Int, remainder: Self)? {
+		guard isFinite else { return nil }
+		var rounded = rounded(.toNearestOrAwayFromZero)
+		var remainder = self - rounded
+		if remainder == 0.5 {
+			rounded += 1
+			remainder = -0.5
+		}
+		guard let nearest = Int(exactly: rounded) else { return nil }
+		return (nearest, remainder + 0)
+	}
+
+	/// The value split into two integers whose exact sum is the value, or `nil` if the
+	/// value is not finite, not integral, or too far outside the `Int` range.
+	var integralParts: (base: Int, offset: Int)? {
+		guard isFinite, self == rounded() else { return nil }
+		if let value = Int(exactly: self) {
+			return (value, 0)
+		}
+		let intMin = Self(Int.min)
+		if self > 0 {
+			guard let offsetFromMin = Int(exactly: self + intMin) else { return nil }
+			let (offset, overflow) = offsetFromMin.addingReportingOverflow(1)
+			return overflow ? nil : (.max, offset)
+		}
+		guard let offset = Int(exactly: self - intMin) else { return nil }
+		return (.min, offset)
+	}
 }

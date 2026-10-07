@@ -72,7 +72,7 @@ public struct CalendarDate: Hashable, Sendable {
 
 extension CalendarDate {
 	/// Creates a calendar date from a calendar day and unchecked day fraction.
-	private init(calendarDay: CalendarDay, uncheckedDayFraction dayFraction: Double) {
+	init(calendarDay: CalendarDay, uncheckedDayFraction dayFraction: Double) {
 		assert(dayFraction.isFinite, "Day fraction must be finite")
 		assert(dayFraction >= 0 && dayFraction < 1, "Day fraction is outside the right-open interval [0, 1)")
 		self.calendarDay = calendarDay
