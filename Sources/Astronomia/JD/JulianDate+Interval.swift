@@ -60,12 +60,12 @@ extension JulianDate.Interval {
 	/// - Note: For full precision pass whole seconds in `seconds1` and the remainder in `seconds2`.
 	public init(seconds1: Double, seconds2: Double) throws(JulianDateError) {
 		guard seconds1.isFinite, seconds2.isFinite else { throw .nonFiniteInput }
-		guard let (sum, error) = twoSum(seconds1, seconds2) else { throw .intervalOutOfRange }
+		guard let (sum, sumError) = twoSum(seconds1, seconds2) else { throw .intervalOutOfRange }
 		let extractedDays = (sum / JulianDate.secondsPerDay).rounded()
-		let remainingSeconds = sum.addingProduct(-extractedDays, JulianDate.secondsPerDay) + error
+		let remainingSeconds = sum.addingProduct(-extractedDays, JulianDate.secondsPerDay) + sumError
 		let additionalDays = (remainingSeconds / JulianDate.secondsPerDay).rounded()
-		let fractionalSeconds = remainingSeconds.addingProduct(-additionalDays, JulianDate.secondsPerDay)
-		guard let (carry, fraction) = normalizedSum(fractionalSeconds / JulianDate.secondsPerDay, 0),
+		let secondsWithinDay = remainingSeconds.addingProduct(-additionalDays, JulianDate.secondsPerDay)
+		guard let (carry, fraction) = normalizedSum(secondsWithinDay / JulianDate.secondsPerDay, 0),
 			  let (baseDays, dayOffset) = extractedDays.integralParts,
 			  let integerAdjustment = Int(exactly: additionalDays)
 		else { throw .intervalOutOfRange }
