@@ -101,12 +101,18 @@ extension JulianDate {
 
 	/// Creates a Julian Date from a Julian epoch value, e.g. 2000.0.
 	public init(julianEpoch epoch: Double) throws(JulianDateError) {
-		self = try Self.J2000.adding(days: (epoch - 2000.0) * Self.daysPerJulianYear)
+		guard epoch.isFinite else { throw .nonFiniteInput }
+		let days = (epoch - 2000.0) * Self.daysPerJulianYear
+		guard days.isFinite else { throw .dateOutOfRange }
+		self = try Self.J2000.adding(days: days)
 	}
 
 	/// Creates a Julian Date from a Besselian epoch value, e.g. 1950.0.
 	public init(besselianEpoch epoch: Double) throws(JulianDateError) {
-		self = try Self.B1900.adding(days: (epoch - 1900.0) * Self.daysPerTropicalYear)
+		guard epoch.isFinite else { throw .nonFiniteInput }
+		let days = (epoch - 1900.0) * Self.daysPerTropicalYear
+		guard days.isFinite else { throw .dateOutOfRange }
+		self = try Self.B1900.adding(days: days)
 	}
 }
 
