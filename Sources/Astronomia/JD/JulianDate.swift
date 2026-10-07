@@ -5,72 +5,36 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
+public enum JulianDateError: Error, Hashable, Sendable {
+	/// An input is NaN or infinite.
+	case nonFiniteInput
+	/// The resulting Julian Date's day number is not representable as an `Int`.
+	case dateOutOfRange
+	/// The resulting interval's whole days are not representable as an `Int`.
+	case intervalOutOfRange
+}
+
 /// A Julian Date stored as an integral Julian day number plus a signed fraction of a day measured
 /// from noon.
-///
-/// A single double near JD 2.45e6 has a resolution of ~40 µs. Storing the day number and the
-/// fraction separately gives a resolution of ~5 ps: the fraction never exceeds half a day in
-/// magnitude, so its ulp is at most 2^-54 days.
-///
-/// A Julian Date may be created from any two-part split following the IAU SOFA convention (the date
-/// is `jd1 + jd2`), but is always stored in canonical form: `day` is integral and `fraction` lies
-/// in the right-open interval [-0.5, 0.5). `day` is the Julian day number of the civil day
-/// containing the instant; that day begins at midnight `day - 0.5` and ends at midnight
-/// `day + 0.5`. Use ``parts(_:)`` to obtain another split. SOFA's recommended splits, in rough
-/// order of precision, are:
-///
-/// | `jd1` | `jd2` | Method | Precision |
-/// | --- | --- | --- | --- |
-/// | 2450123.7 | 0.0 | JD | Worst |
-/// | 2451545.0 | -1421.3 | J2000 | Good |
-/// | 2400000.5 | 50123.2 | MJD | Good |
-/// | 2450123.5 | 0.2 | Date & time | Best |
-///
-/// ## Range and precision
-///
-/// There is no range limit: every finite date is representable. Integral and fractional parts are
-/// accumulated separately, so constructing a date or adding to one rounds at most once per
-/// fractional input, by at most 2^-54 days, as long as the integral parts involved stay below 2^53
-/// in magnitude (about ±2.5 × 10^13 years). Beyond that the day number itself rounds, and the date
-/// degrades gracefully, like a plain `Double`, instead of failing.
-///
-/// Single-value inputs and outputs are limited by the precision of a single `Double`. To keep
-/// the full resolution, use the two-part forms: ``init(jd1:jd2:)``, ``init(mjd1:mjd2:)``,
-/// ``adding(days:plus:)``, ``adding(seconds:plus:)``, ``parts(_:)``, and ``Interval`` for
-/// differences and offsets.
-///
-/// ## Failure
-///
-/// The only failure is a non-finite result: a non-finite input or a result that overflows to
-/// infinity. Each trapping API has a failable counterpart that returns `nil` instead.
-public struct JulianDate: Sendable {
-	/// The integral Julian day number of the civil day containing this instant.
-	///
-	/// The day begins at midnight `day - 0.5` and is centered on noon, `day` itself.
-	public let day: Double
-
-	/// The fraction of a day from noon of ``day``, in the right-open interval [-0.5, 0.5).
+public struct JulianDate: Sendable, Hashable {
+	/// The Julian day number corresponding to the noon boundary.
+	public let jdn: Int
+	/// The fraction of a day from noon of ``jdn``, in the right-open interval [-0.5, 0.5).
 	public let fraction: Double
 
 	/// Creates a Julian Date from parts that are already canonical.
-	init(uncheckedDay day: Double, fraction: Double) {
-		assert(day.isFinite && day == day.rounded(), "Day must be finite and integral")
-		assert(fraction >= -0.5 && fraction < 0.5, "Fraction is outside the right-open interval [-0.5, 0.5)")
-		self.day = day
+	init(uncheckedJDN J: Int, fraction: Double) {
+		assert(fraction >= -0.5 && fraction < 0.5, "Fraction must be in the right-open interval [-0.5, 0.5)")
+		self.jdn = J
 		self.fraction = fraction
 	}
 }
 
 extension JulianDate {
 	/// JD of reference epoch J2000.0 (TT).
-	static let J2000_JD: Double = 2_451_545
+	static let J2000_JD: Double = 2_451_545.0
 	/// JD of MJD zero.
 	static let MJD0_JD: Double = 2_400_000.5
-	/// MJD of Besselian epoch B1900.0.
-	static let B1900_MJD: Double = 15_019.81352
-
-	/// Days from B1900.0 to J2000.0.
-	static let daysFromB1900ToJ2000: Double = 36_524.68648
 
 	/// Days per Julian year.
 	static let daysPerJulianYear: Double = 365.25
@@ -81,158 +45,88 @@ extension JulianDate {
 
 	/// Seconds per day.
 	static let secondsPerDay: Double = 60 * 60 * 24
-
-	/// J2000.0 (2000-01-01T12:00:00).
-	public static let J2000 = JulianDate(uncheckedDay: J2000_JD, fraction: 0)
 }
 
 extension JulianDate {
-	/// Creates a Julian Date from two parts in any split, returning `nil` if the result is not
-	/// finite.
-	public init?(validatingJD1 jd1: Double, jd2: Double = 0) {
-		self.init(Accumulator(days1: jd1, days2: jd2))
+	/// J2000.0 epoch (JD 2451545.0).
+	public static let J2000 = JulianDate(uncheckedJDN: 2_451_545, fraction: 0)
+	/// B1900.0 epoch (JD 2415020.31352).
+	public static let B1900 = JulianDate(uncheckedJDN: 2_415_020, fraction: 0.313_52)
+	/// Modified Julian Day (MJD) zero (JD 2400000.5).
+	public static let MJD0 = JulianDate(uncheckedJDN: 2_400_001, fraction: -0.5)
+}
+
+extension JulianDate {
+	/// Creates a Julian Date `fraction` days from noon of Julian day number `jdn`.
+	public init(jdn: Int, fraction: Double = 0) throws(JulianDateError) {
+		guard fraction.isFinite else { throw .nonFiniteInput }
+		guard let f = normalizedTwoSum(fraction, 0) else { throw .dateOutOfRange }
+		let (n, overflow) = jdn.addingReportingOverflow(f.whole)
+		guard !overflow else { throw .dateOutOfRange }
+		self.init(uncheckedJDN: n, fraction: f.fraction)
 	}
 
-	/// Creates a Julian Date equal to `jd1 + jd2`.
-	/// - Precondition: Both parts are finite and their sum does not overflow.
-	public init(jd1: Double, jd2: Double = 0) {
-		guard let date = Self(validatingJD1: jd1, jd2: jd2) else {
-			preconditionFailure("Julian Date \(jd1) + \(jd2) is not finite")
-		}
-		self = date
-	}
-
-	/// Creates a Julian Date from a single value, returning `nil` if the value is not finite.
-	/// - Note: The resolution is limited to ~40 µs near the present. Use
-	///   ``init(validatingJD1:jd2:)`` for full precision.
-	public init?(validatingJulianDate JD: Double) {
-		self.init(validatingJD1: JD)
+	/// Creates a Julian Date equal to `jd1 + jd2` from an IAU SOFA-style two-part Julian Date.
+	public init(jd1: Double, jd2: Double = 0) throws(JulianDateError) {
+		guard jd1.isFinite, jd2.isFinite else { throw .nonFiniteInput }
+		guard let sum = normalizedTwoSum(jd1, jd2) else { throw .dateOutOfRange }
+		self.jdn = sum.whole
+		self.fraction = sum.fraction
 	}
 
 	/// Creates a Julian Date from a single value.
-	/// - Note: The resolution is limited to ~40 µs near the present. Use ``init(jd1:jd2:)`` for
-	///   full precision.
-	/// - Precondition: The value is finite.
-	public init(julianDate JD: Double) {
-		self.init(jd1: JD)
+	/// - Note: The resolution is limited to ~40 µs near the present.
+	public init(julianDate JD: Double) throws(JulianDateError) {
+		try self.init(jd1: JD)
 	}
 
-	/// Creates a Julian Date from a Modified Julian Date equal to `mjd1 + mjd2`, apportioned in any
-	/// convenient way, returning `nil` if the result is not finite.
+	/// Creates a Julian Date equal to `mjd1 + mjd2` from an IAU SOFA-style two-part
+	/// Modified Julian Date.
 	/// - Note: For full precision pass the integral MJD in `mjd1` and the fraction of the day in
 	///   `mjd2`.
-	public init?(validatingMJD1 mjd1: Double, mjd2: Double = 0) {
-		var a = Accumulator(days1: mjd1, days2: mjd2)
-		a.add(days: Self.MJD0_JD)
-		self.init(a)
-	}
-
-	/// Creates a Julian Date from a Modified Julian Date equal to `mjd1 + mjd2`, apportioned in any
-	/// convenient way.
-	/// - Note: For full precision pass the integral MJD in `mjd1` and the fraction of the day in
-	///   `mjd2`.
-	/// - Precondition: Both parts are finite and the result does not overflow.
-	public init(mjd1: Double, mjd2: Double = 0) {
-		guard let date = Self(validatingMJD1: mjd1, mjd2: mjd2) else {
-			preconditionFailure("Modified Julian Date \(mjd1) + \(mjd2) is not finite")
-		}
-		self = date
-	}
-
-	/// Creates a Julian Date from a single Modified Julian Date value, returning `nil` if the value
-	/// is not finite.
-	/// - Note: The resolution is limited to ~1 µs near the present. Use
-	///   ``init(validatingMJD1:mjd2:)`` for full precision.
-	public init?(validatingModifiedJulianDate MJD: Double) {
-		self.init(validatingMJD1: MJD)
+	public init(mjd1: Double, mjd2: Double = 0) throws(JulianDateError) {
+		self = try Self.MJD0.adding(days1: mjd1, days2: mjd2)
 	}
 
 	/// Creates a Julian Date from a single Modified Julian Date value.
-	/// - Note: The resolution is limited to ~1 µs near the present. Use ``init(mjd1:mjd2:)`` for
-	///   full precision.
-	/// - Precondition: The value is finite.
-	public init(modifiedJulianDate MJD: Double) {
-		self.init(mjd1: MJD)
-	}
-
-	/// Creates a Julian Date from the specified number of days relative to J2000.0,
-	/// returning `nil` if the result is not finite.
-	///
-	/// For full precision use `JulianDate.J2000.addingIfRepresentable(days:plus:)`.
-	public init?(validatingDaysSinceJ2000 days: Double) {
-		guard let date = Self.J2000.addingIfRepresentable(days: days) else {
-			return nil
-		}
-		self = date
+	/// - Note: The resolution is limited to ~1 µs near the present.
+	public init(modifiedJulianDate MJD: Double) throws(JulianDateError) {
+		try self.init(mjd1: MJD)
 	}
 
 	/// Creates a Julian Date from the specified number of days relative to J2000.0.
-	///
-	/// For full precision use `JulianDate.J2000.adding(days:plus:)`.
-	/// - Precondition: The number of days is finite.
-	public init(daysSinceJ2000 days: Double) {
-		guard let date = Self(validatingDaysSinceJ2000: days) else {
-			preconditionFailure("\(days) days from J2000.0 is not finite")
-		}
-		self = date
-	}
-
-	/// Creates a Julian Date from a Julian epoch value, e.g. 2000.0, returning `nil` if the result
-	/// is not finite.
-	public init?(validatingJulianEpoch epoch: Double) {
-		guard let date = Self.J2000.addingIfRepresentable(days: (epoch - 2000.0) * Self.daysPerJulianYear) else {
-			return nil
-		}
-		self = date
+	public init(daysSinceJ2000 days: Double) throws(JulianDateError) {
+		self = try Self.J2000.adding(days: days)
 	}
 
 	/// Creates a Julian Date from a Julian epoch value, e.g. 2000.0.
-	/// - Precondition: The epoch is finite and the result does not overflow.
-	public init(julianEpoch epoch: Double) {
-		guard let date = Self(validatingJulianEpoch: epoch) else {
-			preconditionFailure("Julian epoch \(epoch) is not representable")
-		}
-		self = date
-	}
-
-	/// Creates a Julian Date from a Besselian epoch value, e.g. 1950.0, returning `nil` if the
-	/// result is not finite.
-	public init?(validatingBesselianEpoch epoch: Double) {
-		var a = Accumulator()
-		a.add(days: Self.MJD0_JD)
-		a.add(days: Self.B1900_MJD)
-		a.add(days: (epoch - 1900.0) * Self.daysPerTropicalYear)
-		self.init(a)
+	public init(julianEpoch epoch: Double) throws(JulianDateError) {
+		self = try Self.J2000.adding(days: (epoch - 2000.0) * Self.daysPerJulianYear)
 	}
 
 	/// Creates a Julian Date from a Besselian epoch value, e.g. 1950.0.
-	/// - Precondition: The epoch is finite and the result does not overflow.
-	public init(besselianEpoch epoch: Double) {
-		guard let date = Self(validatingBesselianEpoch: epoch) else {
-			preconditionFailure("Besselian epoch \(epoch) is not representable")
-		}
-		self = date
+	public init(besselianEpoch epoch: Double) throws(JulianDateError) {
+		self = try Self.B1900.adding(days: (epoch - 1900.0) * Self.daysPerTropicalYear)
 	}
 }
 
 extension JulianDate {
-	/// The Julian Date collapsed to a single value.
-	/// - Note: This loses precision.
+	/// The Julian Date as a single value.
+	/// - Important: This loses precision.
 	public var julianDate: Double {
-		day + fraction
+		Double(jdn) + fraction
 	}
 
-	/// The Modified Julian Date (MJD) as a single value. Use ``parts(_:)`` with
-	/// ``SplitMethod/fromMJD0`` for full precision.
+	/// The Modified Julian Date (MJD) as a single value.
+	/// - Note: Use ``parts(_:)`` with ``SplitMethod/fromMJD0`` for full precision.
 	public var modifiedJulianDate: Double {
-		// (day - MJD0_JD) is a half-integer, exact while its magnitude is below 2^52.
-		(day - Self.MJD0_JD) + fraction
+		(differenceAsDouble(jdn, Self.MJD0.jdn) + 0.5) + fraction
 	}
 
-	/// Days from J2000.0 as a single value. Use ``parts(_:)`` with
-	/// ``SplitMethod/fromJ2000`` for full precision.
+	/// Days from J2000.0 as a single value.
+	/// - Note: Use ``parts(_:)`` with ``SplitMethod/fromJ2000`` for full precision.
 	public var daysSinceJ2000: Double {
-		(day - Self.J2000_JD) + fraction
+		differenceAsDouble(jdn, Self.J2000.jdn) + (fraction /*- Self.J2000.fraction*/)
 	}
 
 	/// Julian centuries from J2000.0.
@@ -247,39 +141,31 @@ extension JulianDate {
 
 	/// Besselian epoch.
 	public var besselianEpoch: Double {
-		1900.0 + ((day - Self.J2000_JD) + (fraction + Self.daysFromB1900ToJ2000)) / Self.daysPerTropicalYear
+		let days = differenceAsDouble(jdn, Self.B1900.jdn) + (fraction - Self.B1900.fraction)
+		return 1900.0 + days / Self.daysPerTropicalYear
 	}
 }
 
 extension JulianDate {
 	/// Ways of dividing a Julian Date between two doubles.
 	public enum SplitMethod: Sendable {
-		/// `jd1` holds the whole JD, `jd2` is zero.
-		/// - Note: `jd1` is rounded to a single `Double` (~40 µs near the present).
+		/// SOFA JD method: `jd1` holds the whole JD, `jd2` is zero.
 		case julianDate
-		/// `jd1` is J2000.0 (2451545.0), `jd2` is days from J2000.0.
-		/// - Note: `jd2` is rounded to a single `Double`. Use ``fromJ2000`` for full precision.
+		/// SOFA J2000 method: `jd1` is J2000.0 (2451545.0), `jd2` is days from J2000.0.
 		case j2000
-		/// `jd1` is MJD zero (2400000.5), `jd2` is the MJD.
-		/// - Note: `jd2` is rounded to a single `Double`. Use ``fromMJD0`` for full precision.
+		/// SOFA MJD method: `jd1` is MJD zero (2400000.5), `jd2` is the MJD.
 		case mjd
-		/// `jd1` is the JD of the preceding midnight, `jd2` is the fraction of the day from
-		/// midnight in the right-open interval [0, 1).
-		/// - Note: `jd1` is exact for |`day`| < 2^52. `jd2` is exact from midnight to 06:00
-		///   (`fraction` <= -0.25) and otherwise may round by at most 2^-54 days.
+		/// SOFA Date and Time method: `jd1` is the JD of the preceding midnight,
+		/// `jd2` is the fraction of the day from midnight in the right-open interval [0, 1).
 		case dateAndTime
 		/// `jd1` is the integral Julian day number, `jd2` is the fraction of the day from
 		/// noon in the right-open interval [-0.5, 0.5).
-		/// - Note: This split is always exact.
 		case dayAndFraction
 		/// `jd1` is the integral number of days from J2000.0, `jd2` is the fraction of the day
 		/// from noon in the right-open interval [-0.5, 0.5).
-		/// - Note: `jd1` is exact when its magnitude is below 2^53. `jd2` is always exact.
 		case fromJ2000
 		/// `jd1` is the integral number of days from MJD zero, `jd2` is the fraction of the day
 		/// from midnight in the right-open interval [0, 1).
-		/// - Note: `jd1` is exact for |`day`| < 2^52. `jd2` is exact from midnight to 06:00
-		///   (`fraction` <= -0.25) and otherwise may round by at most 2^-54 days.
 		case fromMJD0
 	}
 
@@ -287,88 +173,58 @@ extension JulianDate {
 	public func parts(_ method: SplitMethod) -> (jd1: Double, jd2: Double) {
 		switch method {
 		case .julianDate:
-			return (day + fraction, 0)
+			return (Double(jdn) + fraction, 0)
 		case .j2000:
-			return (Self.J2000_JD, (day - Self.J2000_JD) + fraction)
+			return (Self.J2000_JD, daysSinceJ2000)
 		case .mjd:
-			return (Self.MJD0_JD, (day - Self.MJD0_JD) + fraction)
+			return (Self.MJD0_JD, modifiedJulianDate)
 		case .dateAndTime:
-			let midnight = day - 0.5 // Exact for |day| < 2^52.
-			let dayFraction = fraction + 0.5 // Exact sum in [0, 1); rounds into [0, 1].
-			if dayFraction == 1 {
-				return (midnight + 1, 0)
-			}
-			return (midnight, dayFraction)
+			let fraction = self.fraction + 0.5
+			return fraction == 1 ? (Double(jdn) + 0.5, 0) : (Double(jdn) - 0.5, fraction)
 		case .dayAndFraction:
-			return (day, fraction)
+			return (Double(jdn), fraction)
 		case .fromJ2000:
-			return (day - Self.J2000_JD, fraction)
+			return (differenceAsDouble(jdn, Self.J2000.jdn), fraction)
 		case .fromMJD0:
-			let (midnight, dayFraction) = parts(.dateAndTime)
-			// Both are half-integers, so the difference is an exact integer for |day| < 2^52.
-			return (midnight - Self.MJD0_JD, dayFraction)
+			let fraction = self.fraction + 0.5
+			let jdn = differenceAsDouble(self.jdn, Self.MJD0.jdn)
+			return fraction == 1 ? (jdn + 1, 0) : (jdn, fraction)
 		}
 	}
 }
 
 extension JulianDate {
-	/// Returns the Julian Date offset by `days1 + days2` days, apportioned in any convenient way,
-	/// or `nil` if the result is not finite.
-	///
-	/// For full precision pass whole days in `days1` and the remainder in `days2`.
-	public func addingIfRepresentable(days days1: Double, plus days2: Double = 0) -> JulianDate? {
-		var a = Accumulator(days1: days1, days2: days2)
-		a.add(self)
-		return JulianDate(a)
+	public func adding(days: Int) throws(JulianDateError) -> JulianDate {
+		let (day, overflow) = self.jdn.addingReportingOverflow(days)
+		guard !overflow else { throw .dateOutOfRange }
+		return JulianDate(uncheckedJDN: day, fraction: fraction)
 	}
 
-	/// Returns the Julian Date offset by `days1 + days2` days, apportioned in any convenient way.
-	///
-	/// For full precision pass whole days in `days1` and the remainder in `days2`.
-	/// - Precondition: Both parts are finite and the result does not overflow.
-	public func adding(days days1: Double, plus days2: Double = 0) -> JulianDate {
-		guard let date = addingIfRepresentable(days: days1, plus: days2) else {
-			preconditionFailure("Adding \(days1) + \(days2) days to \(self) is not finite")
-		}
-		return date
+	/// Returns a date advanced by the two-part interval `days1 + days2`.
+	public func adding(days1: Double, days2: Double) throws(JulianDateError) -> JulianDate {
+		try adding(Interval(days1: days1, days2: days2))
 	}
 
-	/// Returns the Julian Date offset by `seconds1 + seconds2` seconds, apportioned in any
-	/// convenient way and assuming 86,400 seconds per day, or `nil` if the result is not finite.
-	///
-	/// For full precision pass whole seconds in `seconds1` and the fraction of a second in
-	/// `seconds2`.
-	public func addingIfRepresentable(seconds seconds1: Double, plus seconds2: Double = 0) -> JulianDate? {
-		var a = Accumulator(seconds1: seconds1, seconds2: seconds2)
-		a.add(self)
-		return JulianDate(a)
-	}
-
-	/// Returns the Julian Date offset by `seconds1 + seconds2` seconds, apportioned in any
-	/// convenient way and assuming 86,400 seconds per day.
-	///
-	/// For full precision pass whole seconds in `seconds1` and the fraction of a second in
-	/// `seconds2`.
-	/// - Precondition: Both parts are finite and the result does not overflow.
-	public func adding(seconds seconds1: Double, plus seconds2: Double = 0) -> JulianDate {
-		guard let date = addingIfRepresentable(seconds: seconds1, plus: seconds2) else {
-			preconditionFailure("Adding \(seconds1) + \(seconds2) seconds to \(self) is not finite")
-		}
-		return date
+	public func adding(days: Double) throws(JulianDateError) -> JulianDate {
+		try adding(days1: days, days2: 0)
 	}
 }
 
 extension JulianDate {
-	/// Returns the Julian Date offset by a number of days.
-	/// - Precondition: The number of days is finite and the result does not overflow.
-	public static func + (lhs: JulianDate, days: Double) -> JulianDate {
-		lhs.adding(days: days)
+	public func adding(seconds: Int) throws(JulianDateError) -> JulianDate {
+		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: 86_400)
+		let (day, overflow) = self.jdn.addingReportingOverflow(days)
+		guard !overflow else { throw .dateOutOfRange }
+		return try JulianDate(jdn: day, fraction: fraction + Double(remainder) / 86_400)
 	}
 
-	/// Returns the Julian Date offset by a negative number of days.
-	/// - Precondition: The number of days is finite and the result does not overflow.
-	public static func - (lhs: JulianDate, days: Double) -> JulianDate {
-		lhs.adding(days: -days)
+	/// Returns a date advanced by the two-part interval `seconds1 + seconds2`.
+	public func adding(seconds1: Double, seconds2: Double) throws(JulianDateError) -> JulianDate {
+		try adding(Interval(seconds1: seconds1, seconds2: seconds2))
+	}
+
+	public func adding(seconds: Double) throws(JulianDateError) -> JulianDate {
+		try adding(seconds1: seconds, seconds2: 0)
 	}
 }
 
@@ -379,70 +235,41 @@ extension JulianDate {
 	/// Use this instead of `==` when comparing dates that took different computational paths, e.g.
 	/// a JD-method value against a date-and-time split.
 	///
-	/// This is not an equivalence relation (it is not transitive), so it is not a substitute for
-	/// `==` in `Hashable` or `Set` contexts.
-	///
 	/// - Precondition: The specified tolerance is non-negative and not NaN.
 	public func isApproximatelyEqual(to other: JulianDate, toleranceSeconds: Double) -> Bool {
 		precondition(toleranceSeconds >= 0, "Tolerance must be non-negative")
-		if toleranceSeconds == .infinity {
-			return true
+		guard let interval = try? interval(to: other) else {
+			let days = (Double(jdn) - Double(other.jdn)) + (fraction - other.fraction)
+			return (days * Self.secondsPerDay).magnitude <= toleranceSeconds
 		}
-		guard let i = intervalIfRepresentable(since: other) else {
-			return false
-		}
-		return i.inSeconds.magnitude <= toleranceSeconds
+		return interval.inSeconds.magnitude <= toleranceSeconds
 	}
 }
 
-// The stored parts are canonical, so equality and hashing can be synthesized.
-extension JulianDate: Hashable {}
-
 extension JulianDate: Comparable {
-	// Canonical form makes lexicographic order chronological: a later day always wins, because
-	// fractions span less than one day.
 	public static func < (lhs: JulianDate, rhs: JulianDate) -> Bool {
-		(lhs.day, lhs.fraction) < (rhs.day, rhs.fraction)
+		(lhs.jdn, lhs.fraction) < (rhs.jdn, rhs.fraction)
 	}
 }
 
 extension JulianDate: CustomStringConvertible {
 	public var description: String {
 		if fraction == 0 {
-			return "JD \(day)"
+			return "JD \(jdn)"
 		} else {
-			return "JD \(day) \(fraction < 0 ? "-" : "+") \(abs(fraction))"
+			return "JD \(jdn) \(fraction < 0 ? "-" : "+") \(abs(fraction))"
 		}
 	}
 }
 
 extension JulianDate: CustomDebugStringConvertible {
 	public var debugDescription: String {
-		"JulianDate(day: \(day), fraction: \(fraction))"
+		"JulianDate(jdn: \(jdn), fraction: \(fraction))"
 	}
 }
 
-extension JulianDate: Codable {
-	// Keys keep SOFA naming; any split decodes correctly.
-	private enum CodingKeys: String, CodingKey {
-		case jd1, jd2
-	}
-
-	/// Decodes a Julian Date from any split of `jd1 + jd2`; `jd2` defaults to 0 if absent.
-	/// - throws: `DecodingError.dataCorrupted` if the result is not finite.
-	public init(from decoder: any Decoder) throws {
-		let container = try decoder.container(keyedBy: CodingKeys.self)
-		let jd1 = try container.decode(Double.self, forKey: .jd1)
-		let jd2 = try container.decodeIfPresent(Double.self, forKey: .jd2) ?? 0
-		guard let julianDate = JulianDate(validatingJD1: jd1, jd2: jd2) else {
-			throw DecodingError.dataCorruptedError(forKey: .jd1, in: container, debugDescription: "Julian Date parts must be finite and their sum must not overflow (jd1: \(jd1), jd2: \(jd2))")
-		}
-		self = julianDate
-	}
-
-	public func encode(to encoder: any Encoder) throws {
-		var container = encoder.container(keyedBy: CodingKeys.self)
-		try container.encode(day, forKey: .jd1)
-		try container.encode(fraction, forKey: .jd2)
-	}
+/// Returns the difference between two `Int` values as a `Double`.
+func differenceAsDouble(_ lhs: Int, _ rhs: Int) -> Double {
+	let (difference, overflow) = lhs.subtractingReportingOverflow(rhs)
+	return overflow ? Double(lhs) - Double(rhs) : Double(difference)
 }
