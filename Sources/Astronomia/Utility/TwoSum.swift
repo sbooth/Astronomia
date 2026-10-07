@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// Knuth's *TwoSum* error-free transformation of a floating-point sum.
+/// The *2Sum* error-free transformation of a floating-point sum.
 ///
 /// Returns `sum` and `error` such that the exact value of `a + b` is represented
 /// by `sum + error`, or `nil` if `sum` is not finite.
@@ -36,11 +36,11 @@ func normalizedSum(_ a: Double, _ b: Double) -> (integral: Int, remainder: Doubl
 
 /// ``normalizedSum(_:_:)`` for parts whose nearest integers are not both representable as `Int`.
 private func normalizedTwoPartSum(_ a: Double, _ b: Double) -> (integral: Int, remainder: Double)? {
-	guard let (sum, error) = twoSum(a, b) else { return nil }
+	guard let (sum, sumError) = twoSum(a, b) else { return nil }
 	let roundedSum = sum.rounded()
-	let roundedError = error.rounded()
+	let roundedError = sumError.rounded()
 	guard let (base, offset) = roundedSum.integralParts, let intError = Int(exactly: roundedError) else { return nil }
-	let residual = (sum - roundedSum) + (error - roundedError)
+	let residual = (sum - roundedSum) + (sumError - roundedError)
 	guard let (nearest, remainder) = residual.nearestIntegerAndRemainder else { return nil }
 	let (correction, overflow) = intError.addingReportingOverflow(nearest)
 	guard !overflow, let whole = base.adding(offset, plus: correction) else { return nil }
