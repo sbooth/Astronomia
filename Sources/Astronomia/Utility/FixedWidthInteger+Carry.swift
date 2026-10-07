@@ -6,29 +6,40 @@
 //
 
 extension FixedWidthInteger {
-	/// Returns `self + x + carry`, or `nil` if the result is not representable as `Self`.
-	func adding(_ x: Self, carry: Self) -> Self? {
-		let (y, yOverflow) = addingReportingOverflow(carry)
-		if !yOverflow {
-			let (sum, overflow) = y.addingReportingOverflow(x)
+	/// Returns `self + x + y`, or `nil` if the result is not representable as `Self`.
+	///
+	/// Only the result has to be representable: an intermediate sum may overflow.
+	func adding(_ x: Self, plus y: Self) -> Self? {
+		let (a, aOverflow) = addingReportingOverflow(y)
+		if !aOverflow {
+			let (sum, overflow) = a.addingReportingOverflow(x)
 			return overflow ? nil : sum
 		}
-		let (z, zOverflow) = x.addingReportingOverflow(carry)
-		guard !zOverflow else { return nil }
-		let (sum, overflow) = addingReportingOverflow(z)
+		let (b, bOverflow) = x.addingReportingOverflow(y)
+		guard !bOverflow else { return nil }
+		let (sum, overflow) = addingReportingOverflow(b)
 		return overflow ? nil : sum
 	}
 
-	/// Returns `self - x + carry`, or `nil` if the result is not representable as `Self`.
-	func subtracting(_ x: Self, carry: Self) -> Self? {
-		let (y, yOverflow) = addingReportingOverflow(carry)
-		if !yOverflow {
-			let (difference, overflow) = y.subtractingReportingOverflow(x)
+	/// Returns `self - x + y`, or `nil` if the result is not representable as `Self`.
+	///
+	/// Only the result has to be representable: an intermediate difference may overflow.
+	func subtracting(_ x: Self, plus y: Self) -> Self? {
+		let (a, aOverflow) = addingReportingOverflow(y)
+		if !aOverflow {
+			let (difference, overflow) = a.subtractingReportingOverflow(x)
 			return overflow ? nil : difference
 		}
-		let (z, zOverflow) = x.subtractingReportingOverflow(carry)
-		guard !zOverflow else { return nil }
-		let (difference, overflow) = subtractingReportingOverflow(z)
-		return overflow ? nil : difference
+		if x >= y {
+			let (b, bOverflow) = x.subtractingReportingOverflow(y)
+			guard !bOverflow else { return nil }
+			let (difference, overflow) = subtractingReportingOverflow(b)
+			return overflow ? nil : difference
+		} else {
+			let (b, bOverflow) = y.subtractingReportingOverflow(x)
+			guard !bOverflow else { return nil }
+			let (sum, overflow) = addingReportingOverflow(b)
+			return overflow ? nil : sum
+		}
 	}
 }

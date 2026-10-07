@@ -106,21 +106,21 @@ extension JulianDate.Interval {
 extension JulianDate {
 	public func interval(to other: JulianDate) throws(JulianDateError) -> Interval {
 		guard let f = normalizedTwoSum(other.fraction - fraction, 0),
-			  let days = other.jdn.subtracting(jdn, carry: f.whole)
+			  let days = other.jdn.subtracting(jdn, plus: f.whole)
 		else { throw .intervalOutOfRange }
 		return Interval(uncheckedDays: days, fraction: f.fraction)
 	}
 
 	public func adding(_ interval: Interval) throws(JulianDateError) -> JulianDate {
 		guard let f = normalizedTwoSum(fraction + interval.fraction, 0),
-			  let day = jdn.adding(interval.days, carry: f.whole)
+			  let day = jdn.adding(interval.days, plus: f.whole)
 		else { throw .dateOutOfRange }
 		return JulianDate(uncheckedJDN: day, fraction: f.fraction)
 	}
 
 	public func subtracting(_ interval: Interval) throws(JulianDateError) -> JulianDate {
 		guard let f = normalizedTwoSum(fraction + interval.fraction, 0),
-			  let day = jdn.subtracting(interval.days, carry: f.whole)
+			  let day = jdn.subtracting(interval.days, plus: f.whole)
 		else { throw .dateOutOfRange }
 		return JulianDate(uncheckedJDN: day, fraction: f.fraction)
 	}
