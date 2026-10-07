@@ -8,7 +8,7 @@
 public enum JulianDateError: Error, Hashable, Sendable {
 	/// An input is NaN or infinite.
 	case nonFiniteInput
-	/// The resulting Julian Date's day number is not representable as an `Int`.
+	/// The resulting Julian Date's Julian day number is not representable as an `Int`.
 	case dateOutOfRange
 	/// The resulting interval's whole days are not representable as an `Int`.
 	case intervalOutOfRange
