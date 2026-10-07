@@ -295,5 +295,12 @@ extension JulianDate: CustomDebugStringConvertible {
 /// Returns the difference between two `Int` values as a `Double`.
 func differenceAsDouble(_ lhs: Int, _ rhs: Int) -> Double {
 	let (difference, overflow) = lhs.subtractingReportingOverflow(rhs)
-	return overflow ? Double(lhs) - Double(rhs) : Double(difference)
+	guard overflow else { return Double(difference) }
+	// Overflow means the operands have opposite signs, so the result is ±(|lhs| + |rhs|) with the
+	// sign of lhs. The magnitude is at most 2^64 - 1, exact in UInt, and converts with one
+	// rounding. Converting each operand to Double first would round up to three times.
+	if lhs >= 0 {
+		return Double(lhs.magnitude + rhs.magnitude)
+	}
+	return -Double(lhs.magnitude + rhs.magnitude)
 }
