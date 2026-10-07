@@ -304,3 +304,36 @@ func differenceAsDouble(_ lhs: Int, _ rhs: Int) -> Double {
 	}
 	return -Double(lhs.magnitude + rhs.magnitude)
 }
+
+extension JulianDate: Codable {
+	private enum CodingKeys: String, CodingKey {
+		case julianDayNumber, fractionFromNoon
+	}
+
+	/// Decodes and validates a Julian Date.
+	public init(from decoder: any Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		let julianDayNumber = try container.decode(Int.self, forKey: .julianDayNumber)
+		let fractionFromNoon = try container.decode(Double.self, forKey: .fractionFromNoon)
+
+		do throws(JulianDateError) {
+			self = try JulianDate(julianDayNumber: julianDayNumber, fractionFromNoon: fractionFromNoon)
+		} catch {
+			switch error {
+			case .nonFiniteInput:
+				throw DecodingError.dataCorruptedError(forKey: .fractionFromNoon, in: container, debugDescription: "Fraction from noon must be finite")
+			case .dateOutOfRange:
+				throw DecodingError.dataCorruptedError(forKey: .julianDayNumber, in: container, debugDescription: "The Julian day number is not representable")
+			case .intervalOutOfRange:
+				preconditionFailure("Unexpected JulianDateError.intervalOutOfRange")
+			}
+		}
+	}
+
+	/// Encodes a Julian Date.
+	public func encode(to encoder: any Encoder) throws {
+		var container = encoder.container(keyedBy: CodingKeys.self)
+		try container.encode(julianDayNumber, forKey: .julianDayNumber)
+		try container.encode(fractionFromNoon, forKey: .fractionFromNoon)
+	}
+}

@@ -154,3 +154,36 @@ extension JulianDate.Interval: CustomDebugStringConvertible {
 		"JulianDate.Interval(days: \(days), fractionalDay: \(fractionalDay))"
 	}
 }
+
+extension JulianDate.Interval: Codable {
+	private enum CodingKeys: String, CodingKey {
+		case days, fractionalDay
+	}
+
+	/// Decodes and validates a Julian Date.
+	public init(from decoder: any Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		let days = try container.decode(Int.self, forKey: .days)
+		let fractionalDay = try container.decode(Double.self, forKey: .fractionalDay)
+
+		do throws(JulianDateError) {
+			self = try JulianDate.Interval(days: days, fractionalDay: fractionalDay)
+		} catch {
+			switch error {
+			case .nonFiniteInput:
+				throw DecodingError.dataCorruptedError(forKey: .fractionalDay, in: container, debugDescription: "Fractional day must be finite")
+			case .dateOutOfRange:
+				preconditionFailure("Unexpected JulianDateError.dateOutOfRange")
+			case .intervalOutOfRange:
+				throw DecodingError.dataCorruptedError(forKey: .days, in: container, debugDescription: "The interval is out of range")
+			}
+		}
+	}
+
+	/// Encodes a Julian Date.
+	public func encode(to encoder: any Encoder) throws {
+		var container = encoder.container(keyedBy: CodingKeys.self)
+		try container.encode(days, forKey: .days)
+		try container.encode(fractionalDay, forKey: .fractionalDay)
+	}
+}
