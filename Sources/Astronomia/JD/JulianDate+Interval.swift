@@ -105,21 +105,25 @@ extension JulianDate.Interval {
 
 extension JulianDate {
 	public func interval(to other: JulianDate) throws(JulianDateError) -> Interval {
-		let (difference, overflow) = other.jdn.subtractingReportingOverflow(jdn)
-		guard !overflow else { throw .intervalOutOfRange }
-		return try Interval(days: difference, fraction: other.fraction - fraction)
+		guard let f = normalizedTwoSum(other.fraction - fraction, 0),
+			  let days = other.jdn.subtracting(jdn, carry: f.whole) else {
+			throw .intervalOutOfRange
+		}
+		return Interval(uncheckedDays: days, fraction: f.fraction)
 	}
 
 	public func adding(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		let (sum, overflow) = jdn.addingReportingOverflow(interval.days)
-		guard !overflow else { throw .dateOutOfRange }
-		return try JulianDate(jdn: sum, fraction: fraction + interval.fraction)
+		guard let f = normalizedTwoSum(fraction + interval.fraction, 0),
+			  let day = jdn.adding(interval.days, carry: f.whole)
+		else { throw .dateOutOfRange }
+		return JulianDate(uncheckedJDN: day, fraction: f.fraction)
 	}
 
 	public func subtracting(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		let (difference, overflow) = jdn.subtractingReportingOverflow(interval.days)
-		guard !overflow else { throw .dateOutOfRange }
-		return try JulianDate(jdn: difference, fraction: fraction - interval.fraction)
+		guard let f = normalizedTwoSum(fraction + interval.fraction, 0),
+			  let day = jdn.subtracting(interval.days, carry: f.whole)
+		else { throw .dateOutOfRange }
+		return JulianDate(uncheckedJDN: day, fraction: f.fraction)
 	}
 }
 
