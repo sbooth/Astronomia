@@ -38,30 +38,30 @@ import Testing
 		#expect(JulianGregorianCalendar.numberOfMonthsInYear == 12)
 	}
 
-	@Test func monthLength() {
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 1, year: 1900) == 31)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 2, year: 1900) == 28)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 3, year: 1900) == 31)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 4, year: 1900) == 30)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 5, year: 1900) == 31)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 6, year: 1900) == 30)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 7, year: 1900) == 31)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 8, year: 1900) == 31)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 9, year: 1900) == 30)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 10, year: 1900) == 31)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 11, year: 1900) == 30)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 12, year: 1900) == 31)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 2, year: 1600) == 29)
+	@Test func monthLength() throws {
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 1, year: 1900) == 31)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 2, year: 1900) == 28)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 3, year: 1900) == 31)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 4, year: 1900) == 30)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 5, year: 1900) == 31)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 6, year: 1900) == 30)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 7, year: 1900) == 31)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 8, year: 1900) == 31)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 9, year: 1900) == 30)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 10, year: 1900) == 31)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 11, year: 1900) == 30)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 12, year: 1900) == 31)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 2, year: 1600) == 29)
 	}
 
 	@Test func changeover() throws {
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 10, year: 1582) == 21)
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 10, year: 1582) == 21)
 		let oct1 = try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 1)
 		let oct31 = try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 31)
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 10, year: 1582) == (oct31 - oct1 + 1))
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 10, year: 1582) == (oct31 - oct1 + 1))
 
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 9, year: 1582) == JulianCalendar.numberOfDaysIn(month: 9, year: 1582))
-		#expect(JulianGregorianCalendar.numberOfDaysIn(month: 11, year: 1582) == GregorianCalendar.numberOfDaysIn(month: 11, year: 1582))
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 9, year: 1582) == JulianCalendar.numberOfDaysIn(month: 9, year: 1582))
+		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 11, year: 1582) == GregorianCalendar.numberOfDaysIn(month: 11, year: 1582))
 
 		#expect(JulianGregorianCalendar.isValid(year: 1582, month: 10, day: 3) == true)
 		#expect(JulianGregorianCalendar.isValid(year: 1582, month: 10, day: 4) == true)
@@ -84,7 +84,7 @@ import Testing
 
 		var sum = 0
 		for m in 1...12 {
-			sum += JulianGregorianCalendar.numberOfDaysIn(month: m, year: 1582)
+			sum += try JulianGregorianCalendar.numberOfDaysIn(month: m, year: 1582)
 		}
 
 		#expect(JulianGregorianCalendar.numberOfDaysInYear(1582) == sum)

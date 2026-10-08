@@ -54,9 +54,9 @@ import Testing
 		#expect(GregorianCalendar.numberOfMonthsInYear == 12)
 	}
 
-	@Test func monthLength() {
-		#expect(GregorianCalendar.numberOfDaysIn(month: 2, year: 1600) == 29)
-		#expect(GregorianCalendar.numberOfDaysIn(month: 2, year: 1700) == 28)
+	@Test func monthLength() throws {
+		#expect(try GregorianCalendar.numberOfDaysIn(month: 2, year: 1600) == 29)
+		#expect(try GregorianCalendar.numberOfDaysIn(month: 2, year: 1700) == 28)
 	}
 
 	@Test func yearLength() throws {
@@ -68,7 +68,7 @@ import Testing
 
 		var sum = 0
 		for m in 1 ... 12 {
-			sum += GregorianCalendar.numberOfDaysIn(month: m, year: 1961)
+			sum += try GregorianCalendar.numberOfDaysIn(month: m, year: 1961)
 		}
 
 		let jan1 = try GregorianCalendar.julianDayNumberFrom(year: 1961, month: 1, day: 1)
@@ -121,16 +121,16 @@ import Testing
 	}
 
 	@Test func range() throws {
-		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) {
 			_ = try GregorianCalendar.julianDayNumberFrom(year: .min, month: 1, day: 1)
 		}
-		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) {
 			_ = try GregorianCalendar.julianDayNumberFrom(year: .max, month: 1, day: 1)
 		}
-		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) {
 			_ = try GregorianCalendar.julianDayNumberFrom(year: 1, month: .min, day: 1)
 		}
-		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) {
 			_ = try GregorianCalendar.julianDayNumberFrom(year: 1, month: .max, day: 1)
 		}
 	}
