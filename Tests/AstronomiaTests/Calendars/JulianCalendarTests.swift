@@ -62,9 +62,11 @@ import Testing
 		#expect(JulianCalendar.numberOfMonthsInYear == 12)
 	}
 
-	@Test func monthLength() {
-		#expect(JulianCalendar.numberOfDaysIn(month: 2, year: 1600) == 29)
-		#expect(JulianCalendar.numberOfDaysIn(month: 2, year: 1700) == 29)
+	@Test func monthLength() throws {
+		#expect(try JulianCalendar.numberOfDaysIn(month: 2, year: 1600) == 29)
+		#expect(try JulianCalendar.numberOfDaysIn(month: 2, year: 1700) == 29)
+		#expect(throws: CalendarError.invalidDate) { try JulianCalendar.numberOfDaysIn(month: 0, year: 1000) }
+		#expect(throws: CalendarError.invalidDate) { try JulianCalendar.numberOfDaysIn(month: 13, year: 1000) }
 	}
 
 	@Test func yearLength() {
@@ -237,16 +239,16 @@ import Testing
 	}
 
 	@Test func range() throws {
-		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) {
 			_ = try JulianCalendar.julianDayNumberFrom(year: .min, month: 1, day: 1)
 		}
-		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) {
 			_ = try JulianCalendar.julianDayNumberFrom(year: .max, month: 1, day: 1)
 		}
-		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) {
 			_ = try JulianCalendar.julianDayNumberFrom(year: 1, month: .min, day: 1)
 		}
-		#expect(throws: JulianDayNumberOutOfRangeError.self) {
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) {
 			_ = try JulianCalendar.julianDayNumberFrom(year: 1, month: .max, day: 1)
 		}
 	}
