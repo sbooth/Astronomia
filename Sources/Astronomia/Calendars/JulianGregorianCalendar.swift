@@ -107,7 +107,6 @@ extension JulianGregorianCalendar {
 	/// - Note: This function accounts for the Julian to Gregorian calendar changeover.
 	/// - Throws: ``CalendarError/invalidDate`` if the month is not valid.
 	public static func numberOfDaysIn(month M: Int, year Y: Int) throws(CalendarError) -> Int {
-//		guard M >= 1, M <= 12 else { throw .invalidDate }
 		if (Y, M) > (firstGregorianCalendarDate.year, firstGregorianCalendarDate.month) {
 			return try GregorianCalendar.numberOfDaysIn(month: M, year: Y)
 		} else if (Y, M) < (firstGregorianCalendarDate.year, firstGregorianCalendarDate.month) {

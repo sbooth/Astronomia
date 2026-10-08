@@ -33,9 +33,7 @@ public struct CalendarDay: Sendable {
 			throw .invalidDate
 		}
 
-		guard let J = try? calendar.julianDayNumberFrom(year: year, month: month, day: day) else {
-			throw .julianDayNumberNotRepresentable
-		}
+		let J = try calendar.julianDayNumberFrom(year: year, month: month, day: day)
 
 		self.year = year
 		self.month = month
@@ -46,7 +44,7 @@ public struct CalendarDay: Sendable {
 
 	/// Creates the calendar day corresponding to the specified Julian day number
 	/// in the given calendar.
-	public init(julianDayNumber J: JulianDayNumber,_ calendar: CalendarIdentifier) {
+	public init(julianDayNumber J: JulianDayNumber, _ calendar: CalendarIdentifier) {
 		(year, month, day) = calendar.dateFromJulianDayNumber(J)
 		self.calendar = calendar
 		julianDayNumber = J
@@ -59,7 +57,7 @@ public struct CalendarDay: Sendable {
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the year, month, and day cannot be represented as a ``JulianDayNumber``.
 	public static func normalized(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(CalendarError) -> CalendarDay {
-		CalendarDay(julianDayNumber: try calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
+		try CalendarDay(julianDayNumber: calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
 	}
 }
 

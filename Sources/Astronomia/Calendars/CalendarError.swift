@@ -7,7 +7,7 @@
 
 /// Errors that can occur when creating or computing calendar dates.
 public enum CalendarError: Error, Hashable, Sendable {
-	/// The number of days cannot be represented as an `Int`.
+	/// A number of days cannot be represented as an `Int`.
 	case dayCountNotRepresentable
 	/// The date components do not form a valid date, such as February 30 or day of year 400.
 	case invalidDate

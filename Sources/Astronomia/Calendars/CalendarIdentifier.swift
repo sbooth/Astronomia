@@ -35,7 +35,7 @@ extension CalendarIdentifier {
 	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
 	///   days are counted forward or backward from the normalized year and month.
-	/// - Throws: ``CalendarError.julianDayNumberNotRepresentable`` if the Julian day number
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> JulianDayNumber {
 		try julianDayNumberFromDate((Y, M, D))
@@ -45,7 +45,7 @@ extension CalendarIdentifier {
 	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
 	///   days are counted forward or backward from the normalized year and month.
-	/// - Throws: ``CalendarError.julianDayNumberNotRepresentable`` if the Julian day number
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
 		switch self {
@@ -77,7 +77,7 @@ extension CalendarIdentifier {
 	/// Returns a valid year, month, and day for the specified year and possibly
 	/// out-of-range month and day values.
 	///
-	/// - Throws: ``CalendarError.julianDayNumberNotRepresentable`` if the Julian day number
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public func normalizedDateFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> YearMonthDay {
 		try normalizedDate((Y, M, D))
@@ -86,7 +86,7 @@ extension CalendarIdentifier {
 	/// Returns a valid year, month, and day for the specified year and possibly
 	/// out-of-range month and day values.
 	///
-	/// - Throws: ``CalendarError.julianDayNumberNotRepresentable`` if the Julian day number
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public func normalizedDate(_ date: YearMonthDay) throws(CalendarError) -> YearMonthDay {
 		try dateFromJulianDayNumber(julianDayNumberFromDate(date))
