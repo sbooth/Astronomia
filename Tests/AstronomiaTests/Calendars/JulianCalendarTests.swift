@@ -65,6 +65,8 @@ import Testing
 	@Test func monthLength() throws {
 		#expect(try JulianCalendar.numberOfDaysIn(month: 2, year: 1600) == 29)
 		#expect(try JulianCalendar.numberOfDaysIn(month: 2, year: 1700) == 29)
+		#expect(throws: CalendarError.invalidDate) { try JulianCalendar.numberOfDaysIn(month: 0, year: 1000) }
+		#expect(throws: CalendarError.invalidDate) { try JulianCalendar.numberOfDaysIn(month: 13, year: 1000) }
 	}
 
 	@Test func yearLength() {

@@ -57,6 +57,8 @@ import Testing
 	@Test func monthLength() throws {
 		#expect(try GregorianCalendar.numberOfDaysIn(month: 2, year: 1600) == 29)
 		#expect(try GregorianCalendar.numberOfDaysIn(month: 2, year: 1700) == 28)
+		#expect(throws: CalendarError.invalidDate) { try GregorianCalendar.numberOfDaysIn(month: 0, year: 1000) }
+		#expect(throws: CalendarError.invalidDate) { try GregorianCalendar.numberOfDaysIn(month: 13, year: 1000) }
 	}
 
 	@Test func yearLength() throws {
