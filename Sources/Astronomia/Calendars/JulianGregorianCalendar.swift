@@ -21,9 +21,9 @@ public struct JulianGregorianCalendar {
 	///   the unnormalized day, to October 15, 1582, and out-of-range days are counted forward
 	///   or backward in that calendar. The nonexistent dates October 5–14, 1582 are counted
 	///   forward from October 4, 1582 in the Julian calendar.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
-	///   represented as a ``JulianDayNumber``.
-	public static func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
+	///   for the date cannot be represented as a ``JulianDayNumber``.
+	public static func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> JulianDayNumber {
 		try julianDayNumberFromDate((Y, M, D))
 	}
 
@@ -37,17 +37,15 @@ public struct JulianGregorianCalendar {
 	///   the unnormalized day, to October 15, 1582, and out-of-range days are counted forward
 	///   or backward in that calendar. The nonexistent dates October 5–14, 1582 are counted
 	///   forward from October 4, 1582 in the Julian calendar.
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
-	///   represented as a ``JulianDayNumber``.
-	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(JulianDayNumberOutOfRangeError) -> JulianDayNumber {
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
+	///   for the date cannot be represented as a ``JulianDayNumber``.
+	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
 		// Normalize the month to [1, 12] so no intermediate value can overflow
 		let (q, r) = date.month.flooredQuotientAndRemainder(dividingBy: 12)
 		let (yc, month) = r == 0 ? (q - 1, 12) : (q, r)
 
 		let (year, yearOverflow) = date.year.addingReportingOverflow(yc)
-		guard !yearOverflow else {
-			throw JulianDayNumberOutOfRangeError()
-		}
+		guard !yearOverflow else { throw .julianDayNumberNotRepresentable }
 
 		let d: YearMonthDay = (year, month, date.day)
 		return try d < firstGregorianCalendarDate ? JulianCalendar.julianDayNumberFromDate(d) : GregorianCalendar.julianDayNumberFromDate(d)
@@ -107,11 +105,13 @@ extension JulianGregorianCalendar {
 	/// Returns the number of days in the specified month and year.
 	///
 	/// - Note: This function accounts for the Julian to Gregorian calendar changeover.
-	public static func numberOfDaysIn(month M: Int, year Y: Int) -> Int {
+	/// - Throws: ``CalendarError/invalidDate`` if the month is not valid.
+	public static func numberOfDaysIn(month M: Int, year Y: Int) throws(CalendarError) -> Int {
+//		guard M >= 1, M <= 12 else { throw .invalidDate }
 		if (Y, M) > (firstGregorianCalendarDate.year, firstGregorianCalendarDate.month) {
-			return GregorianCalendar.numberOfDaysIn(month: M, year: Y)
+			return try GregorianCalendar.numberOfDaysIn(month: M, year: Y)
 		} else if (Y, M) < (firstGregorianCalendarDate.year, firstGregorianCalendarDate.month) {
-			return JulianCalendar.numberOfDaysIn(month: M, year: Y)
+			return try JulianCalendar.numberOfDaysIn(month: M, year: Y)
 		} else {
 			return 21
 		}
@@ -153,17 +153,17 @@ extension JulianGregorianCalendar {
 extension JulianGregorianCalendar {
 	/// Returns the ordinal day (day of year) for the specified year, month, and day.
 	///
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
-	///   represented as a ``JulianDayNumber``.
-	public static func ordinalDayFrom(year Y: Int, month M: Int, day D: Int) throws(JulianDayNumberOutOfRangeError) -> Int {
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
+	///   for the date cannot be represented as a ``JulianDayNumber``.
+	public static func ordinalDayFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Int {
 		try julianDayNumberFrom(year: Y, month: M, day: D) - julianDayNumberFrom(year: Y, month: 1, day: 1) + 1
 	}
 
 	/// Returns the year, month, and day for the specified year and ordinal day.
 	///
-	/// - Throws: ``JulianDayNumberOutOfRangeError`` if the Julian day number for the date cannot be
-	///   represented as a ``JulianDayNumber``.
-	public static func dateFrom(year Y: Int, ordinalDay N: Int) throws(JulianDayNumberOutOfRangeError) -> YearMonthDay {
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
+	///   for the date cannot be represented as a ``JulianDayNumber``.
+	public static func dateFrom(year Y: Int, ordinalDay N: Int) throws(CalendarError) -> YearMonthDay {
 		try dateFromJulianDayNumber(julianDayNumberFrom(year: Y, month: 1, day: 1) + N - 1)
 	}
 }
