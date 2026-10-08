@@ -167,15 +167,10 @@ extension JulianDate.Interval: Codable {
 
 		do throws(JulianDateError) {
 			self = try JulianDate.Interval(days: days, fractionalDay: fractionalDay)
-		} catch {
-			switch error {
-			case .nonFiniteInput:
-				throw DecodingError.dataCorruptedError(forKey: .fractionalDay, in: container, debugDescription: "Fractional day must be finite")
-			case .dateOutOfRange:
-				preconditionFailure("Unexpected JulianDateError.dateOutOfRange")
-			case .intervalOutOfRange:
-				throw DecodingError.dataCorruptedError(forKey: .days, in: container, debugDescription: "The interval's whole days are not representable")
-			}
+		} catch .nonFiniteInput {
+			throw DecodingError.dataCorruptedError(forKey: .fractionalDay, in: container, debugDescription: "Fractional day must be finite")
+		} catch .intervalOutOfRange {
+			throw DecodingError.dataCorruptedError(forKey: .days, in: container, debugDescription: "The interval's whole days are not representable")
 		}
 	}
 }

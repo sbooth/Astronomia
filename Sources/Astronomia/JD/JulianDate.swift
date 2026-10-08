@@ -318,15 +318,10 @@ extension JulianDate: Codable {
 
 		do throws(JulianDateError) {
 			self = try JulianDate(julianDayNumber: julianDayNumber, fractionFromNoon: fractionFromNoon)
-		} catch {
-			switch error {
-			case .nonFiniteInput:
-				throw DecodingError.dataCorruptedError(forKey: .fractionFromNoon, in: container, debugDescription: "Fraction from noon must be finite")
-			case .dateOutOfRange:
-				throw DecodingError.dataCorruptedError(forKey: .julianDayNumber, in: container, debugDescription: "The Julian day number is not representable")
-			case .intervalOutOfRange:
-				preconditionFailure("Unexpected JulianDateError.intervalOutOfRange")
-			}
+		} catch .nonFiniteInput {
+			throw DecodingError.dataCorruptedError(forKey: .fractionFromNoon, in: container, debugDescription: "Fraction from noon must be finite")
+		} catch .dateOutOfRange {
+			throw DecodingError.dataCorruptedError(forKey: .julianDayNumber, in: container, debugDescription: "The Julian day number is not representable")
 		}
 	}
 }
