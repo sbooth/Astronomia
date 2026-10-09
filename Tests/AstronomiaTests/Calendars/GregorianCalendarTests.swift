@@ -83,6 +83,8 @@ import Testing
 	@Test func dayOfYear() throws {
 		#expect(throws: CalendarError.invalidDate) { try GregorianCalendar.dayOfYearFrom(year: 1500, month: 2, day: 29) }
 		#expect(throws: CalendarError.invalidDate) { try GregorianCalendar.dayOfYearFrom(year: 1700, month: 2, day: 29) }
+		#expect(throws: CalendarError.invalidDate) { try GregorianCalendar.dateFrom(year: 1500, dayOfYear: 0) }
+		#expect(throws: CalendarError.invalidDate) { try GregorianCalendar.dateFrom(year: 1700, dayOfYear: 366) }
 	}
 
 	@Test func easter() {

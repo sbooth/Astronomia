@@ -180,6 +180,9 @@ import Testing
 		#expect(try JulianCalendar.dateFrom(year: 2000, dayOfYear: 335) == (2000, 11, 30))
 		#expect(try JulianCalendar.dateFrom(year: 2000, dayOfYear: 336) == (2000, 12, 1))
 		#expect(try JulianCalendar.dateFrom(year: 2000, dayOfYear: 366) == (2000, 12, 31))
+
+		#expect(throws: CalendarError.invalidDate) { try JulianCalendar.dateFrom(year: 1000, dayOfYear: 0) }
+		#expect(throws: CalendarError.invalidDate) { try JulianCalendar.dateFrom(year: 1001, dayOfYear: 366) }
 	}
 
 	@Test func dayOfWeek() throws {
