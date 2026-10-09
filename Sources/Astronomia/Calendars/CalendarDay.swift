@@ -109,11 +109,6 @@ extension CalendarDay {
 	public var dayOfYear: Int {
 		calendar.dayOfYearFromJulianDayNumber(julianDayNumber)
 	}
-
-	/// The fractional year for this calendar day, e.g. 1985.5.
-	public var fractionalYear: Double {
-		Double(year) + Double(dayOfYear - 1) / Double(numberOfDaysInYear)
-	}
 }
 
 extension CalendarDay {
