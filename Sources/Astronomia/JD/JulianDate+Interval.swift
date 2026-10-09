@@ -50,8 +50,7 @@ extension JulianDate.Interval {
 	public init(days1: Double, days2: Double) throws(JulianDateError) {
 		guard days1.isFinite, days2.isFinite else { throw .nonFiniteValue }
 		guard let sum = normalizedSum(days1, days2) else { throw .dayCountNotRepresentable }
-		self.days = sum.integral
-		self.fractionalDay = sum.remainder
+		self.init(uncheckedDays: sum.integral, fractionalDay: sum.remainder)
 	}
 
 	/// Creates an interval from a single number of seconds.
