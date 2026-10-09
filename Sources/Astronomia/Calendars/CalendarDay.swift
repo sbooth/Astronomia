@@ -109,6 +109,17 @@ extension CalendarDay {
 	public var dayOfYear: Int {
 		calendar.dayOfYearFromJulianDayNumber(julianDayNumber)
 	}
+
+	/// The decimal year for the start of this calendar day.
+	///
+	/// The fraction is the number of whole days elapsed since January 1 divided by the number of days
+	/// in the year, so January 1, 1985 is 1985.0 and July 2, 1985 is 1985 + 182/365 ≈ 1985.4986.
+	///
+	/// - Note: This is a calendar-based value, not an astronomical epoch such as a Julian or Besselian
+	///   epoch; the same day can have slightly different decimal years in different calendars.
+	public var decimalYear: Double {
+		Double(year) + Double(dayOfYear - 1) / Double(numberOfDaysInYear)
+	}
 }
 
 extension CalendarDay {

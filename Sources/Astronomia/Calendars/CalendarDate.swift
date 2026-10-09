@@ -177,6 +177,20 @@ extension CalendarDate {
 }
 
 extension CalendarDate {
+	/// The timescale-agnostic decimal year for this calendar date.
+	///
+	/// The fraction is the number of days elapsed since midnight on January 1, including the day
+	/// fraction, divided by the number of days in the year. For example, noon on January 1, 1985 is
+	/// 1985 + 0.5/365 ≈ 1985.0014.
+	///
+	/// - Note: This is a calendar-based value, not an astronomical epoch such as a Julian or Besselian
+	///   epoch; the same instant can have slightly different decimal years in different calendars.
+	public var decimalYear: Double {
+		Double(year) + (Double(calendarDay.dayOfYear - 1) + dayFraction) / Double(calendarDay.numberOfDaysInYear)
+	}
+}
+
+extension CalendarDate {
 	/// Returns the same calendar date expressed in another calendar.
 	public func convertedTo(_ other: CalendarIdentifier) -> CalendarDate {
 		CalendarDate(calendarDay: calendarDay.convertedTo(other), uncheckedDayFraction: dayFraction)
