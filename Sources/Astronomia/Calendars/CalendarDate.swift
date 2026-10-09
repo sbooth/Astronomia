@@ -59,7 +59,7 @@ extension CalendarDate {
 		calendarDay.year
 	}
 
-	/// The month number from `1` (January) to `12` (December).
+	/// The month number from 1 (January) to 12 (December).
 	public var month: Int {
 		calendarDay.month
 	}

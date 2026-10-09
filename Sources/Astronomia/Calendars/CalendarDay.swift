@@ -12,7 +12,7 @@
 public struct CalendarDay: Sendable {
 	/// The arithmetic year number. Year number 0 is 1 BCE.
 	public let year: Int
-	/// The month number from `1` (January) to `12` (December).
+	/// The month number from 1 (January) to 12 (December).
 	public let month: Int
 	/// The day number. The first day of the month is day number 1.
 	public let day: Int
