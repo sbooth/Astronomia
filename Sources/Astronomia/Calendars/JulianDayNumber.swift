@@ -11,7 +11,7 @@
 /// starting from noon Universal Time, with JDN 0 assigned to the day starting at noon on Monday,
 /// January 1, 4713 BCE in the proleptic Julian calendar.
 ///
-/// - seealso: [Julian day](https://en.wikipedia.org/wiki/Julian_day)
+/// - SeeAlso: [Julian day](https://en.wikipedia.org/wiki/Julian_day)
 public typealias JulianDayNumber = Int
 
 /// A date consisting of a year number, month number, and day number.
