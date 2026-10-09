@@ -32,9 +32,7 @@ extension BinaryFloatingPoint {
 			fraction = 0
 			floor += 1
 		}
-		guard let i = Int(exactly: floor) else {
-			return nil
-		}
+		guard let i = Int(exactly: floor) else { return nil }
 		return (i, fraction)
 	}
 

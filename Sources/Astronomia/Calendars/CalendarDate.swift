@@ -20,12 +20,8 @@ public struct CalendarDate: Hashable, Sendable {
 	///   - ``CalendarError/invalidDayFraction`` if the day fraction
 	///     is outside the right-open interval [0, 1).
 	public init(calendarDay: CalendarDay, dayFraction: Double) throws(CalendarError) {
-		guard dayFraction.isFinite else {
-			throw .nonFiniteValue
-		}
-		guard dayFraction >= 0, dayFraction < 1 else {
-			throw .invalidDayFraction
-		}
+		guard dayFraction.isFinite else { throw .nonFiniteValue }
+		guard dayFraction >= 0, dayFraction < 1 else { throw .invalidDayFraction }
 		self.calendarDay = calendarDay
 		self.dayFraction = dayFraction == 0 ? 0 : dayFraction
 	}
@@ -99,12 +95,8 @@ extension CalendarDate {
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the resulting day's Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days: Int, dayFraction: Double = 0) throws(CalendarError) -> CalendarDate {
-		guard dayFraction.isFinite else {
-			throw .nonFiniteValue
-		}
-		guard dayFraction >= 0, dayFraction < 1 else {
-			throw .invalidDayFraction
-		}
+		guard dayFraction.isFinite else { throw .nonFiniteValue }
+		guard dayFraction >= 0, dayFraction < 1 else { throw .invalidDayFraction }
 
 		var fraction = dayFraction + self.dayFraction
 
@@ -134,12 +126,8 @@ extension CalendarDate {
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the resulting day's Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days n: Double) throws(CalendarError) -> CalendarDate {
-		guard n.isFinite else {
-			throw .nonFiniteValue
-		}
-		guard let (days, fraction) = n.floorAndFraction else {
-			throw .dayCountNotRepresentable
-		}
+		guard n.isFinite else { throw .nonFiniteValue }
+		guard let (days, fraction) = n.floorAndFraction else { throw .dayCountNotRepresentable }
 		return try adding(days: days, dayFraction: fraction)
 	}
 }

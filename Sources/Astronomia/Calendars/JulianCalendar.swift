@@ -186,9 +186,7 @@ extension JulianCalendar {
 
 	/// Returns `true` if the specified date is valid.
 	public static func isValidDate(_ date: YearMonthDay) -> Bool {
-		guard let daysInMonth = try? numberOfDaysIn(month: date.month, year: date.year) else {
-			return false
-		}
+		guard let daysInMonth = try? numberOfDaysIn(month: date.month, year: date.year) else { return false }
 		return date.day >= 1 && date.day <= daysInMonth
 	}
 }
