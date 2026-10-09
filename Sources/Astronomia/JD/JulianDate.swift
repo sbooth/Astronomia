@@ -12,10 +12,10 @@
 /// are exact in any timescale. Functions that work in seconds assume every day contains
 /// exactly 86,400 seconds, which holds for uniform timescales such as TAI, TT, and TDB.
 ///
-/// In UTC, a day ending in a leap second contains 86,401 seconds, and its fraction of a day
-/// spans that full length (the SOFA quasi-JD convention). Seconds-based functions treat
-/// such a day as 86,400 seconds long, so results within or across it can be off by up to
-/// one second per leap second.
+/// In UTC, a day ending in a positive or negative leap second contains 86,401 or 86,399
+/// seconds, respectively, and its fraction spans that full length (the SOFA quasi-JD convention).
+/// Seconds-based functions treat such a day as 86,400 seconds long, so results within or
+/// across it can be off by up to one second per leap second.
 ///
 /// For second-level accuracy in UTC near a leap second, convert seconds to a fraction of
 /// the specific day by dividing by that day's actual length, split intervals that cross

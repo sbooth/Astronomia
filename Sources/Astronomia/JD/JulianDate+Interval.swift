@@ -10,8 +10,9 @@ extension JulianDate {
 	/// fractional day.
 	///
 	/// An interval measures days and fractions of a day, not elapsed time. In a uniform timescale
-	/// such as TAI or TT, the two are equivalent. Between UTC quasi-JDs, an interval spanning a
-	/// leap second is one second shorter than the time that elapsed.
+	/// such as TAI or TT, the two are equivalent. For UTC quasi-JDs, converting intervals on or
+	/// across leap-second days using 86,400 seconds per day can differ from elapsed time by up to
+	/// one second per leap second.
 	public struct Interval: Hashable, Sendable {
 		/// The number of whole days.
 		public let days: Int

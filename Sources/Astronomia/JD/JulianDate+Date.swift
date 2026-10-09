@@ -40,9 +40,8 @@ extension JulianDate {
 	/// The conversion assumes days of exactly 86,400 seconds, ignoring leap seconds, so it is only
 	/// meaningful if this Julian Date is a UTC label, for example one created from a `Date`.
 	///
-	/// `Date` cannot represent a leap second. If this Julian Date is a UTC quasi-JD on a day ending
-	/// in a leap second, whose fraction spans 86,401 seconds, the result can be off by up to
-	/// one second, and 23:59:60 maps to the following midnight.
+	/// `Date` cannot represent leap seconds. If this Julian Date is a UTC quasi-JD on a day ending
+	/// in a leap second the result can be off by up to one second.
 	public var date: Date {
 		let days = differenceAsDouble(julianDayNumber, Self.referenceDate.julianDayNumber) + 0.5
 		let seconds = (fractionFromNoon * Self.secondsPerDay).addingProduct(days, Self.secondsPerDay)
