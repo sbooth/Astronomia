@@ -8,6 +8,11 @@
 extension JulianDate {
 	/// A signed interval between two Julian Dates, stored as an integral number of days plus a
 	/// fractional day.
+	///
+	/// An interval measures days and fractions of a day, not elapsed time. In a uniform timescale
+	/// such as TAI or TT, the two are equivalent. For UTC quasi-JDs, converting intervals on or
+	/// across leap-second days using 86,400 seconds per day can differ from elapsed time by up to
+	/// one second per leap second.
 	public struct Interval: Hashable, Sendable {
 		/// The number of whole days.
 		public let days: Int
@@ -41,7 +46,7 @@ extension JulianDate.Interval {
 
 	/// Creates an interval of `days1 + days2` days.
 	///
-	/// - Note: For full precision pass whole days in `days1` and the remainder in `days2`.
+	/// For full precision pass whole days in `days1` and the remainder in `days2`.
 	public init(days1: Double, days2: Double) throws(JulianDateError) {
 		guard days1.isFinite, days2.isFinite else { throw .nonFiniteValue }
 		guard let sum = normalizedSum(days1, days2) else { throw .dayCountNotRepresentable }
@@ -50,13 +55,17 @@ extension JulianDate.Interval {
 	}
 
 	/// Creates an interval from a single number of seconds.
+	///
+	/// - Important: Assumes 86,400 seconds per day.
 	public init(seconds: Double) throws(JulianDateError) {
 		try self.init(seconds1: seconds, seconds2: 0)
 	}
 
 	/// Creates an interval of `seconds1 + seconds2` seconds.
 	///
-	/// - Note: For full precision pass whole seconds in `seconds1` and the remainder in `seconds2`.
+	/// For full precision pass whole seconds in `seconds1` and the remainder in `seconds2`.
+	///
+	/// - Important: Assumes 86,400 seconds per day.
 	public init(seconds1: Double, seconds2: Double) throws(JulianDateError) {
 		guard seconds1.isFinite, seconds2.isFinite else { throw .nonFiniteValue }
 		guard let (sum, sumError) = twoSum(seconds1, seconds2) else { throw .dayCountNotRepresentable }
@@ -76,19 +85,24 @@ extension JulianDate.Interval {
 
 extension JulianDate.Interval {
 	/// The interval in days as a single value.
+	///
 	/// - Note: Loses precision for long intervals.
 	public var inDays: Double {
 		Double(days) + fractionalDay
 	}
 
-	/// The interval in seconds as a single value, assuming 86,400 seconds per day.
+	/// The interval in seconds as a single value.
+	///
+	/// - Important: Assumes 86,400 seconds per day.
 	/// - Note: Loses precision for long intervals.
 	public var inSeconds: Double {
 		(fractionalDay * JulianDate.secondsPerDay).addingProduct(Double(days), JulianDate.secondsPerDay)
 	}
 
 	/// The interval as an integral number of seconds and a fractional second in the right-open
-	/// interval [-0.5, 0.5), assuming 86,400 seconds per day.
+	/// interval [-0.5, 0.5).
+	///
+	/// - Important: Assumes 86,400 seconds per day.
 	public var wholeAndFractionalSeconds: (seconds: Double, fractionalSecond: Double) {
 		let s = fractionalDay * JulianDate.secondsPerDay
 		var w = s.rounded()

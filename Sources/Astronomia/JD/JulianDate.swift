@@ -7,6 +7,20 @@
 
 /// A Julian Date stored as a Julian day number plus a signed fraction of a day measured
 /// from noon.
+///
+/// ``JulianDate`` does not know which timescale it represents. Functions that work in days
+/// are exact in any timescale. Functions that work in seconds assume every day contains
+/// exactly 86,400 seconds, which holds for uniform timescales such as TAI, TT, and TDB.
+///
+/// In UTC, a day ending in a positive or negative leap second contains 86,401 or 86,399
+/// seconds, respectively, and its fraction spans that full length (the SOFA quasi-JD convention).
+/// Seconds-based functions treat such a day as 86,400 seconds long, so results within or
+/// across it can be off by up to one second per leap second.
+///
+/// For second-level accuracy in UTC near a leap second, convert seconds to a fraction of
+/// the specific day by dividing by that day's actual length, split intervals that cross
+/// midnight at the day boundary, and use the day-based functions such as
+/// ``adding(days:)`` and ``init(julianDayNumber:fractionFromNoon:)``.
 public struct JulianDate: Hashable, Sendable {
 	/// The Julian day number of the civil day containing this date.
 	public let julianDayNumber: JulianDayNumber
@@ -36,6 +50,8 @@ extension JulianDate {
 	static let daysPerTropicalYear: Double = 365.242198781
 
 	/// Seconds per day.
+	///
+	/// - Important: Leap seconds are deliberately not modeled.
 	static let secondsPerDay: Double = 60 * 60 * 24
 }
 
@@ -73,8 +89,8 @@ extension JulianDate {
 
 	/// Creates a Julian Date equal to `mjd1 + mjd2` from an IAU SOFA-style two-part
 	/// Modified Julian Date.
-	/// - Note: For full precision pass the integral MJD in `mjd1` and the fraction of the day in
-	///   `mjd2`.
+	///
+	/// For full precision pass the integral MJD in `mjd1` and the fraction of the day in `mjd2`.
 	public init(mjd1: Double, mjd2: Double = 0) throws(JulianDateError) {
 		self = try Self.MJD0.adding(days1: mjd1, days2: mjd2)
 	}
@@ -122,13 +138,15 @@ extension JulianDate {
 	}
 
 	/// The Modified Julian Date (MJD) as a single value.
-	/// - Note: Use ``parts(_:)`` with ``SplitMethod/fromMJD0`` for full precision.
+	///
+	/// Use ``parts(_:)`` with ``SplitMethod/fromMJD0`` for full precision.
 	public var modifiedJulianDate: Double {
 		(differenceAsDouble(julianDayNumber, Self.MJD0.julianDayNumber) + 0.5) + fractionFromNoon
 	}
 
 	/// Days from J2000.0 as a single value.
-	/// - Note: Use ``parts(_:)`` with ``SplitMethod/fromJ2000`` for full precision.
+	///
+	/// Use ``parts(_:)`` with ``SplitMethod/fromJ2000`` for full precision.
 	public var daysSinceJ2000: Double {
 		differenceAsDouble(julianDayNumber, Self.J2000.julianDayNumber) + (fractionFromNoon /*- Self.J2000.fraction*/)
 	}
@@ -225,6 +243,9 @@ extension JulianDate {
 }
 
 extension JulianDate {
+	/// Returns the Julian Date advanced by the specified number of seconds.
+	///
+	/// - Important: Assumes 86,400 seconds per day.
 	public func adding(seconds: Int) throws(JulianDateError) -> JulianDate {
 		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: 86_400)
 		let (day, overflow) = self.julianDayNumber.addingReportingOverflow(days)
@@ -232,11 +253,16 @@ extension JulianDate {
 		return try JulianDate(julianDayNumber: day, fractionFromNoon: fractionFromNoon + Double(remainder) / 86_400)
 	}
 
-	/// Returns a date advanced by the two-part interval `seconds1 + seconds2`.
+	/// Returns the Julian Date advanced by the two-part interval `seconds1 + seconds2`.
+	///
+	/// - Important: Assumes 86,400 seconds per day.
 	public func adding(seconds1: Double, seconds2: Double) throws(JulianDateError) -> JulianDate {
 		try adding(Interval(seconds1: seconds1, seconds2: seconds2))
 	}
 
+	/// Returns the Julian Date advanced by the specified number of seconds.
+	///
+	/// - Important: Assumes 86,400 seconds per day.
 	public func adding(seconds: Double) throws(JulianDateError) -> JulianDate {
 		try adding(seconds1: seconds, seconds2: 0)
 	}
@@ -244,11 +270,14 @@ extension JulianDate {
 
 extension JulianDate {
 	/// Returns `true` if the specified Julian Date is within the specified tolerance of this Julian
-	/// Date, assuming 86,400 seconds per day.
+	/// Date.
 	///
 	/// Use this instead of `==` when comparing dates that took different computational paths, e.g.
 	/// a JD-method value against a date-and-time split.
 	///
+	/// - Important: Assumes 86,400 seconds per day.
+	/// - Note: In UTC, the measured difference can be off by up to one second per leap second
+	///   between the two dates.
 	/// - Precondition: The specified tolerance is non-negative and not NaN.
 	public func isApproximatelyEqual(to other: JulianDate, toleranceSeconds: Double) -> Bool {
 		precondition(toleranceSeconds >= 0, "Tolerance must be non-negative")
