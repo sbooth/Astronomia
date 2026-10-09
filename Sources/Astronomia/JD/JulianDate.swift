@@ -5,20 +5,11 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-public enum JulianDateError: Error, Hashable, Sendable {
-	/// An input is NaN or infinite.
-	case nonFiniteInput
-	/// The resulting Julian Date's Julian day number is not representable as an `Int`.
-	case dateOutOfRange
-	/// The resulting interval's whole days are not representable as an `Int`.
-	case intervalOutOfRange
-}
-
-/// A Julian Date stored as an integral Julian day number plus a signed fraction of a day measured
+/// A Julian Date stored as a Julian day number plus a signed fraction of a day measured
 /// from noon.
 public struct JulianDate: Hashable, Sendable {
 	/// The Julian day number of the civil day containing this date.
-	public let julianDayNumber: Int
+	public let julianDayNumber: JulianDayNumber
 	/// The fraction of the day from noon, in the right-open interval [-0.5, 0.5).
 	public let fractionFromNoon: Double
 
@@ -60,19 +51,18 @@ extension JulianDate {
 extension JulianDate {
 	/// Creates a Julian Date `fractionFromNoon` days from `julianDayNumber`.
 	public init(julianDayNumber: Int, fractionFromNoon: Double = 0) throws(JulianDateError) {
-		guard fractionFromNoon.isFinite else { throw .nonFiniteInput }
-		guard let f = normalizedSum(fractionFromNoon, 0) else { throw .dateOutOfRange }
+		guard fractionFromNoon.isFinite else { throw .nonFiniteValue }
+		guard let f = normalizedSum(fractionFromNoon, 0) else { throw .dayCountNotRepresentable }
 		let (n, overflow) = julianDayNumber.addingReportingOverflow(f.integral)
-		guard !overflow else { throw .dateOutOfRange }
+		guard !overflow else { throw .julianDayNumberNotRepresentable }
 		self.init(uncheckedJulianDayNumber: n, fractionFromNoon: f.remainder)
 	}
 
 	/// Creates a Julian Date equal to `jd1 + jd2` from an IAU SOFA-style two-part Julian Date.
 	public init(jd1: Double, jd2: Double = 0) throws(JulianDateError) {
-		guard jd1.isFinite, jd2.isFinite else { throw .nonFiniteInput }
-		guard let sum = normalizedSum(jd1, jd2) else { throw .dateOutOfRange }
-		self.julianDayNumber = sum.integral
-		self.fractionFromNoon = sum.remainder
+		guard jd1.isFinite, jd2.isFinite else { throw .nonFiniteValue }
+		guard let sum = normalizedSum(jd1, jd2) else { throw .julianDayNumberNotRepresentable }
+		self.init(uncheckedJulianDayNumber: sum.integral, fractionFromNoon: sum.remainder)
 	}
 
 	/// Creates a Julian Date from a single value.
@@ -102,17 +92,17 @@ extension JulianDate {
 
 	/// Creates a Julian Date from a Julian epoch value, e.g. 2000.0.
 	public init(julianEpoch epoch: Double) throws(JulianDateError) {
-		guard epoch.isFinite else { throw .nonFiniteInput }
+		guard epoch.isFinite else { throw .nonFiniteValue }
 		let days = (epoch - 2000.0) * Self.daysPerJulianYear
-		guard days.isFinite else { throw .dateOutOfRange }
+		guard days.isFinite else { throw .dayCountNotRepresentable }
 		self = try Self.J2000.adding(days: days)
 	}
 
 	/// Creates a Julian Date from a Besselian epoch value, e.g. 1950.0.
 	public init(besselianEpoch epoch: Double) throws(JulianDateError) {
-		guard epoch.isFinite else { throw .nonFiniteInput }
+		guard epoch.isFinite else { throw .nonFiniteValue }
 		let days = (epoch - 1900.0) * Self.daysPerTropicalYear
-		guard days.isFinite else { throw .dateOutOfRange }
+		guard days.isFinite else { throw .dayCountNotRepresentable }
 		self = try Self.B1900.adding(days: days)
 	}
 }
@@ -220,7 +210,7 @@ extension JulianDate {
 extension JulianDate {
 	public func adding(days: Int) throws(JulianDateError) -> JulianDate {
 		let (day, overflow) = self.julianDayNumber.addingReportingOverflow(days)
-		guard !overflow else { throw .dateOutOfRange }
+		guard !overflow else { throw .julianDayNumberNotRepresentable }
 		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: fractionFromNoon)
 	}
 
@@ -238,7 +228,7 @@ extension JulianDate {
 	public func adding(seconds: Int) throws(JulianDateError) -> JulianDate {
 		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: 86_400)
 		let (day, overflow) = self.julianDayNumber.addingReportingOverflow(days)
-		guard !overflow else { throw .dateOutOfRange }
+		guard !overflow else { throw .julianDayNumberNotRepresentable }
 		return try JulianDate(julianDayNumber: day, fractionFromNoon: fractionFromNoon + Double(remainder) / 86_400)
 	}
 
@@ -318,9 +308,11 @@ extension JulianDate: Codable {
 
 		do throws(JulianDateError) {
 			self = try JulianDate(julianDayNumber: julianDayNumber, fractionFromNoon: fractionFromNoon)
-		} catch .nonFiniteInput {
+		} catch .nonFiniteValue {
 			throw DecodingError.dataCorruptedError(forKey: .fractionFromNoon, in: container, debugDescription: "Fraction from noon must be finite")
-		} catch .dateOutOfRange {
+		} catch .dayCountNotRepresentable {
+			throw DecodingError.dataCorruptedError(forKey: .fractionFromNoon, in: container, debugDescription: "The fraction from noon's day count is not representable")
+		} catch .julianDayNumberNotRepresentable {
 			throw DecodingError.dataCorruptedError(forKey: .julianDayNumber, in: container, debugDescription: "The Julian day number is not representable")
 		}
 	}
