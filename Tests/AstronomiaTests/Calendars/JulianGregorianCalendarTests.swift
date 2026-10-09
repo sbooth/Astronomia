@@ -89,6 +89,12 @@ import Testing
 
 		#expect(JulianGregorianCalendar.numberOfDaysInYear(1582) == sum)
 		#expect(sum == (dec31 - jan1 + 1))
+
+		#expect(try JulianGregorianCalendar.dayOfYearFrom(year: 1582, month: 1, day: 1) == 1)
+		#expect(try JulianGregorianCalendar.dayOfYearFrom(year: 1582, month: 10, day: 4) == 277)
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.dayOfYearFrom(year: 1582, month: 10, day: 10) }
+		#expect(try JulianGregorianCalendar.dayOfYearFrom(year: 1582, month: 10, day: 15) == 278)
+		#expect(try JulianGregorianCalendar.dayOfYearFrom(year: 1582, month: 12, day: 31) == 355)
 	}
 
 	@Test func easter() {
