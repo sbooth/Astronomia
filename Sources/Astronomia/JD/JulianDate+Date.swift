@@ -17,7 +17,7 @@ extension JulianDate {
 	/// The `Date` reference epoch, 2001-01-01T00:00:00 UTC.
 	static let referenceDate = JulianDate(uncheckedJulianDayNumber: 2_451_911, fractionFromNoon: -0.5)
 
-	/// Creates a UTC-labelled Julian Date from a `Date`.
+	/// Creates a Julian Date from a `Date`.
 	///
 	/// `Date` counts seconds since 2001-01-01T00:00:00 UTC as if every day had exactly
 	/// 86,400 seconds, the same convention as POSIX time. The resulting Julian Date has
@@ -35,10 +35,14 @@ extension JulianDate {
 		self = try Self.referenceDate.adding(seconds: date.timeIntervalSinceReferenceDate)
 	}
 
-	/// The Julian Date as a `Date`, treating this Julian Date as UTC-labelled.
+	/// The Julian Date as a `Date`.
 	///
 	/// The conversion assumes days of exactly 86,400 seconds, ignoring leap seconds, so it is only
 	/// meaningful if this Julian Date is a UTC label, for example one created from a `Date`.
+	///
+	/// `Date` cannot represent a leap second. If this Julian Date is a UTC quasi-JD on a day ending
+	/// in a leap second, whose fraction spans 86,401 seconds, the result can be off by up to
+	/// one second, and 23:59:60 maps to the following midnight.
 	public var date: Date {
 		let days = differenceAsDouble(julianDayNumber, Self.referenceDate.julianDayNumber) + 0.5
 		let seconds = (fractionFromNoon * Self.secondsPerDay).addingProduct(days, Self.secondsPerDay)
