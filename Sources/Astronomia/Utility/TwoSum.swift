@@ -9,6 +9,8 @@
 ///
 /// Returns `sum` and `error` such that the exact value of `a + b` is represented
 /// by `sum + error`, or `nil` if `sum` is not finite.
+///
+/// - SeeAlso: [2Sum](https://en.wikipedia.org/wiki/2Sum)
 func twoSum(_ a: Double, _ b: Double) -> (sum: Double, error: Double)? {
 	let s = a + b
 	guard s.isFinite else { return nil }
@@ -20,9 +22,7 @@ func twoSum(_ a: Double, _ b: Double) -> (sum: Double, error: Double)? {
 /// Returns `a + b` as an integer plus a remainder in the right-open interval [-0.5, 0.5),
 /// or `nil` if the inputs are non-finite or the result cannot be represented.
 func normalizedSum(_ a: Double, _ b: Double) -> (integral: Int, remainder: Double)? {
-	guard a.isFinite, b.isFinite else {
-		return nil
-	}
+	guard a.isFinite, b.isFinite else { return nil }
 	let aRounded = a.rounded()
 	let bRounded = b.rounded()
 	guard let intA = Int(exactly: aRounded),
