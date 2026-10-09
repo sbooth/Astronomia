@@ -29,10 +29,7 @@ public struct CalendarDay: Sendable {
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the year, month, and day form
 	///     a valid date, but its Julian day number cannot be represented as a ``JulianDayNumber``.
 	public init(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(CalendarError) {
-		guard calendar.isValid(year: year, month: month, day: day) else {
-			throw .invalidDate
-		}
-
+		guard calendar.isValid(year: year, month: month, day: day) else { throw .invalidDate }
 		let J = try calendar.julianDayNumberFrom(year: year, month: month, day: day)
 
 		self.year = year
@@ -146,9 +143,7 @@ extension CalendarDay {
 			return self
 		}
 		let (J, overflow) = julianDayNumber.addingReportingOverflow(n)
-		guard !overflow else {
-			throw .julianDayNumberNotRepresentable
-		}
+		guard !overflow else { throw .julianDayNumberNotRepresentable }
 		return CalendarDay(julianDayNumber: J, calendar)
 	}
 
@@ -158,9 +153,7 @@ extension CalendarDay {
 	///   calendar days' Julian day numbers cannot be represented as an `Int`.
 	public func days(to other: CalendarDay) throws(CalendarError) -> Int {
 		let (difference, overflow) = other.julianDayNumber.subtractingReportingOverflow(julianDayNumber)
-		guard !overflow else {
-			throw .dayCountNotRepresentable
-		}
+		guard !overflow else { throw .dayCountNotRepresentable }
 		return difference
 	}
 }
