@@ -40,9 +40,10 @@ extension BinaryFloatingPoint {
 	/// The value split into its nearest integer and a remainder, or `nil` if the value
 	/// is not finite or the nearest integer is not representable as an `Int`.
 	///
-	/// The result satisfies `self == Self(nearest) + remainder` exactly, with
-	/// `-0.5 <= remainder < 0.5`. Ties round toward positive infinity, so a remainder of 0.5
-	/// never occurs, and a remainder of negative zero is returned as positive zero.
+	/// The result satisfies `self == Self(nearest) + remainder` exactly, with `remainder` in
+	/// the right-open interval [-0.5, 0.5). Ties round toward positive infinity, so a
+	/// remainder of 0.5 never occurs, and a remainder of negative zero is returned as positive
+	/// zero.
 	var nearestIntegerAndRemainder: (nearest: Int, remainder: Self)? {
 		guard isFinite else { return nil }
 		var rounded = rounded(.toNearestOrAwayFromZero)
