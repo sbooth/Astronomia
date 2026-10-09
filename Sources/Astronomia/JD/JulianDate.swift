@@ -9,12 +9,12 @@
 /// from noon.
 public struct JulianDate: Hashable, Sendable {
 	/// The Julian day number of the civil day containing this date.
-	public let julianDayNumber: Int
+	public let julianDayNumber: JulianDayNumber
 	/// The fraction of the day from noon, in the right-open interval [-0.5, 0.5).
 	public let fractionFromNoon: Double
 
 	/// Creates a Julian Date from parts that are already canonical.
-	init(uncheckedJulianDayNumber julianDayNumber: Int, fractionFromNoon: Double) {
+	init(uncheckedJulianDayNumber julianDayNumber: JulianDayNumber, fractionFromNoon: Double) {
 		assert(fractionFromNoon.isFinite, "Fraction from noon must be finite")
 		assert(fractionFromNoon >= -0.5 && fractionFromNoon < 0.5, "Fraction from noon is outside the right-open interval [-0.5, 0.5)")
 		self.julianDayNumber = julianDayNumber
@@ -50,7 +50,7 @@ extension JulianDate {
 
 extension JulianDate {
 	/// Creates a Julian Date `fractionFromNoon` days from `julianDayNumber`.
-	public init(julianDayNumber: Int, fractionFromNoon: Double = 0) throws(JulianDateError) {
+	public init(julianDayNumber: JulianDayNumber, fractionFromNoon: Double = 0) throws(JulianDateError) {
 		guard fractionFromNoon.isFinite else { throw .nonFiniteValue }
 		guard let f = normalizedSum(fractionFromNoon, 0) else { throw .dayCountNotRepresentable }
 		let (n, overflow) = julianDayNumber.addingReportingOverflow(f.integral)
@@ -303,7 +303,7 @@ extension JulianDate: Codable {
 	/// Decodes and validates a Julian Date.
 	public init(from decoder: any Decoder) throws {
 		let container = try decoder.container(keyedBy: CodingKeys.self)
-		let julianDayNumber = try container.decode(Int.self, forKey: .julianDayNumber)
+		let julianDayNumber = try container.decode(JulianDayNumber.self, forKey: .julianDayNumber)
 		let fractionFromNoon = try container.decode(Double.self, forKey: .fractionFromNoon)
 
 		do throws(JulianDateError) {
