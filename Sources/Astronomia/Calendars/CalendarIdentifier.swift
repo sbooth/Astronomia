@@ -136,6 +136,50 @@ extension CalendarIdentifier {
 }
 
 extension CalendarIdentifier {
+	/// Returns the day of year (ordinal day) for the specified Julian day number, starting at 1.
+	public func dayOfYearFromJulianDayNumber(_ J: JulianDayNumber) -> Int {
+		switch self {
+		case .julian:
+			return JulianCalendar.dayOfYearFromJulianDayNumber(J)
+		case .gregorian:
+			return GregorianCalendar.dayOfYearFromJulianDayNumber(J)
+		case .julianGregorian:
+			return JulianGregorianCalendar.dayOfYearFromJulianDayNumber(J)
+		}
+	}
+
+	/// Returns the day of year (ordinal day) for the specified year, month, and day, starting at 1.
+	///
+	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
+	///   a valid date.
+	public func dayOfYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Int {
+		switch self {
+		case .julian:
+			return try JulianCalendar.dayOfYearFrom(year: Y, month: M, day: D)
+		case .gregorian:
+			return try GregorianCalendar.dayOfYearFrom(year: Y, month: M, day: D)
+		case .julianGregorian:
+			return try JulianGregorianCalendar.dayOfYearFrom(year: Y, month: M, day: D)
+		}
+	}
+
+	/// Returns the year, month, and day for the specified year and day of year (ordinal day).
+	///
+	/// - Throws: ``CalendarError/invalidDate`` if the year and day of year do not form
+	///   a valid date.
+	public func dateFrom(year Y: Int, dayOfYear N: Int) throws(CalendarError) -> YearMonthDay {
+		switch self {
+		case .julian:
+			return try JulianCalendar.dateFrom(year: Y, dayOfYear: N)
+		case .gregorian:
+			return try GregorianCalendar.dateFrom(year: Y, dayOfYear: N)
+		case .julianGregorian:
+			return try JulianGregorianCalendar.dateFrom(year: Y, dayOfYear: N)
+		}
+	}
+}
+
+extension CalendarIdentifier {
 	/// Returns `true` if the specified year, month, and day form a valid date.
 	public func isValid(year Y: Int, month M: Int, day D: Int) -> Bool {
 		isValidDate((Y, M, D))

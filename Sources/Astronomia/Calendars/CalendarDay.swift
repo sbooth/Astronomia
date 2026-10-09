@@ -105,6 +105,13 @@ extension CalendarDay {
 }
 
 extension CalendarDay {
+	/// The day of year (ordinal day) for this calendar day, starting at 1.
+	public var dayOfYear: Int {
+		calendar.dayOfYearFromJulianDayNumber(julianDayNumber)
+	}
+}
+
+extension CalendarDay {
 	/// Returns the same calendar day expressed in another calendar.
 	public func convertedTo(_ other: CalendarIdentifier) -> CalendarDay {
 		other == calendar ? self : CalendarDay(julianDayNumber: julianDayNumber, other)

@@ -202,28 +202,38 @@ extension GregorianCalendar {
 	}
 }
 
+
 extension GregorianCalendar {
-	/// Returns the ordinal day for the specified year, month, and day.
-	///
-	/// - Throws:
-	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the date
-	///     or for January 1 of the year cannot be represented as a ``JulianDayNumber``.
-	///   - ``CalendarError/dayCountNotRepresentable`` if the ordinal day cannot be represented
-	///     as an `Int`.
-	public static func ordinalDayFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Int {
-		let J = try julianDayNumberFrom(year: Y, month: M, day: D)
-		let jan1 = try julianDayNumberFrom(year: Y, month: 1, day: 1)
-		let (difference, overflow) = J.subtractingReportingOverflow(jan1)
-		guard !overflow, difference < .max else { throw .dayCountNotRepresentable }
-		return difference + 1
+	/// Returns the day of year (ordinal day) for the specified Julian day number, starting at 1.
+	public static func dayOfYearFromJulianDayNumber(_ J: JulianDayNumber) -> Int {
+		let (Y, M, D) = dateFromJulianDayNumber(J)
+		return dayOfYearFrom(uncheckedYear: Y, month: M, day: D)
 	}
 
-	/// Returns the year, month, and day for the specified year and ordinal day.
+	/// Returns the day of year (ordinal day) for the specified year, month, and day, starting at 1.
 	///
-	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
-	///   for the date cannot be represented as a ``JulianDayNumber``.
-	public static func dateFrom(year Y: Int, ordinalDay N: Int) throws(CalendarError) -> YearMonthDay {
-		try normalizedDate((Y, 1, N))
+	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
+	///   a valid date.
+	public static func dayOfYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Int {
+		guard isValid(year: Y, month: M, day: D) else { throw .invalidDate }
+		return dayOfYearFrom(uncheckedYear: Y, month: M, day: D)
+	}
+
+	/// Returns the day of year (ordinal day) for the specified year, month, and day, starting at 1.
+	private static func dayOfYearFrom(uncheckedYear Y: Int, month M: Int, day D: Int) -> Int {
+		let daysBeforeMonth = isLeapYear(Y) ? JulianCalendar.daysBeforeLeapYearMonth : JulianCalendar.daysBeforeCommonYearMonth
+		return D + daysBeforeMonth[M - 1]
+	}
+
+	/// Returns the year, month, and day for the specified year and day of year (ordinal day).
+	///
+	/// - Throws: ``CalendarError/invalidDate`` if the year and day of year do not form
+	///   a valid date.
+	public static func dateFrom(year Y: Int, dayOfYear N: Int) throws(CalendarError) -> YearMonthDay {
+		guard N >= 1, N <= numberOfDaysInYear(Y) else { throw .invalidDate }
+		let daysBeforeMonth = isLeapYear(Y) ? JulianCalendar.daysBeforeLeapYearMonth : JulianCalendar.daysBeforeCommonYearMonth
+		let m = daysBeforeMonth.lastIndex { $0 < N }!
+		return (Y, m + 1, N - daysBeforeMonth[m])
 	}
 }
 
