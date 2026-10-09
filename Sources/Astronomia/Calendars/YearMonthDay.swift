@@ -5,15 +5,6 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// A Julian day number.
-///
-/// The Julian day number (JDN) is the integer assigned to a whole solar day in the Julian day count
-/// starting from noon Universal Time, with JDN 0 assigned to the day starting at noon on Monday,
-/// January 1, 4713 BCE in the proleptic Julian calendar.
-///
-/// - SeeAlso: [Julian day](https://en.wikipedia.org/wiki/Julian_day)
-public typealias JulianDayNumber = Int
-
 /// A date consisting of a year number, month number, and day number.
 ///
 /// Year numbers are arithmetic and may be positive or negative. Year number 0 is 1 BCE.
