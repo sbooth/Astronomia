@@ -9,7 +9,7 @@
 /// from noon.
 public struct JulianDate: Hashable, Sendable {
 	/// The Julian day number of the civil day containing this date.
-	public let julianDayNumber: JulianDayNumber
+	public let julianDayNumber: Int
 	/// The fraction of the day from noon, in the right-open interval [-0.5, 0.5).
 	public let fractionFromNoon: Double
 
