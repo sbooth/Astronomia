@@ -80,6 +80,11 @@ import Testing
 		#expect(sum == (dec31 - jan1 + 1))
 	}
 
+	@Test func dayOfYear() throws {
+		#expect(throws: CalendarError.invalidDate) { try GregorianCalendar.dayOfYearFrom(year: 1500, month: 2, day: 29) }
+		#expect(throws: CalendarError.invalidDate) { try GregorianCalendar.dayOfYearFrom(year: 1700, month: 2, day: 29) }
+	}
+
 	@Test func easter() {
 		// Dates from Meeus (1998)
 		#expect(GregorianCalendar.easter(year: 1991) == (3, 31))

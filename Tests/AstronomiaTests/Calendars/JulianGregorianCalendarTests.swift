@@ -54,6 +54,11 @@ import Testing
 		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 2, year: 1600) == 29)
 	}
 
+	@Test func dayOfYear() throws {
+		#expect(try JulianGregorianCalendar.dayOfYearFrom(year: 1500, month: 2, day: 29) == 60)
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.dayOfYearFrom(year: 1700, month: 2, day: 29) }
+	}
+
 	@Test func changeover() throws {
 		#expect(try JulianGregorianCalendar.numberOfDaysIn(month: 10, year: 1582) == 21)
 		let oct1 = try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 1)

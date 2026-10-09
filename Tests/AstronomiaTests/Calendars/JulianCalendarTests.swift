@@ -78,6 +78,9 @@ import Testing
 	}
 
 	@Test func dayOfYear() throws {
+		#expect(try JulianCalendar.dayOfYearFrom(year: 1500, month: 2, day: 29) == 60)
+		#expect(try JulianCalendar.dayOfYearFrom(year: 1700, month: 2, day: 29) == 60)
+
 		#expect(try JulianCalendar.dayOfYearFrom(year: 1901, month: 1, day: 1) == 1)
 		#expect(try JulianCalendar.dayOfYearFrom(year: 1901, month: 1, day: 31) == 31)
 		#expect(try JulianCalendar.dayOfYearFrom(year: 1901, month: 2, day: 1) == 32)
