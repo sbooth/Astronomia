@@ -19,9 +19,25 @@ extension JulianDate {
 }
 
 extension JulianDate {
-	/// Creates a Julian Date from year, month, day, and day fraction values in the specified calendar.
+	/// Creates a Julian date for the specified year, month, and day in the given calendar
+	/// with the specified day fraction.
 	///
 	/// - Note: The Julian Date is in the calendar date's timescale.
+	/// - Parameters:
+	///   - year: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - month: The month number from 1 (January) to 12 (December).
+	///   - day: The day number, starting at 1.
+	///   - dayFraction: The fraction of the day elapsed since midnight.
+	///   - calendar: The calendar the year, month, and day belong to.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the day fraction is not finite.
+	///   - ``CalendarError/invalidDayFraction`` if the day fraction is outside
+	///     the right-open interval [0, 1).
+	///   - ``CalendarError/invalidDate`` if the year, month, and day do not form a valid
+	///     date in the specified calendar.
+	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the year, month, and day form
+	///     a valid date, but its Julian day number cannot be represented as a
+	///     ``JulianDayNumber``.
 	public init(year: Int, month: Int, day: Int, dayFraction: Double = 0, _ calendar: CalendarIdentifier = .julianGregorian) throws(CalendarError) {
 		try self.init(CalendarDate(year: year, month: month, day: day, dayFraction: dayFraction, calendar))
 	}
