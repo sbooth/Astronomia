@@ -41,7 +41,7 @@ func normalizedSum(_ a: Double, _ b: Double) -> (integral: Int, remainder: Doubl
 	let bRounded = b.rounded()
 	guard let intA = Int(exactly: aRounded),
 		  let intB = Int(exactly: bRounded)
-	else { return normalizedTwoPartSum(a, b) }
+	else { return normalizedTwoSum(a, b) }
 	let residual = (a - aRounded) + (b - bRounded)
 	guard let (nearest, remainder) = residual.nearestIntegerAndRemainder else { return nil }
 	guard let sum = intA.adding(intB, plus: nearest) else { return nil }
@@ -56,7 +56,7 @@ func normalizedSum(_ a: Double, _ b: Double) -> (integral: Int, remainder: Doubl
 ///
 /// - Returns: The integral part and remainder of `a + b`, or `nil` if `a + b` overflows or its
 ///   integral part cannot be represented as an `Int`.
-private func normalizedTwoPartSum(_ a: Double, _ b: Double) -> (integral: Int, remainder: Double)? {
+private func normalizedTwoSum(_ a: Double, _ b: Double) -> (integral: Int, remainder: Double)? {
 	guard let (sum, sumError) = twoSum(a, b) else { return nil }
 	let roundedSum = sum.rounded()
 	let roundedError = sumError.rounded()
