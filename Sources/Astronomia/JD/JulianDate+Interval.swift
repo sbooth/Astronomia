@@ -215,9 +215,12 @@ extension JulianDate {
 }
 
 extension JulianDate.Interval: Comparable {
-	/// Returns `true` if the first interval is shorter (more negative) than the second.
+	/// Returns `true` if the first interval is less than the second in signed numeric order.
 	///
-	/// - Returns: `true` if `lhs` is less than `rhs`; otherwise, `false`.
+	/// Intervals are ordered as signed numbers of days, not by magnitude: an interval of
+	/// -2 days is less than an interval of -1 day.
+	///
+	/// - Returns: `true` if `lhs` is numerically less than `rhs`; otherwise, `false`.
 	public static func < (lhs: Self, rhs: Self) -> Bool {
 		(lhs.days, lhs.fractionalDay) < (rhs.days, rhs.fractionalDay)
 	}
