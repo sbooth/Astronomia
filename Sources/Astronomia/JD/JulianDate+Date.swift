@@ -23,8 +23,10 @@ extension JulianDate {
 	/// 86,400 seconds, the same convention as POSIX time. The resulting Julian Date has the
 	/// UTC calendar day and time of day of `date`, but its days are uniform: it is a UTC label
 	/// on a timeline that has no leap seconds. It is not a TAI, TT, or UT1 Julian Date, and
-	/// intervals between such dates are not elapsed SI seconds. An interval spanning a leap
-	/// second is one second shorter than the time that elapsed.
+	/// intervals between such dates are not elapsed SI seconds. An interval spanning a positive
+	/// leap second is one second shorter than the elapsed time, because the uniform timeline
+	/// has no label for the inserted second. An interval spanning a negative leap second is one
+	/// second longer, because the uniform timeline includes a label that UTC skips.
 	///
 	/// UTC began in 1960 and has had integral leap seconds only since 1972. For earlier
 	/// instants, `Date` simply extends its uniform count backward proleptically, so the "UTC"
