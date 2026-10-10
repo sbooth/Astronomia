@@ -6,7 +6,11 @@
 //
 
 /// The Gregorian calendar is a solar calendar with 365 days in the year
-/// plus an additional leap day in certain years.
+/// plus an additional leap day in years divisible by 4, except for years divisible by 100
+/// but not by 400.
+///
+/// The calendar's rules are also applied to dates before its introduction on October 15,
+/// 1582, so it is proleptic for those dates.
 ///
 /// Year numbers are arithmetic and may be positive or negative. Year number 0 is 1 BCE.
 ///
@@ -19,8 +23,13 @@ public struct GregorianCalendar {
 
 	/// Returns the Julian day number for the specified year, month, and day.
 	///
-	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
-	///   days are counted forward or backward from the normalized year and month.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years.
+	///   Out-of-range days are counted forward or backward from the normalized year and month.
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number, possibly outside the closed interval [1, 12].
+	///   - D: The day number, possibly outside the days of the month.
+	/// - Returns: The Julian day number of the date.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> JulianDayNumber {
@@ -31,16 +40,18 @@ public struct GregorianCalendar {
 
 	/// The number of days in a 400-year era, which is also the length of a block.
 	private static let daysPerEra = 146_097
-	/// The block containing the start of era 0 (March 1, 1 BCE in the proleptic Gregorian calendar,
-	/// JDN 1,721,120 which is 306 days before `epoch`).
+	/// The block containing the start of era 0 (March 1, 1 BCE in the proleptic Gregorian
+	/// calendar, JDN 1,721,120 which is 306 days before `epoch`).
 	private static let eraZeroBlock = 11
 	/// The day within `eraZeroBlock` on which era 0 begins.
 	private static let eraZeroDayOfBlock = 114_053
 
 	/// Returns the Julian day number for the specified date.
 	///
-	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
-	///   days are counted forward or backward from the normalized year and month.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years.
+	///   Out-of-range days are counted forward or backward from the normalized year and month.
+	/// - Parameter date: The year, month, and day, possibly out of range.
+	/// - Returns: The Julian day number of the date.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
@@ -88,6 +99,8 @@ public struct GregorianCalendar {
 	/// Returns the year, month, and day for the specified Julian day number.
 	///
 	/// - Note: Every ``JulianDayNumber`` value is a valid Julian day number.
+	/// - Parameter J: The Julian day number.
+	/// - Returns: A valid date in the Gregorian calendar.
 	public static func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
 		// `q` and `r` are the floored quotient and remainder of the JDN divided by 146,097
 		let (q, r) = J.flooredQuotientAndRemainder(dividingBy: daysPerEra)
@@ -115,8 +128,13 @@ extension GregorianCalendar {
 	/// Returns a valid year, month, and day for the specified year and possibly
 	/// out-of-range month and day values.
 	///
-	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
-	///   days are counted forward or backward from the normalized year and month.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years.
+	///   Out-of-range days are counted forward or backward from the normalized year and month.
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number, possibly outside the closed interval [1, 12].
+	///   - D: The day number, possibly outside the days of the month.
+	/// - Returns: The equivalent valid date in the Gregorian calendar.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public static func normalizedDateFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> YearMonthDay {
@@ -126,8 +144,10 @@ extension GregorianCalendar {
 	/// Returns a valid year, month, and day for the specified year and possibly
 	/// out-of-range month and day values.
 	///
-	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. Out-of-range
-	///   days are counted forward or backward from the normalized year and month.
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years.
+	///   Out-of-range days are counted forward or backward from the normalized year and month.
+	/// - Parameter date: The year, month, and day, possibly out of range.
+	/// - Returns: The equivalent valid date in the Gregorian calendar.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public static func normalizedDate(_ date: YearMonthDay) throws(CalendarError) -> YearMonthDay {
@@ -140,7 +160,11 @@ extension GregorianCalendar {
 	static let papalReform: JulianDayNumber = 2_299_161
 
 	/// Returns `true` if the specified Julian day number is less than 2,299,161
-	/// (October 15, 1582 in the Gregorian calendar).
+	/// (October 15, 1582 in the Gregorian calendar), the day the Gregorian calendar took effect.
+	///
+	/// - Parameter J: The Julian day number.
+	/// - Returns: `true` if `J` is before October 15, 1582 in the Gregorian calendar; otherwise,
+	///   `false`.
 	public static func beforePapalReform(_ J: JulianDayNumber) -> Bool {
 		J < papalReform
 	}
@@ -148,6 +172,9 @@ extension GregorianCalendar {
 
 extension GregorianCalendar {
 	/// Returns `true` if the specified year is a leap year.
+	///
+	/// - Parameter Y: The arithmetic year number. Year number 0 is 1 BCE.
+	/// - Returns: `true` if `Y` is a leap year in the Gregorian calendar; otherwise, `false`.
 	public static func isLeapYear(_ Y: Int) -> Bool {
 		Y % 4 == 0 && (Y % 100 != 0 || Y % 400 == 0)
 	}
@@ -158,13 +185,20 @@ extension GregorianCalendar {
 	public static let numberOfMonthsInYear = JulianCalendar.numberOfMonthsInYear
 
 	/// Returns the number of days in the specified year.
+	///
+	/// - Parameter Y: The arithmetic year number. Year number 0 is 1 BCE.
+	/// - Returns: The number of days in year `Y`: 365 or 366.
 	public static func numberOfDaysInYear(_ Y: Int) -> Int {
 		isLeapYear(Y) ? 366 : 365
 	}
 
 	/// Returns the number of days in the specified month and year.
 	///
-	/// - Throws: ``CalendarError/invalidDate`` if the month is not valid.
+	/// - Parameters:
+	///   - M: The month number from 1 (January) to 12 (December).
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	/// - Returns: The number of days in the month, from 28 to 31.
+	/// - Throws: ``CalendarError/invalidDate`` if the month is outside the closed interval [1, 12].
 	public static func numberOfDaysIn(month M: Int, year Y: Int) throws(CalendarError) -> Int {
 		switch M {
 		case 4, 6, 9, 11:
@@ -181,11 +215,21 @@ extension GregorianCalendar {
 
 extension GregorianCalendar {
 	/// Returns `true` if the specified year, month, and day form a valid date.
+	///
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number.
+	///   - D: The day number.
+	/// - Returns: `true` if the year, month, and day form a valid date in the Gregorian calendar;
+	///   otherwise, `false`.
 	public static func isValid(year Y: Int, month M: Int, day D: Int) -> Bool {
 		isValidDate((Y, M, D))
 	}
 
 	/// Returns `true` if the specified date is valid.
+	///
+	/// - Parameter date: The year, month, and day to check.
+	/// - Returns: `true` if `date` is a valid date in the Gregorian calendar; otherwise, `false`.
 	public static func isValidDate(_ date: YearMonthDay) -> Bool {
 		guard let daysInMonth = try? numberOfDaysIn(month: date.month, year: date.year) else { return false }
 		return date.day >= 1 && date.day <= daysInMonth
@@ -195,6 +239,9 @@ extension GregorianCalendar {
 extension GregorianCalendar {
 	/// Returns the day of the week from 1 (Sunday) to 7 (Saturday)
 	/// for the specified Julian day number.
+	///
+	/// - Parameter J: The Julian day number.
+	/// - Returns: The day of the week from 1 (Sunday) to 7 (Saturday).
 	public static func dayOfWeek(_ J: JulianDayNumber) -> Int {
 		JulianCalendar.dayOfWeek(J)
 	}
@@ -203,13 +250,22 @@ extension GregorianCalendar {
 
 extension GregorianCalendar {
 	/// Returns the day of year (ordinal day) for the specified Julian day number, starting at 1.
+	///
+	/// - Parameter J: The Julian day number.
+	/// - Returns: The day of year, from 1 to the number of days in the year.
 	public static func dayOfYearFromJulianDayNumber(_ J: JulianDayNumber) -> Int {
 		let (Y, M, D) = dateFromJulianDayNumber(J)
 		return dayOfYearFrom(uncheckedYear: Y, month: M, day: D)
 	}
 
-	/// Returns the day of year (ordinal day) for the specified year, month, and day, starting at 1.
+	/// Returns the day of year (ordinal day) for the specified year, month, and day,
+	/// starting at 1.
 	///
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number from 1 (January) to 12 (December).
+	///   - D: The day number, starting at 1.
+	/// - Returns: The day of year, from 1 to the number of days in the year.
 	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
 	///   a valid date.
 	public static func dayOfYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Int {
@@ -217,7 +273,11 @@ extension GregorianCalendar {
 		return dayOfYearFrom(uncheckedYear: Y, month: M, day: D)
 	}
 
-	/// Returns the day of year (ordinal day) for the specified year, month, and day, starting at 1.
+	/// Returns the day of year (ordinal day) for the specified year, month, and day,
+	/// starting at 1.
+	///
+	/// - Returns: The day of year, starting at 1.
+	/// - Precondition: The month is in the closed interval [1, 12]; the day is not checked.
 	private static func dayOfYearFrom(uncheckedYear Y: Int, month M: Int, day D: Int) -> Int {
 		let daysBeforeMonth = isLeapYear(Y) ? JulianCalendar.daysBeforeLeapYearMonth : JulianCalendar.daysBeforeCommonYearMonth
 		return D + daysBeforeMonth[M - 1]
@@ -225,6 +285,10 @@ extension GregorianCalendar {
 
 	/// Returns the year, month, and day for the specified year and day of year (ordinal day).
 	///
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - N: The day of year, starting at 1.
+	/// - Returns: The year, month, and day in the Gregorian calendar.
 	/// - Throws: ``CalendarError/invalidDate`` if the year and day of year do not form
 	///   a valid date.
 	public static func dateFrom(year Y: Int, dayOfYear N: Int) throws(CalendarError) -> YearMonthDay {
@@ -237,6 +301,12 @@ extension GregorianCalendar {
 
 extension GregorianCalendar {
 	/// Returns the month and day of Easter in the specified year.
+	///
+	/// Uses the Gregorian computus for every year, including years before 1583. Gregorian
+	/// Easter dates repeat every 5,700,000 years, so any year number is accepted.
+	///
+	/// - Parameter Y: The arithmetic year number. Year number 0 is 1 BCE.
+	/// - Returns: The month (3 or 4) and day of Easter Sunday in the Gregorian calendar.
 	public static func easter(year Y: Int) -> (month: Int, day: Int) {
 		let Y = Y.flooredRemainder(dividingBy: 5_700_000)
 		// Based on the algorithm from the Explanatory Supplement to the Astronomical Almanac,

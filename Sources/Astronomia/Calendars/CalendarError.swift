@@ -9,7 +9,8 @@
 public enum CalendarError: Error, Hashable, Sendable {
 	/// A number of days cannot be represented as an `Int`.
 	case dayCountNotRepresentable
-	/// The date components do not form a valid date, such as February 30 or day of year 400.
+	/// The date components do not form a valid date, such as February 30, month 13, or day of
+	/// year 400.
 	case invalidDate
 	/// The day fraction is outside the right-open interval [0, 1).
 	case invalidDayFraction
