@@ -8,7 +8,12 @@
 extension FixedWidthInteger {
 	/// Returns `self + x + y`, or `nil` if the result is not representable as `Self`.
 	///
-	/// Only the result has to be representable: an intermediate sum may overflow.
+	/// Only the result has to be representable; an intermediate sum may overflow.
+	///
+	/// - Parameters:
+	///   - x: The first value to add.
+	///   - y: The second value to add.
+	/// - Returns: `self + x + y`, or `nil` if the result is not representable as `Self`.
 	func adding(_ x: Self, plus y: Self) -> Self? {
 		let (a, aOverflow) = addingReportingOverflow(y)
 		if !aOverflow {
@@ -23,7 +28,12 @@ extension FixedWidthInteger {
 
 	/// Returns `self - x + y`, or `nil` if the result is not representable as `Self`.
 	///
-	/// Only the result has to be representable: an intermediate difference may overflow.
+	/// Only the result has to be representable; an intermediate difference may overflow.
+	///
+	/// - Parameters:
+	///   - x: The value to subtract.
+	///   - y: The value to add.
+	/// - Returns: `self - x + y`, or `nil` if the result is not representable as `Self`.
 	func subtracting(_ x: Self, plus y: Self) -> Self? {
 		let (a, aOverflow) = addingReportingOverflow(y)
 		if !aOverflow {

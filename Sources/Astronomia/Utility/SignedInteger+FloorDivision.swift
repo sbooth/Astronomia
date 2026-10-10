@@ -29,7 +29,8 @@ extension SignedInteger {
 	///
 	/// - Parameter divisor: The value to divide this value by.
 	/// - Returns: The quotient and remainder of the division.
-	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`.
+	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`
+	///   (for a fixed-width type, this value is not `Self.min` when `divisor` is -1).
 	@inlinable @inline(__always)
 	func flooredQuotientAndRemainder(dividingBy divisor: Self) -> (quotient: Self, remainder: Self) {
 		let (quotient, remainder) = quotientAndRemainder(dividingBy: divisor)
@@ -46,7 +47,8 @@ extension SignedInteger {
 	///
 	/// - Parameter divisor: The value to divide this value by.
 	/// - Returns: The quotient of the division.
-	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`.
+	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`
+	///   (for a fixed-width type, this value is not `Self.min` when `divisor` is -1).
 	@inlinable @inline(__always)
 	func flooredQuotient(dividingBy divisor: Self) -> Self {
 		flooredQuotientAndRemainder(dividingBy: divisor).quotient
@@ -59,7 +61,8 @@ extension SignedInteger {
 	///
 	/// - Parameter divisor: The value to divide this value by.
 	/// - Returns: The remainder of the division.
-	/// - Precondition: `divisor` is not zero.
+	/// - Precondition: `divisor` is not zero, and for a fixed-width type this value is not
+	///   `Self.min` when `divisor` is -1, because Swift's `%` traps on that overflow.
 	@inlinable @inline(__always)
 	func flooredRemainder(dividingBy divisor: Self) -> Self {
 		let remainder = self % divisor
