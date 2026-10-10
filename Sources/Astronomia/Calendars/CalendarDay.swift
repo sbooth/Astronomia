@@ -103,6 +103,7 @@ extension CalendarDay {
 	///
 	/// In the Julian-Gregorian calendar, October 1582 has 21 days.
 	public var numberOfDaysInMonth: Int {
+		// A CalendarDay's month is always in the closed interval [1, 12], so this cannot throw
 		try! calendar.numberOfDaysIn(month: month, year: year)
 	}
 
