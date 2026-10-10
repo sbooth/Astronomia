@@ -85,7 +85,7 @@ extension CalendarDay {
 }
 
 extension CalendarDay {
-	/// `true` if this calendar day falls in a leap year of its calendar.
+	/// A Boolean value indicating whether this calendar day falls in a leap year of its calendar.
 	public var isInLeapYear: Bool {
 		calendar.isLeapYear(year)
 	}
