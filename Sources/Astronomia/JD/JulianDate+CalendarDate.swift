@@ -19,7 +19,7 @@ extension JulianDate {
 }
 
 extension JulianDate {
-	/// Creates a Julian date for the specified year, month, and day in the given calendar
+	/// Creates a Julian Date for the specified year, month, and day in the given calendar
 	/// with the specified day fraction.
 	///
 	/// - Note: The Julian Date is in the calendar date's timescale.
