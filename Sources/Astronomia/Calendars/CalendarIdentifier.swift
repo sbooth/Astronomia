@@ -229,6 +229,95 @@ extension CalendarIdentifier {
 }
 
 extension CalendarIdentifier {
+	/// Returns the decimal year for the start of the day with the specified Julian day number.
+	///
+	/// The fraction is the number of whole days elapsed since January 1 divided by the number
+	/// of days in the year, so January 1, 1985 is 1985.0 and July 2, 1985 is
+	/// 1985 + 182/365 ≈ 1985.4986.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Note: This is a calendar-based value, not an astronomical epoch such as a Julian or
+	///   Besselian epoch.
+	/// - Parameter J: The Julian day number.
+	/// - Returns: The decimal year for the start of the day.
+	public func decimalYearFromJulianDayNumber(_ J: JulianDayNumber) -> Double {
+		switch self {
+		case .julian:
+			return JulianCalendar.decimalYearFromJulianDayNumber(J)
+		case .gregorian:
+			return GregorianCalendar.decimalYearFromJulianDayNumber(J)
+		case .julianGregorian:
+			return JulianGregorianCalendar.decimalYearFromJulianDayNumber(J)
+		}
+	}
+
+	/// Returns the Julian day number of the day containing the specified decimal year.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameter decimalYear: The decimal year. Year number 0 is 1 BCE.
+	/// - Returns: The Julian day number of the day containing `decimalYear`.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
+	///     day cannot be represented as a ``JulianDayNumber``.
+	public func julianDayNumberFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> JulianDayNumber {
+		switch self {
+		case .julian:
+			return try JulianCalendar.julianDayNumberFromDecimalYear(decimalYear)
+		case .gregorian:
+			return try GregorianCalendar.julianDayNumberFromDecimalYear(decimalYear)
+		case .julianGregorian:
+			return try JulianGregorianCalendar.julianDayNumberFromDecimalYear(decimalYear)
+		}
+	}
+
+	/// Returns the decimal year for the start of the specified year, month, and day.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number from 1 (January) to 12 (December).
+	///   - D: The day number, starting at 1.
+	/// - Returns: The decimal year for the start of the day.
+	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
+	///   a valid date.
+	public func decimalYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Double {
+		switch self {
+		case .julian:
+			return try JulianCalendar.decimalYearFrom(year: Y, month: M, day: D)
+		case .gregorian:
+			return try GregorianCalendar.decimalYearFrom(year: Y, month: M, day: D)
+		case .julianGregorian:
+			return try JulianGregorianCalendar.decimalYearFrom(year: Y, month: M, day: D)
+		}
+	}
+
+	/// Returns the year, month, and day containing the specified decimal year.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameter decimalYear: The decimal year. Year number 0 is 1 BCE.
+	/// - Returns: The year, month, and day.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	public func dateFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> YearMonthDay {
+		switch self {
+		case .julian:
+			return try JulianCalendar.dateFromDecimalYear(decimalYear)
+		case .gregorian:
+			return try GregorianCalendar.dateFromDecimalYear(decimalYear)
+		case .julianGregorian:
+			return try JulianGregorianCalendar.dateFromDecimalYear(decimalYear)
+		}
+	}
+}
+
+extension CalendarIdentifier {
 	/// Returns `true` if the specified year, month, and day form a valid date.
 	///
 	/// - Parameters:
