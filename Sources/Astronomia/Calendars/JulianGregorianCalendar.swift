@@ -282,9 +282,8 @@ extension JulianGregorianCalendar {
 	/// 1985 + 182/365 ≈ 1985.4986. The year 1582 has 355 days, so October 15, 1582 is
 	/// 1582 + 277/355 ≈ 1582.7803.
 	///
-	/// - Note: Decimal years distinguish individual days only while the year's magnitude is
-	///   small enough for `Double` to resolve a fraction of a day, roughly |`Y`| < 2^43.
-	///   Beyond that, converting to a decimal year and back may not return the original day.
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
 	/// - Note: This is a calendar-based value, not an astronomical epoch such as a Julian or
 	///   Besselian epoch.
 	/// - Parameter J: The Julian day number.
@@ -298,6 +297,8 @@ extension JulianGregorianCalendar {
 
 	/// Returns the Julian day number of the day containing the specified decimal year.
 	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
 	/// - Parameter decimalYear: The decimal year. Year number 0 is 1 BCE.
 	/// - Returns: The Julian day number of the day containing `decimalYear`.
 	/// - Throws:
@@ -312,9 +313,8 @@ extension JulianGregorianCalendar {
 
 	/// Returns the decimal year for the start of the specified year, month, and day.
 	///
-	/// - Note: Decimal years distinguish individual days only while the year's magnitude is
-	///   small enough for `Double` to resolve a fraction of a day, roughly |`Y`| < 2^43.
-	///   Beyond that, converting to a decimal year and back may not return the original day.
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
 	/// - Parameters:
 	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
 	///   - M: The month number from 1 (January) to 12 (December).
@@ -330,14 +330,8 @@ extension JulianGregorianCalendar {
 
 	/// Returns the year, month, and day containing the specified decimal year.
 	///
-	/// This is the inverse of ``decimalYearFrom(year:month:day:)``: the integer part (rounded
-	/// toward negative infinity) is the year, and the fractional part multiplied by the number
-	/// of days in that year gives the whole days elapsed since January 1. Any remaining
-	/// fraction of a day is discarded.
-	///
-	/// - Note: Decimal years distinguish individual days only while the year's magnitude is
-	///   small enough for `Double` to resolve a fraction of a day, roughly |`Y`| < 2^43.
-	///   Beyond that, converting to a decimal year and back may not return the original day.
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
 	/// - Parameter decimalYear: The decimal year. Year number 0 is 1 BCE.
 	/// - Returns: The year, month, and day in the Julian-Gregorian calendar.
 	/// - Throws:
