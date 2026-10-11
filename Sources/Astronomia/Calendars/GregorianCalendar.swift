@@ -312,8 +312,7 @@ extension GregorianCalendar {
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
 	///     day cannot be represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> JulianDayNumber {
-		let date = try dateFromDecimalYear(decimalYear)
-		return try julianDayNumberFromDate(date)
+		try julianDayNumberFromDate(dateFromDecimalYear(decimalYear))
 	}
 
 	/// Returns the decimal year for the start of the specified year, month, and day.
