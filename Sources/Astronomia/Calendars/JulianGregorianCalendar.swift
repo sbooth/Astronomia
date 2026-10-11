@@ -206,7 +206,7 @@ extension JulianGregorianCalendar {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The day of the week from 1 (Sunday) to 7 (Saturday).
 	public static func dayOfWeek(_ J: JulianDayNumber) -> Int {
-		JulianCalendar.dayOfWeek(J)
+		JulianAndGregorianArithmetic.dayOfWeek(J)
 	}
 }
 

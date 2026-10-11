@@ -58,6 +58,15 @@ enum JulianAndGregorianArithmetic {
 		return D >= 1 && D <= daysInMonth
 	}
 
+	/// Returns the day of the week from 1 (Sunday) to 7 (Saturday)
+	/// for the specified Julian day number.
+	///
+	/// - Parameter J: The Julian day number.
+	/// - Returns: The day of the week from 1 (Sunday) to 7 (Saturday).
+	static func dayOfWeek(_ J: JulianDayNumber) -> Int {
+		1 + ((J % 7) + 8) % 7
+	}
+
 	/// Returns the day of year (ordinal day) for the specified month and day, starting at 1.
 	///
 	/// - Parameters:
