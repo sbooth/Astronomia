@@ -22,13 +22,10 @@ func decimalYearForStartOfDay(year Y: Int, dayOfYear N: Int, numberOfDaysInYear 
 	return Double(Y) + Double(N - 1) / Double(d)
 }
 
-/// Returns the day of year whose start is the latest at or before the specified decimal year.
+/// Returns the greatest day of year whose start is at or before the specified decimal year.
 ///
 /// - Note: This is valid for the Julian, Gregorian, and Julian-Gregorian calendars, including
 ///   the 355-day year 1582 in the Julian-Gregorian calendar.
-/// - Note: Decimal years distinguish individual days only while the year's magnitude is
-///   small enough for `Double` to resolve a fraction of a day, roughly |`Y`| < 2^43.
-///   Beyond that, the result may not be the day the decimal year was computed from.
 /// - Parameters:
 ///   - decimalYear: The decimal year. Year number 0 is 1 BCE.
 ///   - Y: The arithmetic year number containing `decimalYear`.
@@ -42,9 +39,11 @@ func dayOfYearForDecimalYear(_ decimalYear: Double, year Y: Int, yearFraction: D
 	assert(yearFraction >= 0 && yearFraction < 1, "Year fraction is outside the right-open interval [0, 1)")
 	assert(d > 0, "Number of days in year must be positive")
 	var N = Int((yearFraction * Double(d)).rounded(.down)) + 1
-	if N > 1, decimalYearForStartOfDay(year: Y, dayOfYear: N, numberOfDaysInYear: d) > decimalYear {
+	// Correct the estimate for rounding in the decimal year
+	while N > 1, decimalYearForStartOfDay(year: Y, dayOfYear: N, numberOfDaysInYear: d) > decimalYear {
 		N -= 1
-	} else if N < d, decimalYearForStartOfDay(year: Y, dayOfYear: N + 1, numberOfDaysInYear: d) <= decimalYear {
+	}
+	while N < d, decimalYearForStartOfDay(year: Y, dayOfYear: N + 1, numberOfDaysInYear: d) <= decimalYear {
 		N += 1
 	}
 	return N
