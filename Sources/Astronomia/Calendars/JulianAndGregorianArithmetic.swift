@@ -1,0 +1,96 @@
+//
+// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
+// SPDX-License-Identifier: MIT
+//
+// Part of https://github.com/sbooth/Astronomia
+//
+
+/// Year and month arithmetic shared by ``JulianCalendar`` and ``GregorianCalendar``.
+///
+/// Both calendars have 365- or 366-day years with the same month lengths and differ only in
+/// the leap year rule. These helpers do not apply to ``JulianGregorianCalendar``, whose
+/// year 1582 has 355 days and whose October 1582 has 21 days.
+enum JulianAndGregorianArithmetic {
+	/// The number of days before the first of the month in a common year, indexed from
+	/// 0 (January) to 11 (December).
+	static let daysBeforeCommonYearMonth = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+	/// The number of days before the first of the month in a leap year, indexed from
+	/// 0 (January) to 11 (December).
+	static let daysBeforeLeapYearMonth = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
+
+	/// Returns the number of days in a year: 365 or 366.
+	///
+	/// - Parameter isLeap: Whether the year is a leap year.
+	/// - Returns: The number of days in the year.
+	static func numberOfDays(isLeap: Bool) -> Int {
+		isLeap ? 366 : 365
+	}
+
+	/// Returns the number of days in the specified month.
+	///
+	/// - Parameters:
+	///   - M: The month number from 1 (January) to 12 (December).
+	///   - isLeap: Whether the month's year is a leap year.
+	/// - Returns: The number of days in the month, from 28 to 31.
+	/// - Throws: ``CalendarError/invalidDate`` if the month is outside the closed interval [1, 12].
+	static func numberOfDaysIn(month M: Int, isLeap: Bool) throws(CalendarError) -> Int {
+		switch M {
+		case 4, 6, 9, 11:
+			return 30
+		case 2:
+			return isLeap ? 29 : 28
+		case 1, 3, 5, 7, 8, 10, 12:
+			return 31
+		default:
+			throw .invalidDate
+		}
+	}
+
+	/// Returns `true` if the specified month and day form a valid date.
+	///
+	/// - Parameters:
+	///   - M: The month number.
+	///   - D: The day number.
+	///   - isLeap: Whether the date's year is a leap year.
+	/// - Returns: `true` if the month and day form a valid date; otherwise, `false`.
+	static func isValid(month M: Int, day D: Int, isLeap: Bool) -> Bool {
+		guard let daysInMonth = try? numberOfDaysIn(month: M, isLeap: isLeap) else { return false }
+		return D >= 1 && D <= daysInMonth
+	}
+
+	/// Returns the day of the week from 1 (Sunday) to 7 (Saturday)
+	/// for the specified Julian day number.
+	///
+	/// - Parameter J: The Julian day number.
+	/// - Returns: The day of the week from 1 (Sunday) to 7 (Saturday).
+	static func dayOfWeek(_ J: JulianDayNumber) -> Int {
+		1 + ((J % 7) + 8) % 7
+	}
+
+	/// Returns the day of year (ordinal day) for the specified month and day, starting at 1.
+	///
+	/// - Parameters:
+	///   - M: The month number from 1 (January) to 12 (December).
+	///   - D: The day number, starting at 1.
+	///   - isLeap: Whether the date's year is a leap year.
+	/// - Returns: The day of year, starting at 1.
+	/// - Precondition: The month is in the closed interval [1, 12]; the day is not checked.
+	static func dayOfYear(month M: Int, day D: Int, isLeap: Bool) -> Int {
+		let daysBeforeMonth = isLeap ? daysBeforeLeapYearMonth : daysBeforeCommonYearMonth
+		return D + daysBeforeMonth[M - 1]
+	}
+
+	/// Returns the month and day for the specified day of year (ordinal day).
+	///
+	/// - Parameters:
+	///   - N: The day of year, starting at 1.
+	///   - isLeap: Whether the year is a leap year.
+	/// - Returns: The month and day.
+	/// - Precondition: `N` is in the closed interval [1, 365] in a common year or
+	///   [1, 366] in a leap year.
+	static func monthAndDay(dayOfYear N: Int, isLeap: Bool) -> (month: Int, day: Int) {
+		let daysBeforeMonth = isLeap ? daysBeforeLeapYearMonth : daysBeforeCommonYearMonth
+		let m = daysBeforeMonth.lastIndex { $0 < N }!
+		return (m + 1, N - daysBeforeMonth[m])
+	}
+}
