@@ -326,8 +326,7 @@ extension JulianCalendar {
 	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
 	///   a valid date.
 	public static func decimalYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Double {
-		guard isValid(year: Y, month: M, day: D) else { throw .invalidDate }
-		let N = Arithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
+		let N = try dayOfYearFrom(year: Y, month: M, day: D)
 		let d = numberOfDaysInYear(Y)
 		return DecimalYearArithmetic.startOfDay(year: Y, dayOfYear: N, daysInYear: d)
 	}
