@@ -38,15 +38,11 @@ public enum JulianCalendar {
 		try julianDayNumberFromDate((Y, M, D))
 	}
 
-	// Based on https://howardhinnant.github.io/date_algorithms.html
-
-	/// The number of days in a 4-year era, which is also the length of a block.
-	private static let daysPerEra = 1_461
-	/// The block containing the start of era 0 (March 1, 1 BCE in the Julian calendar,
-	/// JDN 1,721,118 which is 306 days before `epoch`).
-	private static let eraZeroBlock = 1_178
-	/// The day within `eraZeroBlock` on which era 0 begins.
-	private static let eraZeroDayOfBlock = 60
+	/// The 4-year era of the Julian calendar.
+	///
+	/// Era 0 begins on March 1, 1 BCE in the Julian calendar, JDN 1,721,118 = 1,178 × 1,461 + 60,
+	/// which is 306 days before `epoch`.
+	private static let eraLayout = Arithmetic.EraLayout(years: 4, days: 1_461, zeroBlock: 1_178, zeroDayOfBlock: 60)
 
 	/// Returns the Julian day number for the specified date.
 	///
@@ -57,44 +53,11 @@ public enum JulianCalendar {
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
-		// Normalize the month in two steps so no intermediate value can overflow.
-		// `m0` is the month in [0, 12) with January = 0;
-		// `mp` is the month in [0, 12) with March = 0.
-		let (yc0, m0) = date.month.flooredQuotientAndRemainder(dividingBy: 12)
-		let (yc1, mp) = (m0 - 3).flooredQuotientAndRemainder(dividingBy: 12)
-
-		// The normalized year, with years beginning on March 1
-		let (y, yearOverflow) = date.year.addingReportingOverflow(yc0 + yc1)
-		guard !yearOverflow else { throw .julianDayNumberNotRepresentable }
-
-		// `era` is the March-based 4-year era containing `y`; `yoe` is the year of era in [0, 4)
-		let (era, yoe) = y.flooredQuotientAndRemainder(dividingBy: 4)
+		let (y, mp) = try Arithmetic.marchBasedYearAndMonth(date)
+		let (era, yoe) = eraLayout.eraAndYearOfEra(marchBasedYear: y)
 		// Day of era of the first day of the month, in [0, 1,433)
 		let doe = yoe * 365 + (153 * mp + 2) / 5
-
-		// `date.day` as whole 1,461-day blocks plus remaining days in [0, 1,461)
-		let (dayBlocks, dayRem) = date.day.flooredQuotientAndRemainder(dividingBy: daysPerEra)
-
-		// The JDN of March 1, 0 in the Julian calendar is 1,721,118:
-		//   1,721,118 = 1,178 × 1,461 + 60
-
-		// J = (era + 1,178 + dayBlocks) × 1,461 + (doe + dayRem - 1 + 60)
-		// The second term is in [59, 2,952); move its whole blocks into the first.
-		let (carry, r) = (doe + dayRem - 1 + eraZeroDayOfBlock).quotientAndRemainder(dividingBy: daysPerEra)
-		// `q` and `r` are the floored quotient and remainder of the JDN divided by 1,461
-		let q = era + eraZeroBlock + dayBlocks + carry
-
-		// Compute q × 1,461 + r. For negative q, use (q + 1) × 1,461 + (r - 1,461) so the product
-		// can't overflow when the result fits.
-		let (blocks, days) = q >= 0 ? (q, r) : (q + 1, r - daysPerEra)
-
-		let (product, multiplyOverflow) = blocks.multipliedReportingOverflow(by: daysPerEra)
-		guard !multiplyOverflow else { throw .julianDayNumberNotRepresentable }
-
-		let (result, addOverflow) = product.addingReportingOverflow(days)
-		guard !addOverflow else { throw .julianDayNumberNotRepresentable }
-
-		return result
+		return try eraLayout.julianDayNumber(era: era, dayOfEra: doe, day: date.day)
 	}
 
 	/// Returns the year, month, and day for the specified Julian day number.
@@ -103,25 +66,12 @@ public enum JulianCalendar {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: A valid date in the Julian calendar.
 	public static func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
-		// `q` and `r` are the floored quotient and remainder of the JDN divided by 1,461
-		let (q, r) = J.flooredQuotientAndRemainder(dividingBy: daysPerEra)
-
-		// Subtract 1,721,118 = 1,178 × 1,461 + 60, borrowing a block when r < 60.
-		// `era` is the March-based 4-year era; `doe` is the day of era in [0, 1,461)
-		let (era, doe) = r >= eraZeroDayOfBlock ? (q - eraZeroBlock, r - eraZeroDayOfBlock) : (q - eraZeroBlock - 1, r - eraZeroDayOfBlock + daysPerEra)
-
+		let (era, doe) = eraLayout.eraAndDayOfEra(julianDayNumber: J)
 		// Year of era in [0, 4)
 		let yoe = (doe - doe / 1_460) / 365
 		// Day of year in [0, 366) with March 1 = 0
 		let doy = doe - 365 * yoe
-		// Month in [0, 12) with March = 0
-		let mp = (5 * doy + 2) / 153
-
-		let day = doy - (153 * mp + 2) / 5 + 1
-		let month = mp < 10 ? mp + 3 : mp - 9
-		let year = era * 4 + yoe + (month <= 2 ? 1 : 0)
-
-		return (year, month, day)
+		return eraLayout.date(era: era, yearOfEra: yoe, dayOfYear: doy)
 	}
 }
 
