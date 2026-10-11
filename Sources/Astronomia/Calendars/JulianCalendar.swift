@@ -282,6 +282,10 @@ extension JulianCalendar {
 	/// Returns the day of year (ordinal day) for the specified year, month, and day,
 	/// starting at 1.
 	///
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number from 1 (January) to 12 (December).
+	///   - D: The day number, starting at 1.
 	/// - Returns: The day of year, starting at 1.
 	/// - Precondition: The month is in the closed interval [1, 12]; the day is not checked.
 	private static func dayOfYearFrom(uncheckedYear Y: Int, month M: Int, day D: Int) -> Int {
@@ -299,9 +303,96 @@ extension JulianCalendar {
 	///   a valid date.
 	public static func dateFrom(year Y: Int, dayOfYear N: Int) throws(CalendarError) -> YearMonthDay {
 		guard N >= 1, N <= numberOfDaysInYear(Y) else { throw .invalidDate }
+		return dateFrom(uncheckedYear: Y, dayOfYear: N)
+	}
+
+	/// Returns the year, month, and day for the specified year and day of year.
+	///
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - N: The day of year, starting at 1.
+	/// - Returns: The year, month, and day in the Julian calendar.
+	/// - Precondition: `N` is in the closed interval [1, number of days in `Y`].
+	private static func dateFrom(uncheckedYear Y: Int, dayOfYear N: Int) -> YearMonthDay {
 		let daysBeforeMonth = isLeapYear(Y) ? daysBeforeLeapYearMonth : daysBeforeCommonYearMonth
 		let m = daysBeforeMonth.lastIndex { $0 < N }!
 		return (Y, m + 1, N - daysBeforeMonth[m])
+	}
+}
+
+extension JulianCalendar {
+	/// Returns the decimal year for the start of the day with the specified Julian day number.
+	///
+	/// The fraction is the number of whole days elapsed since January 1 divided by the number
+	/// of days in the year, so January 1, 1985 is 1985.0 and July 2, 1985 is
+	/// 1985 + 182/365 ≈ 1985.4986.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Note: This is a calendar-based value, not an astronomical epoch such as a Julian or
+	///   Besselian epoch.
+	/// - Parameter J: The Julian day number.
+	/// - Returns: The decimal year for the start of the day in the Julian calendar.
+	public static func decimalYearFromJulianDayNumber(_ J: JulianDayNumber) -> Double {
+		let (Y, M, D) = dateFromJulianDayNumber(J)
+		let N = dayOfYearFrom(uncheckedYear: Y, month: M, day: D)
+		let d = numberOfDaysInYear(Y)
+		return decimalYearForStartOfDay(year: Y, dayOfYear: N, numberOfDaysInYear: d)
+	}
+
+	/// Returns the Julian day number of the day containing the specified decimal year.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameter decimalYear: The decimal year. Year number 0 is 1 BCE.
+	/// - Returns: The Julian day number of the day containing `decimalYear`.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
+	///     day cannot be represented as a ``JulianDayNumber``.
+	public static func julianDayNumberFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> JulianDayNumber {
+		let date = try dateFromDecimalYear(decimalYear)
+		return try julianDayNumberFromDate(date)
+	}
+
+	/// Returns the decimal year for the start of the specified year, month, and day.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number from 1 (January) to 12 (December).
+	///   - D: The day number, starting at 1.
+	/// - Returns: The decimal year for the start of the day in the Julian calendar.
+	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
+	///   a valid date.
+	public static func decimalYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Double {
+		guard isValid(year: Y, month: M, day: D) else { throw .invalidDate }
+		let N = dayOfYearFrom(uncheckedYear: Y, month: M, day: D)
+		let d = numberOfDaysInYear(Y)
+		return decimalYearForStartOfDay(year: Y, dayOfYear: N, numberOfDaysInYear: d)
+	}
+
+	/// Returns the year, month, and day containing the specified decimal year.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameter decimalYear: The decimal year. Year number 0 is 1 BCE.
+	/// - Returns: The year, month, and day in the Julian calendar.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	public static func dateFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> YearMonthDay {
+		guard decimalYear.isFinite else { throw .nonFiniteValue }
+		guard let (Y, yearFraction) = decimalYear.floorAndFraction else { throw .invalidDecimalYear }
+		// Ensure accurate date for decimal years that rounded to 0
+		if decimalYear < Double(Y) {
+			return dateFrom(uncheckedYear: Y - 1, dayOfYear: numberOfDaysInYear(Y - 1))
+		}
+		let d = numberOfDaysInYear(Y)
+		let N = dayOfYearForDecimalYear(decimalYear, year: Y, yearFraction: yearFraction, numberOfDaysInYear: d)
+		return dateFrom(uncheckedYear: Y, dayOfYear: N)
 	}
 }
 

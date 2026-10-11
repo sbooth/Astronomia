@@ -110,6 +110,18 @@ import Testing
 		#expect(try JulianGregorianCalendar.dayOfYearFrom(year: 1582, month: 12, day: 31) == 355)
 	}
 
+	@Test func decimalYear() throws {
+		for Y in [1500, 1581, 1582, 1583, 1600, 1700] {
+			for N in 1...JulianGregorianCalendar.numberOfDaysInYear(Y) {
+				let date = try JulianGregorianCalendar.dateFrom(year: Y, dayOfYear: N)
+				let y = try JulianGregorianCalendar.decimalYearFrom(year: date.year, month: date.month, day: date.day)
+				#expect(try JulianGregorianCalendar.dateFromDecimalYear(y) == date)
+			}
+		}
+		#expect(try JulianGregorianCalendar.dateFromDecimalYear(1582 + 276.0 / 355) == (1582, 10, 4))
+		#expect(try JulianGregorianCalendar.dateFromDecimalYear(1582 + 277.0 / 355) == (1582, 10, 15))
+	}
+
 	@Test func easter() {
 		// Dates from Meeus (1998)
 		#expect(JulianGregorianCalendar.easter(year: 1991) == (3, 31))

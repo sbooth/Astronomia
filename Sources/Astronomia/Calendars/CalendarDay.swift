@@ -72,7 +72,8 @@ public struct CalendarDay: Sendable {
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the year, month, and day cannot be represented as a ``JulianDayNumber``.
 	public static func normalized(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(CalendarError) -> CalendarDay {
-		try CalendarDay(julianDayNumber: calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
+		let J = try calendar.julianDayNumberFrom(year: year, month: month, day: day)
+		return CalendarDay(julianDayNumber: J, calendar)
 	}
 }
 
@@ -129,6 +130,29 @@ extension CalendarDay {
 	public var dayOfYear: Int {
 		calendar.dayOfYearFromJulianDayNumber(julianDayNumber)
 	}
+}
+
+extension CalendarDay {
+	/// Creates the calendar day containing the specified timescale-agnostic decimal year
+	/// in the given calendar.
+	///
+	/// The result is the latest day whose start is at or before the decimal year, and any fraction
+	/// of a day is discarded.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameters:
+	///   - decimalYear: The decimal year. Year number 0 is 1 BCE.
+	///   - calendar: The calendar the decimal year is expressed in.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
+	///     day cannot be represented as a ``JulianDayNumber``.
+	public init(decimalYear: Double, _ calendar: CalendarIdentifier) throws(CalendarError) {
+		let J = try calendar.julianDayNumberFromDecimalYear(decimalYear)
+		self.init(julianDayNumber: J, calendar)
+	}
 
 	/// The decimal year for the start of this calendar day.
 	///
@@ -136,11 +160,13 @@ extension CalendarDay {
 	/// of days in the year, so January 1, 1985 is 1985.0 and July 2, 1985 is
 	/// 1985 + 182/365 ≈ 1985.4986.
 	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
 	/// - Note: This is a calendar-based value, not an astronomical epoch such as a Julian or
 	///   Besselian epoch; the same day can have slightly different decimal years in different
 	///   calendars.
 	public var decimalYear: Double {
-		Double(year) + Double(dayOfYear - 1) / Double(numberOfDaysInYear)
+		calendar.decimalYearFromJulianDayNumber(julianDayNumber)
 	}
 }
 

@@ -14,6 +14,8 @@ public enum CalendarError: Error, Hashable, Sendable {
 	case invalidDate
 	/// The day fraction is outside the right-open interval [0, 1).
 	case invalidDayFraction
+	/// The number of years in the decimal year cannot be represented as an `Int`.
+	case invalidDecimalYear
 	/// A date's Julian day number cannot be represented as a ``JulianDayNumber``.
 	case julianDayNumberNotRepresentable
 	/// The day fraction or number of days is not finite.
