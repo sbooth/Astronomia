@@ -207,6 +207,19 @@ import Testing
 		#expect(JulianCalendar.dayOfWeek(try JulianCalendar.julianDayNumberFromDate((-10028, 3, 1))) == JulianCalendar.dayOfWeek(try JulianCalendar.julianDayNumberFromDate((-10000, 3, 1))))
 	}
 
+	@Test func decimalYear() throws {
+		for Y in [-45, -44, 1984, 1985] {
+			for N in 1...JulianCalendar.numberOfDaysInYear(Y) {
+				let date = try JulianCalendar.dateFrom(year: Y, dayOfYear: N)
+				let y = try JulianCalendar.decimalYearFrom(year: date.year, month: date.month, day: date.day)
+				#expect(try JulianCalendar.dateFromDecimalYear(y) == date)
+			}
+		}
+		#expect(try JulianCalendar.dateFromDecimalYear(-0x1p-53) == (-1, 12, 31))
+		#expect(try JulianCalendar.dateFromDecimalYear(-0x1p-54) == (-1, 12, 31))
+		#expect(try JulianCalendar.dateFromDecimalYear(-1e-20) == (-1, 12, 31))
+	}
+
 	@Test func easter() {
 		// Dates from Meeus (1998)
 		#expect(JulianCalendar.easter(year: 179) == (4, 12))
