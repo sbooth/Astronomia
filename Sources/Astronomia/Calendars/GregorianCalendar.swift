@@ -17,7 +17,7 @@
 /// Months are numbered from 1 (January) to 12 (December).
 ///
 /// Day numbers are always positive and the first day of a month has day number 1.
-public struct GregorianCalendar {
+public enum GregorianCalendar {
 	/// The Julian day number for January 1, 1 CE in the proleptic Gregorian calendar.
 	public static let epoch: JulianDayNumber = 1_721_426
 
@@ -189,7 +189,7 @@ extension GregorianCalendar {
 	/// - Parameter Y: The arithmetic year number. Year number 0 is 1 BCE.
 	/// - Returns: The number of days in year `Y`: 365 or 366.
 	public static func numberOfDaysInYear(_ Y: Int) -> Int {
-		isLeapYear(Y) ? 366 : 365
+		JulianAndGregorianArithmetic.numberOfDays(isLeap: isLeapYear(Y))
 	}
 
 	/// Returns the number of days in the specified month and year.
@@ -200,16 +200,7 @@ extension GregorianCalendar {
 	/// - Returns: The number of days in the month, from 28 to 31.
 	/// - Throws: ``CalendarError/invalidDate`` if the month is outside the closed interval [1, 12].
 	public static func numberOfDaysIn(month M: Int, year Y: Int) throws(CalendarError) -> Int {
-		switch M {
-		case 4, 6, 9, 11:
-			return 30
-		case 2:
-			return isLeapYear(Y) ? 29 : 28
-		case 1, 3, 5, 7, 8, 10, 12:
-			return 31
-		default:
-			throw .invalidDate
-		}
+		try JulianAndGregorianArithmetic.numberOfDaysIn(month: M, isLeap: isLeapYear(Y))
 	}
 }
 
@@ -231,8 +222,7 @@ extension GregorianCalendar {
 	/// - Parameter date: The year, month, and day to check.
 	/// - Returns: `true` if `date` is a valid date in the Gregorian calendar; otherwise, `false`.
 	public static func isValidDate(_ date: YearMonthDay) -> Bool {
-		guard let daysInMonth = try? numberOfDaysIn(month: date.month, year: date.year) else { return false }
-		return date.day >= 1 && date.day <= daysInMonth
+		JulianAndGregorianArithmetic.isValid(month: date.month, day: date.day, isLeap: isLeapYear(date.year))
 	}
 }
 
@@ -283,8 +273,7 @@ extension GregorianCalendar {
 	/// - Returns: The day of year, starting at 1.
 	/// - Precondition: The month is in the closed interval [1, 12]; the day is not checked.
 	private static func dayOfYearFrom(uncheckedYear Y: Int, month M: Int, day D: Int) -> Int {
-		let daysBeforeMonth = isLeapYear(Y) ? JulianCalendar.daysBeforeLeapYearMonth : JulianCalendar.daysBeforeCommonYearMonth
-		return D + daysBeforeMonth[M - 1]
+		JulianAndGregorianArithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
 	}
 
 	/// Returns the year, month, and day for the specified year and day of year (ordinal day).
@@ -308,9 +297,8 @@ extension GregorianCalendar {
 	/// - Returns: The year, month, and day in the Gregorian calendar.
 	/// - Precondition: `N` is in the closed interval [1, number of days in `Y`].
 	private static func dateFrom(uncheckedYear Y: Int, dayOfYear N: Int) -> YearMonthDay {
-		let daysBeforeMonth = isLeapYear(Y) ? JulianCalendar.daysBeforeLeapYearMonth : JulianCalendar.daysBeforeCommonYearMonth
-		let m = daysBeforeMonth.lastIndex { $0 < N }!
-		return (Y, m + 1, N - daysBeforeMonth[m])
+		let (M, D) = JulianAndGregorianArithmetic.monthAndDay(dayOfYear: N, isLeap: isLeapYear(Y))
+		return (Y, M, D)
 	}
 }
 
@@ -331,7 +319,7 @@ extension GregorianCalendar {
 		let (Y, M, D) = dateFromJulianDayNumber(J)
 		let N = dayOfYearFrom(uncheckedYear: Y, month: M, day: D)
 		let d = numberOfDaysInYear(Y)
-		return decimalYearForStartOfDay(year: Y, dayOfYear: N, numberOfDaysInYear: d)
+		return DecimalYearArithmetic.startOfDay(year: Y, dayOfYear: N, daysInYear: d)
 	}
 
 	/// Returns the Julian day number of the day containing the specified decimal year.
@@ -365,7 +353,7 @@ extension GregorianCalendar {
 		guard isValid(year: Y, month: M, day: D) else { throw .invalidDate }
 		let N = dayOfYearFrom(uncheckedYear: Y, month: M, day: D)
 		let d = numberOfDaysInYear(Y)
-		return decimalYearForStartOfDay(year: Y, dayOfYear: N, numberOfDaysInYear: d)
+		return DecimalYearArithmetic.startOfDay(year: Y, dayOfYear: N, daysInYear: d)
 	}
 
 	/// Returns the year, month, and day containing the specified decimal year.
@@ -378,14 +366,7 @@ extension GregorianCalendar {
 	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
 	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
 	public static func dateFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> YearMonthDay {
-		guard decimalYear.isFinite else { throw .nonFiniteValue }
-		guard let (Y, yearFraction) = decimalYear.floorAndFraction else { throw .invalidDecimalYear }
-		// Ensure accurate date for decimal years that rounded to 0
-		if decimalYear < Double(Y) {
-			return dateFrom(uncheckedYear: Y - 1, dayOfYear: numberOfDaysInYear(Y - 1))
-		}
-		let d = numberOfDaysInYear(Y)
-		let N = dayOfYearForDecimalYear(decimalYear, year: Y, yearFraction: yearFraction, numberOfDaysInYear: d)
+		let (Y, N) = try DecimalYearArithmetic.yearAndDayOfYear(decimalYear: decimalYear, daysInYear: numberOfDaysInYear)
 		return dateFrom(uncheckedYear: Y, dayOfYear: N)
 	}
 }
