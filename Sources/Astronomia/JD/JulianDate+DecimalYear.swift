@@ -59,7 +59,7 @@ extension JulianDate {
 	/// because the calendars disagree on when the year begins and how long it is.
 	///
 	/// - Note: The decimal year is in this Julian Date's timescale.
-	/// - Note: The resolution of a decimal year depends on the year's magnitude. 
+	/// - Note: The resolution of a decimal year depends on the year's magnitude.
 	/// - Note: A decimal year is calendar-based, not an astronomical epoch. Use
 	///   ``julianEpoch`` or ``besselianEpoch`` for those.
 	/// - Parameter calendar: The calendar in which to express the decimal year.
