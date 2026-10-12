@@ -32,8 +32,7 @@ public struct CalendarDate: Hashable, Sendable {
 	public init(calendarDay: CalendarDay, dayFraction: Double) throws(CalendarError) {
 		guard dayFraction.isFinite else { throw .nonFiniteValue }
 		guard dayFraction >= 0, dayFraction < 1 else { throw .invalidDayFraction }
-		self.calendarDay = calendarDay
-		self.dayFraction = dayFraction == 0 ? 0 : dayFraction
+		self.init(calendarDay: calendarDay, uncheckedDayFraction: dayFraction == 0 ? 0 : dayFraction)
 	}
 
 	/// Creates a calendar date for the specified year, month, and day in the given calendar
@@ -54,7 +53,7 @@ public struct CalendarDate: Hashable, Sendable {
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the year, month, and day form
 	///     a valid date, but its Julian day number cannot be represented as a
 	///     ``JulianDayNumber``.
-	public init(year: Int, month: Int, day: Int, dayFraction: Double, _ calendar: CalendarIdentifier) throws(CalendarError) {
+	public init(year: Int, month: Int, day: Int, dayFraction: Double = 0, _ calendar: CalendarIdentifier) throws(CalendarError) {
 		let calendarDay = try CalendarDay(year: year, month: month, day: day, calendar)
 		try self.init(calendarDay: calendarDay, dayFraction: dayFraction)
 	}
