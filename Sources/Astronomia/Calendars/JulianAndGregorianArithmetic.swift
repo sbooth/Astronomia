@@ -83,9 +83,13 @@ enum JulianAndGregorianArithmetic {
 	///   [1, 366] in a leap year.
 	static func monthAndDay(dayOfYear N: Int, isLeap: Bool) -> (month: Int, day: Int) {
 		assert(N >= 1 && N <= numberOfDays(isLeap: isLeap), "Day of year is outside the closed interval [1, \(numberOfDays(isLeap: isLeap))]")
+		// Days in January and February
 		let janFeb = isLeap ? 60 : 59
-		let doy = N > janFeb ? N - 1 - janFeb : N - 1 + 306   // March-based day of year, March 1 = 0
-		let mp = (5 * doy + 2) / 153
-		return (mp < 10 ? mp + 3 : mp - 9, doy - (153 * mp + 2) / 5 + 1)
+		// March-based day of year in [0, 366) with March 1 = 0: [0, 306) for March through
+		// December, [306, 366) for January and February
+		let doy = N > janFeb ? N &- 1 &- janFeb : N &- 1 &+ 306
+		// Month in [0, 12) with March = 0; 5 × doy + 2 < 1,830
+		let mp = (5 &* doy &+ 2) / 153
+		return (mp < 10 ? mp &+ 3 : mp &- 9, doy &- (153 &* mp &+ 2) / 5 &+ 1)
 	}
 }
