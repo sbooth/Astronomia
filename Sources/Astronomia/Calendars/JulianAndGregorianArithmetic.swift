@@ -69,8 +69,8 @@ enum JulianAndGregorianArithmetic {
 	/// - Returns: The day of year, starting at 1.
 	/// - Precondition: The month is in the closed interval [1, 12]; the day is not checked.
 	static func dayOfYear(month M: Int, day D: Int, isLeap: Bool) -> Int {
-		assert(M >= 1 && M <= 12, "Month is outside the closed interval [1, 12]")
-		return (367 * M - 362) / 12 - (M <= 2 ? 0 : isLeap ? 1 : 2) + D
+		assert(isValid(month: M, day: D, isLeap: isLeap), "Month and day do not form a valid date")
+		return (367 &* M &- 362) / 12 &- (M <= 2 ? 0 : isLeap ? 1 : 2) &+ D
 	}
 
 	/// Returns the month and day for the specified day of year (ordinal day).
