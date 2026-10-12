@@ -91,8 +91,8 @@ extension JulianDate {
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public init(julianDayNumber: JulianDayNumber, fractionFromNoon: Double = 0) throws(JulianDateError) {
 		guard fractionFromNoon.isFinite else { throw .nonFiniteValue }
-		guard let f = normalizedSum(fractionFromNoon, 0) else { throw .dayCountNotRepresentable }
-		let (n, overflow) = julianDayNumber.addingReportingOverflow(f.integral)
+		guard let f = fractionFromNoon.nearestIntegerAndRemainder else { throw .dayCountNotRepresentable }
+		let (n, overflow) = julianDayNumber.addingReportingOverflow(f.nearest)
 		guard !overflow else { throw .julianDayNumberNotRepresentable }
 		self.init(uncheckedJulianDayNumber: n, fractionFromNoon: f.remainder)
 	}
