@@ -128,7 +128,8 @@ extension CalendarDay {
 extension CalendarDay {
 	/// The day of year (ordinal day) for this calendar day, starting at 1.
 	public var dayOfYear: Int {
-		calendar.dayOfYearFromJulianDayNumber(julianDayNumber)
+		// A CalendarDay is always a valid date, so this cannot throw
+		try! calendar.dayOfYearFrom(year: year, month: month, day: day)
 	}
 }
 
@@ -166,7 +167,10 @@ extension CalendarDay {
 	///   Besselian epoch; the same day can have slightly different decimal years in different
 	///   calendars.
 	public var decimalYear: Double {
-		calendar.decimalYearFromJulianDayNumber(julianDayNumber)
+		let Y = year
+		let N = dayOfYear
+		let d = numberOfDaysInYear
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
 	}
 }
 
