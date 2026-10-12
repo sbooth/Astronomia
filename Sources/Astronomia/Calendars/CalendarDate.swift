@@ -16,58 +16,58 @@ public struct CalendarDate: Hashable, Sendable {
 	/// The calendar day.
 	public let calendarDay: CalendarDay
 	/// The fraction of the day elapsed since midnight, in the right-open interval [0, 1).
-	public let dayFraction: Double
+	public let fractionSinceMidnight: Double
 
-	/// Creates a calendar date for the specified calendar day and day fraction.
+	/// Creates a calendar date for the specified calendar day and fraction since midnight.
 	///
-	/// A day fraction of negative zero is stored as positive zero.
+	/// A fraction since midnight of negative zero is stored as positive zero.
 	///
 	/// - Parameters:
 	///   - calendarDay: The calendar day.
-	///   - dayFraction: The fraction of the day elapsed since midnight.
+	///   - fractionSinceMidnight: The fraction of the day elapsed since midnight.
 	/// - Throws:
-	///   - ``CalendarError/nonFiniteValue`` if the day fraction is not finite.
-	///   - ``CalendarError/invalidDayFraction`` if the day fraction
+	///   - ``CalendarError/nonFiniteValue`` if the fraction since midnight is not finite.
+	///   - ``CalendarError/invalidDayFraction`` if the fraction since midnight
 	///     is outside the right-open interval [0, 1).
-	public init(calendarDay: CalendarDay, dayFraction: Double) throws(CalendarError) {
-		guard dayFraction.isFinite else { throw .nonFiniteValue }
-		guard dayFraction >= 0, dayFraction < 1 else { throw .invalidDayFraction }
-		self.init(calendarDay: calendarDay, uncheckedDayFraction: dayFraction == 0 ? 0 : dayFraction)
+	public init(calendarDay: CalendarDay, fractionSinceMidnight: Double) throws(CalendarError) {
+		guard fractionSinceMidnight.isFinite else { throw .nonFiniteValue }
+		guard fractionSinceMidnight >= 0, fractionSinceMidnight < 1 else { throw .invalidDayFraction }
+		self.init(calendarDay: calendarDay, uncheckedFractionSinceMidnight: fractionSinceMidnight == 0 ? 0 : fractionSinceMidnight)
 	}
 
 	/// Creates a calendar date for the specified year, month, and day in the given calendar
-	/// with the specified day fraction.
+	/// with the specified fraction since midnight.
 	///
 	/// - Parameters:
 	///   - year: The arithmetic year number. Year number 0 is 1 BCE.
 	///   - month: The month number from 1 (January) to 12 (December).
 	///   - day: The day number, starting at 1.
-	///   - dayFraction: The fraction of the day elapsed since midnight.
+	///   - fractionSinceMidnight: The fraction of the day elapsed since midnight.
 	///   - calendar: The calendar the year, month, and day belong to.
 	/// - Throws:
-	///   - ``CalendarError/nonFiniteValue`` if the day fraction is not finite.
-	///   - ``CalendarError/invalidDayFraction`` if the day fraction is outside
+	///   - ``CalendarError/nonFiniteValue`` if the fraction since midnight is not finite.
+	///   - ``CalendarError/invalidDayFraction`` if the fraction since midnight is outside
 	///     the right-open interval [0, 1).
 	///   - ``CalendarError/invalidDate`` if the year, month, and day do not form a valid
 	///     date in the specified calendar.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the year, month, and day form
 	///     a valid date, but its Julian day number cannot be represented as a
 	///     ``JulianDayNumber``.
-	public init(year: Int, month: Int, day: Int, dayFraction: Double = 0, _ calendar: CalendarIdentifier) throws(CalendarError) {
+	public init(year: Int, month: Int, day: Int, fractionSinceMidnight: Double = 0, _ calendar: CalendarIdentifier) throws(CalendarError) {
 		let calendarDay = try CalendarDay(year: year, month: month, day: day, calendar)
-		try self.init(calendarDay: calendarDay, dayFraction: dayFraction)
+		try self.init(calendarDay: calendarDay, fractionSinceMidnight: fractionSinceMidnight)
 	}
 }
 
 extension CalendarDate {
-	/// Creates a calendar date from a calendar day and unchecked day fraction.
+	/// Creates a calendar date from a calendar day and unchecked fraction since midnight.
 	///
-	/// - Precondition: `dayFraction` is finite and in the right-open interval [0, 1).
-	init(calendarDay: CalendarDay, uncheckedDayFraction dayFraction: Double) {
-		assert(dayFraction.isFinite, "Day fraction must be finite")
-		assert(dayFraction >= 0 && dayFraction < 1, "Day fraction is outside the right-open interval [0, 1)")
+	/// - Precondition: `fractionSinceMidnight` is finite and in the right-open interval [0, 1).
+	init(calendarDay: CalendarDay, uncheckedFractionSinceMidnight fractionSinceMidnight: Double) {
+		assert(fractionSinceMidnight.isFinite, "Fraction since midnight must be finite")
+		assert(fractionSinceMidnight >= 0 && fractionSinceMidnight < 1, "Fraction since midnight is outside the right-open interval [0, 1)")
 		self.calendarDay = calendarDay
-		self.dayFraction = dayFraction
+		self.fractionSinceMidnight = fractionSinceMidnight
 	}
 }
 
@@ -95,36 +95,36 @@ extension CalendarDate {
 	/// The Julian day number of this calendar date's day.
 	///
 	/// This is the JDN of the calendar day (the Julian day beginning at noon on that date),
-	/// regardless of the day fraction. For a day fraction less than 0.5 it is one greater than
-	/// the floor of the instant's Julian Date.
+	/// regardless of the fraction since midnight. For a fraction since midnight less than 0.5
+	/// it is one greater than the floor of the instant's Julian Date.
 	public var julianDayNumber: JulianDayNumber {
 		calendarDay.julianDayNumber
 	}
 }
 
 extension CalendarDate {
-	/// Returns the calendar date the specified number of days plus day fraction before (for
+	/// Returns the calendar date the specified number of days plus fractional day before (for
 	/// negative values) or after (for positive values) this calendar date, in the same
 	/// calendar.
 	///
-	/// `days` may be negative but `dayFraction` may not; to move back by a fraction of a day,
+	/// `days` may be negative but `fractionalDay` may not; to move back by a fraction of a day,
 	/// use ``adding(days:)-(Double)`` or pass one fewer day and the complementary fraction.
 	///
 	/// - Parameters:
 	///   - days: The signed number of whole days to add.
-	///   - dayFraction: The additional fraction of a day to add.
+	///   - fractionalDay: The additional fraction of a day to add.
 	/// - Returns: The resulting calendar date, in this calendar date's calendar.
 	/// - Throws:
-	///   - ``CalendarError/nonFiniteValue`` if the day fraction is not finite.
-	///   - ``CalendarError/invalidDayFraction`` if the day fraction is outside
+	///   - ``CalendarError/nonFiniteValue`` if the fractional day is not finite.
+	///   - ``CalendarError/invalidDayFraction`` if the fractional day is outside
 	///     the right-open interval [0, 1).
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the resulting day's Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
-	public func adding(days: Int, dayFraction: Double = 0) throws(CalendarError) -> CalendarDate {
-		guard dayFraction.isFinite else { throw .nonFiniteValue }
-		guard dayFraction >= 0, dayFraction < 1 else { throw .invalidDayFraction }
+	public func adding(days: Int, fractionalDay: Double = 0) throws(CalendarError) -> CalendarDate {
+		guard fractionalDay.isFinite else { throw .nonFiniteValue }
+		guard fractionalDay >= 0, fractionalDay < 1 else { throw .invalidDayFraction }
 
-		var fraction = dayFraction + self.dayFraction
+		var fraction = fractionalDay + self.fractionSinceMidnight
 
 		var calendarDay: CalendarDay
 		if fraction >= 1 {
@@ -139,7 +139,7 @@ extension CalendarDate {
 			calendarDay = try self.calendarDay.adding(days: days)
 		}
 
-		return CalendarDate(calendarDay: calendarDay, uncheckedDayFraction: fraction)
+		return CalendarDate(calendarDay: calendarDay, uncheckedFractionSinceMidnight: fraction)
 	}
 
 	/// Returns the calendar date the specified number of days before (for negative values) or
@@ -156,56 +156,56 @@ extension CalendarDate {
 	public func adding(days n: Double) throws(CalendarError) -> CalendarDate {
 		guard n.isFinite else { throw .nonFiniteValue }
 		guard let (days, fraction) = n.floorAndFraction else { throw .dayCountNotRepresentable }
-		return try adding(days: days, dayFraction: fraction)
+		return try adding(days: days, fractionalDay: fraction)
 	}
 }
 
 extension CalendarDate {
-	/// Creates a calendar date from a possibly out-of-range day fraction.
+	/// Creates a calendar date from a possibly out-of-range fraction since midnight.
 	///
-	/// - Note: Day fractions outside the right-open interval [0, 1) carry whole days forward
-	///   or backward from the specified calendar day.
+	/// - Note: Fractions since midnight outside the right-open interval [0, 1) carry whole days
+	/// forward or backward from the specified calendar day.
 	/// - Parameters:
 	///   - calendarDay: The calendar day.
-	///   - dayFraction: The signed number of days, including any fraction of a day, from
-	///     midnight at the start of `calendarDay`.
-	/// - Returns: A calendar date with a day fraction in the right-open interval [0, 1), in the
+	///   - fractionSinceMidnight: The signed number of days, including any fraction of a day,
+	///     from midnight at the start of `calendarDay`.
+	/// - Returns: A calendar date with a fraction since midnight in the right-open interval [0, 1), in the
 	///   calendar of `calendarDay`.
 	/// - Throws:
-	///   - ``CalendarError/nonFiniteValue`` if the day fraction is not finite.
-	///   - ``CalendarError/dayCountNotRepresentable`` if the day fraction's whole days cannot
-	///     be represented as an `Int`.
+	///   - ``CalendarError/nonFiniteValue`` if the fraction since midnight is not finite.
+	///   - ``CalendarError/dayCountNotRepresentable`` if the fraction since midnight's whole days
+	///     cannot be represented as an `Int`.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the resulting day's Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
-	public static func normalized(calendarDay: CalendarDay, dayFraction: Double) throws(CalendarError) -> CalendarDate {
-		try CalendarDate(calendarDay: calendarDay, uncheckedDayFraction: 0).adding(days: dayFraction)
+	public static func normalized(calendarDay: CalendarDay, fractionSinceMidnight: Double) throws(CalendarError) -> CalendarDate {
+		try CalendarDate(calendarDay: calendarDay, uncheckedFractionSinceMidnight: 0).adding(days: fractionSinceMidnight)
 	}
 
-	/// Creates a calendar date from possibly out-of-range month, day, and day fraction values.
+	/// Creates a calendar date from possibly out-of-range month, day, and fraction since midnight values.
 	///
 	/// - Note: Months outside the closed interval [1, 12] roll over into earlier or later
-	///   years, days are counted from the normalized month, and the day fraction carries whole
+	///   years, days are counted from the normalized month, and the fraction since midnight carries whole
 	///   days. See ``JulianGregorianCalendar/julianDayNumberFromDate(_:)`` for how
 	///   out-of-range values are interpreted in the Julian-Gregorian calendar.
 	/// - Parameters:
 	///   - year: The arithmetic year number. Year number 0 is 1 BCE.
 	///   - month: The month number, possibly outside the closed interval [1, 12].
 	///   - day: The day number, possibly outside the days of the month.
-	///   - dayFraction: The signed number of days, including any fraction of a day, from
-	///     midnight at the start of the normalized day.
+	///   - fractionSinceMidnight: The signed number of days, including any fraction of a day,
+	///     from midnight at the start of the normalized day.
 	///   - calendar: The calendar the year, month, and day belong to.
-	/// - Returns: A calendar date with valid components and a day fraction in the right-open
+	/// - Returns: A calendar date with valid components and a fraction since midnight in the right-open
 	///   interval [0, 1), in `calendar`.
 	/// - Throws:
-	///   - ``CalendarError/nonFiniteValue`` if the day fraction is not finite.
-	///   - ``CalendarError/dayCountNotRepresentable`` if the day fraction's whole days cannot
-	///     be represented as an `Int`.
+	///   - ``CalendarError/nonFiniteValue`` if the fraction since midnight is not finite.
+	///   - ``CalendarError/dayCountNotRepresentable`` if the fraction since midnight's whole days
+	///     cannot be represented as an `Int`.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
 	///     year, month, and day or the resulting day's Julian day number cannot be represented
 	///     as a ``JulianDayNumber``.
-	public static func normalized(year: Int, month: Int, day: Int, dayFraction: Double, _ calendar: CalendarIdentifier) throws(CalendarError) -> CalendarDate {
+	public static func normalized(year: Int, month: Int, day: Int, fractionSinceMidnight: Double, _ calendar: CalendarIdentifier) throws(CalendarError) -> CalendarDate {
 		let calendarDay = try CalendarDay.normalized(year: year, month: month, day: day, calendar)
-		return try normalized(calendarDay: calendarDay, dayFraction: dayFraction)
+		return try normalized(calendarDay: calendarDay, fractionSinceMidnight: fractionSinceMidnight)
 	}
 }
 
@@ -227,12 +227,12 @@ extension CalendarDate {
 		let Y = calendarDay.year
 		let N = calendarDay.dayOfYear
 		let d = calendarDay.numberOfDaysInYear
-		let dayFraction: Double
+		let fractionSinceMidnight: Double
 		if decimalYear == DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d) {
 			// The start of a day is generally rounded, so measuring from the exact start would
 			// leave a tiny fraction of either sign. A decimal year equal to the rounded start of
 			// day is that day's midnight.
-			dayFraction = 0
+			fractionSinceMidnight = 0
 		} else {
 			// Measure from the start of the year rather than the start of the day. Subtracting
 			// the integer year is exact because both values are multiples of the decimal year's
@@ -240,14 +240,15 @@ extension CalendarDate {
 			let yearFraction = decimalYear - Double(Y)
 			// yearFraction × d − (N − 1) with a single rounding
 			let fraction = Double(-(N - 1)).addingProduct(yearFraction, Double(d))
-			dayFraction = fraction > 0 ? min(fraction, Double(1).nextDown) : 0
+			fractionSinceMidnight = fraction > 0 ? min(fraction, Double(1).nextDown) : 0
 		}
-		self.init(calendarDay: calendarDay, uncheckedDayFraction: dayFraction)	}
+		self.init(calendarDay: calendarDay, uncheckedFractionSinceMidnight: fractionSinceMidnight)
+	}
 
 	/// The timescale-agnostic decimal year for this calendar date.
 	///
 	/// The fraction is the number of days elapsed since midnight on January 1, including the
-	/// day fraction, divided by the number of days in the year. For example, noon on
+	/// fraction since midnight, divided by the number of days in the year. For example, noon on
 	/// January 1, 1985 is 1985 + 0.5/365 ≈ 1985.0014.
 	///
 	/// - Note: The resolution of a decimal year depends on the year's magnitude.
@@ -258,7 +259,7 @@ extension CalendarDate {
 		let Y = calendarDay.year
 		let N = calendarDay.dayOfYear
 		let d = calendarDay.numberOfDaysInYear
-		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, dayFraction: dayFraction, daysInYear: d)
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, fractionSinceMidnight: fractionSinceMidnight, daysInYear: d)
 	}
 }
 
@@ -268,17 +269,17 @@ extension CalendarDate {
 	/// - Parameter other: The calendar in which to express the date.
 	/// - Returns: A calendar date for the same day and time of day in `other`.
 	public func convertedTo(_ other: CalendarIdentifier) -> CalendarDate {
-		CalendarDate(calendarDay: calendarDay.convertedTo(other), uncheckedDayFraction: dayFraction)
+		CalendarDate(calendarDay: calendarDay.convertedTo(other), uncheckedFractionSinceMidnight: fractionSinceMidnight)
 	}
 
 	/// Returns `true` if the specified calendar date denotes the same day and time of day,
 	/// regardless of calendar.
 	///
 	/// - Parameter other: The calendar date to compare with.
-	/// - Returns: `true` if both calendar dates have the same Julian day number and day fraction;
+	/// - Returns: `true` if both calendar dates have the same Julian day number and fraction since midnight;
 	///   otherwise, `false`.
 	public func isSameInstantAs(_ other: CalendarDate) -> Bool {
-		calendarDay.isSameDayAs(other.calendarDay) && dayFraction == other.dayFraction
+		calendarDay.isSameDayAs(other.calendarDay) && fractionSinceMidnight == other.fractionSinceMidnight
 	}
 }
 
@@ -289,8 +290,8 @@ extension CalendarDate: Comparable {
 	/// - Returns: `true` if `lhs` is earlier than `rhs`, or if they denote the same instant and the
 	///   calendar of `lhs` sorts before that of `rhs`; otherwise, `false`.
 	public static func < (lhs: CalendarDate, rhs: CalendarDate) -> Bool {
-		if lhs.calendarDay.isSameDayAs(rhs.calendarDay), lhs.dayFraction != rhs.dayFraction {
-			return lhs.dayFraction < rhs.dayFraction
+		if lhs.calendarDay.isSameDayAs(rhs.calendarDay), lhs.fractionSinceMidnight != rhs.fractionSinceMidnight {
+			return lhs.fractionSinceMidnight < rhs.fractionSinceMidnight
 		}
 		// `CalendarDay` breaks JDN ties by calendar
 		return lhs.calendarDay < rhs.calendarDay
@@ -300,20 +301,20 @@ extension CalendarDate: Comparable {
 extension CalendarDate: CustomStringConvertible {
 	/// A textual representation of the calendar date, such as `2000-1-1 +0.5 (Gregorian)`.
 	public var description: String {
-		"\(year)-\(month)-\(day) +\(dayFraction) (\(calendar.name))"
+		"\(year)-\(month)-\(day) +\(fractionSinceMidnight) (\(calendar.name))"
 	}
 }
 
 extension CalendarDate: CustomDebugStringConvertible {
 	/// A textual representation of the calendar date's components, suitable for debugging.
 	public var debugDescription: String {
-		"CalendarDate(year: \(year), month: \(month), day: \(day), dayFraction: \(dayFraction), calendar: \(calendar.name))"
+		"CalendarDate(year: \(year), month: \(month), day: \(day), fractionSinceMidnight: \(fractionSinceMidnight), calendar: \(calendar.name))"
 	}
 }
 
 extension CalendarDate: Codable {
 	private enum CodingKeys: String, CodingKey {
-		case year, month, day, dayFraction, calendar
+		case year, month, day, fractionSinceMidnight, calendar
 	}
 
 	/// Creates a calendar date by decoding and validating it from the specified decoder.
@@ -326,15 +327,15 @@ extension CalendarDate: Codable {
 		let year = try container.decode(Int.self, forKey: .year)
 		let month = try container.decode(Int.self, forKey: .month)
 		let day = try container.decode(Int.self, forKey: .day)
-		let dayFraction = try container.decode(Double.self, forKey: .dayFraction)
+		let fractionSinceMidnight = try container.decode(Double.self, forKey: .fractionSinceMidnight)
 		let calendar = try container.decode(CalendarIdentifier.self, forKey: .calendar)
 
 		do throws(CalendarError) {
-			self = try CalendarDate(year: year, month: month, day: day, dayFraction: dayFraction, calendar)
+			self = try CalendarDate(year: year, month: month, day: day, fractionSinceMidnight: fractionSinceMidnight, calendar)
 		} catch .nonFiniteValue {
-			throw DecodingError.dataCorruptedError(forKey: .dayFraction, in: container, debugDescription: "Day fraction must be finite")
+			throw DecodingError.dataCorruptedError(forKey: .fractionSinceMidnight, in: container, debugDescription: "Fraction since midnight must be finite")
 		} catch .invalidDayFraction {
-			throw DecodingError.dataCorruptedError(forKey: .dayFraction, in: container, debugDescription: "Day fraction is outside the right-open interval [0, 1)")
+			throw DecodingError.dataCorruptedError(forKey: .fractionSinceMidnight, in: container, debugDescription: "Fraction since midnight is outside the right-open interval [0, 1)")
 		} catch .invalidDate {
 			throw DecodingError.dataCorruptedError(forKey: .day, in: container, debugDescription: "year: \(year), month: \(month), day: \(day) do not form a valid \(calendar.name) date")
 		} catch .julianDayNumberNotRepresentable {
@@ -342,8 +343,8 @@ extension CalendarDate: Codable {
 		}
 	}
 
-	/// Encodes the calendar date's year, month, day, day fraction, and calendar into the
-	/// specified encoder.
+	/// Encodes the calendar date's year, month, day, fraction since midnight, and calendar
+	/// into the specified encoder.
 	///
 	/// - Parameter encoder: The encoder to write data to.
 	/// - Throws: Any error thrown by `encoder`.
@@ -352,7 +353,7 @@ extension CalendarDate: Codable {
 		try container.encode(year, forKey: .year)
 		try container.encode(month, forKey: .month)
 		try container.encode(day, forKey: .day)
-		try container.encode(dayFraction, forKey: .dayFraction)
+		try container.encode(fractionSinceMidnight, forKey: .fractionSinceMidnight)
 		try container.encode(calendar, forKey: .calendar)
 	}
 }
