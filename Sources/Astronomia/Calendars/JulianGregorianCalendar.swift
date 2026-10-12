@@ -289,8 +289,15 @@ extension JulianGregorianCalendar {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The decimal year for the start of the day in the Julian-Gregorian calendar.
 	public static func decimalYearFromJulianDayNumber(_ J: JulianDayNumber) -> Double {
-		let (Y, _, _) = dateFromJulianDayNumber(J)
-		let N = dayOfYearFromJulianDayNumber(J)
+		let (Y, M, D) = dateFromJulianDayNumber(J)
+		let N: Int
+		if changeoverYear.contains(J) {
+			// 1582 has 355 days, counted continuously across the changeover
+			N = J - firstDayOfChangeoverYear + 1
+		} else {
+			// Outside 1582 the year follows a single calendar's rules
+			N = JulianAndGregorianArithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
+		}
 		let d = numberOfDaysInYear(Y)
 		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
 	}

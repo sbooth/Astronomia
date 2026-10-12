@@ -38,11 +38,35 @@ public enum JulianCalendar {
 		try julianDayNumberFromDate((Y, M, D))
 	}
 
-	/// The 4-year era of the Julian calendar.
+	/// The 4-year cycle of the Julian calendar, positioned against the Julian day numbers.
 	///
-	/// Era 0 begins on March 1, 1 BCE in the Julian calendar, JDN 1,721,118 = 1,178 × 1,461 + 60,
-	/// which is 306 days before `epoch`.
-	private static let eraLayout = Arithmetic.EraLayout(years: 4, days: 1_461, zeroBlock: 1_178, zeroDayOfBlock: 60)
+	/// The Julian leap year rule repeats every 4 years, and those 4 years always contain
+	/// 1,461 days (one leap year). Each era begins on March 1, so its leap day falls at the end
+	/// of a year. Era 0 begins on March 1, 1 BCE (year 0), which is JDN 1,721,118.
+	///
+	/// Julian day numbers are divided into blocks of 1,461 days counted from JDN 0, which is
+	/// January 1, 4713 BCE in the proleptic Julian calendar. That year is a leap year, and a
+	/// block is exactly one 4-year cycle, so every block begins on January 1 of a leap year.
+	private enum Era: Arithmetic.EraLayout {
+		/// The number of years in one cycle of the Julian leap year rule.
+		static var years: Int { 4 }
+
+		/// The number of days in 4 Julian years: 4 × 365 + 1 leap day.
+		///
+		/// This is also the length of a block of Julian day numbers.
+		static var days: Int { 1_461 }
+
+		/// The block of Julian day numbers containing March 1, 1 BCE.
+		///
+		/// Block 1,178 spans JDN 1,721,058 (January 1, 1 BCE) through JDN 1,722,518.
+		static var zeroBlock: Int { 1_178 }
+
+		/// The day within block 1,178 on which era 0 begins.
+		///
+		/// Every block begins on January 1 of a leap year, so March 1 is day 31 + 29 = 60 of the
+		/// block. Era 0 begins at JDN 1,178 × 1,461 + 60 = 1,721,118, which is March 1, 1 BCE.
+		static var zeroDayOfBlock: Int { 60 }
+	}
 
 	/// Returns the Julian day number for the specified date.
 	///
@@ -54,10 +78,12 @@ public enum JulianCalendar {
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
 		let (y, mp) = try Arithmetic.marchBasedYearAndMonth(date)
-		let (era, yoe) = eraLayout.eraAndYearOfEra(marchBasedYear: y)
+		assert(mp >= 0 && mp < 12, "March-based month outside the right-open interval [0, 12)")
+		let (era, yoe) = Era.eraAndYearOfEra(marchBasedYear: y)
+		assert(yoe >= 0 && yoe < Era.years, "Year of era outside the right-open interval [0, \(Era.years))")
 		// Day of era of the first day of the month, in [0, 1,433)
-		let doe = yoe * 365 + (153 * mp + 2) / 5
-		return try eraLayout.julianDayNumber(era: era, dayOfEra: doe, day: date.day)
+		let doe = yoe &* 365 + (153 &* mp &+ 2) / 5
+		return try Era.julianDayNumber(era: era, dayOfEra: doe, day: date.day)
 	}
 
 	/// Returns the year, month, and day for the specified Julian day number.
@@ -66,12 +92,14 @@ public enum JulianCalendar {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: A valid date in the Julian calendar.
 	public static func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
-		let (era, doe) = eraLayout.eraAndDayOfEra(julianDayNumber: J)
+		let (era, doe) = Era.eraAndDayOfEra(julianDayNumber: J)
+		assert(doe >= 0 && doe < Era.days, "Day of era outside the right-open interval [0, \(Era.days))")
 		// Year of era in [0, 4)
-		let yoe = (doe - doe / 1_460) / 365
+		let yoe = (doe &- doe / 1_460) / 365
+		assert(yoe >= 0 && yoe < Era.years, "Year of era outside the right-open interval [0, \(Era.years))")
 		// Day of year in [0, 366) with March 1 = 0
-		let doy = doe - 365 * yoe
-		return eraLayout.date(era: era, yearOfEra: yoe, dayOfYear: doy)
+		let doy = doe &- 365 &* yoe
+		return Era.date(era: era, yearOfEra: yoe, dayOfYear: doy)
 	}
 }
 
