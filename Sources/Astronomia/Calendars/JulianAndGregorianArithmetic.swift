@@ -57,7 +57,7 @@ enum JulianAndGregorianArithmetic {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The day of the week from 1 (Sunday) to 7 (Saturday).
 	static func dayOfWeek(_ J: JulianDayNumber) -> Int {
-		1 + ((J % 7) + 8) % 7
+		1 &+ ((J % 7) &+ 8) % 7
 	}
 
 	/// Returns the day of year (ordinal day) for the specified month and day, starting at 1.
@@ -69,7 +69,8 @@ enum JulianAndGregorianArithmetic {
 	/// - Returns: The day of year, starting at 1.
 	/// - Precondition: The month is in the closed interval [1, 12]; the day is not checked.
 	static func dayOfYear(month M: Int, day D: Int, isLeap: Bool) -> Int {
-		(367 * M - 362) / 12 - (M <= 2 ? 0 : isLeap ? 1 : 2) + D
+		assert(M >= 1 && M <= 12, "Month is outside the closed interval [1, 12]")
+		return (367 * M - 362) / 12 - (M <= 2 ? 0 : isLeap ? 1 : 2) + D
 	}
 
 	/// Returns the month and day for the specified day of year (ordinal day).
@@ -81,6 +82,7 @@ enum JulianAndGregorianArithmetic {
 	/// - Precondition: `N` is in the closed interval [1, 365] in a common year or
 	///   [1, 366] in a leap year.
 	static func monthAndDay(dayOfYear N: Int, isLeap: Bool) -> (month: Int, day: Int) {
+		assert(N >= 1 && N <= numberOfDays(isLeap: isLeap), "Day of year is outside the closed interval [1, \(numberOfDays(isLeap: isLeap))]")
 		let janFeb = isLeap ? 60 : 59
 		let doy = N > janFeb ? N - 1 - janFeb : N - 1 + 306   // March-based day of year, March 1 = 0
 		let mp = (5 * doy + 2) / 153

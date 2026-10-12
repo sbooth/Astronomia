@@ -46,7 +46,7 @@ enum DecimalYearArithmetic {
 		assert(N >= 1 && N <= d, "Day of year is outside the closed interval [1, \(d)]")
 		assert(dayFraction.isFinite, "Day fraction must be finite")
 		assert(dayFraction >= 0 && dayFraction < 1, "Day fraction is outside the right-open interval [0, 1)")
-		assert(d == 365 || d == 366 || d == 355, "Invalid number of days in year")
+		assert(d >= 1 && (d == 365 || d == 366 || d == 355), "Invalid number of days in year")
 		let days = Double(d)
 		// Days elapsed since midnight on January 1 as the unevaluated sum sum + error.
 		// The operands are finite and small, so twoSum cannot fail.
@@ -76,14 +76,14 @@ enum DecimalYearArithmetic {
 		assert(decimalYear >= Double(Y), "Decimal year is before the start of year Y")
 		assert(yearFraction.isFinite, "Year fraction must be finite")
 		assert(yearFraction >= 0 && yearFraction < 1, "Year fraction is outside the right-open interval [0, 1)")
-		assert(d == 365 || d == 366 || d == 355, "Invalid number of days in year")
-		var N = Int((yearFraction * Double(d)).rounded(.down)) + 1
+		assert(d >= 1 && (d == 365 || d == 366 || d == 355), "Invalid number of days in year")
+		var N = Int((yearFraction * Double(d)).rounded(.down)) &+ 1
 		// Correct the estimate for rounding in the decimal year
 		while N > 1, Self.decimalYear(year: Y, dayOfYear: N, daysInYear: d) > decimalYear {
-			N -= 1
+			N &-= 1
 		}
 		while N < d, Self.decimalYear(year: Y, dayOfYear: N + 1, daysInYear: d) <= decimalYear {
-			N += 1
+			N &+= 1
 		}
 		return N
 	}
