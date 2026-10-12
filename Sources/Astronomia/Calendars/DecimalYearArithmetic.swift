@@ -101,8 +101,9 @@ enum DecimalYearArithmetic {
 		guard decimalYear.isFinite else { throw .nonFiniteValue }
 		guard let (Y, yearFraction) = decimalYear.floorAndFraction else { throw .invalidDecimalYear }
 		// Ensure accurate date for decimal years that rounded to 0
-		if decimalYear < Double(Y) {
-			return (Y - 1, daysInYear(Y - 1))
+		assert(decimalYear >= Double(Y) || Y == 0, "Floor correction outside year 0")
+		if Y == 0, decimalYear < 0 {
+			return (-1, daysInYear(-1))
 		}
 		let d = daysInYear(Y)
 		let dayOfYear = dayOfYear(decimalYear: decimalYear, year: Y, yearFraction: yearFraction, daysInYear: d)
