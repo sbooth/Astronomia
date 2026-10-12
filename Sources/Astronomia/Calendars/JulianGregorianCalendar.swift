@@ -54,7 +54,7 @@ public enum JulianGregorianCalendar {
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
 		// Normalize the month to [1, 12] so no intermediate value can overflow
 		let (q, r) = date.month.flooredQuotientAndRemainder(dividingBy: 12)
-		let (yc, month) = r == 0 ? (q - 1, 12) : (q, r)
+		let (yc, month) = r == 0 ? (q &- 1, 12) : (q, r)
 
 		let (year, yearOverflow) = date.year.addingReportingOverflow(yc)
 		guard !yearOverflow else { throw .julianDayNumberNotRepresentable }
@@ -226,7 +226,7 @@ extension JulianGregorianCalendar {
 	/// - Returns: The day of year, from 1 to the number of days in the year.
 	public static func dayOfYearFromJulianDayNumber(_ J: JulianDayNumber) -> Int {
 		if changeoverYear.contains(J) {
-			return J - firstDayOfChangeoverYear + 1
+			return J &- firstDayOfChangeoverYear &+ 1
 		}
 		return J < GregorianCalendar.papalReform ? JulianCalendar.dayOfYearFromJulianDayNumber(J) : GregorianCalendar.dayOfYearFromJulianDayNumber(J)
 	}
@@ -252,7 +252,7 @@ extension JulianGregorianCalendar {
 		}
 		guard isValid(year: Y, month: M, day: D) else { throw .invalidDate }
 		// A valid date in 1582 has a small JDN, so neither the conversion nor the subtraction can fail
-		return try! julianDayNumberFrom(year: Y, month: M, day: D) - firstDayOfChangeoverYear + 1
+		return try! julianDayNumberFrom(year: Y, month: M, day: D) &- firstDayOfChangeoverYear &+ 1
 	}
 
 	/// Returns the year, month, and day for the specified year and day of year (ordinal day).
@@ -293,7 +293,7 @@ extension JulianGregorianCalendar {
 		let N: Int
 		if changeoverYear.contains(J) {
 			// 1582 has 355 days, counted continuously across the changeover
-			N = J - firstDayOfChangeoverYear + 1
+			N = J &- firstDayOfChangeoverYear &+ 1
 		} else {
 			// Outside 1582 the year follows a single calendar's rules
 			N = JulianAndGregorianArithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))

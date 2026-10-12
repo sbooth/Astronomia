@@ -57,7 +57,7 @@ enum JulianAndGregorianArithmetic {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The day of the week from 1 (Sunday) to 7 (Saturday).
 	static func dayOfWeek(_ J: JulianDayNumber) -> Int {
-		1 + ((J % 7) + 8) % 7
+		1 &+ ((J % 7) &+ 8) % 7
 	}
 
 	/// Returns the day of year (ordinal day) for the specified month and day, starting at 1.
@@ -67,9 +67,10 @@ enum JulianAndGregorianArithmetic {
 	///   - D: The day number, starting at 1.
 	///   - isLeap: Whether the date's year is a leap year.
 	/// - Returns: The day of year, starting at 1.
-	/// - Precondition: The month is in the closed interval [1, 12]; the day is not checked.
+	/// - Precondition: The month and day form a valid date for the supplied leap-year status.
 	static func dayOfYear(month M: Int, day D: Int, isLeap: Bool) -> Int {
-		(367 * M - 362) / 12 - (M <= 2 ? 0 : isLeap ? 1 : 2) + D
+		assert(isValid(month: M, day: D, isLeap: isLeap), "Month and day do not form a valid date")
+		return (367 &* M &- 362) / 12 &- (M <= 2 ? 0 : isLeap ? 1 : 2) &+ D
 	}
 
 	/// Returns the month and day for the specified day of year (ordinal day).
@@ -81,9 +82,14 @@ enum JulianAndGregorianArithmetic {
 	/// - Precondition: `N` is in the closed interval [1, 365] in a common year or
 	///   [1, 366] in a leap year.
 	static func monthAndDay(dayOfYear N: Int, isLeap: Bool) -> (month: Int, day: Int) {
+		assert(N >= 1 && N <= numberOfDays(isLeap: isLeap), "Day of year is outside the closed interval [1, \(numberOfDays(isLeap: isLeap))]")
+		// Days in January and February
 		let janFeb = isLeap ? 60 : 59
-		let doy = N > janFeb ? N - 1 - janFeb : N - 1 + 306   // March-based day of year, March 1 = 0
-		let mp = (5 * doy + 2) / 153
-		return (mp < 10 ? mp + 3 : mp - 9, doy - (153 * mp + 2) / 5 + 1)
+		// March-based day of year in [0, 366) with March 1 = 0: [0, 306) for March through
+		// December, [306, 366) for January and February
+		let doy = N > janFeb ? N &- 1 &- janFeb : N &- 1 &+ 306
+		// Month in [0, 12) with March = 0; 5 × doy + 2 < 1,830
+		let mp = (5 &* doy &+ 2) / 153
+		return (mp < 10 ? mp &+ 3 : mp &- 9, doy &- (153 &* mp &+ 2) / 5 &+ 1)
 	}
 }

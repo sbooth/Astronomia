@@ -161,6 +161,7 @@ extension JulianDate.Interval {
 
 		let (daySeconds, productOverflow) = days.multipliedReportingOverflow(by: 86_400)
 		if !productOverflow {
+			// `w` is in [-43,200, 43,200]
 			let (seconds, sumOverflow) = daySeconds.addingReportingOverflow(Int(w))
 			if !sumOverflow {
 				return (Double(seconds), f)
