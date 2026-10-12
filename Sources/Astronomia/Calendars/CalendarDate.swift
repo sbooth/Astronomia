@@ -225,10 +225,25 @@ extension CalendarDate {
 	///     day cannot be represented as a ``JulianDayNumber``.
 	public init(decimalYear: Double, _ calendar: CalendarIdentifier) throws(CalendarError) {
 		let calendarDay = try CalendarDay(decimalYear: decimalYear, calendar)
-		let fraction = (decimalYear - calendarDay.decimalYear) * Double(calendarDay.numberOfDaysInYear)
-		let dayFraction = fraction > 0 ? min(fraction, Double(1).nextDown) : 0
-		self.init(calendarDay: calendarDay, uncheckedDayFraction: dayFraction)
-	}
+		let Y = calendarDay.year
+		let N = calendarDay.dayOfYear
+		let d = calendarDay.numberOfDaysInYear
+		let dayFraction: Double
+		if decimalYear == DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d) {
+			// The start of a day is generally rounded, so measuring from the exact start would
+			// leave a tiny fraction of either sign. A decimal year equal to the rounded start of
+			// day is that day's midnight.
+			dayFraction = 0
+		} else {
+			// Measure from the start of the year rather than the start of the day. Subtracting
+			// the integer year is exact because both values are multiples of the decimal year's
+			// ulp and the difference is below 1.
+			let yearFraction = decimalYear - Double(Y)
+			// yearFraction × d − (N − 1) with a single rounding
+			let fraction = Double(-(N - 1)).addingProduct(yearFraction, Double(d))
+			dayFraction = fraction > 0 ? min(fraction, Double(1).nextDown) : 0
+		}
+		self.init(calendarDay: calendarDay, uncheckedDayFraction: dayFraction)	}
 
 	/// The timescale-agnostic decimal year for this calendar date.
 	///
@@ -241,7 +256,10 @@ extension CalendarDate {
 	///   Besselian epoch; the same instant can have slightly different decimal years in
 	///   different calendars.
 	public var decimalYear: Double {
-		calendarDay.decimalYear + dayFraction / Double(calendarDay.numberOfDaysInYear)
+		let Y = calendarDay.year
+		let N = calendarDay.dayOfYear
+		let d = calendarDay.numberOfDaysInYear
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, dayFraction: dayFraction, daysInYear: d)
 	}
 }
 
