@@ -40,16 +40,16 @@ extension JulianAndGregorianArithmetic {
 	/// days in the Julian calendar, and 400 years and 146,097 days in the Gregorian calendar.
 	/// Julian day numbers are split into blocks of the same length, and era 0, which begins on
 	/// March 1, 1 BCE, starts on day ``zeroDayOfBlock`` of block ``zeroBlock``.
-	struct EraLayout {
+	protocol EraLayout {
 		/// The number of years in an era.
-		let years: Int
+		static var years: Int { get }
 		/// The number of days in an era, which is also the length of a block.
-		let days: Int
+		static var days: Int { get }
 		/// The block containing the start of era 0.
-		let zeroBlock: Int
+		static var zeroBlock: Int { get }
 		/// The day within the block containing the start of era 0 on which era 0 begins,
 		/// in the right-open interval [1, `days`).
-		let zeroDayOfBlock: Int
+		static var zeroDayOfBlock: Int { get }
 	}
 }
 
@@ -58,7 +58,7 @@ extension JulianAndGregorianArithmetic.EraLayout {
 	///
 	/// - Parameter y: The March-based year.
 	/// - Returns: The era and the year of era in the right-open interval [0, ``years``).
-	func eraAndYearOfEra(marchBasedYear y: Int) -> (era: Int, yearOfEra: Int) {
+	static func eraAndYearOfEra(marchBasedYear y: Int) -> (era: Int, yearOfEra: Int) {
 		let (era, yoe) = y.flooredQuotientAndRemainder(dividingBy: years)
 		return (era, yoe)
 	}
@@ -74,7 +74,7 @@ extension JulianAndGregorianArithmetic.EraLayout {
 	/// - Returns: The Julian day number.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   cannot be represented as a ``JulianDayNumber``.
-	func julianDayNumber(era: Int, dayOfEra doe: Int, day: Int) throws(CalendarError) -> JulianDayNumber {
+	static func julianDayNumber(era: Int, dayOfEra doe: Int, day: Int) throws(CalendarError) -> JulianDayNumber {
 		// `day` as whole blocks plus remaining days in [0, days)
 		let (dayBlocks, dayRem) = day.flooredQuotientAndRemainder(dividingBy: days)
 
@@ -104,7 +104,7 @@ extension JulianAndGregorianArithmetic.EraLayout {
 	///
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The era and the day of era in the right-open interval [0, ``days``).
-	func eraAndDayOfEra(julianDayNumber J: JulianDayNumber) -> (era: Int, dayOfEra: Int) {
+	static func eraAndDayOfEra(julianDayNumber J: JulianDayNumber) -> (era: Int, dayOfEra: Int) {
 		// `q` and `r` are the floored quotient and remainder of the JDN divided by `days`
 		let (q, r) = J.flooredQuotientAndRemainder(dividingBy: days)
 
@@ -120,7 +120,7 @@ extension JulianAndGregorianArithmetic.EraLayout {
 	///   - doy: The day of the March-based year in the right-open interval [0, 366)
 	///     with March 1 = 0.
 	/// - Returns: The year, month, and day.
-	func date(era: Int, yearOfEra yoe: Int, dayOfYear doy: Int) -> YearMonthDay {
+	static func date(era: Int, yearOfEra yoe: Int, dayOfYear doy: Int) -> YearMonthDay {
 		// Month in [0, 12) with March = 0
 		let mp = (5 * doy + 2) / 153
 

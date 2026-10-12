@@ -38,11 +38,36 @@ public enum GregorianCalendar {
 		try julianDayNumberFromDate((Y, M, D))
 	}
 
-	/// The 400-year era of the Gregorian calendar.
+	/// The 400-year cycle of the Gregorian calendar, positioned against the Julian day numbers.
 	///
-	/// Era 0 begins on March 1, 1 BCE in the proleptic Gregorian calendar,
-	/// JDN 1,721,120 = 11 × 146,097 + 114,053, which is 306 days before `epoch`.
-	private static let eraLayout = Arithmetic.EraLayout(years: 400, days: 146_097, zeroBlock: 11, zeroDayOfBlock: 114_053)
+	/// The Gregorian leap year rule repeats every 400 years, and those 400 years always contain
+	/// 146,097 days (97 leap years). Each era begins on March 1, so its leap day, if any, falls
+	/// at the end of a year. Era 0 begins on March 1, 1 BCE (year 0), which is JDN 1,721,120.
+	///
+	/// Julian day numbers are divided into blocks of 146,097 days counted from JDN 0, which is
+	/// November 24, 4714 BCE in the proleptic Gregorian calendar. Because a block is exactly one
+	/// 400-year cycle, every block begins on November 24, and block `k` begins in year
+	/// −4713 + 400 × `k`.
+	private enum Era: Arithmetic.EraLayout {
+		/// The number of years in one cycle of the Gregorian leap year rule.
+		static var years: Int { 400 }
+
+		/// The number of days in 400 Gregorian years: 400 × 365 + 97 leap days.
+		///
+		/// This is also the length of a block of Julian day numbers.
+		static var days: Int { 146_097 }
+
+		/// The block of Julian day numbers containing March 1, 1 BCE.
+		///
+		/// Block 11 spans JDN 1,607,067 (November 24, 314 BCE) through JDN 1,753,163.
+		static var zeroBlock: Int { 11 }
+
+		/// The day within block 11 on which era 0 begins.
+		///
+		/// Era 0 begins at JDN 11 × 146,097 + 114,053 = 1,721,120, which is March 1, 1 BCE,
+		/// 114,053 days after the start of the block on November 24, 314 BCE.
+		static var zeroDayOfBlock: Int { 114_053 }
+	}
 
 	/// Returns the Julian day number for the specified date.
 	///
@@ -54,10 +79,10 @@ public enum GregorianCalendar {
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
 		let (y, mp) = try Arithmetic.marchBasedYearAndMonth(date)
-		let (era, yoe) = eraLayout.eraAndYearOfEra(marchBasedYear: y)
+		let (era, yoe) = Era.eraAndYearOfEra(marchBasedYear: y)
 		// Day of era of the first day of the month, in [0, 146,069)
 		let doe = yoe * 365 + yoe / 4 - yoe / 100 + (153 * mp + 2) / 5
-		return try eraLayout.julianDayNumber(era: era, dayOfEra: doe, day: date.day)
+		return try Era.julianDayNumber(era: era, dayOfEra: doe, day: date.day)
 	}
 
 	/// Returns the year, month, and day for the specified Julian day number.
@@ -66,12 +91,12 @@ public enum GregorianCalendar {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: A valid date in the Gregorian calendar.
 	public static func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
-		let (era, doe) = eraLayout.eraAndDayOfEra(julianDayNumber: J)
+		let (era, doe) = Era.eraAndDayOfEra(julianDayNumber: J)
 		// Year of era in [0, 400)
 		let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365
 		// Day of year in [0, 366) with March 1 = 0
 		let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
-		return eraLayout.date(era: era, yearOfEra: yoe, dayOfYear: doy)
+		return Era.date(era: era, yearOfEra: yoe, dayOfYear: doy)
 	}
 }
 
