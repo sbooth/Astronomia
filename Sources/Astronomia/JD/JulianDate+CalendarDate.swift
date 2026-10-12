@@ -22,6 +22,13 @@ extension JulianDate {
 	/// Creates a Julian Date for the specified year, month, and day in the given calendar
 	/// with the specified day fraction.
 	///
+	/// This is equivalent to creating a ``CalendarDate`` and passing it to
+	/// ``init(_:)``. Errors are ``CalendarError`` values, not ``JulianDateError`` values,
+	/// because they describe an invalid calendar date.
+	///
+	/// The conversion is exact for times of day from 06:00. Earlier times can round by up to
+	/// 2^-55 days (about 2.4 ps).
+	///
 	/// - Note: The Julian Date is in the calendar date's timescale.
 	/// - Parameters:
 	///   - year: The arithmetic year number. Year number 0 is 1 BCE.
