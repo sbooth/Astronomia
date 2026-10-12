@@ -11,13 +11,6 @@
 /// the leap year rule. These helpers do not apply to ``JulianGregorianCalendar``, whose
 /// year 1582 has 355 days and whose October 1582 has 21 days.
 enum JulianAndGregorianArithmetic {
-	/// The number of days before the first of the month in a common year, indexed from
-	/// 0 (January) to 11 (December).
-	static let daysBeforeCommonYearMonth = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
-	/// The number of days before the first of the month in a leap year, indexed from
-	/// 0 (January) to 11 (December).
-	static let daysBeforeLeapYearMonth = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
-
 	/// Returns the number of days in a year: 365 or 366.
 	///
 	/// - Parameter isLeap: Whether the year is a leap year.
@@ -76,8 +69,7 @@ enum JulianAndGregorianArithmetic {
 	/// - Returns: The day of year, starting at 1.
 	/// - Precondition: The month is in the closed interval [1, 12]; the day is not checked.
 	static func dayOfYear(month M: Int, day D: Int, isLeap: Bool) -> Int {
-		let daysBeforeMonth = isLeap ? daysBeforeLeapYearMonth : daysBeforeCommonYearMonth
-		return D + daysBeforeMonth[M - 1]
+		(367 * M - 362) / 12 - (M <= 2 ? 0 : isLeap ? 1 : 2) + D
 	}
 
 	/// Returns the month and day for the specified day of year (ordinal day).
@@ -89,8 +81,9 @@ enum JulianAndGregorianArithmetic {
 	/// - Precondition: `N` is in the closed interval [1, 365] in a common year or
 	///   [1, 366] in a leap year.
 	static func monthAndDay(dayOfYear N: Int, isLeap: Bool) -> (month: Int, day: Int) {
-		let daysBeforeMonth = isLeap ? daysBeforeLeapYearMonth : daysBeforeCommonYearMonth
-		let m = daysBeforeMonth.lastIndex { $0 < N }!
-		return (m + 1, N - daysBeforeMonth[m])
+		let janFeb = isLeap ? 60 : 59
+		let doy = N > janFeb ? N - 1 - janFeb : N - 1 + 306   // March-based day of year, March 1 = 0
+		let mp = (5 * doy + 2) / 153
+		return (mp < 10 ? mp + 3 : mp - 9, doy - (153 * mp + 2) / 5 + 1)
 	}
 }
