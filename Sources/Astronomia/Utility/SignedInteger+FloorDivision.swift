@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-extension SignedInteger {
+extension FixedWidthInteger where Self: SignedInteger {
 	/// Returns the quotient and remainder of this value divided by the given
 	/// value using floor division.
 	///
@@ -29,13 +29,15 @@ extension SignedInteger {
 	///
 	/// - Parameter divisor: The value to divide this value by.
 	/// - Returns: The quotient and remainder of the division.
-	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`
-	///   (for a fixed-width type, this value is not `Self.min` when `divisor` is -1).
+	/// - Precondition: `divisor` is not zero and this value is not `Self.min` when `divisor` is -1.
 	@inlinable @inline(__always)
 	func flooredQuotientAndRemainder(dividingBy divisor: Self) -> (quotient: Self, remainder: Self) {
 		let (quotient, remainder) = quotientAndRemainder(dividingBy: divisor)
 		if remainder != 0 && (remainder ^ divisor) < 0 {
-			return (quotient - 1, remainder + divisor)
+			// The adjustment requires |divisor| ≥ 2, so |quotient| ≤ |Self.min| / 2 and
+			// quotient - 1 cannot overflow. remainder and divisor have opposite signs, so
+			// their sum cannot overflow.
+			return (quotient &- 1, remainder &+ divisor)
 		}
 		return (quotient, remainder)
 	}
@@ -47,8 +49,7 @@ extension SignedInteger {
 	///
 	/// - Parameter divisor: The value to divide this value by.
 	/// - Returns: The quotient of the division.
-	/// - Precondition: `divisor` is not zero and the quotient is representable in `Self`
-	///   (for a fixed-width type, this value is not `Self.min` when `divisor` is -1).
+	/// - Precondition: `divisor` is not zero and this value is not `Self.min` when `divisor` is -1.
 	@inlinable @inline(__always)
 	func flooredQuotient(dividingBy divisor: Self) -> Self {
 		flooredQuotientAndRemainder(dividingBy: divisor).quotient
@@ -61,11 +62,10 @@ extension SignedInteger {
 	///
 	/// - Parameter divisor: The value to divide this value by.
 	/// - Returns: The remainder of the division.
-	/// - Precondition: `divisor` is not zero, and for a fixed-width type this value is not
-	///   `Self.min` when `divisor` is -1, because Swift's `%` traps on that overflow.
+	/// - Precondition: `divisor` is not zero and this value is not `Self.min` when `divisor` is -1.
 	@inlinable @inline(__always)
 	func flooredRemainder(dividingBy divisor: Self) -> Self {
 		let remainder = self % divisor
-		return remainder != 0 && (remainder ^ divisor) < 0 ? remainder + divisor : remainder
+		return remainder != 0 && (remainder ^ divisor) < 0 ? remainder &+ divisor : remainder
 	}
 }
