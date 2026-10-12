@@ -73,9 +73,10 @@ enum DecimalYearArithmetic {
 	///   `decimalYear`.
 	static func dayOfYear(decimalYear: Double, year Y: Int, yearFraction: Double, daysInYear d: Int) -> Int {
 		assert(decimalYear.isFinite, "Decimal year must be finite")
-		assert(Double(Y) <= decimalYear, "Decimal year is before the start of year Y")
+		assert(decimalYear >= Double(Y), "Decimal year is before the start of year Y")
+		assert(yearFraction.isFinite, "Year fraction must be finite")
 		assert(yearFraction >= 0 && yearFraction < 1, "Year fraction is outside the right-open interval [0, 1)")
-		assert(d > 0, "Number of days in year must be positive")
+		assert(d == 365 || d == 366 || d == 355, "Invalid number of days in year")
 		var N = Int((yearFraction * Double(d)).rounded(.down)) + 1
 		// Correct the estimate for rounding in the decimal year
 		while N > 1, Self.decimalYear(year: Y, dayOfYear: N, daysInYear: d) > decimalYear {
