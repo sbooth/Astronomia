@@ -24,9 +24,9 @@ public struct CalendarDay: Sendable {
 	/// Creates a calendar day for the specified year, month, and day in the given calendar.
 	///
 	/// - Parameters:
-	///   - year: The arithmetic year number. Year number 0 is 1 BCE.
-	///   - month: The month number from 1 (January) to 12 (December).
-	///   - day: The day number, starting at 1.
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number from 1 (January) to 12 (December).
+	///   - D: The day number, starting at 1.
 	///   - calendar: The calendar the year, month, and day belong to.
 	/// - Throws:
 	///   - ``CalendarError/invalidDate`` if the year, month, and day do not form a valid date
@@ -34,15 +34,10 @@ public struct CalendarDay: Sendable {
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the year, month, and day form
 	///     a valid date, but its Julian day number cannot be represented as a
 	///     ``JulianDayNumber``.
-	public init(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(CalendarError) {
-		guard calendar.isValid(year: year, month: month, day: day) else { throw .invalidDate }
-		let J = try calendar.julianDayNumberFrom(year: year, month: month, day: day)
-
-		self.year = year
-		self.month = month
-		self.day = day
-		self.calendar = calendar
-		self.julianDayNumber = J
+	public init(year Y: Int, month M: Int, day D: Int, _ calendar: CalendarIdentifier) throws(CalendarError) {
+		guard calendar.isValid(year: Y, month: M, day: D) else { throw .invalidDate }
+		let J = try calendar.julianDayNumberFrom(year: Y, month: M, day: D)
+		self.init(uncheckedYear: Y, month: M, day: D, julianDayNumber: J, calendar)
 	}
 
 	/// Creates the calendar day corresponding to the specified Julian day number
@@ -52,9 +47,8 @@ public struct CalendarDay: Sendable {
 	///   - J: The Julian day number. Every ``JulianDayNumber`` value is valid.
 	///   - calendar: The calendar in which to express the day.
 	public init(julianDayNumber J: JulianDayNumber, _ calendar: CalendarIdentifier) {
-		(year, month, day) = calendar.dateFromJulianDayNumber(J)
-		self.calendar = calendar
-		julianDayNumber = J
+		let (Y, M, D) = calendar.dateFromJulianDayNumber(J)
+		self.init(uncheckedYear: Y, month: M, day: D, julianDayNumber: J, calendar)
 	}
 
 	/// Creates a calendar day from possibly out-of-range month and day values.
@@ -64,15 +58,29 @@ public struct CalendarDay: Sendable {
 	///   See ``JulianGregorianCalendar/julianDayNumberFromDate(_:)`` for how out-of-range
 	///   values are interpreted in the Julian-Gregorian calendar.
 	/// - Parameters:
-	///   - year: The arithmetic year number. Year number 0 is 1 BCE.
-	///   - month: The month number, possibly outside the closed interval [1, 12].
-	///   - day: The day number, possibly outside the days of the month.
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number, possibly outside the closed interval [1, 12].
+	///   - D: The day number, possibly outside the days of the month.
 	///   - calendar: The calendar the year, month, and day belong to.
 	/// - Returns: A calendar day with valid components in `calendar`.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the year, month, and day cannot be represented as a ``JulianDayNumber``.
-	public static func normalized(year: Int, month: Int, day: Int, _ calendar: CalendarIdentifier) throws(CalendarError) -> CalendarDay {
-		try CalendarDay(julianDayNumber: calendar.julianDayNumberFrom(year: year, month: month, day: day), calendar)
+	public static func normalized(year Y: Int, month M: Int, day D: Int, _ calendar: CalendarIdentifier) throws(CalendarError) -> CalendarDay {
+		let J = try calendar.julianDayNumberFrom(year: Y, month: M, day: D)
+		return CalendarDay(julianDayNumber: J, calendar)
+	}
+}
+
+extension CalendarDay {
+	/// Creates a calendar day from an unchecked year, month, day, and Julian day number in the specified calendar.
+	init(uncheckedYear Y: Int, month M: Int, day D: Int, julianDayNumber J: JulianDayNumber, _ calendar: CalendarIdentifier) {
+		assert(calendar.isValid(year: Y, month: M, day: D), "Invalid date")
+		assert(calendar.dateFromJulianDayNumber(J) == (Y, M, D), "Mismatch between date and Julian day number")
+		self.year = Y
+		self.month = M
+		self.day = D
+		self.calendar = calendar
+		self.julianDayNumber = J
 	}
 }
 
@@ -127,7 +135,32 @@ extension CalendarDay {
 extension CalendarDay {
 	/// The day of year (ordinal day) for this calendar day, starting at 1.
 	public var dayOfYear: Int {
-		calendar.dayOfYearFromJulianDayNumber(julianDayNumber)
+		// A CalendarDay is always a valid date, so this cannot throw
+		try! calendar.dayOfYearFrom(year: year, month: month, day: day)
+	}
+}
+
+extension CalendarDay {
+	/// Creates the calendar day containing the specified timescale-agnostic decimal year
+	/// in the given calendar.
+	///
+	/// The result is the latest day whose start is at or before the decimal year, and any fraction
+	/// of a day is discarded.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameters:
+	///   - decimalYear: The decimal year. Year number 0 is 1 BCE.
+	///   - calendar: The calendar the decimal year is expressed in.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
+	///     day cannot be represented as a ``JulianDayNumber``.
+	public init(decimalYear: Double, _ calendar: CalendarIdentifier) throws(CalendarError) {
+		let (Y, M, D) = try calendar.dateFromDecimalYear(decimalYear)
+		let J = try calendar.julianDayNumberFrom(year: Y, month: M, day: D)
+		self.init(uncheckedYear: Y, month: M, day: D, julianDayNumber: J, calendar)
 	}
 
 	/// The decimal year for the start of this calendar day.
@@ -136,11 +169,16 @@ extension CalendarDay {
 	/// of days in the year, so January 1, 1985 is 1985.0 and July 2, 1985 is
 	/// 1985 + 182/365 ≈ 1985.4986.
 	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
 	/// - Note: This is a calendar-based value, not an astronomical epoch such as a Julian or
 	///   Besselian epoch; the same day can have slightly different decimal years in different
 	///   calendars.
 	public var decimalYear: Double {
-		Double(year) + Double(dayOfYear - 1) / Double(numberOfDaysInYear)
+		let Y = year
+		let N = dayOfYear
+		let d = numberOfDaysInYear
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
 	}
 }
 

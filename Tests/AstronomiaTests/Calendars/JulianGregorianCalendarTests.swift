@@ -110,6 +110,51 @@ import Testing
 		#expect(try JulianGregorianCalendar.dayOfYearFrom(year: 1582, month: 12, day: 31) == 355)
 	}
 
+	@Test func changeoverConstants() throws {
+		let first = JulianGregorianCalendar.firstGregorianCalendarDate
+		let last = JulianGregorianCalendar.lastJulianCalendarDate
+
+		// The changeover dates themselves
+		#expect(first == (1582, 10, 15))
+		#expect(last == (1582, 10, 4))
+
+		// October 15, 1582 (Gregorian) immediately follows October 4, 1582 (Julian)
+		let firstGregorianJDN = try GregorianCalendar.julianDayNumberFromDate(first)
+		#expect(GregorianCalendar.papalReform == firstGregorianJDN)
+		#expect(try JulianCalendar.julianDayNumberFromDate(last) + 1 == firstGregorianJDN)
+
+		// The changeover year runs from January 1, 1582 (Julian) up to January 1, 1583 (Gregorian)
+		let startOf1582 = try JulianCalendar.julianDayNumberFrom(year: 1582, month: 1, day: 1)
+		let startOf1583 = try GregorianCalendar.julianDayNumberFrom(year: 1583, month: 1, day: 1)
+		#expect(JulianGregorianCalendar.firstDayOfChangeoverYear == startOf1582)
+		#expect(JulianGregorianCalendar.numberOfDaysInChangeoverYear == startOf1583 - startOf1582)
+		#expect(JulianGregorianCalendar.changeoverYear == startOf1582 ..< startOf1583)
+
+		// October 1582 runs from October 1 (Julian) up to November 1 (Gregorian)
+		let startOfOctober = try JulianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 1)
+		let startOfNovember = try GregorianCalendar.julianDayNumberFrom(year: 1582, month: 11, day: 1)
+		#expect(JulianGregorianCalendar.numberOfDaysInChangeoverMonth == startOfNovember - startOfOctober)
+
+		// JulianGregorianCalendar.isLeapYear relies on 1582 being a common year in both calendars
+		#expect(!JulianCalendar.isLeapYear(1582))
+		#expect(!GregorianCalendar.isLeapYear(1582))
+
+		// The Julian calendar took effect on January 1, 45 BCE (year -44)
+		#expect(JulianCalendar.effective == (try JulianCalendar.julianDayNumberFrom(year: -44, month: 1, day: 1)))
+	}
+	
+	@Test func decimalYear() throws {
+		for Y in [1500, 1581, 1582, 1583, 1600, 1700] {
+			for N in 1...JulianGregorianCalendar.numberOfDaysInYear(Y) {
+				let date = try JulianGregorianCalendar.dateFrom(year: Y, dayOfYear: N)
+				let y = try JulianGregorianCalendar.decimalYearFrom(year: date.year, month: date.month, day: date.day)
+				#expect(try JulianGregorianCalendar.dateFromDecimalYear(y) == date)
+			}
+		}
+		#expect(try JulianGregorianCalendar.dateFromDecimalYear(1582 + 276.0 / 355) == (1582, 10, 4))
+		#expect(try JulianGregorianCalendar.dateFromDecimalYear(1582 + 277.0 / 355) == (1582, 10, 15))
+	}
+
 	@Test func easter() {
 		// Dates from Meeus (1998)
 		#expect(JulianGregorianCalendar.easter(year: 1991) == (3, 31))

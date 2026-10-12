@@ -87,6 +87,18 @@ import Testing
 		#expect(throws: CalendarError.invalidDate) { try GregorianCalendar.dateFrom(year: 1700, dayOfYear: 366) }
 	}
 
+	@Test func decimalYear() throws {
+		for Y in [-401, -400, -100, 1900, 2000, 2023, 2024] {
+			for N in 1...GregorianCalendar.numberOfDaysInYear(Y) {
+				let date = try GregorianCalendar.dateFrom(year: Y, dayOfYear: N)
+				let y = try GregorianCalendar.decimalYearFrom(year: date.year, month: date.month, day: date.day)
+				#expect(try GregorianCalendar.dateFromDecimalYear(y) == date)
+			}
+		}
+		#expect(try GregorianCalendar.dateFromDecimalYear(-0x1p-53) == (-1, 12, 31))  // fraction rounds but doesn't carry
+		#expect(try GregorianCalendar.dateFromDecimalYear(-0x1p-54) == (-1, 12, 31))  // tie rounds to 1 and carries
+		#expect(try GregorianCalendar.dateFromDecimalYear(-1e-20) == (-1, 12, 31))	}
+
 	@Test func easter() {
 		// Dates from Meeus (1998)
 		#expect(GregorianCalendar.easter(year: 1991) == (3, 31))

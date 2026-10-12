@@ -5,6 +5,8 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
+private typealias Arithmetic = JulianAndGregorianArithmetic
+
 /// The Gregorian calendar is a solar calendar with 365 days in the year
 /// plus an additional leap day in years divisible by 4, except for years divisible by 100
 /// but not by 400.
@@ -17,7 +19,7 @@
 /// Months are numbered from 1 (January) to 12 (December).
 ///
 /// Day numbers are always positive and the first day of a month has day number 1.
-public struct GregorianCalendar {
+public enum GregorianCalendar {
 	/// The Julian day number for January 1, 1 CE in the proleptic Gregorian calendar.
 	public static let epoch: JulianDayNumber = 1_721_426
 
@@ -36,15 +38,36 @@ public struct GregorianCalendar {
 		try julianDayNumberFromDate((Y, M, D))
 	}
 
-	// Based on https://howardhinnant.github.io/date_algorithms.html
+	/// The 400-year cycle of the Gregorian calendar, positioned against the Julian day numbers.
+	///
+	/// The Gregorian leap year rule repeats every 400 years, and those 400 years always contain
+	/// 146,097 days (97 leap years). Each era begins on March 1, so its leap day, if any, falls
+	/// at the end of a year. Era 0 begins on March 1, 1 BCE (year 0), which is JDN 1,721,120.
+	///
+	/// Julian day numbers are divided into blocks of 146,097 days counted from JDN 0, which is
+	/// November 24, 4714 BCE in the proleptic Gregorian calendar. Because a block is exactly one
+	/// 400-year cycle, every block begins on November 24, and block `k` begins in year
+	/// −4713 + 400 × `k`.
+	private enum Era: Arithmetic.EraLayout {
+		/// The number of years in one cycle of the Gregorian leap year rule.
+		static var years: Int { 400 }
 
-	/// The number of days in a 400-year era, which is also the length of a block.
-	private static let daysPerEra = 146_097
-	/// The block containing the start of era 0 (March 1, 1 BCE in the proleptic Gregorian
-	/// calendar, JDN 1,721,120 which is 306 days before `epoch`).
-	private static let eraZeroBlock = 11
-	/// The day within `eraZeroBlock` on which era 0 begins.
-	private static let eraZeroDayOfBlock = 114_053
+		/// The number of days in 400 Gregorian years: 400 × 365 + 97 leap days.
+		///
+		/// This is also the length of a block of Julian day numbers.
+		static var days: Int { 146_097 }
+
+		/// The block of Julian day numbers containing March 1, 1 BCE.
+		///
+		/// Block 11 spans JDN 1,607,067 (November 24, 314 BCE) through JDN 1,753,163.
+		static var zeroBlock: Int { 11 }
+
+		/// The day within block 11 on which era 0 begins.
+		///
+		/// Era 0 begins at JDN 11 × 146,097 + 114,053 = 1,721,120, which is March 1, 1 BCE,
+		/// 114,053 days after the start of the block on November 24, 314 BCE.
+		static var zeroDayOfBlock: Int { 114_053 }
+	}
 
 	/// Returns the Julian day number for the specified date.
 	///
@@ -55,45 +78,13 @@ public struct GregorianCalendar {
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
-		// Normalize the month in two steps so no intermediate value can overflow.
-		// `m0` is the month in [0, 12) with January = 0;
-		// `mp` is the month in [0, 12) with March = 0.
-		let (yc0, m0) = date.month.flooredQuotientAndRemainder(dividingBy: 12)
-		let (yc1, mp) = (m0 - 3).flooredQuotientAndRemainder(dividingBy: 12)
-
-		// The normalized year, with years beginning on March 1
-		let (y, yearOverflow) = date.year.addingReportingOverflow(yc0 + yc1)
-		guard !yearOverflow else { throw .julianDayNumberNotRepresentable }
-
-		// `era` is the March-based 400-year era containing `y`;
-		// `yoe` is the year of era in [0, 400)
-		let (era, yoe) = y.flooredQuotientAndRemainder(dividingBy: 400)
+		let (y, mp) = try Arithmetic.marchBasedYearAndMonth(date)
+		assert(mp >= 0 && mp < 12, "March-based month outside the right-open interval [0, 12)")
+		let (era, yoe) = Era.eraAndYearOfEra(marchBasedYear: y)
+		assert(yoe >= 0 && yoe < Era.years, "Year of era outside the right-open interval [0, \(Era.years))")
 		// Day of era of the first day of the month, in [0, 146,069)
-		let doe = yoe * 365 + yoe / 4 - yoe / 100 + (153 * mp + 2) / 5
-
-		// `date.day` as whole 146,097-day blocks plus remaining days in [0, 146,097)
-		let (dayBlocks, dayRem) = date.day.flooredQuotientAndRemainder(dividingBy: daysPerEra)
-
-		// The JDN of March 1, 0 in the proleptic Gregorian calendar is 1,721,120:
-		//   1,721,120 = 11 × 146,097 + 114,053
-
-		// J = (era + 11 + dayBlocks) × 146,097 + (doe + dayRem - 1 + 114,053)
-		// The second term is in [114,052, 406,217); move its whole blocks into the first.
-		let (carry, r) = (doe + dayRem - 1 + eraZeroDayOfBlock).quotientAndRemainder(dividingBy: daysPerEra)
-		// `q` and `r` are the floored quotient and remainder of the JDN divided by 146,097
-		let q = era + eraZeroBlock + dayBlocks + carry
-
-		// Compute q × 146,097 + r. For negative q, use (q + 1) × 146,097 + (r - 146,097) so
-		// the product can't overflow when the result fits.
-		let (blocks, days) = q >= 0 ? (q, r) : (q + 1, r - daysPerEra)
-
-		let (product, multiplyOverflow) = blocks.multipliedReportingOverflow(by: daysPerEra)
-		guard !multiplyOverflow else { throw .julianDayNumberNotRepresentable }
-
-		let (result, addOverflow) = product.addingReportingOverflow(days)
-		guard !addOverflow else { throw .julianDayNumberNotRepresentable }
-
-		return result
+		let doe = yoe &* 365 &+ yoe / 4 &- yoe / 100 &+ (153 &* mp &+ 2) / 5
+		return try Era.julianDayNumber(era: era, dayOfEra: doe, day: date.day)
 	}
 
 	/// Returns the year, month, and day for the specified Julian day number.
@@ -102,25 +93,14 @@ public struct GregorianCalendar {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: A valid date in the Gregorian calendar.
 	public static func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
-		// `q` and `r` are the floored quotient and remainder of the JDN divided by 146,097
-		let (q, r) = J.flooredQuotientAndRemainder(dividingBy: daysPerEra)
-
-		// Subtract 1,721,120 = 11 × 146,097 + 114,053, borrowing a block when r < 114,053.
-		// `era` is the March-based 400-year era; `doe` is the day of era in [0, 146,097)
-		let (era, doe) = r >= eraZeroDayOfBlock ? (q - eraZeroBlock, r - eraZeroDayOfBlock) : (q - eraZeroBlock - 1, r - eraZeroDayOfBlock + daysPerEra)
-
+		let (era, doe) = Era.eraAndDayOfEra(julianDayNumber: J)
+		assert(doe >= 0 && doe < Era.days, "Day of era outside the right-open interval [0, \(Era.days))")
 		// Year of era in [0, 400)
-		let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365
+		let yoe = (doe &- doe / 1_460 &+ doe / 36_524 &- doe / 146_096) / 365
+		assert(yoe >= 0 && yoe < Era.years, "Year of era outside the right-open interval [0, \(Era.years))")
 		// Day of year in [0, 366) with March 1 = 0
-		let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
-		// Month in [0, 12) with March = 0
-		let mp = (5 * doy + 2) / 153
-
-		let day = doy - (153 * mp + 2) / 5 + 1
-		let month = mp < 10 ? mp + 3 : mp - 9
-		let year = era * 400 + yoe + (month <= 2 ? 1 : 0)
-
-		return (year, month, day)
+		let doy = doe &- (365 &* yoe &+ yoe / 4 &- yoe / 100)
+		return Era.date(era: era, yearOfEra: yoe, dayOfYear: doy)
 	}
 }
 
@@ -189,7 +169,7 @@ extension GregorianCalendar {
 	/// - Parameter Y: The arithmetic year number. Year number 0 is 1 BCE.
 	/// - Returns: The number of days in year `Y`: 365 or 366.
 	public static func numberOfDaysInYear(_ Y: Int) -> Int {
-		isLeapYear(Y) ? 366 : 365
+		Arithmetic.numberOfDays(isLeap: isLeapYear(Y))
 	}
 
 	/// Returns the number of days in the specified month and year.
@@ -200,16 +180,7 @@ extension GregorianCalendar {
 	/// - Returns: The number of days in the month, from 28 to 31.
 	/// - Throws: ``CalendarError/invalidDate`` if the month is outside the closed interval [1, 12].
 	public static func numberOfDaysIn(month M: Int, year Y: Int) throws(CalendarError) -> Int {
-		switch M {
-		case 4, 6, 9, 11:
-			return 30
-		case 2:
-			return isLeapYear(Y) ? 29 : 28
-		case 1, 3, 5, 7, 8, 10, 12:
-			return 31
-		default:
-			throw .invalidDate
-		}
+		try Arithmetic.numberOfDaysIn(month: M, isLeap: isLeapYear(Y))
 	}
 }
 
@@ -231,8 +202,7 @@ extension GregorianCalendar {
 	/// - Parameter date: The year, month, and day to check.
 	/// - Returns: `true` if `date` is a valid date in the Gregorian calendar; otherwise, `false`.
 	public static func isValidDate(_ date: YearMonthDay) -> Bool {
-		guard let daysInMonth = try? numberOfDaysIn(month: date.month, year: date.year) else { return false }
-		return date.day >= 1 && date.day <= daysInMonth
+		Arithmetic.isValid(month: date.month, day: date.day, isLeap: isLeapYear(date.year))
 	}
 }
 
@@ -243,7 +213,7 @@ extension GregorianCalendar {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The day of the week from 1 (Sunday) to 7 (Saturday).
 	public static func dayOfWeek(_ J: JulianDayNumber) -> Int {
-		JulianCalendar.dayOfWeek(J)
+		Arithmetic.dayOfWeek(J)
 	}
 }
 
@@ -255,7 +225,7 @@ extension GregorianCalendar {
 	/// - Returns: The day of year, from 1 to the number of days in the year.
 	public static func dayOfYearFromJulianDayNumber(_ J: JulianDayNumber) -> Int {
 		let (Y, M, D) = dateFromJulianDayNumber(J)
-		return dayOfYearFrom(uncheckedYear: Y, month: M, day: D)
+		return Arithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
 	}
 
 	/// Returns the day of year (ordinal day) for the specified year, month, and day,
@@ -270,17 +240,7 @@ extension GregorianCalendar {
 	///   a valid date.
 	public static func dayOfYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Int {
 		guard isValid(year: Y, month: M, day: D) else { throw .invalidDate }
-		return dayOfYearFrom(uncheckedYear: Y, month: M, day: D)
-	}
-
-	/// Returns the day of year (ordinal day) for the specified year, month, and day,
-	/// starting at 1.
-	///
-	/// - Returns: The day of year, starting at 1.
-	/// - Precondition: The month is in the closed interval [1, 12]; the day is not checked.
-	private static func dayOfYearFrom(uncheckedYear Y: Int, month M: Int, day D: Int) -> Int {
-		let daysBeforeMonth = isLeapYear(Y) ? JulianCalendar.daysBeforeLeapYearMonth : JulianCalendar.daysBeforeCommonYearMonth
-		return D + daysBeforeMonth[M - 1]
+		return Arithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
 	}
 
 	/// Returns the year, month, and day for the specified year and day of year (ordinal day).
@@ -293,9 +253,76 @@ extension GregorianCalendar {
 	///   a valid date.
 	public static func dateFrom(year Y: Int, dayOfYear N: Int) throws(CalendarError) -> YearMonthDay {
 		guard N >= 1, N <= numberOfDaysInYear(Y) else { throw .invalidDate }
-		let daysBeforeMonth = isLeapYear(Y) ? JulianCalendar.daysBeforeLeapYearMonth : JulianCalendar.daysBeforeCommonYearMonth
-		let m = daysBeforeMonth.lastIndex { $0 < N }!
-		return (Y, m + 1, N - daysBeforeMonth[m])
+		let (M, D) = Arithmetic.monthAndDay(dayOfYear: N, isLeap: isLeapYear(Y))
+		return (Y, M, D)
+	}
+}
+
+extension GregorianCalendar {
+	/// Returns the decimal year for the start of the day with the specified Julian day number.
+	///
+	/// The fraction is the number of whole days elapsed since January 1 divided by the number
+	/// of days in the year, so January 1, 1985 is 1985.0 and July 2, 1985 is
+	/// 1985 + 182/365 ≈ 1985.4986.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Note: This is a calendar-based value, not an astronomical epoch such as a Julian or
+	///   Besselian epoch.
+	/// - Parameter J: The Julian day number.
+	/// - Returns: The decimal year for the start of the day in the Gregorian calendar.
+	public static func decimalYearFromJulianDayNumber(_ J: JulianDayNumber) -> Double {
+		let (Y, M, D) = dateFromJulianDayNumber(J)
+		let N = Arithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
+		let d = numberOfDaysInYear(Y)
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
+	}
+
+	/// Returns the Julian day number of the day containing the specified decimal year.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameter decimalYear: The decimal year. Year number 0 is 1 BCE.
+	/// - Returns: The Julian day number of the day containing `decimalYear`.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
+	///     day cannot be represented as a ``JulianDayNumber``.
+	public static func julianDayNumberFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> JulianDayNumber {
+		try julianDayNumberFromDate(dateFromDecimalYear(decimalYear))
+	}
+
+	/// Returns the decimal year for the start of the specified year, month, and day.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number from 1 (January) to 12 (December).
+	///   - D: The day number, starting at 1.
+	/// - Returns: The decimal year for the start of the day in the Gregorian calendar.
+	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
+	///   a valid date.
+	public static func decimalYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Double {
+		let N = try dayOfYearFrom(year: Y, month: M, day: D)
+		let d = numberOfDaysInYear(Y)
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
+	}
+
+	/// Returns the year, month, and day containing the specified decimal year.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameter decimalYear: The decimal year. Year number 0 is 1 BCE.
+	/// - Returns: The year, month, and day in the Gregorian calendar.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	public static func dateFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> YearMonthDay {
+		let (Y, N) = try DecimalYearArithmetic.yearAndDayOfYear(decimalYear: decimalYear, daysInYear: numberOfDaysInYear)
+		let (M, D) = Arithmetic.monthAndDay(dayOfYear: N, isLeap: isLeapYear(Y))
+		return (Y, M, D)
 	}
 }
 

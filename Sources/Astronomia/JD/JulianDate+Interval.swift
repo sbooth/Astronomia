@@ -51,8 +51,8 @@ extension JulianDate.Interval {
 	///     or the total number of whole days, cannot be represented as an `Int`.
 	public init(days: Int, fractionalDay: Double = 0) throws(JulianDateError) {
 		guard fractionalDay.isFinite else { throw .nonFiniteValue }
-		guard let f = normalizedSum(fractionalDay, 0) else { throw .dayCountNotRepresentable }
-		let (n, overflow) = days.addingReportingOverflow(f.integral)
+		guard let f = fractionalDay.nearestIntegerAndRemainder else { throw .dayCountNotRepresentable }
+		let (n, overflow) = days.addingReportingOverflow(f.nearest)
 		guard !overflow else { throw .dayCountNotRepresentable }
 		self.init(uncheckedDays: n, fractionalDay: f.remainder)
 	}
@@ -116,7 +116,7 @@ extension JulianDate.Interval {
 		let remainingSeconds = sum.addingProduct(-extractedDays, JulianDate.secondsPerDay) + sumError
 		let additionalDays = (remainingSeconds / JulianDate.secondsPerDay).rounded()
 		let secondsWithinDay = remainingSeconds.addingProduct(-additionalDays, JulianDate.secondsPerDay)
-		guard let (carry, fraction) = normalizedSum(secondsWithinDay / JulianDate.secondsPerDay, 0),
+		guard let (carry, fraction) = (secondsWithinDay / JulianDate.secondsPerDay).nearestIntegerAndRemainder,
 			  let (baseDays, dayOffset) = extractedDays.integralParts,
 			  let integerAdjustment = Int(exactly: additionalDays)
 		else { throw .dayCountNotRepresentable }
@@ -161,6 +161,7 @@ extension JulianDate.Interval {
 
 		let (daySeconds, productOverflow) = days.multipliedReportingOverflow(by: 86_400)
 		if !productOverflow {
+			// `w` is in [-43,200, 43,200]
 			let (seconds, sumOverflow) = daySeconds.addingReportingOverflow(Int(w))
 			if !sumOverflow {
 				return (Double(seconds), f)
@@ -180,8 +181,8 @@ extension JulianDate {
 	/// - Throws: ``JulianDateError/dayCountNotRepresentable`` if the whole days in the interval
 	///   cannot be represented as an `Int`.
 	public func interval(to other: JulianDate) throws(JulianDateError) -> Interval {
-		guard let f = normalizedSum(other.fractionFromNoon - fractionFromNoon, 0),
-			  let days = other.julianDayNumber.subtracting(julianDayNumber, plus: f.integral)
+		guard let f = (other.fractionFromNoon - fractionFromNoon).nearestIntegerAndRemainder,
+			  let days = other.julianDayNumber.subtracting(julianDayNumber, plus: f.nearest)
 		else { throw .dayCountNotRepresentable }
 		return Interval(uncheckedDays: days, fractionalDay: f.remainder)
 	}
@@ -193,8 +194,8 @@ extension JulianDate {
 	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func adding(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedSum(fractionFromNoon + interval.fractionalDay, 0),
-			  let day = julianDayNumber.adding(interval.days, plus: f.integral)
+		guard let f = (fractionFromNoon + interval.fractionalDay).nearestIntegerAndRemainder,
+			  let day = julianDayNumber.adding(interval.days, plus: f.nearest)
 		else { throw .julianDayNumberNotRepresentable }
 		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: f.remainder)
 	}
@@ -206,8 +207,8 @@ extension JulianDate {
 	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func subtracting(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedSum(fractionFromNoon - interval.fractionalDay, 0),
-			  let day = julianDayNumber.subtracting(interval.days, plus: f.integral)
+		guard let f = (fractionFromNoon - interval.fractionalDay).nearestIntegerAndRemainder,
+			  let day = julianDayNumber.subtracting(interval.days, plus: f.nearest)
 		else { throw .julianDayNumberNotRepresentable }
 		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: f.remainder)
 	}

@@ -10,7 +10,7 @@
 ///
 /// The dates October 5-14, 1582 do not exist, so 1582 has 355 days and October 1582 has
 /// 21 days. Dates before January 1, 45 BCE use the proleptic Julian calendar.
-public struct JulianGregorianCalendar {
+public enum JulianGregorianCalendar {
 	/// The Julian day number for January 1, 1 CE in the Julian calendar.
 	public static let epoch = JulianCalendar.epoch
 
@@ -54,7 +54,7 @@ public struct JulianGregorianCalendar {
 	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
 		// Normalize the month to [1, 12] so no intermediate value can overflow
 		let (q, r) = date.month.flooredQuotientAndRemainder(dividingBy: 12)
-		let (yc, month) = r == 0 ? (q - 1, 12) : (q, r)
+		let (yc, month) = r == 0 ? (q &- 1, 12) : (q, r)
 
 		let (year, yearOverflow) = date.year.addingReportingOverflow(yc)
 		guard !yearOverflow else { throw .julianDayNumberNotRepresentable }
@@ -206,7 +206,7 @@ extension JulianGregorianCalendar {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The day of the week from 1 (Sunday) to 7 (Saturday).
 	public static func dayOfWeek(_ J: JulianDayNumber) -> Int {
-		JulianCalendar.dayOfWeek(J)
+		JulianAndGregorianArithmetic.dayOfWeek(J)
 	}
 }
 
@@ -226,7 +226,7 @@ extension JulianGregorianCalendar {
 	/// - Returns: The day of year, from 1 to the number of days in the year.
 	public static func dayOfYearFromJulianDayNumber(_ J: JulianDayNumber) -> Int {
 		if changeoverYear.contains(J) {
-			return J - firstDayOfChangeoverYear + 1
+			return J &- firstDayOfChangeoverYear &+ 1
 		}
 		return J < GregorianCalendar.papalReform ? JulianCalendar.dayOfYearFromJulianDayNumber(J) : GregorianCalendar.dayOfYearFromJulianDayNumber(J)
 	}
@@ -252,7 +252,7 @@ extension JulianGregorianCalendar {
 		}
 		guard isValid(year: Y, month: M, day: D) else { throw .invalidDate }
 		// A valid date in 1582 has a small JDN, so neither the conversion nor the subtraction can fail
-		return try! julianDayNumberFrom(year: Y, month: M, day: D) - firstDayOfChangeoverYear + 1
+		return try! julianDayNumberFrom(year: Y, month: M, day: D) &- firstDayOfChangeoverYear &+ 1
 	}
 
 	/// Returns the year, month, and day for the specified year and day of year (ordinal day).
@@ -271,6 +271,83 @@ extension JulianGregorianCalendar {
 		}
 		guard N >= 1, N <= numberOfDaysInChangeoverYear else { throw .invalidDate }
 		return dateFromJulianDayNumber(firstDayOfChangeoverYear + N - 1)
+	}
+}
+
+extension JulianGregorianCalendar {
+	/// Returns the decimal year for the start of the day with the specified Julian day number.
+	///
+	/// The fraction is the number of whole days elapsed since January 1 divided by the number
+	/// of days in the year, so January 1, 1985 is 1985.0 and July 2, 1985 is
+	/// 1985 + 182/365 ≈ 1985.4986. The year 1582 has 355 days, so October 15, 1582 is
+	/// 1582 + 277/355 ≈ 1582.7803.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Note: This is a calendar-based value, not an astronomical epoch such as a Julian or
+	///   Besselian epoch.
+	/// - Parameter J: The Julian day number.
+	/// - Returns: The decimal year for the start of the day in the Julian-Gregorian calendar.
+	public static func decimalYearFromJulianDayNumber(_ J: JulianDayNumber) -> Double {
+		let (Y, M, D) = dateFromJulianDayNumber(J)
+		let N: Int
+		if changeoverYear.contains(J) {
+			// 1582 has 355 days, counted continuously across the changeover
+			N = J &- firstDayOfChangeoverYear &+ 1
+		} else {
+			// Outside 1582 the year follows a single calendar's rules
+			N = JulianAndGregorianArithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
+		}
+		let d = numberOfDaysInYear(Y)
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
+	}
+
+	/// Returns the Julian day number of the day containing the specified decimal year.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameter decimalYear: The decimal year. Year number 0 is 1 BCE.
+	/// - Returns: The Julian day number of the day containing `decimalYear`.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
+	///     day cannot be represented as a ``JulianDayNumber``.
+	public static func julianDayNumberFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> JulianDayNumber {
+		let date = try dateFromDecimalYear(decimalYear)
+		return try julianDayNumberFromDate(date)
+	}
+
+	/// Returns the decimal year for the start of the specified year, month, and day.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number from 1 (January) to 12 (December).
+	///   - D: The day number, starting at 1.
+	/// - Returns: The decimal year for the start of the day in the Julian-Gregorian calendar.
+	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
+	///   a valid date, including October 5–14, 1582.
+	public static func decimalYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Double {
+		let N = try dayOfYearFrom(year: Y, month: M, day: D)
+		let d = numberOfDaysInYear(Y)
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
+	}
+
+	/// Returns the year, month, and day containing the specified decimal year.
+	///
+	/// - Note: Decimal years distinguish individual days only when the year's magnitude is
+	///   small enough for `Double` to resolve a fraction of a day, roughly < 2^43.
+	/// - Parameter decimalYear: The decimal year. Year number 0 is 1 BCE.
+	/// - Returns: The year, month, and day in the Julian-Gregorian calendar.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	public static func dateFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> YearMonthDay {
+		let (Y, N) = try DecimalYearArithmetic.yearAndDayOfYear(decimalYear: decimalYear, daysInYear: numberOfDaysInYear)
+		// N is in [1, number of days in Y], so this can't throw
+		return try! dateFrom(year: Y, dayOfYear: N)
 	}
 }
 

@@ -211,17 +211,55 @@ extension CalendarDate {
 }
 
 extension CalendarDate {
+	/// Creates a calendar date containing the specified timescale-agnostic decimal year
+	/// in the given calendar.
+	///
+	/// - Note: The resolution of a decimal year depends on the year's magnitude.
+	/// - Parameters:
+	///   - decimalYear: The decimal year. Year number 0 is 1 BCE.
+	///   - calendar: The calendar the decimal year is expressed in.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
+	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
+	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
+	///     day cannot be represented as a ``JulianDayNumber``.
+	public init(decimalYear: Double, _ calendar: CalendarIdentifier) throws(CalendarError) {
+		let calendarDay = try CalendarDay(decimalYear: decimalYear, calendar)
+		let Y = calendarDay.year
+		let N = calendarDay.dayOfYear
+		let d = calendarDay.numberOfDaysInYear
+		let dayFraction: Double
+		if decimalYear == DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d) {
+			// The start of a day is generally rounded, so measuring from the exact start would
+			// leave a tiny fraction of either sign. A decimal year equal to the rounded start of
+			// day is that day's midnight.
+			dayFraction = 0
+		} else {
+			// Measure from the start of the year rather than the start of the day. Subtracting
+			// the integer year is exact because both values are multiples of the decimal year's
+			// ulp and the difference is below 1.
+			let yearFraction = decimalYear - Double(Y)
+			// yearFraction × d − (N − 1) with a single rounding
+			let fraction = Double(-(N - 1)).addingProduct(yearFraction, Double(d))
+			dayFraction = fraction > 0 ? min(fraction, Double(1).nextDown) : 0
+		}
+		self.init(calendarDay: calendarDay, uncheckedDayFraction: dayFraction)	}
+
 	/// The timescale-agnostic decimal year for this calendar date.
 	///
 	/// The fraction is the number of days elapsed since midnight on January 1, including the
 	/// day fraction, divided by the number of days in the year. For example, noon on
 	/// January 1, 1985 is 1985 + 0.5/365 ≈ 1985.0014.
 	///
+	/// - Note: The resolution of a decimal year depends on the year's magnitude.
 	/// - Note: This is a calendar-based value, not an astronomical epoch such as a Julian or
 	///   Besselian epoch; the same instant can have slightly different decimal years in
 	///   different calendars.
 	public var decimalYear: Double {
-		Double(year) + (Double(calendarDay.dayOfYear - 1) + dayFraction) / Double(calendarDay.numberOfDaysInYear)
+		let Y = calendarDay.year
+		let N = calendarDay.dayOfYear
+		let d = calendarDay.numberOfDaysInYear
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, dayFraction: dayFraction, daysInYear: d)
 	}
 }
 
