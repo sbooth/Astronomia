@@ -28,29 +28,29 @@ enum DecimalYearArithmetic {
 	/// start of day 183 of a 365-day year is `Y` + 182/365, and noon on that day is
 	/// `Y` + 182.5/365 = `Y` + 0.5.
 	///
-	/// The result is computed as `Y + (N - 1 + dayFraction) / d` with the rounding errors of
-	/// the intermediate sum and quotient carried along, so it is the exact value rounded once
-	/// to the nearest `Double` for all practical inputs. Because rounding is monotonic, the
+	/// The result is computed as `Y + (N - 1 + fractionSinceMidnight) / d` with the rounding
+	/// errors of the intermediate sum and quotient carried along, so it is the exact value rounded
+	/// once to the nearest `Double` for all practical inputs. Because rounding is monotonic, the
 	/// start of day never decreases as `N` increases, which
 	/// ``dayOfYear(decimalYear:year:yearFraction:daysInYear:)`` relies on.
 	///
 	/// - Parameters:
 	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
 	///   - N: The day of year, starting at 1.
-	///   - dayFraction: The fraction of the day elapsed since midnight.
+	///   - fractionSinceMidnight: The fraction of the day elapsed since midnight.
 	///   - d: The number of days in year `Y` in the calendar being used.
-	/// - Returns: The decimal year at `dayFraction` into day `N` of year `Y`.
-	/// - Precondition: `N` is in the closed interval [1, `d`] and `dayFraction` is in the
-	///   right-open interval [0, 1).
-	static func decimalYear(year Y: Int, dayOfYear N: Int, dayFraction: Double = 0, daysInYear d: Int) -> Double {
+	/// - Returns: The decimal year at `fractionSinceMidnight` into day `N` of year `Y`.
+	/// - Precondition: `N` is in the closed interval [1, `d`] and `fractionSinceMidnight` is
+	///   in the right-open interval [0, 1).
+	static func decimalYear(year Y: Int, dayOfYear N: Int, fractionSinceMidnight: Double = 0, daysInYear d: Int) -> Double {
 		assert(N >= 1 && N <= d, "Day of year is outside the closed interval [1, \(d)]")
-		assert(dayFraction.isFinite, "Day fraction must be finite")
-		assert(dayFraction >= 0 && dayFraction < 1, "Day fraction is outside the right-open interval [0, 1)")
+		assert(fractionSinceMidnight.isFinite, "Fraction since midnight must be finite")
+		assert(fractionSinceMidnight >= 0 && fractionSinceMidnight < 1, "Fraction since midnight is outside the right-open interval [0, 1)")
 		assert(d >= 1 && (d == 365 || d == 366 || d == 355), "Invalid number of days in year")
 		let days = Double(d)
 		// Days elapsed since midnight on January 1 as the unevaluated sum sum + error.
 		// The operands are finite and small, so twoSum cannot fail.
-		let (sum, error) = twoSum(Double(N - 1), dayFraction)!
+		let (sum, error) = twoSum(Double(N - 1), fractionSinceMidnight)!
 		// Fraction of the year as the unevaluated sum q + qLow. The remainder s - q × days
 		// is exact when computed with a fused multiply-add.
 		let q = sum / days
