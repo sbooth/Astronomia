@@ -23,9 +23,10 @@ extension JulianAndGregorianArithmetic {
 		// `m0` is the month in [0, 12) with January = 0;
 		// `mp` is the month in [0, 12) with March = 0.
 		let (yc0, m0) = date.month.flooredQuotientAndRemainder(dividingBy: 12)
-		let (yc1, mp) = (m0 - 3).flooredQuotientAndRemainder(dividingBy: 12)
+		let (yc1, mp) = (m0 &- 3).flooredQuotientAndRemainder(dividingBy: 12)
 
-		let (y, yearOverflow) = date.year.addingReportingOverflow(yc0 + yc1)
+		// |yc0| ≤ |Int.min| / 12 + 1 and yc1 is -1 or 0, so this sum cannot overflow
+		let (y, yearOverflow) = date.year.addingReportingOverflow(yc0 &+ yc1)
 		guard !yearOverflow else { throw .julianDayNumberNotRepresentable }
 
 		return (y, mp)
@@ -75,20 +76,29 @@ extension JulianAndGregorianArithmetic.EraLayout {
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   cannot be represented as a ``JulianDayNumber``.
 	static func julianDayNumber(era: Int, dayOfEra doe: Int, day: Int) throws(CalendarError) -> JulianDayNumber {
+		assert(era >= Int.min / years - 1 && era <= Int.max / years, "Era outside the range of a floored quotient by \(years)")
 		assert(doe >= 0 && doe < days, "Day of era outside the right-open interval [0, \(days))")
+
 		// `day` as whole blocks plus remaining days in [0, days)
 		let (dayBlocks, dayRem) = day.flooredQuotientAndRemainder(dividingBy: days)
 
 		// J = (era + zeroBlock + dayBlocks) × days + (doe + dayRem - 1 + zeroDayOfBlock)
-		// The second term is in [zeroDayOfBlock - 1, 3 × days), so it is non-negative and
-		// truncating division is floored; move its whole blocks into the first.
-		let (carry, r) = (doe + dayRem - 1 + zeroDayOfBlock).quotientAndRemainder(dividingBy: days)
+
+		// doe and dayRem are in [0, days) and zeroDayOfBlock is in [1, days), so dayOffset
+		// is in [0, 3 × days − 3) and cannot overflow
+		let dayOffset = doe &+ dayRem &- 1 &+ zeroDayOfBlock
+
 		// `q` and `r` are the floored quotient and remainder of the JDN divided by `days`
-		let q = era + zeroBlock + dayBlocks + carry
+
+		let (carry, r) = dayOffset.quotientAndRemainder(dividingBy: days)
+		// |era| ≤ |Int.min| / 4 + 1, |dayBlocks| ≤ |Int.min| / days + 1, zeroBlock < days, and
+		// carry is in [0, 3), so this sum cannot overflow
+		let q = era &+ zeroBlock &+ dayBlocks &+ carry
 
 		// Compute q × days + r. For negative q, use (q + 1) × days + (r - days) so the
 		// product can't overflow when the result fits.
-		let (blocks, remainder) = q >= 0 ? (q, r) : (q + 1, r - days)
+		// q + 1 is safe because q < 0, and r - days is in [-days, 0) because r is in [0, days)
+		let (blocks, remainder) = q >= 0 ? (q, r) : (q &+ 1, r &- days)
 
 		let (product, multiplyOverflow) = blocks.multipliedReportingOverflow(by: days)
 		guard !multiplyOverflow else { throw .julianDayNumberNotRepresentable }
@@ -110,7 +120,7 @@ extension JulianAndGregorianArithmetic.EraLayout {
 		let (q, r) = J.flooredQuotientAndRemainder(dividingBy: days)
 
 		// Subtract zeroBlock × days + zeroDayOfBlock, borrowing a block when r < zeroDayOfBlock
-		return r >= zeroDayOfBlock ? (q - zeroBlock, r - zeroDayOfBlock) : (q - zeroBlock - 1, r - zeroDayOfBlock + days)
+		return r >= zeroDayOfBlock ? (q &- zeroBlock, r &- zeroDayOfBlock) : (q &- zeroBlock &- 1, r &- zeroDayOfBlock &+ days)
 	}
 
 	/// Returns the year, month, and day for the specified day of a March-based year.
