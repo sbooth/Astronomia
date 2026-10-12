@@ -299,8 +299,7 @@ extension JulianGregorianCalendar {
 			N = JulianAndGregorianArithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
 		}
 		let d = numberOfDaysInYear(Y)
-//		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
-		return DecimalYearArithmetic.startOfDay(year: Y, dayOfYear: N, daysInYear: d)
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
 	}
 
 	/// Returns the Julian day number of the day containing the specified decimal year.
@@ -333,7 +332,7 @@ extension JulianGregorianCalendar {
 	public static func decimalYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Double {
 		let N = try dayOfYearFrom(year: Y, month: M, day: D)
 		let d = numberOfDaysInYear(Y)
-		return DecimalYearArithmetic.startOfDay(year: Y, dayOfYear: N, daysInYear: d)
+		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
 	}
 
 	/// Returns the year, month, and day containing the specified decimal year.
