@@ -50,6 +50,17 @@ struct DayAccumulator {
 		self = try adding(n)
 	}
 
+	/// Subtracts `n` days.
+	///
+	/// Unlike `add(-n)`, this does not overflow when `n` is `Int.min`.
+	///
+	/// - Parameter n: The signed number of days to subtract.
+	/// - Throws: ``Failure/overflow`` if the whole days overflow 128 bits.
+	mutating func subtract(_ n: Int) throws(Failure) {
+		// The negation of any Int fits in 128 bits.
+		self = try adding(WideInteger(n).negated()!)
+	}
+
 	/// Adds `n` days.
 	///
 	/// - Parameter n: The signed number of days to add.
@@ -187,9 +198,24 @@ extension DayAccumulator {
 	private func adding(_ x: Double) throws(Failure) -> DayAccumulator {
 		guard x.isFinite else { throw .nonFiniteValue }
 		let n = x.rounded(.toNearestOrEven)
-		guard let whole = WideInteger(exactly: n) else { throw .overflow }
 		// Subtracting the nearest integer is always exact and leaves a value in [-0.5, 0.5].
-		return try adding(whole).addingFraction(x - n)
+		let r = x - n
+		var result = self
+		if n != 0 {
+			// Fast path: whole days that fit in 64 bits, the common case, skip the general
+			// 128-bit conversion.
+			let whole: WideInteger
+			if let w = Int64(exactly: n) {
+				whole = WideInteger(w)
+			} else {
+				guard let w = WideInteger(exactly: n) else { throw .overflow }
+				whole = w
+			}
+			guard let d = days.adding(whole) else { throw .overflow }
+			result.days = d
+		}
+		// Fast path: an integral x leaves the fractional day unchanged.
+		return r == 0 ? result : try result.addingFraction(r)
 	}
 
 	private func adding(sum a: Double, _ b: Double) throws(Failure) -> DayAccumulator {
@@ -226,12 +252,24 @@ extension DayAccumulator {
 	/// Adds `x`, which must be finite and in [-0.5, 0.5], to the fractional day.
 	private func addingFraction(_ x: Double) throws(Failure) -> DayAccumulator {
 		assert(x.isFinite && x >= -0.5 && x <= 0.5, "Fraction to add is outside [-0.5, 0.5]")
-		// Double-double addition. All operands are bounded by 1, so these cannot fail.
-		guard let (s, e) = twoSum(hi, x),
-			  let (t, f) = twoSum(lo, e),
-			  let (u, g) = twoSum(s, t),
-			  let (v, w) = twoSum(u, g + f)
-		else { throw .overflow }
+		// All operands are bounded by 1, so these twoSum calls cannot fail.
+		let v: Double
+		let w: Double
+		if lo == 0 {
+			// Fast path: with no trailing part, one twoSum gives the exact, normalized sum.
+			// This is the common case, since lo stays zero until a sum is inexact, and
+			// matches what the full double-double addition below computes when lo is zero.
+			guard let (s, e) = twoSum(hi, x) else { throw .overflow }
+			(v, w) = (s, e)
+		} else {
+			// Double-double addition.
+			guard let (s, e) = twoSum(hi, x),
+				  let (t, f) = twoSum(lo, e),
+				  let (u, g) = twoSum(s, t),
+				  let (vv, ww) = twoSum(u, g + f)
+			else { throw .overflow }
+			(v, w) = (vv, ww)
+		}
 
 		var result = self
 		result.hi = v
