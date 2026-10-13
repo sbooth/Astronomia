@@ -91,12 +91,13 @@ struct DayAccumulator {
 		self = try adding(seconds: s)
 	}
 
-	/// The accumulated sum as whole days and a fraction in the right-open interval [-0.5, 0.5).
+	/// The accumulated sum as whole days and a fractional day in the right-open
+	/// interval [-0.5, 0.5).
 	///
 	/// The fraction is never `-0.0`.
 	///
 	/// - Throws: ``Failure/overflow`` if the whole days cannot be represented as an `Int`.
-	func result() throws(Failure) -> (days: Int, fraction: Double) {
+	func result() throws(Failure) -> (days: Int, fractionalDay: Double) {
 		var d = days
 		var f = hi + lo
 		// The exact total is in [-0.5, 0.5), and rounding is monotone, so `f` is at least -0.5.
