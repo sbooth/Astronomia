@@ -13,9 +13,8 @@ extension JulianDate.Interval {
 	/// - Throws: ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result
 	///   cannot be represented as an `Int`.
 	public func adding(_ other: JulianDate.Interval) throws(JulianDateError) -> JulianDate.Interval {
-		// Both fractions are in [-0.5, 0.5), so the sum is in [-1, 1) and the carry is -1, 0 or 1
-		guard let f = (fractionalDay + other.fractionalDay).nearestIntegerAndRemainder,
-			  let n = days.adding(other.days, plus: f.nearest)
+		guard let f = normalizedSum(fractionalDay, other.fractionalDay),
+			  let n = days.adding(other.days, plus: f.integral)
 		else { throw .dayCountNotRepresentable }
 		return JulianDate.Interval(uncheckedDays: n, fractionalDay: f.remainder)
 	}
@@ -27,9 +26,8 @@ extension JulianDate.Interval {
 	/// - Throws: ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result
 	///   cannot be represented as an `Int`.
 	public func subtracting(_ other: JulianDate.Interval) throws(JulianDateError) -> JulianDate.Interval {
-		// The difference of the fractions is in (-1, 1) and the carry is -1, 0 or 1
-		guard let f = (fractionalDay - other.fractionalDay).nearestIntegerAndRemainder,
-			  let n = days.subtracting(other.days, plus: f.nearest)
+		guard let f = normalizedSum(fractionalDay, -other.fractionalDay),
+			  let n = days.subtracting(other.days, plus: f.integral)
 		else { throw .dayCountNotRepresentable }
 		return JulianDate.Interval(uncheckedDays: n, fractionalDay: f.remainder)
 	}
@@ -50,7 +48,7 @@ extension JulianDate.Interval {
 
 	/// Returns this interval advanced by a number of days.
 	///
-	/// Only the result has to be representable; `days` may itself exceed the range of `Int`
+	/// Only the result has to be representable: `days` may itself exceed the range of `Int`
 	/// if this interval offsets it.
 	///
 	/// - Parameter days: The signed number of days to add.
@@ -64,7 +62,10 @@ extension JulianDate.Interval {
 		do throws(JulianDateError) {
 			return try adding(JulianDate.Interval(days: days))
 		} catch {
-			// If the result is representable then so is the midpoint
+			// Either the whole days in `days` do not fit in an `Int` on their own, or the result
+			// does not fit. `self + days / 2` lies between `self` and the result, so if the
+			// result is representable then so is that midpoint and adding the half twice
+			// succeeds. Otherwise one of the two additions throws.
 			let half = try JulianDate.Interval(days: days / 2)
 			return try adding(half).adding(half)
 		}
@@ -72,7 +73,7 @@ extension JulianDate.Interval {
 
 	/// Returns this interval advanced by a number of seconds.
 	///
-	/// Only the result has to be representable; the whole days in `seconds` may themselves
+	/// Only the result has to be representable: the whole days in `seconds` may themselves
 	/// exceed the range of `Int` if this interval offsets them.
 	///
 	/// - Important: Assumes 86,400 seconds per day.
@@ -87,7 +88,10 @@ extension JulianDate.Interval {
 		do throws(JulianDateError) {
 			return try adding(JulianDate.Interval(seconds: seconds))
 		} catch {
-			// If the result is representable then so is the midpoint
+			// Either the whole days in `seconds` do not fit in an `Int` on their own, or the
+			// result does not fit. `self + seconds / 2` lies between `self` and the result, so
+			// if the result is representable then so is that midpoint and adding the half twice
+			// succeeds. Otherwise one of the two additions throws.
 			let half = try JulianDate.Interval(seconds: seconds / 2)
 			return try adding(half).adding(half)
 		}
