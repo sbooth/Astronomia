@@ -27,8 +27,12 @@ func twoSum(_ a: Double, _ b: Double) -> (sum: Double, error: Double)? {
 /// Returns `a + b` as an integer plus a remainder in the right-open interval [-0.5, 0.5),
 /// or `nil` if the inputs are non-finite or the integer cannot be represented as an `Int`.
 ///
-/// The integer is computed exactly. The remainder is the sum of the parts' fractional
-/// residues, so it may be rounded once.
+/// The integer is computed exactly and the remainder is correctly rounded: it is the exact
+/// remainder of `a + b` rounded once. For example, `normalizedSum(0.3, 0.4)` is `(1, -0.3)`,
+/// whereas `(0.3 + 0.4).nearestIntegerAndRemainder` gives a remainder of
+/// -0.30000000000000004 because the sum is rounded before the carry is removed.
+///
+/// To subtract, pass the negated second operand, which is exact.
 ///
 /// - Parameters:
 ///   - a: The first addend.
@@ -42,9 +46,9 @@ func normalizedSum(_ a: Double, _ b: Double) -> (integral: Int, remainder: Doubl
 	guard let intA = Int(exactly: aRounded),
 		  let intB = Int(exactly: bRounded)
 	else { return normalizedTwoSum(a, b) }
-	let residual = (a - aRounded) + (b - bRounded)
-	guard let (nearest, remainder) = residual.nearestIntegerAndRemainder else { return nil }
-	guard let sum = intA.adding(intB, plus: nearest) else { return nil }
+	guard let (carry, remainder) = normalizedResidueSum(a - aRounded, b - bRounded),
+		  let sum = intA.adding(intB, plus: carry)
+	else { return nil }
 	return (sum, remainder)
 }
 
@@ -61,9 +65,33 @@ private func normalizedTwoSum(_ a: Double, _ b: Double) -> (integral: Int, remai
 	let roundedSum = sum.rounded()
 	let roundedError = sumError.rounded()
 	guard let (base, offset) = roundedSum.integralParts, let intError = Int(exactly: roundedError) else { return nil }
-	let residual = (sum - roundedSum) + (sumError - roundedError)
-	guard let (nearest, remainder) = residual.nearestIntegerAndRemainder else { return nil }
-	let (correction, overflow) = intError.addingReportingOverflow(nearest)
+	guard let (carry, remainder) = normalizedResidueSum(sum - roundedSum, sumError - roundedError) else { return nil }
+	let (correction, overflow) = intError.addingReportingOverflow(carry)
 	guard !overflow, let whole = base.adding(offset, plus: correction) else { return nil }
 	return (whole, remainder)
+}
+
+/// Returns the sum of two residues as a carry plus a correctly rounded remainder in the
+/// right-open interval [-0.5, 0.5).
+///
+/// The residues are the exact differences between values and their nearest integers, so each
+/// lies in [-0.5, 0.5]. Their sum is computed with ``twoSum(_:_:)`` and its rounding error is
+/// added back only after the carry is removed. When the sum carries, the remainder is smaller
+/// in magnitude than the sum and can hold bits the rounded sum could not, so it is rounded
+/// only once.
+///
+/// - Parameters:
+///   - x: The first residue.
+///   - y: The second residue.
+/// - Returns: The carry, which is -1, 0 or 1, and the remainder, or `nil` if either residue
+///   is not finite.
+private func normalizedResidueSum(_ x: Double, _ y: Double) -> (carry: Int, remainder: Double)? {
+	guard let (sum, error) = twoSum(x, y),
+		  let (n1, r1) = sum.nearestIntegerAndRemainder,
+		  // `r1 + error` is the exact remainder. Rounding it can reach ±0.5 or just beyond,
+		  // so it is normalized again.
+		  let (n2, r2) = (r1 + error).nearestIntegerAndRemainder
+	else { return nil }
+	// |x + y| ≤ 1, so both carries are small and their sum cannot overflow
+	return (n1 + n2, r2)
 }

@@ -181,8 +181,8 @@ extension JulianDate {
 	/// - Throws: ``JulianDateError/dayCountNotRepresentable`` if the whole days in the interval
 	///   cannot be represented as an `Int`.
 	public func interval(to other: JulianDate) throws(JulianDateError) -> Interval {
-		guard let f = (other.fractionFromNoon - fractionFromNoon).nearestIntegerAndRemainder,
-			  let days = other.julianDayNumber.subtracting(julianDayNumber, plus: f.nearest)
+		guard let f = normalizedSum(other.fractionFromNoon, -fractionFromNoon),
+			  let days = other.julianDayNumber.subtracting(julianDayNumber, plus: f.integral)
 		else { throw .dayCountNotRepresentable }
 		return Interval(uncheckedDays: days, fractionalDay: f.remainder)
 	}
@@ -194,8 +194,8 @@ extension JulianDate {
 	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func adding(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = (fractionFromNoon + interval.fractionalDay).nearestIntegerAndRemainder,
-			  let day = julianDayNumber.adding(interval.days, plus: f.nearest)
+		guard let f = normalizedSum(fractionFromNoon, interval.fractionalDay),
+			  let day = julianDayNumber.adding(interval.days, plus: f.integral)
 		else { throw .julianDayNumberNotRepresentable }
 		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: f.remainder)
 	}
@@ -207,8 +207,8 @@ extension JulianDate {
 	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func subtracting(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = (fractionFromNoon - interval.fractionalDay).nearestIntegerAndRemainder,
-			  let day = julianDayNumber.subtracting(interval.days, plus: f.nearest)
+		guard let f = normalizedSum(fractionFromNoon, -interval.fractionalDay),
+			  let day = julianDayNumber.subtracting(interval.days, plus: f.integral)
 		else { throw .julianDayNumberNotRepresentable }
 		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: f.remainder)
 	}
