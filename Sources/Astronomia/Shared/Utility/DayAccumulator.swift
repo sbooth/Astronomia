@@ -121,8 +121,7 @@ struct DayAccumulator {
 		self = try adding(seconds: a, b)
 	}
 
-	/// The accumulated sum as whole days and a fractional day in the right-open
-	/// interval [-0.5, 0.5).
+	/// The accumulated sum as whole days and a fraction in the right-open interval [-0.5, 0.5).
 	///
 	/// The fraction is never `-0.0`.
 	///
@@ -140,6 +139,34 @@ struct DayAccumulator {
 		assert(f >= -0.5 && f < 0.5, "Fraction is outside the right-open interval [-0.5, 0.5)")
 		guard let wholeDays = d.intValue else { throw .overflow }
 		return (wholeDays, f == 0 ? 0 : f)
+	}
+
+	/// The accumulated sum as whole days rounded down and a fraction since midnight
+	/// in the right-open interval [0, 1).
+	///
+	/// A total just below a whole number of days whose fraction rounds up to 1 is returned as
+	/// the next whole day with a fraction of 0. The fraction is never `-0.0`.
+	///
+	/// - Throws: ``Failure/overflow`` if the whole days cannot be represented as an `Int`.
+	func flooredResult() throws(Failure) -> (days: Int, fractionSinceMidnight: Double) {
+		// The fractional day hi + lo has the sign of hi, except that a zero hi can carry a
+		// lo too small to affect it.
+		guard hi < 0 || (hi == 0 && lo < 0) else {
+			guard let wholeDays = days.intValue else { throw .overflow }
+			let f = hi + lo
+			return (wholeDays, f == 0 ? 0 : f)
+		}
+		// Borrow a day, so the fraction is 1 + hi + lo, in [0.5, 1). 1 + hi is computed
+		// exactly as s + e and rounded once with lo.
+		guard let (s, e) = twoSum(1, hi) else { throw .overflow }
+		let f = s + (e + lo)
+		if f == 1 {
+			// The total is so close to the next midnight that it rounds to it.
+			guard let wholeDays = days.intValue else { throw .overflow }
+			return (wholeDays, 0)
+		}
+		guard let borrowed = days.adding(-1), let wholeDays = borrowed.intValue else { throw .overflow }
+		return (wholeDays, f)
 	}
 }
 
