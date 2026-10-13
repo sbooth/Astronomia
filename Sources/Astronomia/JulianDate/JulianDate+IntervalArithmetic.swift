@@ -13,10 +13,10 @@ extension JulianDate.Interval {
 	/// - Throws: ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result
 	///   cannot be represented as an `Int`.
 	public func adding(_ other: JulianDate.Interval) throws(JulianDateError) -> JulianDate.Interval {
-		guard let f = normalizedSum(fractionalDay, other.fractionalDay),
-			  let n = days.adding(other.days, plus: f.integral)
-		else { throw .dayCountNotRepresentable }
-		return JulianDate.Interval(uncheckedDays: n, fractionalDay: f.remainder)
+		try JulianDate.Interval { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.add(other)
+		}
 	}
 
 	/// Returns the difference of this interval and another interval.
@@ -26,10 +26,10 @@ extension JulianDate.Interval {
 	/// - Throws: ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result
 	///   cannot be represented as an `Int`.
 	public func subtracting(_ other: JulianDate.Interval) throws(JulianDateError) -> JulianDate.Interval {
-		guard let f = normalizedSum(fractionalDay, -other.fractionalDay),
-			  let n = days.subtracting(other.days, plus: f.integral)
-		else { throw .dayCountNotRepresentable }
-		return JulianDate.Interval(uncheckedDays: n, fractionalDay: f.remainder)
+		try JulianDate.Interval { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.subtract(other)
+		}
 	}
 }
 
@@ -112,9 +112,8 @@ extension JulianDate.Interval {
 	///   cannot be represented as an `Int`.
 	public func multiplied(by k: Int) throws(JulianDateError) -> JulianDate.Interval {
 		let k64 = Int64(k)
-		// The product of the whole days is exact in 128 bits.
 		let wholeDays = Int64(days).multipliedFullWidth(by: k64)
-		let (kHigh, kLow) = k64.exactDoubleParts
+		let (kHigh, kLow) = k64.exactDoubleComponents
 		return try JulianDate.Interval { acc throws(DayAccumulator.Failure) in
 			try acc.add(WideInteger(high: wholeDays.high, low: wholeDays.low))
 			try acc.add(product: fractionalDay, kHigh)
@@ -134,7 +133,7 @@ extension JulianDate.Interval {
 	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result cannot
 	///     be represented as an `Int`.
 	public func multiplied(by s: Double) throws(JulianDateError) -> JulianDate.Interval {
-		let (daysHigh, daysLow) = Int64(days).exactDoubleParts
+		let (daysHigh, daysLow) = Int64(days).exactDoubleComponents
 		return try JulianDate.Interval { acc throws(DayAccumulator.Failure) in
 			try acc.add(product: daysHigh, s)
 			try acc.add(product: daysLow, s)
@@ -147,8 +146,8 @@ private extension Int64 {
 	/// Two values, each exactly representable as a `Double`, that sum to this value.
 	///
 	/// The high part is a multiple of 2^32 with at most 32 significant bits, and the low part
-	/// is in [0, 2^32).
-	var exactDoubleParts: (high: Double, low: Double) {
+	/// is in the right-open interval [0, 2^32).
+	var exactDoubleComponents: (high: Double, low: Double) {
 		(Double(self & ~0xFFFF_FFFF), Double(self & 0xFFFF_FFFF))
 	}
 }
