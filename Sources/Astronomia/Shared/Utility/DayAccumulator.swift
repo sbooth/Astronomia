@@ -68,6 +68,21 @@ struct DayAccumulator {
 		self = try adding(x)
 	}
 
+	/// Adds `a + b` days.
+	///
+	/// The parts are combined exactly before their whole days are taken, so each part may
+	/// exceed the 128-bit range on its own as long as their sum does not.
+	///
+	/// - Parameters:
+	///   - a: The first part of the signed number of days to add.
+	///   - b: The second part of the signed number of days to add.
+	/// - Throws:
+	///   - ``Failure/nonFiniteValue`` if `a` or `b` is NaN or infinite.
+	///   - ``Failure/overflow`` if `a + b` overflows `Double` or the sum overflows 128 bits.
+	mutating func add(sum a: Double, _ b: Double) throws(Failure) {
+		self = try adding(sum: a, b)
+	}
+
 	/// Adds `a × b` days with no intermediate rounding.
 	///
 	/// - Parameters:
@@ -89,6 +104,21 @@ struct DayAccumulator {
 	///   - ``Failure/overflow`` if the sum overflows 128 bits.
 	mutating func add(seconds s: Double) throws(Failure) {
 		self = try adding(seconds: s)
+	}
+
+	/// Adds `a + b` seconds, assuming 86,400 seconds per day.
+	///
+	/// The parts are combined exactly before their whole days are taken, so each part may
+	/// exceed the 128-bit range on its own as long as their sum does not.
+	///
+	/// - Parameters:
+	///   - a: The first part of the signed number of seconds to add.
+	///   - b: The second part of the signed number of seconds to add.
+	/// - Throws:
+	///   - ``Failure/nonFiniteValue`` if `a` or `b` is NaN or infinite.
+	///   - ``Failure/overflow`` if `a + b` overflows `Double` or the sum overflows 128 bits.
+	mutating func add(seconds a: Double, _ b: Double) throws(Failure) {
+		self = try adding(seconds: a, b)
 	}
 
 	/// The accumulated sum as whole days and a fractional day in the right-open
@@ -133,6 +163,19 @@ extension DayAccumulator {
 		guard let whole = WideInteger(exactly: n) else { throw .overflow }
 		// Subtracting the nearest integer is always exact and leaves a value in [-0.5, 0.5].
 		return try adding(whole).addingFraction(x - n)
+	}
+
+	private func adding(sum a: Double, _ b: Double) throws(Failure) -> DayAccumulator {
+		guard a.isFinite, b.isFinite else { throw .nonFiniteValue }
+		// s + e is exactly a + b, and s is within half an ulp of it.
+		guard let (s, e) = twoSum(a, b) else { throw .overflow }
+		return try adding(s).adding(e)
+	}
+
+	private func adding(seconds a: Double, _ b: Double) throws(Failure) -> DayAccumulator {
+		guard a.isFinite, b.isFinite else { throw .nonFiniteValue }
+		guard let (s, e) = twoSum(a, b) else { throw .overflow }
+		return try adding(seconds: s).adding(seconds: e)
 	}
 
 	private func adding(product a: Double, _ b: Double) throws(Failure) -> DayAccumulator {
