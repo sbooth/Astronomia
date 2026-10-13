@@ -228,15 +228,13 @@ extension JulianDate {
 }
 
 extension DayAccumulator {
-	/// Adds a Julian Date, as its Julian day number plus its fraction from noon.
+	/// Adds a Julian Date as its Julian day number plus its fraction from noon.
 	///
 	/// - Parameter date: The Julian Date to add.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
 	mutating func add(_ date: JulianDate) throws(Failure) {
-		var sum = self
-		try sum.add(date.julianDayNumber)
-		try sum.add(date.fractionFromNoon)
-		self = sum
+		try add(date.julianDayNumber)
+		try add(date.fractionFromNoon)
 	}
 }
 

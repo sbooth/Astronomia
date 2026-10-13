@@ -191,10 +191,8 @@ extension DayAccumulator {
 	/// - Parameter date: The calendar date to add.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
 	mutating func add(_ date: CalendarDate) throws(Failure) {
-		var sum = self
-		try sum.add(date.julianDayNumber)
-		try sum.add(date.fractionSinceMidnight)
-		self = sum
+		try add(date.julianDayNumber)
+		try add(date.fractionSinceMidnight)
 	}
 }
 
