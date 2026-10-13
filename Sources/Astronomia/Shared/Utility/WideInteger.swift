@@ -72,9 +72,6 @@ struct WideInteger: Hashable {
 	func adding(_ other: WideInteger) -> WideInteger? {
 		let (l, carry) = low.addingReportingOverflow(other.low)
 		let h = high &+ other.high &+ (carry ? 1 : 0)
-		// Two's-complement addition can overflow only when both operands have the same
-		// sign, and overflow always flips the sign. Checking only the final sign is exact;
-		// checking each step of the high-word addition would report false overflows.
 		if (high ^ h) & (other.high ^ h) < 0 { return nil }
 		return WideInteger(high: h, low: l)
 	}
@@ -93,6 +90,17 @@ struct WideInteger: Hashable {
 	/// - Returns: The sum, or `nil` if it overflows 128 bits.
 	func adding(_ n: Int) -> WideInteger? {
 		adding(Int64(n))
+	}
+
+	/// Returns this value with its sign reversed.
+	///
+	/// - Returns: The negation, or `nil` if this value is -2^127, whose negation overflows
+	///   128 bits.
+	func negated() -> WideInteger? {
+		guard high != .min || low != 0 else { return nil }
+		let l = ~low &+ 1
+		let h = ~high &+ (l == 0 ? 1 : 0)
+		return WideInteger(high: h, low: l)
 	}
 
 	/// This value as an `Int`, or `nil` if it cannot be represented as one.
