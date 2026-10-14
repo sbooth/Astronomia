@@ -244,8 +244,10 @@ extension DayAccumulator {
 	/// - Parameter date: The Julian Date to subtract.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
 	mutating func subtract(_ date: JulianDate) throws(Failure) {
-		try subtract(date.julianDayNumber)
-		try add(-date.fractionFromNoon)
+		var result = self
+		try result.subtract(date.julianDayNumber)
+		try result.add(-date.fractionFromNoon)
+		self = result
 	}
 }
 
