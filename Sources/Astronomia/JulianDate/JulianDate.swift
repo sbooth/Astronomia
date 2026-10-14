@@ -225,8 +225,9 @@ extension JulianDate {
 extension DayAccumulator {
 	/// Adds a Julian Date as a noon-based day count.
 	///
-	/// - Important: This is half a day earlier than adding the same instant as a
-	///   ``CalendarDate``, which counts from midnight.
+	/// - Important: A noon-based count is half a day less than the midnight-based count of
+	///   the same instant, so this leaves the sum half a day earlier than
+	///   ``add(midnightBased:)`` would. Never mix the two bases in one accumulation.
 	/// - Parameter date: The Julian Date to add.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
 	mutating func add(noonBased date: JulianDate) throws(Failure) {
@@ -238,8 +239,9 @@ extension DayAccumulator {
 
 	/// Subtracts a Julian Date as a noon-based day count.
 	///
-	/// - Important: This is half a day earlier than adding the same instant as a
-	///   ``CalendarDate``, which counts from midnight.
+	/// - Important: A noon-based count is half a day less than the midnight-based count of
+	///   the same instant, so this leaves the sum half a day later than
+	///   ``subtract(midnightBased:)`` would. Never mix the two bases in one accumulation.
 	/// - Parameter date: The Julian Date to subtract.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
 	mutating func subtract(noonBased date: JulianDate) throws(Failure) {

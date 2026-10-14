@@ -184,8 +184,9 @@ extension CalendarDate {
 extension DayAccumulator {
 	/// Adds a calendar date as a midnight-based day count.
 	///
-	/// - Important: This is half a day later than adding the same instant as a
-	///   ``JulianDate``, which counts from noon.
+	/// - Important: A midnight-based count is half a day greater than the noon-based count of
+	///   the same instant, so this leaves the sum half a day later than
+	///   ``add(noonBased:)`` would. Never mix the two bases in one accumulation.
 	/// - Parameter date: The calendar date to add.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
 	mutating func add(midnightBased date: CalendarDate) throws(Failure) {
@@ -197,8 +198,9 @@ extension DayAccumulator {
 
 	/// Subtracts a calendar date as a midnight-based day count.
 	///
-	/// - Important: This is half a day later than subtracting the same instant as a
-	///   ``JulianDate``, which counts from noon.
+	/// - Important: A midnight-based count is half a day greater than the noon-based count of
+	///   the same instant, so this leaves the sum half a day earlier than
+	///   ``subtract(noonBased:)`` would. Never mix the two bases in one accumulation.
 	/// - Parameter date: The calendar date to subtract.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
 	mutating func subtract(midnightBased date: CalendarDate) throws(Failure) {
