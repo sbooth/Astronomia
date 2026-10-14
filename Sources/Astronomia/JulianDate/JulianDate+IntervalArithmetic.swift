@@ -13,10 +13,10 @@ extension JulianDate.Interval {
 	/// - Throws: ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result
 	///   cannot be represented as an `Int`.
 	public func adding(_ other: JulianDate.Interval) throws(JulianDateError) -> JulianDate.Interval {
-		guard let f = normalizedSum(fractionalDay, other.fractionalDay),
-			  let n = days.adding(other.days, plus: f.integral)
-		else { throw .dayCountNotRepresentable }
-		return JulianDate.Interval(uncheckedDays: n, fractionalDay: f.remainder)
+		try JulianDate.Interval { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.add(other)
+		}
 	}
 
 	/// Returns the difference of this interval and another interval.
@@ -26,10 +26,10 @@ extension JulianDate.Interval {
 	/// - Throws: ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result
 	///   cannot be represented as an `Int`.
 	public func subtracting(_ other: JulianDate.Interval) throws(JulianDateError) -> JulianDate.Interval {
-		guard let f = normalizedSum(fractionalDay, -other.fractionalDay),
-			  let n = days.subtracting(other.days, plus: f.integral)
-		else { throw .dayCountNotRepresentable }
-		return JulianDate.Interval(uncheckedDays: n, fractionalDay: f.remainder)
+		try JulianDate.Interval { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.subtract(other)
+		}
 	}
 }
 
@@ -58,16 +58,9 @@ extension JulianDate.Interval {
 	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result cannot
 	///     be represented as an `Int`.
 	public func adding(days: Double) throws(JulianDateError) -> JulianDate.Interval {
-		guard days.isFinite else { throw .nonFiniteValue }
-		do throws(JulianDateError) {
-			return try adding(JulianDate.Interval(days: days))
-		} catch {
-			// Either the whole days in `days` do not fit in an `Int` on their own, or the result
-			// does not fit. `self + days / 2` lies between `self` and the result, so if the
-			// result is representable then so is that midpoint and adding the half twice
-			// succeeds. Otherwise one of the two additions throws.
-			let half = try JulianDate.Interval(days: days / 2)
-			return try adding(half).adding(half)
+		try JulianDate.Interval { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.add(days)
 		}
 	}
 
@@ -84,16 +77,9 @@ extension JulianDate.Interval {
 	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result cannot
 	///     be represented as an `Int`.
 	public func adding(seconds: Double) throws(JulianDateError) -> JulianDate.Interval {
-		guard seconds.isFinite else { throw .nonFiniteValue }
-		do throws(JulianDateError) {
-			return try adding(JulianDate.Interval(seconds: seconds))
-		} catch {
-			// Either the whole days in `seconds` do not fit in an `Int` on their own, or the
-			// result does not fit. `self + seconds / 2` lies between `self` and the result, so
-			// if the result is representable then so is that midpoint and adding the half twice
-			// succeeds. Otherwise one of the two additions throws.
-			let half = try JulianDate.Interval(seconds: seconds / 2)
-			return try adding(half).adding(half)
+		try JulianDate.Interval { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.add(seconds: seconds)
 		}
 	}
 
@@ -112,5 +98,56 @@ extension JulianDate.Interval {
 		let (n, overflow) = 0.subtractingReportingOverflow(days)
 		guard !overflow else { throw .dayCountNotRepresentable }
 		return JulianDate.Interval(uncheckedDays: n, fractionalDay: fractionalDay == 0 ? 0 : -fractionalDay)
+	}
+}
+
+extension JulianDate.Interval {
+	/// Returns this interval multiplied by an integer.
+	///
+	/// The whole days of the product are exact, and its fractional day is rounded once.
+	///
+	/// - Parameter k: The multiplier.
+	/// - Returns: This interval times `k`.
+	/// - Throws: ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result
+	///   cannot be represented as an `Int`.
+	public func multiplied(by k: Int) throws(JulianDateError) -> JulianDate.Interval {
+		let k64 = Int64(k)
+		let wholeDays = Int64(days).multipliedFullWidth(by: k64)
+		let (kHigh, kLow) = k64.exactDoubleComponents
+		return try JulianDate.Interval { acc throws(DayAccumulator.Failure) in
+			try acc.add(WideInteger(high: wholeDays.high, low: wholeDays.low))
+			try acc.add(product: fractionalDay, kHigh)
+			try acc.add(product: fractionalDay, kLow)
+		}
+	}
+
+	/// Returns this interval multiplied by a scalar.
+	///
+	/// The product is computed without intermediate rounding, and its fractional day is
+	/// rounded once.
+	///
+	/// - Parameter s: The multiplier.
+	/// - Returns: This interval times `s`.
+	/// - Throws:
+	///   - ``JulianDateError/nonFiniteValue`` if `s` is NaN or infinite.
+	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in the result cannot
+	///     be represented as an `Int`.
+	public func multiplied(by s: Double) throws(JulianDateError) -> JulianDate.Interval {
+		let (daysHigh, daysLow) = Int64(days).exactDoubleComponents
+		return try JulianDate.Interval { acc throws(DayAccumulator.Failure) in
+			try acc.add(product: daysHigh, s)
+			try acc.add(product: daysLow, s)
+			try acc.add(product: fractionalDay, s)
+		}
+	}
+}
+
+private extension Int64 {
+	/// Two values, each exactly representable as a `Double`, that sum to this value.
+	///
+	/// The high part is a multiple of 2^32 with at most 32 significant bits, and the low part
+	/// is in the right-open interval [0, 2^32).
+	var exactDoubleComponents: (high: Double, low: Double) {
+		(Double(self & ~0xFFFF_FFFF), Double(self & 0xFFFF_FFFF))
 	}
 }

@@ -36,8 +36,6 @@ extension JulianDate {
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if the time interval of `date` is NaN or
 	///     infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days between `date` and
-	///     the reference date cannot be represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public init(_ date: Date) throws(JulianDateError) {

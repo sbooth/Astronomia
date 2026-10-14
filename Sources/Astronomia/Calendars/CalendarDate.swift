@@ -123,40 +123,78 @@ extension CalendarDate {
 	public func adding(days: Int, fractionalDay: Double = 0) throws(CalendarError) -> CalendarDate {
 		guard fractionalDay.isFinite else { throw .nonFiniteValue }
 		guard fractionalDay >= 0, fractionalDay < 1 else { throw .invalidDayFraction }
-
-		var fraction = fractionalDay + self.fractionSinceMidnight
-
-		var calendarDay: CalendarDay
-		if fraction >= 1 {
-			fraction -= 1
-			if days < Int.max {
-				calendarDay = try self.calendarDay.adding(days: days + 1)
-			} else {
-				calendarDay = try self.calendarDay.adding(days: days)
-				calendarDay = try calendarDay.adding(days: 1)
-			}
-		} else {
-			calendarDay = try self.calendarDay.adding(days: days)
+		return try CalendarDate(calendar) { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.add(days)
+			try acc.add(fractionalDay)
 		}
-
-		return CalendarDate(calendarDay: calendarDay, uncheckedFractionSinceMidnight: fraction)
 	}
 
 	/// Returns the calendar date the specified number of days before (for negative values) or
 	/// after (for positive values) this calendar date, in the same calendar.
 	///
+	/// The time of day is computed from the exact sum and rounded once. `n` may exceed the
+	/// range of `Int` if this calendar date offsets it.
+	///
 	/// - Parameter n: The signed number of days, including any fraction of a day, to add.
 	/// - Returns: The resulting calendar date, in this calendar date's calendar.
 	/// - Throws:
 	///   - ``CalendarError/nonFiniteValue`` if the number of days is not finite.
-	///   - ``CalendarError/dayCountNotRepresentable`` if the number of whole days cannot
-	///     be represented as an `Int`.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the resulting day's Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days n: Double) throws(CalendarError) -> CalendarDate {
-		guard n.isFinite else { throw .nonFiniteValue }
-		guard let (days, fraction) = n.floorAndFraction else { throw .dayCountNotRepresentable }
-		return try adding(days: days, fractionalDay: fraction)
+		try CalendarDate(calendar) { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.add(n)
+		}
+	}
+}
+
+extension CalendarDate {
+	/// Creates a calendar date in `calendar` from the exact sum of the terms that `body` adds
+	/// to an empty accumulator, rounding the time of day once at the end.
+	///
+	/// The sum is a midnight-based day count: `J + f`, for `f` in [0, 1), is the instant `f`
+	/// days after midnight at the start of the calendar day whose Julian day number is `J`.
+	/// This differs from a Julian Date, which counts from noon, by half a day.
+	///
+	/// - Parameters:
+	///   - calendar: The calendar in which to express the result.
+	///   - body: A closure that adds terms to the accumulator.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if a term is NaN or infinite.
+	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the resulting day's Julian day
+	///     number, or an intermediate value, is not representable.
+	init(_ calendar: CalendarIdentifier, accumulating body: (inout DayAccumulator) throws(DayAccumulator.Failure) -> Void) throws(CalendarError) {
+		let sum: (days: Int, fractionSinceMidnight: Double)
+		do throws(DayAccumulator.Failure) {
+			var acc = DayAccumulator()
+			try body(&acc)
+			sum = try acc.flooredResult()
+		} catch {
+			switch error {
+			case .nonFiniteValue: throw .nonFiniteValue
+			case .overflow: throw .julianDayNumberNotRepresentable
+			}
+		}
+		self.init(calendarDay: CalendarDay(julianDayNumber: sum.days, calendar), uncheckedFractionSinceMidnight: sum.fractionSinceMidnight)
+	}
+}
+
+extension DayAccumulator {
+	/// Adds a calendar date as a midnight-based day count: its Julian day number plus its
+	/// fraction since midnight.
+	///
+	/// - Important: This is half a day later than adding the same instant as a
+	///   ``JulianDate``, which counts from noon. Read the sum with
+	///   ``CalendarDate/init(_:accumulating:)``.
+	/// - Parameter date: The calendar date to add.
+	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
+	mutating func add(_ date: CalendarDate) throws(Failure) {
+		var result = self
+		try result.add(date.julianDayNumber)
+		try result.add(date.fractionSinceMidnight)
+		self = result
 	}
 }
 
@@ -173,8 +211,6 @@ extension CalendarDate {
 	///   calendar of `calendarDay`.
 	/// - Throws:
 	///   - ``CalendarError/nonFiniteValue`` if the fraction since midnight is not finite.
-	///   - ``CalendarError/dayCountNotRepresentable`` if the fraction since midnight's whole days
-	///     cannot be represented as an `Int`.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the resulting day's Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public static func normalized(calendarDay: CalendarDay, fractionSinceMidnight: Double) throws(CalendarError) -> CalendarDate {
@@ -198,8 +234,6 @@ extension CalendarDate {
 	///   interval [0, 1), in `calendar`.
 	/// - Throws:
 	///   - ``CalendarError/nonFiniteValue`` if the fraction since midnight is not finite.
-	///   - ``CalendarError/dayCountNotRepresentable`` if the fraction since midnight's whole days
-	///     cannot be represented as an `Int`.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
 	///     year, month, and day or the resulting day's Julian day number cannot be represented
 	///     as a ``JulianDayNumber``.

@@ -85,16 +85,13 @@ extension JulianDate {
 	///   - fractionFromNoon: The signed number of days from noon on `julianDayNumber`.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `fractionFromNoon` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in
-	///     `fractionFromNoon` cannot be represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public init(julianDayNumber: JulianDayNumber, fractionFromNoon: Double = 0) throws(JulianDateError) {
-		guard fractionFromNoon.isFinite else { throw .nonFiniteValue }
-		guard let f = fractionFromNoon.nearestIntegerAndRemainder else { throw .dayCountNotRepresentable }
-		let (n, overflow) = julianDayNumber.addingReportingOverflow(f.nearest)
-		guard !overflow else { throw .julianDayNumberNotRepresentable }
-		self.init(uncheckedJulianDayNumber: n, fractionFromNoon: f.remainder)
+		try self.init { acc throws(DayAccumulator.Failure) in
+			try acc.add(julianDayNumber)
+			try acc.add(fractionFromNoon)
+		}
 	}
 
 	/// Creates a Julian Date equal to `jd1 + jd2` from an IAU SOFA-style two-part Julian Date.
@@ -110,9 +107,9 @@ extension JulianDate {
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the Julian day number of
 	///     `jd1 + jd2` cannot be represented as a ``JulianDayNumber``.
 	public init(jd1: Double, jd2: Double = 0) throws(JulianDateError) {
-		guard jd1.isFinite, jd2.isFinite else { throw .nonFiniteValue }
-		guard let sum = normalizedSum(jd1, jd2) else { throw .julianDayNumberNotRepresentable }
-		self.init(uncheckedJulianDayNumber: sum.integral, fractionFromNoon: sum.remainder)
+		try self.init { acc throws(DayAccumulator.Failure) in
+			try acc.add(sum: jd1, jd2)
+		}
 	}
 
 	/// Creates a Julian Date from a single value.
@@ -138,8 +135,6 @@ extension JulianDate {
 	///   - mjd2: The second part of the Modified Julian Date.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `mjd1` or `mjd2` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in `mjd1 + mjd2`
-	///     cannot be represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public init(mjd1: Double, mjd2: Double = 0) throws(JulianDateError) {
@@ -153,8 +148,6 @@ extension JulianDate {
 	/// - Parameter MJD: The Modified Julian Date.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `MJD` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in `MJD` cannot be
-	///     represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public init(modifiedJulianDate MJD: Double) throws(JulianDateError) {
@@ -166,8 +159,6 @@ extension JulianDate {
 	/// - Parameter days: The signed number of days from J2000.0.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `days` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in `days` cannot be
-	///     represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public init(daysSinceJ2000 days: Double) throws(JulianDateError) {
@@ -181,15 +172,15 @@ extension JulianDate {
 	/// - Parameter epoch: The Julian epoch.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `epoch` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the number of days from J2000.0
-	///     overflows or its whole days cannot be represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public init(julianEpoch epoch: Double) throws(JulianDateError) {
-		guard epoch.isFinite else { throw .nonFiniteValue }
-		let days = (epoch - 2000.0) * Self.daysPerJulianYear
-		guard days.isFinite else { throw .dayCountNotRepresentable }
-		self = try Self.J2000.adding(days: days)
+		// J2000.0 + (epoch - 2000) × 365.25
+		try self.init { acc throws(DayAccumulator.Failure) in
+			try acc.add(Self.J2000)
+			try acc.add(product: epoch, Self.daysPerJulianYear)
+			try acc.add(-730_500) // 2000 × 365.25
+		}
 	}
 
 	/// Creates a Julian Date from a Besselian epoch value, e.g. 1950.0.
@@ -199,15 +190,62 @@ extension JulianDate {
 	/// - Parameter epoch: The Besselian epoch.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `epoch` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the number of days from B1900.0
-	///     overflows or its whole days cannot be represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public init(besselianEpoch epoch: Double) throws(JulianDateError) {
-		guard epoch.isFinite else { throw .nonFiniteValue }
-		let days = (epoch - 1900.0) * Self.daysPerTropicalYear
-		guard days.isFinite else { throw .dayCountNotRepresentable }
-		self = try Self.B1900.adding(days: days)
+		// B1900.0 + (epoch - 1900) × days per tropical year
+		try self.init { acc throws(DayAccumulator.Failure) in
+			try acc.add(Self.B1900)
+			try acc.add(product: epoch, Self.daysPerTropicalYear)
+			try acc.add(product: -1900, Self.daysPerTropicalYear)
+		}
+	}
+}
+
+extension JulianDate {
+	/// Creates a Julian Date from the exact sum of the terms that `body` adds to an empty
+	/// accumulator, rounding the fraction of the day once at the end.
+	///
+	/// - Parameter body: A closure that adds terms to the accumulator.
+	/// - Throws:
+	///   - ``JulianDateError/nonFiniteValue`` if a term is NaN or infinite.
+	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
+	///     number, or an intermediate value, is not representable.
+	init(accumulating body: (inout DayAccumulator) throws(DayAccumulator.Failure) -> Void) throws(JulianDateError) {
+		let sum: (days: Int, fractionalDay: Double)
+		do throws(DayAccumulator.Failure) {
+			var acc = DayAccumulator()
+			try body(&acc)
+			sum = try acc.result()
+		} catch {
+			switch error {
+			case .nonFiniteValue: throw .nonFiniteValue
+			case .overflow: throw .julianDayNumberNotRepresentable
+			}
+		}
+		self.init(uncheckedJulianDayNumber: sum.days, fractionFromNoon: sum.fractionalDay)
+	}
+}
+
+extension DayAccumulator {
+	/// Adds a Julian Date as its Julian day number plus its fraction from noon.
+	///
+	/// - Parameter date: The Julian Date to add.
+	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
+	mutating func add(_ date: JulianDate) throws(Failure) {
+		var result = self
+		try result.add(date.julianDayNumber)
+		try result.add(date.fractionFromNoon)
+		self = result
+	}
+
+	/// Subtracts a Julian Date as its Julian day number plus its fraction from noon.
+	///
+	/// - Parameter date: The Julian Date to subtract.
+	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
+	mutating func subtract(_ date: JulianDate) throws(Failure) {
+		try subtract(date.julianDayNumber)
+		try add(-date.fractionFromNoon)
 	}
 }
 
@@ -355,12 +393,13 @@ extension JulianDate {
 	/// - Returns: This Julian Date advanced by `days1 + days2` days.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `days1` or `days2` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in `days1 + days2`
-	///     cannot be represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days1: Double, days2: Double) throws(JulianDateError) -> JulianDate {
-		try adding(Interval(days1: days1, days2: days2))
+		try JulianDate { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.add(sum: days1, days2)
+		}
 	}
 
 	/// Returns the Julian Date advanced by the specified number of days.
@@ -369,8 +408,6 @@ extension JulianDate {
 	/// - Returns: This Julian Date advanced by `days` days.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `days` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in `days` cannot be
-	///     represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days: Double) throws(JulianDateError) -> JulianDate {
@@ -387,10 +424,13 @@ extension JulianDate {
 	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func adding(seconds: Int) throws(JulianDateError) -> JulianDate {
+		// The remainder is below 86,400 in magnitude, so it converts to Double exactly.
 		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: 86_400)
-		let (day, overflow) = self.julianDayNumber.addingReportingOverflow(days)
-		guard !overflow else { throw .julianDayNumberNotRepresentable }
-		return try JulianDate(julianDayNumber: day, fractionFromNoon: fractionFromNoon + Double(remainder) / 86_400)
+		return try JulianDate { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.add(days)
+			try acc.add(seconds: Double(remainder))
+		}
 	}
 
 	/// Returns the Julian Date advanced by the two-part interval `seconds1 + seconds2`.
@@ -404,12 +444,13 @@ extension JulianDate {
 	/// - Returns: This Julian Date advanced by `seconds1 + seconds2` seconds.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `seconds1` or `seconds2` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if `seconds1 + seconds2` overflows or
-	///     its whole days cannot be represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public func adding(seconds1: Double, seconds2: Double) throws(JulianDateError) -> JulianDate {
-		try adding(Interval(seconds1: seconds1, seconds2: seconds2))
+		try JulianDate { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.add(seconds: seconds1, seconds2)
+		}
 	}
 
 	/// Returns the Julian Date advanced by the specified number of seconds.
@@ -419,8 +460,6 @@ extension JulianDate {
 	/// - Returns: This Julian Date advanced by `seconds` seconds.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `seconds` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in `seconds` cannot
-	///     be represented as an `Int`.
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public func adding(seconds: Double) throws(JulianDateError) -> JulianDate {
@@ -522,9 +561,7 @@ extension JulianDate: Codable {
 			self = try JulianDate(julianDayNumber: julianDayNumber, fractionFromNoon: fractionFromNoon)
 		} catch .nonFiniteValue {
 			throw DecodingError.dataCorruptedError(forKey: .fractionFromNoon, in: container, debugDescription: "Fraction from noon must be finite")
-		} catch .dayCountNotRepresentable {
-			throw DecodingError.dataCorruptedError(forKey: .fractionFromNoon, in: container, debugDescription: "The fraction from noon's day count is not representable")
-		} catch .julianDayNumberNotRepresentable {
+		} catch {
 			throw DecodingError.dataCorruptedError(forKey: .julianDayNumber, in: container, debugDescription: "The Julian day number is not representable")
 		}
 	}

@@ -47,14 +47,13 @@ extension JulianDate.Interval {
 	///   - fractionalDay: The signed number of additional days.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `fractionalDay` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in `fractionalDay`,
-	///     or the total number of whole days, cannot be represented as an `Int`.
+	///   - ``JulianDateError/dayCountNotRepresentable`` if the total number of whole days
+	///     cannot be represented as an `Int`.
 	public init(days: Int, fractionalDay: Double = 0) throws(JulianDateError) {
-		guard fractionalDay.isFinite else { throw .nonFiniteValue }
-		guard let f = fractionalDay.nearestIntegerAndRemainder else { throw .dayCountNotRepresentable }
-		let (n, overflow) = days.addingReportingOverflow(f.nearest)
-		guard !overflow else { throw .dayCountNotRepresentable }
-		self.init(uncheckedDays: n, fractionalDay: f.remainder)
+		try self.init { acc throws(DayAccumulator.Failure) in
+			try acc.add(days)
+			try acc.add(fractionalDay)
+		}
 	}
 
 	/// Creates an interval from a single number of days.
@@ -80,9 +79,9 @@ extension JulianDate.Interval {
 	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in `days1 + days2`
 	///     cannot be represented as an `Int`.
 	public init(days1: Double, days2: Double) throws(JulianDateError) {
-		guard days1.isFinite, days2.isFinite else { throw .nonFiniteValue }
-		guard let sum = normalizedSum(days1, days2) else { throw .dayCountNotRepresentable }
-		self.init(uncheckedDays: sum.integral, fractionalDay: sum.remainder)
+		try self.init { acc throws(DayAccumulator.Failure) in
+			try acc.add(sum: days1, days2)
+		}
 	}
 
 	/// Creates an interval from a single number of seconds.
@@ -107,22 +106,61 @@ extension JulianDate.Interval {
 	///   - seconds2: The second part of the signed number of seconds.
 	/// - Throws:
 	///   - ``JulianDateError/nonFiniteValue`` if `seconds1` or `seconds2` is NaN or infinite.
-	///   - ``JulianDateError/dayCountNotRepresentable`` if `seconds1 + seconds2` overflows or
-	///     its whole days cannot be represented as an `Int`.
+	///   - ``JulianDateError/dayCountNotRepresentable`` if the whole days in
+	///     `seconds1 + seconds2` cannot be represented as an `Int`.
 	public init(seconds1: Double, seconds2: Double) throws(JulianDateError) {
-		guard seconds1.isFinite, seconds2.isFinite else { throw .nonFiniteValue }
-		guard let (sum, sumError) = twoSum(seconds1, seconds2) else { throw .dayCountNotRepresentable }
-		let extractedDays = (sum / JulianDate.secondsPerDay).rounded()
-		let remainingSeconds = sum.addingProduct(-extractedDays, JulianDate.secondsPerDay) + sumError
-		let additionalDays = (remainingSeconds / JulianDate.secondsPerDay).rounded()
-		let secondsWithinDay = remainingSeconds.addingProduct(-additionalDays, JulianDate.secondsPerDay)
-		guard let (carry, fraction) = (secondsWithinDay / JulianDate.secondsPerDay).nearestIntegerAndRemainder,
-			  let (baseDays, dayOffset) = extractedDays.integralParts,
-			  let integerAdjustment = Int(exactly: additionalDays)
-		else { throw .dayCountNotRepresentable }
-		let (totalAdjustment, overflow) = integerAdjustment.addingReportingOverflow(carry)
-		guard !overflow, let days = baseDays.adding(dayOffset, plus: totalAdjustment) else { throw .dayCountNotRepresentable }
-		self.init(uncheckedDays: days, fractionalDay: fraction)
+		try self.init { acc throws(DayAccumulator.Failure) in
+			try acc.add(seconds: seconds1, seconds2)
+		}
+	}
+}
+
+extension JulianDate.Interval {
+	/// Creates an interval from the exact sum of the terms that `body` adds to an empty
+	/// accumulator, rounding the fractional day once at the end.
+	///
+	/// - Parameter body: A closure that adds terms to the accumulator.
+	/// - Throws:
+	///   - ``JulianDateError/nonFiniteValue`` if a term is NaN or infinite.
+	///   - ``JulianDateError/dayCountNotRepresentable`` if the sum or an intermediate value
+	///     is not representable.
+	init(accumulating body: (inout DayAccumulator) throws(DayAccumulator.Failure) -> Void) throws(JulianDateError) {
+		let sum: (days: Int, fractionalDay: Double)
+		do throws(DayAccumulator.Failure) {
+			var acc = DayAccumulator()
+			try body(&acc)
+			sum = try acc.result()
+		} catch {
+			switch error {
+			case .nonFiniteValue: throw .nonFiniteValue
+			case .overflow: throw .dayCountNotRepresentable
+			}
+		}
+		self.init(uncheckedDays: sum.days, fractionalDay: sum.fractionalDay)
+	}
+}
+
+extension DayAccumulator {
+	/// Adds an interval.
+	///
+	/// - Parameter interval: The interval to add.
+	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
+	mutating func add(_ interval: JulianDate.Interval) throws(Failure) {
+		var result = self
+		try result.add(interval.days)
+		try result.add(interval.fractionalDay)
+		self = result
+	}
+
+	/// Subtracts an interval.
+	///
+	/// - Parameter interval: The interval to subtract.
+	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
+	mutating func subtract(_ interval: JulianDate.Interval) throws(Failure) {
+		var result = self
+		try result.subtract(interval.days)
+		try result.add(-interval.fractionalDay)
+		self = result
 	}
 }
 
@@ -181,10 +219,10 @@ extension JulianDate {
 	/// - Throws: ``JulianDateError/dayCountNotRepresentable`` if the whole days in the interval
 	///   cannot be represented as an `Int`.
 	public func interval(to other: JulianDate) throws(JulianDateError) -> Interval {
-		guard let f = normalizedSum(other.fractionFromNoon, -fractionFromNoon),
-			  let days = other.julianDayNumber.subtracting(julianDayNumber, plus: f.integral)
-		else { throw .dayCountNotRepresentable }
-		return Interval(uncheckedDays: days, fractionalDay: f.remainder)
+		try Interval { acc throws(DayAccumulator.Failure) in
+			try acc.add(other)
+			try acc.subtract(self)
+		}
 	}
 
 	/// Returns the Julian Date advanced by the specified interval.
@@ -194,10 +232,10 @@ extension JulianDate {
 	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func adding(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedSum(fractionFromNoon, interval.fractionalDay),
-			  let day = julianDayNumber.adding(interval.days, plus: f.integral)
-		else { throw .julianDayNumberNotRepresentable }
-		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: f.remainder)
+		try JulianDate { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.add(interval)
+		}
 	}
 
 	/// Returns the Julian Date moved back by the specified interval.
@@ -207,10 +245,10 @@ extension JulianDate {
 	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func subtracting(_ interval: Interval) throws(JulianDateError) -> JulianDate {
-		guard let f = normalizedSum(fractionFromNoon, -interval.fractionalDay),
-			  let day = julianDayNumber.subtracting(interval.days, plus: f.integral)
-		else { throw .julianDayNumberNotRepresentable }
-		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: f.remainder)
+		try JulianDate { acc throws(DayAccumulator.Failure) in
+			try acc.add(self)
+			try acc.subtract(interval)
+		}
 	}
 }
 
