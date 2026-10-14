@@ -33,6 +33,11 @@ public struct DayInterval: Hashable, Sendable {
 }
 
 extension DayInterval {
+	/// An interval of zero days.
+	public static let zero = DayInterval(uncheckedDays: 0, fractionalDay: 0)
+}
+
+extension DayInterval {
 	/// Creates a day interval from the specified number of days and fractional day.
 	///
 	/// `fractionalDay` need not lie in the right-open interval [-0.5, 0.5); whole days are
