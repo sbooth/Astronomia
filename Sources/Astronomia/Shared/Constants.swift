@@ -9,3 +9,8 @@
 ///
 /// - Important: Leap seconds are deliberately not modeled.
 let secondsPerDay: Double = 86_400
+
+/// Seconds per day, for exact integer arithmetic.
+///
+/// - Important: Leap seconds are deliberately not modeled.
+let integerSecondsPerDay: Int = 86_400

@@ -198,7 +198,7 @@ extension DayInterval {
 			f = -0.5
 		}
 
-		let (daySeconds, productOverflow) = days.multipliedReportingOverflow(by: 86_400)
+		let (daySeconds, productOverflow) = days.multipliedReportingOverflow(by: integerSecondsPerDay)
 		if !productOverflow {
 			// `w` is in [-43,200, 43,200]
 			let (seconds, sumOverflow) = daySeconds.addingReportingOverflow(Int(w))

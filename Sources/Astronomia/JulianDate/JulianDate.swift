@@ -428,7 +428,7 @@ extension JulianDate {
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func adding(seconds: Int) throws(JulianDateError) -> JulianDate {
 		// The remainder is below 86,400 in magnitude, so it converts to Double exactly.
-		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: 86_400)
+		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: integerSecondsPerDay)
 		return try JulianDate { acc throws(DayAccumulator.Failure) in
 			try acc.add(noonBased: self)
 			try acc.add(days)
