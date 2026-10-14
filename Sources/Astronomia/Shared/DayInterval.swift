@@ -166,11 +166,6 @@ extension DayAccumulator {
 }
 
 extension DayInterval {
-	/// Seconds per day.
-	static let secondsPerDay: Double = 60 * 60 * 24
-}
-
-extension DayInterval {
 	/// The interval in days as a single value.
 	///
 	/// - Note: Loses precision for long intervals.
@@ -183,7 +178,7 @@ extension DayInterval {
 	/// - Important: Assumes 86,400 seconds per day.
 	/// - Note: Loses precision for long intervals.
 	public var inSeconds: Double {
-		(fractionalDay * Self.secondsPerDay).addingProduct(Double(days), Self.secondsPerDay)
+		(fractionalDay * secondsPerDay).addingProduct(Double(days), secondsPerDay)
 	}
 
 	/// The interval as an integral number of seconds and a fractional second in the right-open
@@ -195,7 +190,7 @@ extension DayInterval {
 	///
 	/// - Important: Assumes 86,400 seconds per day.
 	public var wholeAndFractionalSeconds: (seconds: Double, fractionalSecond: Double) {
-		let s = fractionalDay * Self.secondsPerDay
+		let s = fractionalDay * secondsPerDay
 		var w = s.rounded()
 		var f = s - w
 		if f == 0.5 {
@@ -211,7 +206,7 @@ extension DayInterval {
 				return (Double(seconds), f)
 			}
 		}
-		return (w.addingProduct(Double(days), Self.secondsPerDay), f)
+		return (w.addingProduct(Double(days), secondsPerDay), f)
 	}
 }
 

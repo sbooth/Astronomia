@@ -55,7 +55,7 @@ extension JulianDate {
 	///   about 0.1 µs near the present.
 	public var date: Date {
 		let days = differenceAsDouble(julianDayNumber, Self.referenceDate.julianDayNumber) + 0.5
-		let seconds = (fractionFromNoon * Self.secondsPerDay).addingProduct(days, Self.secondsPerDay)
+		let seconds = (fractionFromNoon * secondsPerDay).addingProduct(days, secondsPerDay)
 		return Date(timeIntervalSinceReferenceDate: seconds)
 	}
 }

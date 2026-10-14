@@ -56,11 +56,6 @@ extension JulianDate {
 	static let daysPerJulianCentury: Double = 36_525
 	/// Days per tropical year, used for Besselian epochs.
 	static let daysPerTropicalYear: Double = 365.242198781
-
-	/// Seconds per day.
-	///
-	/// - Important: Leap seconds are deliberately not modeled.
-	static let secondsPerDay: Double = 60 * 60 * 24
 }
 
 extension JulianDate {
@@ -493,7 +488,7 @@ extension JulianDate {
 		precondition(toleranceSeconds >= 0, "Tolerance must be non-negative")
 		guard let interval = try? interval(to: other) else {
 			let days = (Double(julianDayNumber) - Double(other.julianDayNumber)) + (fractionFromNoon - other.fractionFromNoon)
-			return (days * Self.secondsPerDay).magnitude <= toleranceSeconds
+			return (days * secondsPerDay).magnitude <= toleranceSeconds
 		}
 		return interval.inSeconds.magnitude <= toleranceSeconds
 	}
