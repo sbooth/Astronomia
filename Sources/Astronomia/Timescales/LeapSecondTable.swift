@@ -45,8 +45,22 @@ public struct LeapSecondTable: Hashable, Sendable {
 extension LeapSecondTable {
 	/// Returns the entry applicable to the specified Julian day number, or `nil` if none.
 	func entryForUTCJulianDayNumber(_ J: JulianDayNumber) -> Entry? {
-		let index = entries.partitioningIndex { $0.effective <= J }
-		return index == entries.startIndex ? nil : entries[index - 1]
+#if false
+		// Most dates of interest are recent, so search from the end
+		entries.last { $0.effective <= J }
+#endif
+		var low = entries.startIndex
+		var high = entries.endIndex
+		while low != high {
+			let distance = entries.distance(from: low, to: high)
+			let mid = entries.index(low, offsetBy: distance / 2)
+			if entries[mid].effective <= J {
+				low = entries.index(after: mid)
+			} else {
+				high = mid
+			}
+		}
+		return low == entries.startIndex ? nil : entries[low - 1]
 	}
 }
 
