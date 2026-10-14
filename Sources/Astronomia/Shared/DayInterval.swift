@@ -5,16 +5,20 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// A signed number of days, possibly fractional.
+/// A signed number of days, possibly fractional, stored as a whole number of days plus a
+/// fractional day in the right-open interval [-0.5, 0.5).
 ///
-/// A day interval measures days and fractions of a day, not elapsed time. In a uniform
-/// timescale such as TAI or TT, the two are equivalent. For UTC quasi-JDs, converting
-/// intervals on or across leap-second days using 86,400 seconds per day can differ from
-/// elapsed time by up to one second per leap second.
+/// A day interval measures days, not elapsed time. In a uniform timescale such as TAI or
+/// TT the two agree. In UTC, a day containing a leap second is 86,401 (or 86,399) seconds
+/// long, so the seconds-based accessors, which assume 86,400 seconds per day, can differ
+/// from elapsed time by up to one second per leap second crossed.
 public struct DayInterval: Hashable, Sendable {
-	/// The number of whole days in the interval.
+	/// The interval rounded to the nearest whole number of days, with halves rounded up.
+	///
+	/// This is not the truncated number of whole days: an interval of 0.75 days has
+	/// ``days`` equal to 1 and ``fractionalDay`` equal to -0.25.
 	public let days: Int
-	/// The interval's fractional day in the right-open interval [-0.5, 0.5).
+	/// The remainder of the interval after ``days``, in the right-open interval [-0.5, 0.5).
 	public let fractionalDay: Double
 
 	/// Creates a day interval from parts that are already canonical.
