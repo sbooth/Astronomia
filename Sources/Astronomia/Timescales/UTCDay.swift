@@ -157,8 +157,7 @@ extension UTCDay {
 		let correction = (offsetAtStart + fraction * offsetChange) / secondsPerDay
 		do throws(JulianDateError) {
 			return try start.adding(days1: fraction, days2: correction)
-		} catch {
-			throw TimescaleConversionError(error)
 		}
+		catch { throw TimescaleConversionError(error) }
 	}
 }

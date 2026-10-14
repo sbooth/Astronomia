@@ -24,9 +24,8 @@ public enum GPS: Timescale {
 		let date: JulianDate
 		do throws(JulianDateError) {
 			date = try julianDate.adding(seconds: -offsetFromTAI)
-		} catch {
-			throw TimescaleConversionError(error)
 		}
+		catch { throw TimescaleConversionError(error) }
 		return try TAI.toTT(date, context: context)
 	}
 
@@ -34,9 +33,8 @@ public enum GPS: Timescale {
 		let date: JulianDate
 		do throws(JulianDateError) {
 			date = try julianDate.adding(seconds: offsetFromTAI)
-		} catch {
-			throw TimescaleConversionError(error)
 		}
+		catch { throw TimescaleConversionError(error) }
 		return try TAI.fromTT(date, context: context)
 	}
 }

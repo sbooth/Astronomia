@@ -10,10 +10,10 @@
 /// TCG is the time coordinate of the Geocentric Celestial Reference System. TT is defined
 /// as a linear scaling of TCG (IAU 2000 Resolution B1.9):
 ///
-/// TT = TCG − L_G × (JD_TCG − T₀)
+/// TT = TCG − L_G × (JD_TCG − T₀) × 86,400 s
 ///
 /// where L_G = 6.969290134 × 10⁻¹⁰ and T₀ = JD 2443144.5003725, the instant
-/// 1977-01-01T00:00:32.184 TT (00:00:00 TAI) at which TCG, TT and TDB agree.
+/// 1977-01-01T00:00:32.184 TT (00:00:00 TAI) at which TCG and TT agree.
 ///
 /// TCG − TT is about 0.506 s at J2000.0, grows by about 22 ms per year, and is negative
 /// before 1977.
@@ -34,9 +34,8 @@ public enum TCG: Timescale {
 		let correction = try scaledElapsedTime(since: epoch, until: julianDate, by: rate)
 		do throws(JulianDateError) {
 			return try julianDate.subtracting(correction)
-		} catch {
-			throw TimescaleConversionError(error)
 		}
+		catch { throw TimescaleConversionError(error) }
 	}
 
 	public static func fromTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
@@ -44,9 +43,8 @@ public enum TCG: Timescale {
 		let correction = try scaledElapsedTime(since: epoch, until: julianDate, by: rateRelativeToTT)
 		do throws(JulianDateError) {
 			return try julianDate.adding(correction)
-		} catch {
-			throw TimescaleConversionError(error)
 		}
+		catch { throw TimescaleConversionError(error) }
 	}
 }
 
@@ -58,8 +56,7 @@ extension TCG {
 	static func scaledElapsedTime(since start: JulianDate, until end: JulianDate, by rate: Double) throws(TimescaleConversionError) -> DayInterval {
 		do throws(DayIntervalError) {
 			return try start.interval(to: end).multiplied(by: rate)
-		} catch {
-			throw TimescaleConversionError(error)
 		}
+		catch { throw TimescaleConversionError(error) }
 	}
 }

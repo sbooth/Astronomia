@@ -48,9 +48,8 @@ public enum UTC: Timescale {
 		do throws(DayIntervalError) {
 			elapsed = try startOfDay.interval(to: tai).inDays
 			dayLength = try startOfDay.interval(to: endOfDay).inDays
-		} catch {
-			throw .dateOutOfRange
 		}
+		catch { throw .dateOutOfRange }
 
 		// Rounding can push the quotient just outside [0, 1); keep it on this UTC day
 		let fraction = min(max(elapsed / dayLength, 0), Double(1).nextDown)

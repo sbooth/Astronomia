@@ -17,16 +17,14 @@ public enum TAI: Timescale {
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		do throws(JulianDateError) {
 			return try julianDate.adding(TT.intervalFromTAI)
-		} catch {
-			throw TimescaleConversionError(error)
 		}
+		catch { throw TimescaleConversionError(error) }
 	}
 
 	public static func fromTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		do throws(JulianDateError) {
 			return try julianDate.subtracting(TT.intervalFromTAI)
-		} catch {
-			throw TimescaleConversionError(error)
 		}
+		catch { throw TimescaleConversionError(error) }
 	}
 }
