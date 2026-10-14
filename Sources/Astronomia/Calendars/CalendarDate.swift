@@ -196,6 +196,17 @@ extension DayAccumulator {
 		try result.add(date.fractionSinceMidnight)
 		self = result
 	}
+
+	/// Subtracts a calendar date as its Julian day number plus its fraction since midnight.
+	///
+	/// - Parameter date: The Julian Date to subtract.
+	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
+	mutating func subtract(_ date: CalendarDate) throws(Failure) {
+		var result = self
+		try result.subtract(date.julianDayNumber)
+		try result.add(-date.fractionSinceMidnight)
+		self = result
+	}
 }
 
 extension CalendarDate {

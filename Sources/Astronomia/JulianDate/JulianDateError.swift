@@ -11,7 +11,4 @@ public enum JulianDateError: Error, Hashable, Sendable {
 	case nonFiniteValue
 	/// The resulting Julian day number cannot be represented as a ``JulianDayNumber``.
 	case julianDayNumberNotRepresentable
-	/// A number of days, such as the whole days in a day fraction or in an interval, cannot be
-	/// represented as an `Int`.
-	case dayCountNotRepresentable
 }
