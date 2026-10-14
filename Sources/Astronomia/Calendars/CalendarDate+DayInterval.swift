@@ -10,6 +10,9 @@ extension CalendarDate {
 	///
 	/// The interval is positive if `other` is later than this calendar date.
 	///
+	/// - Note: Because `CalendarDate` stores a fraction since midnight, an interval between
+	///   calendar dates converted from Julian Dates can differ from the Julian Date interval by
+	///   up to one ulp.
 	/// - Parameter other: The end of the interval.
 	/// - Returns: `other` minus this calendar date.
 	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the interval
