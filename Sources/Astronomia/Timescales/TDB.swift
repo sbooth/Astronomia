@@ -75,12 +75,12 @@ extension TDB {
 }
 
 extension TDB {
-	/// Returns TDB − TT, in seconds, at the specified TT.
+	/// Returns TDB - TT, in seconds, at the specified TT.
 	///
 	/// - Parameters:
 	///   - tt: A Julian Date in TT.
-	///   - model: The model of TDB − TT.
-	/// - Returns: TDB − TT, in seconds.
+	///   - model: The model of TDB - TT.
+	/// - Returns: TDB - TT, in seconds.
 	public static func tdbMinusTT(at tt: JulianDate, model: Model = .usnoCircular179) -> Double {
 		switch model {
 		case .usnoCircular179:

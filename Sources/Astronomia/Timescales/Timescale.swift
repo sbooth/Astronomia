@@ -23,7 +23,7 @@
 /// ```
 ///
 /// TT is the hub because it is the timescale of most astronomical models: TDB is a periodic
-/// series in TT, and ΔT is defined as TT − UT1.
+/// series in TT, and ΔT is defined as TT - UT1.
 public protocol Timescale: Sendable {
 	associatedtype Context: Sendable = Void
 	static var defaultContext: Context { get }
