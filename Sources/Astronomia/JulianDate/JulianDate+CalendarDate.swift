@@ -14,7 +14,7 @@ extension JulianDate {
 	/// - Note: The Julian Date is in the calendar date's timescale.
 	/// - Parameter calendarDate: The calendar date to convert.
 	public init(_ calendarDate: CalendarDate) {
-		self.init(uncheckedJulianDayNumber: calendarDate.julianDayNumber, fractionFromNoon: calendarDate.fractionSinceMidnight - 0.5)
+		self.init(uncheckedJulianDayNumber: calendarDate.julianDayNumber, fractionFromNoon: calendarDate.fractionSinceMidnight - noonToMidnightOffset)
 	}
 }
 

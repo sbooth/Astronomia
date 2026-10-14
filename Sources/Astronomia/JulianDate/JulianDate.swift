@@ -260,7 +260,7 @@ extension JulianDate {
 	var fractionSinceMidnight: Double {
 		// The exact value `fractionFromNoon + 0.5` lies in [0, 1) but can round to 1.
 		// Clamping to `1.nextDown` keeps the instant in ``julianDayNumber``.
-		min(fractionFromNoon + 0.5, Double(1).nextDown)
+		min(fractionFromNoon + noonToMidnightOffset, Double(1).nextDown)
 	}
 
 	/// The Julian Date as a single value.
@@ -275,7 +275,7 @@ extension JulianDate {
 	///
 	/// Use ``parts(_:)`` with ``SplitMethod/fromMJD0`` for full precision.
 	public var modifiedJulianDate: Double {
-		(differenceAsDouble(julianDayNumber, Self.MJD0.julianDayNumber) + 0.5) + fractionFromNoon
+		(differenceAsDouble(julianDayNumber, Self.MJD0.julianDayNumber) + noonToMidnightOffset) + fractionFromNoon
 	}
 
 	/// Days from J2000.0 as a single value.
@@ -359,7 +359,7 @@ extension JulianDate {
 		case .mjd:
 			return (Self.MJD0_JD, modifiedJulianDate)
 		case .dateAndTime:
-			return (Double(julianDayNumber) - 0.5, fractionSinceMidnight)
+			return (Double(julianDayNumber) - noonToMidnightOffset, fractionSinceMidnight)
 		case .dayAndFraction:
 			return (Double(julianDayNumber), fractionFromNoon)
 		case .fromJ2000:
