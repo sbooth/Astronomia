@@ -242,11 +242,11 @@ extension DayAccumulator {
 
 	private func adding(seconds s: Double) throws(Failure) -> DayAccumulator {
 		guard s.isFinite else { throw .nonFiniteValue }
-		let n = (s / 86_400).rounded(.toNearestOrEven)
-		let r = s.addingProduct(-n, 86_400)        // exact
-		let q = r / 86_400
-		let residual = r.addingProduct(-q, 86_400) // exact remainder of the division
-		return try adding(n).adding(q).adding(residual / 86_400)
+		let n = (s / secondsPerDay).rounded(.toNearestOrEven)
+		let r = s.addingProduct(-n, secondsPerDay)        // exact
+		let q = r / secondsPerDay
+		let residual = r.addingProduct(-q, secondsPerDay) // exact remainder of the division
+		return try adding(n).adding(q).adding(residual / secondsPerDay)
 	}
 
 	/// Adds `x`, which must be finite and in [-0.5, 0.5], to the fractional day.
