@@ -70,7 +70,7 @@ public struct UTCDay: Sendable {
 extension UTCDay {
 	/// Creates a UTC day containing the specified UTC Julian Date.
 	///
-	/// - Throws: ``TimescaleConversionError/dateOutOfRange`` if the day is before January 1, 1961.
+	/// - Throws: ``TimescaleConversionError/unsupported`` if the day is before January 1, 1961.
 	public init(containing julianDate: JulianDate, leapSecondTable: LeapSecondTable = .builtIn) throws(TimescaleConversionError) {
 		try self.init(julianDayNumber: julianDate.julianDayNumber, leapSecondTable: leapSecondTable)
 	}
