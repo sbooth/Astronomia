@@ -146,8 +146,10 @@ extension DayAccumulator {
 	/// - Parameter interval: The interval to add.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
 	mutating func add(_ interval: JulianDate.Interval) throws(Failure) {
-		try add(interval.days)
-		try add(interval.fractionalDay)
+		var result = self
+		try result.add(interval.days)
+		try result.add(interval.fractionalDay)
+		self = result
 	}
 
 	/// Subtracts an interval.
@@ -155,8 +157,10 @@ extension DayAccumulator {
 	/// - Parameter interval: The interval to subtract.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
 	mutating func subtract(_ interval: JulianDate.Interval) throws(Failure) {
-		try subtract(interval.days)
-		try add(-interval.fractionalDay)
+		var result = self
+		try result.subtract(interval.days)
+		try result.add(-interval.fractionalDay)
+		self = result
 	}
 }
 
