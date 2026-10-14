@@ -19,7 +19,7 @@
 ///                       │
 ///                    32.184 s
 ///                       │
-///                      TT ──L_G── TCG
+///         TCG ──L_G──  TT  ──series── TDB ──L_B── TCB
 /// ```
 ///
 /// TT is the hub because it is the timescale of most astronomical models: TDB is a periodic
