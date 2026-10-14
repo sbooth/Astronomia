@@ -43,8 +43,9 @@ public struct UTCDay: Sendable {
 
 	/// Creates a UTC day with the specified Julian Day Number.
 	///
-	/// - Throws: ``TimescaleConversionError/dateOutOfRange`` if the Julian day number is out of range.
-	/// - Throws: ``TimescaleConversionError/unsupported`` if the day is before January 1, 1961.
+	/// - Throws:
+	///   - ``TimescaleConversionError/dateOutOfRange`` if the Julian day number is out of range.
+	///   - ``TimescaleConversionError/unsupported`` if the day is before January 1, 1961.
 	public init(julianDayNumber J: JulianDayNumber, leapSecondTable: LeapSecondTable = .builtIn) throws(TimescaleConversionError) {
 		let (nextJ, overflow) = J.addingReportingOverflow(1)
 		guard !overflow else { throw .dateOutOfRange }
