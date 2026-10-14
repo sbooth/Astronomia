@@ -124,7 +124,7 @@ extension CalendarDate {
 		guard fractionalDay.isFinite else { throw .nonFiniteValue }
 		guard fractionalDay >= 0, fractionalDay < 1 else { throw .invalidDayFraction }
 		return try CalendarDate(calendar) { acc throws(DayAccumulator.Failure) in
-			try acc.add(self)
+			try acc.add(midnightBased: self)
 			try acc.add(days)
 			try acc.add(fractionalDay)
 		}
@@ -144,7 +144,7 @@ extension CalendarDate {
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days n: Double) throws(CalendarError) -> CalendarDate {
 		try CalendarDate(calendar) { acc throws(DayAccumulator.Failure) in
-			try acc.add(self)
+			try acc.add(midnightBased: self)
 			try acc.add(n)
 		}
 	}
@@ -182,26 +182,26 @@ extension CalendarDate {
 }
 
 extension DayAccumulator {
-	/// Adds a calendar date as a midnight-based day count: its Julian day number plus its
-	/// fraction since midnight.
+	/// Adds a calendar date as a midnight-based day count.
 	///
 	/// - Important: This is half a day later than adding the same instant as a
-	///   ``JulianDate``, which counts from noon. Read the sum with
-	///   ``CalendarDate/init(_:accumulating:)``.
+	///   ``JulianDate``, which counts from noon.
 	/// - Parameter date: The calendar date to add.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
-	mutating func add(_ date: CalendarDate) throws(Failure) {
+	mutating func add(midnightBased date: CalendarDate) throws(Failure) {
 		var result = self
 		try result.add(date.julianDayNumber)
 		try result.add(date.fractionSinceMidnight)
 		self = result
 	}
 
-	/// Subtracts a calendar date as its Julian day number plus its fraction since midnight.
+	/// Subtracts a calendar date as a midnight-based day count.
 	///
-	/// - Parameter date: The Julian Date to subtract.
+	/// - Important: This is half a day later than subtracting the same instant as a
+	///   ``JulianDate``, which counts from noon.
+	/// - Parameter date: The calendar date to subtract.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
-	mutating func subtract(_ date: CalendarDate) throws(Failure) {
+	mutating func subtract(midnightBased date: CalendarDate) throws(Failure) {
 		var result = self
 		try result.subtract(date.julianDayNumber)
 		try result.add(-date.fractionSinceMidnight)

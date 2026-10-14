@@ -16,8 +16,8 @@ extension JulianDate {
 	///   cannot be represented as an `Int`.
 	public func interval(to other: JulianDate) throws(DayIntervalError) -> DayInterval {
 		try DayInterval { acc throws(DayAccumulator.Failure) in
-			try acc.add(other)
-			try acc.subtract(self)
+			try acc.add(noonBased: other)
+			try acc.subtract(noonBased: self)
 		}
 	}
 
@@ -29,7 +29,7 @@ extension JulianDate {
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func adding(_ interval: DayInterval) throws(JulianDateError) -> JulianDate {
 		try JulianDate { acc throws(DayAccumulator.Failure) in
-			try acc.add(self)
+			try acc.add(noonBased: self)
 			try acc.add(interval)
 		}
 	}
@@ -42,7 +42,7 @@ extension JulianDate {
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func subtracting(_ interval: DayInterval) throws(JulianDateError) -> JulianDate {
 		try JulianDate { acc throws(DayAccumulator.Failure) in
-			try acc.add(self)
+			try acc.add(noonBased: self)
 			try acc.subtract(interval)
 		}
 	}

@@ -16,8 +16,8 @@ extension CalendarDate {
 	///   cannot be represented as an `Int`.
 	public func interval(to other: CalendarDate) throws(DayIntervalError) -> DayInterval {
 		try DayInterval { acc throws(DayAccumulator.Failure) in
-			try acc.add(other)
-			try acc.subtract(self)
+			try acc.add(midnightBased: other)
+			try acc.subtract(midnightBased: self)
 		}
 	}
 
@@ -31,7 +31,7 @@ extension CalendarDate {
 	///   Julian day number cannot be represented as a ``JulianDayNumber``.
 	public func adding(_ interval: DayInterval) throws(CalendarError) -> CalendarDate {
 		try CalendarDate(calendar) { acc throws(DayAccumulator.Failure) in
-			try acc.add(self)
+			try acc.add(midnightBased: self)
 			try acc.add(interval)
 		}
 	}
@@ -44,7 +44,7 @@ extension CalendarDate {
 	///   Julian day number cannot be represented as a ``JulianDayNumber``.
 	public func subtracting(_ interval: DayInterval) throws(CalendarError) -> CalendarDate {
 		try CalendarDate(calendar) { acc throws(DayAccumulator.Failure) in
-			try acc.add(self)
+			try acc.add(midnightBased: self)
 			try acc.subtract(interval)
 		}
 	}

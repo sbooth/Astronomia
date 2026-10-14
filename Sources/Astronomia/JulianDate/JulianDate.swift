@@ -177,7 +177,7 @@ extension JulianDate {
 	public init(julianEpoch epoch: Double) throws(JulianDateError) {
 		// J2000.0 + (epoch - 2000) × 365.25
 		try self.init { acc throws(DayAccumulator.Failure) in
-			try acc.add(Self.J2000)
+			try acc.add(noonBased: Self.J2000)
 			try acc.add(product: epoch, Self.daysPerJulianYear)
 			try acc.add(-730_500) // 2000 × 365.25
 		}
@@ -195,7 +195,7 @@ extension JulianDate {
 	public init(besselianEpoch epoch: Double) throws(JulianDateError) {
 		// B1900.0 + (epoch - 1900) × days per tropical year
 		try self.init { acc throws(DayAccumulator.Failure) in
-			try acc.add(Self.B1900)
+			try acc.add(noonBased: Self.B1900)
 			try acc.add(product: epoch, Self.daysPerTropicalYear)
 			try acc.add(product: -1900, Self.daysPerTropicalYear)
 		}
@@ -228,22 +228,26 @@ extension JulianDate {
 }
 
 extension DayAccumulator {
-	/// Adds a Julian Date as its Julian day number plus its fraction from noon.
+	/// Adds a Julian Date as a noon-based day count.
 	///
+	/// - Important: This is half a day earlier than adding the same instant as a
+	///   ``CalendarDate``, which counts from midnight.
 	/// - Parameter date: The Julian Date to add.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
-	mutating func add(_ date: JulianDate) throws(Failure) {
+	mutating func add(noonBased date: JulianDate) throws(Failure) {
 		var result = self
 		try result.add(date.julianDayNumber)
 		try result.add(date.fractionFromNoon)
 		self = result
 	}
 
-	/// Subtracts a Julian Date as its Julian day number plus its fraction from noon.
+	/// Subtracts a Julian Date as a noon-based day count.
 	///
+	/// - Important: This is half a day earlier than adding the same instant as a
+	///   ``CalendarDate``, which counts from midnight.
 	/// - Parameter date: The Julian Date to subtract.
 	/// - Throws: ``Failure/overflow`` if the sum overflows 128 bits.
-	mutating func subtract(_ date: JulianDate) throws(Failure) {
+	mutating func subtract(noonBased date: JulianDate) throws(Failure) {
 		var result = self
 		try result.subtract(date.julianDayNumber)
 		try result.add(-date.fractionFromNoon)
@@ -399,7 +403,7 @@ extension JulianDate {
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days1: Double, days2: Double) throws(JulianDateError) -> JulianDate {
 		try JulianDate { acc throws(DayAccumulator.Failure) in
-			try acc.add(self)
+			try acc.add(noonBased: self)
 			try acc.add(sum: days1, days2)
 		}
 	}
@@ -429,7 +433,7 @@ extension JulianDate {
 		// The remainder is below 86,400 in magnitude, so it converts to Double exactly.
 		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: 86_400)
 		return try JulianDate { acc throws(DayAccumulator.Failure) in
-			try acc.add(self)
+			try acc.add(noonBased: self)
 			try acc.add(days)
 			try acc.add(seconds: Double(remainder))
 		}
@@ -450,7 +454,7 @@ extension JulianDate {
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public func adding(seconds1: Double, seconds2: Double) throws(JulianDateError) -> JulianDate {
 		try JulianDate { acc throws(DayAccumulator.Failure) in
-			try acc.add(self)
+			try acc.add(noonBased: self)
 			try acc.add(seconds: seconds1, seconds2)
 		}
 	}
