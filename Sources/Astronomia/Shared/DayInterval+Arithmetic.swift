@@ -111,6 +111,13 @@ extension DayInterval {
 	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result cannot be
 	///   represented as an `Int`.
 	public func multiplied(by k: Int) throws(DayIntervalError) -> DayInterval {
+		switch k {
+		case 1:  return self
+		case 0:  return .zero
+		case -1: return try negated()
+		default: break
+		}
+
 		let k64 = Int64(k)
 		let wholeDays = Int64(days).multipliedFullWidth(by: k64)
 		let (kHigh, kLow) = k64.exactDoubleComponents
@@ -133,6 +140,10 @@ extension DayInterval {
 	///   - ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result cannot
 	///     be represented as an `Int`.
 	public func multiplied(by s: Double) throws(DayIntervalError) -> DayInterval {
+		guard s.isFinite else { throw .nonFiniteValue }
+		if s == 1 { return self }
+		if s == 0 { return .zero }
+		if s == -1 { return try negated() }
 		let (daysHigh, daysLow) = Int64(days).exactDoubleComponents
 		return try DayInterval { acc throws(DayAccumulator.Failure) in
 			try acc.add(product: daysHigh, s)
