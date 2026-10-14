@@ -145,9 +145,12 @@ extension DayInterval {
 private extension Int64 {
 	/// Two values, each exactly representable as a `Double`, that sum to this value.
 	///
+	/// Both parts have the same sign as this value (or are zero), and neither exceeds it in
+	/// magnitude, so scaling them cannot overflow unless scaling the value itself would.
 	/// The high part is a multiple of 2^32 with at most 32 significant bits, and the low part
-	/// is in the right-open interval [0, 2^32).
+	/// is in the open interval (-2^32, 2^32).
 	var exactDoubleComponents: (high: Double, low: Double) {
-		(Double(self & ~0xFFFF_FFFF), Double(self & 0xFFFF_FFFF))
+		let low = self % 0x1_0000_0000
+		return (Double(self - low), Double(low))
 	}
 }
