@@ -17,7 +17,8 @@
 ///   ``UTCDay/julianDate(secondsSinceMidnight:)`` to convert a clock reading.
 public enum UTC: Timescale {
 	public static let abbreviation = "UTC"
-	public static let defaultContext = Context(leapSecondTable: .builtIn, extrapolationPolicy: .allow)
+	/// The built-in leap second table, assuming no further leap seconds past its horizon.
+	public static let defaultContext = Context(uncheckedLeapSecondTable: .builtIn, extrapolationPolicy: .allow)
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		let day = try UTCDay(containing: julianDate, leapSecondTable: context.leapSecondTable)
@@ -66,11 +67,30 @@ extension UTC {
 		case allow
 	}
 
+	/// The leap seconds and extrapolation policy used by UTC conversions.
 	public struct Context: Hashable, Sendable {
+		/// The leap second table.
 		public let leapSecondTable: LeapSecondTable
+		/// Whether conversions may use days past the table's horizon.
 		public let extrapolationPolicy: ExtrapolationPolicy
 
-		public init(leapSecondTable: LeapSecondTable, extrapolationPolicy: ExtrapolationPolicy) {
+		/// Creates a UTC context, validating the leap second table.
+		///
+		/// - Parameters:
+		///   - leapSecondTable: The leap second table.
+		///   - extrapolationPolicy: Whether conversions may use days past the table's horizon.
+		/// - Throws: A ``LeapSecondTable/ValidationError`` if the table cannot be used for
+		///   conversions. See ``LeapSecondTable/validate()``.
+		public init(leapSecondTable: LeapSecondTable, extrapolationPolicy: ExtrapolationPolicy = .allow) throws(LeapSecondTable.ValidationError) {
+			try leapSecondTable.validate()
+			self.init(uncheckedLeapSecondTable: leapSecondTable, extrapolationPolicy: extrapolationPolicy)
+		}
+
+		/// Creates a UTC context from a leap second table already known to be valid.
+		///
+		/// - Precondition: `leapSecondTable` passes ``LeapSecondTable/validate()``.
+		init(uncheckedLeapSecondTable leapSecondTable: LeapSecondTable, extrapolationPolicy: ExtrapolationPolicy) {
+			assert((try? leapSecondTable.validate()) != nil, "Leap second table is invalid")
 			self.leapSecondTable = leapSecondTable
 			self.extrapolationPolicy = extrapolationPolicy
 		}
