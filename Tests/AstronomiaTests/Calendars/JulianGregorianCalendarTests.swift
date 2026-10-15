@@ -219,4 +219,213 @@ import Testing
 		_ = JulianGregorianCalendar.dayOfWeek(.min)
 		_ = JulianGregorianCalendar.dayOfWeek(.max)
 	}
+
+	@Test func normalize() throws {
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 2000, month: 13, day: 1) == (2001, 1, 1))
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1900, month: 2, day: 29) == (1900, 3, 1))
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1500, month: 2, day: 29) == (1500, 2, 29))
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1582, month: 10, day: 4) == (1582, 10, 4))
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1582, month: 10, day: 15) == (1582, 10, 15))
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1582, month: 10, day: 0) == (1582, 9, 30))
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1582, month: 10, day: 36) == (1582, 11, 5))
+		#expect(try JulianGregorianCalendar.normalizedDate((2000, 14, 30)) == (2001, 3, 2))
+		#expect(try JulianGregorianCalendar.normalizedDate((1582, 10, 10)) == (1582, 10, 20))
+
+		// Valid dates are unchanged
+		for J in stride(from: 2_290_000, through: 2_310_000, by: 3) {
+			let date = JulianGregorianCalendar.dateFromJulianDayNumber(J)
+			#expect(try JulianGregorianCalendar.normalizedDate(date) == date)
+		}
+
+		// Agrees with the calendar identifier
+		for M in -13 ... 26 {
+			for D in [-400, -31, -1, 0, 1, 5, 14, 29, 32, 400] {
+				#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1582, month: M, day: D) == CalendarIdentifier.julianGregorian.normalizedDateFrom(year: 1582, month: M, day: D), "M = \(M), D = \(D)")
+			}
+		}
+
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try JulianGregorianCalendar.normalizedDateFrom(year: .max, month: 12, day: 31) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try JulianGregorianCalendar.normalizedDateFrom(year: .min, month: 1, day: 1) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try JulianGregorianCalendar.normalizedDate((2000, 1, .max)) }
+	}
+
+	@Test func normalizeNonexistentDates() throws {
+		// October 5-14, 1582 count forward from October 4 in the Julian calendar
+		for day in 5 ... 14 {
+			#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1582, month: 10, day: day) == (1582, 10, day + 10))
+			#expect(try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: day) == JulianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: day))
+		}
+
+		// The calendar is chosen using the normalized year and month with the unnormalized day
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1581, month: 22, day: 10) == (1582, 10, 20))
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1583, month: -2, day: 1) == (1582, 10, 1))
+		// September 45 is counted in the Julian calendar
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1582, month: 9, day: 45) == (1582, 10, 25))
+		// November -20 is counted back in the Gregorian calendar to Gregorian October 11, which is Julian October 1
+		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1582, month: 11, day: -20) == (1582, 10, 1))
+	}
+
+	@Test func isJulianAndIsProlepticJulian() throws {
+		#expect(JulianGregorianCalendar.isJulian(2_299_160))
+		#expect(!JulianGregorianCalendar.isJulian(2_299_161))
+		#expect(JulianGregorianCalendar.isJulian(try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 4)))
+		#expect(!JulianGregorianCalendar.isJulian(try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 15)))
+		#expect(JulianGregorianCalendar.isJulian(.min))
+		#expect(!JulianGregorianCalendar.isJulian(.max))
+
+		#expect(JulianGregorianCalendar.isProlepticJulian(1_704_986))
+		#expect(!JulianGregorianCalendar.isProlepticJulian(1_704_987))
+		#expect(!JulianGregorianCalendar.isProlepticJulian(try JulianGregorianCalendar.julianDayNumberFrom(year: -44, month: 1, day: 1)))
+		#expect(JulianGregorianCalendar.isProlepticJulian(.min))
+		#expect(!JulianGregorianCalendar.isProlepticJulian(.max))
+	}
+
+	@Test func agreesWithJulianBeforeAndGregorianAfterChangeover() throws {
+		var failures: [JulianDayNumber] = []
+		for J in stride(from: -1_000_000, through: 4_000_000, by: 11) {
+			let date = JulianGregorianCalendar.dateFromJulianDayNumber(J)
+			let expected = J < GregorianCalendar.papalReform ? JulianCalendar.dateFromJulianDayNumber(J) : GregorianCalendar.dateFromJulianDayNumber(J)
+			if try date != expected || JulianGregorianCalendar.julianDayNumberFromDate(date) != J || !JulianGregorianCalendar.isValidDate(date) {
+				failures.append(J)
+			}
+		}
+		#expect(failures.isEmpty)
+
+		for Y in -1000 ... 3000 {
+			let expected = Y < 1582 ? JulianCalendar.isLeapYear(Y) : GregorianCalendar.isLeapYear(Y)
+			#expect(JulianGregorianCalendar.isLeapYear(Y) == expected, "Y = \(Y)")
+		}
+	}
+
+	@Test func dayOfWeekIsContinuousAcrossChangeover() throws {
+		let october4 = try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 4)
+		let october15 = try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 15)
+		#expect(october15 == october4 + 1)
+		// Thursday, October 4, 1582 was followed by Friday, October 15, 1582
+		#expect(JulianGregorianCalendar.dayOfWeek(october4) == 5)
+		#expect(JulianGregorianCalendar.dayOfWeek(october15) == 6)
+		for J in october4 - 30 ... october15 + 30 {
+			#expect(JulianGregorianCalendar.dayOfWeek(J) == GregorianCalendar.dayOfWeek(J))
+			#expect(JulianGregorianCalendar.dayOfWeek(J) == JulianCalendar.dayOfWeek(J))
+		}
+	}
+
+	@Test func changeoverYearDayOfYear() throws {
+		let jan1 = try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 1, day: 1)
+		#expect(jan1 == JulianGregorianCalendar.firstDayOfChangeoverYear)
+		for N in 1 ... 355 {
+			let J = jan1 + N - 1
+			let date = JulianGregorianCalendar.dateFromJulianDayNumber(J)
+			#expect(date.year == 1582)
+			#expect(JulianGregorianCalendar.dayOfYearFromJulianDayNumber(J) == N)
+			#expect(try JulianGregorianCalendar.dayOfYearFrom(year: date.year, month: date.month, day: date.day) == N)
+			#expect(try JulianGregorianCalendar.dateFrom(year: 1582, dayOfYear: N) == date)
+		}
+		#expect(JulianGregorianCalendar.dateFromJulianDayNumber(jan1 + 355) == (1583, 1, 1))
+		#expect(JulianGregorianCalendar.dayOfYearFromJulianDayNumber(jan1 + 355) == 1)
+		#expect(JulianGregorianCalendar.dayOfYearFromJulianDayNumber(jan1 - 1) == 365)
+
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.dateFrom(year: 1582, dayOfYear: 356) }
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.dateFrom(year: 1581, dayOfYear: 366) }
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.dateFrom(year: 1700, dayOfYear: 366) }
+		#expect(try JulianGregorianCalendar.dateFrom(year: 1600, dayOfYear: 366) == (1600, 12, 31))
+		#expect(try JulianGregorianCalendar.dateFrom(year: 1500, dayOfYear: 366) == (1500, 12, 31))
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.dayOfYearFrom(year: 1582, month: 13, day: 1) }
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.dayOfYearFrom(year: 1582, month: 10, day: 5) }
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.dayOfYearFrom(year: 1582, month: 10, day: 14) }
+	}
+
+	@Test func monthLengthErrors() {
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.numberOfDaysIn(month: 0, year: 1582) }
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.numberOfDaysIn(month: 13, year: 1582) }
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.numberOfDaysIn(month: 0, year: 1000) }
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.numberOfDaysIn(month: 13, year: 2000) }
+	}
+
+	@Test func yearLengths() {
+		#expect(JulianGregorianCalendar.numberOfDaysInYear(1500) == 366)
+		#expect(JulianGregorianCalendar.numberOfDaysInYear(1581) == 365)
+		#expect(JulianGregorianCalendar.numberOfDaysInYear(1582) == 355)
+		#expect(JulianGregorianCalendar.numberOfDaysInYear(1583) == 365)
+		#expect(JulianGregorianCalendar.numberOfDaysInYear(1600) == 366)
+		#expect(JulianGregorianCalendar.numberOfDaysInYear(1700) == 365)
+		#expect(JulianGregorianCalendar.numberOfDaysInYear(-100) == 366)
+	}
+
+	@Test func decimalYearFromJulianDayNumber() throws {
+		#expect(JulianGregorianCalendar.decimalYearFromJulianDayNumber(GregorianCalendar.papalReform) == 1582 + 277.0 / 355)
+		#expect(try JulianGregorianCalendar.decimalYearFrom(year: 1582, month: 10, day: 15) == 1582 + 277.0 / 355)
+		#expect(try JulianGregorianCalendar.julianDayNumberFromDecimalYear(1582 + 277.0 / 355) == GregorianCalendar.papalReform)
+		#expect(try JulianGregorianCalendar.dateFromDecimalYear(1582.5) == (1582, 6, 27))
+
+		var previous = -Double.infinity
+		var failures: [JulianDayNumber] = []
+		for J in stride(from: 2_290_000, through: 2_310_000, by: 1) {
+			let decimalYear = JulianGregorianCalendar.decimalYearFromJulianDayNumber(J)
+			if try decimalYear <= previous || JulianGregorianCalendar.julianDayNumberFromDecimalYear(decimalYear) != J {
+				failures.append(J)
+			}
+			previous = decimalYear
+		}
+		#expect(failures.isEmpty)
+
+		#expect(throws: CalendarError.invalidDate) { try JulianGregorianCalendar.decimalYearFrom(year: 1582, month: 10, day: 10) }
+		#expect(throws: CalendarError.nonFiniteValue) { try JulianGregorianCalendar.dateFromDecimalYear(.nan) }
+		#expect(throws: CalendarError.invalidDecimalYear) { try JulianGregorianCalendar.dateFromDecimalYear(1e300) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try JulianGregorianCalendar.julianDayNumberFromDecimalYear(1e18) }
+	}
+
+	@Test func easterAroundChangeover() {
+		// The Julian computus is used through 1582 and the Gregorian computus afterwards
+		#expect(JulianGregorianCalendar.easter(year: 1582) == JulianCalendar.easter(year: 1582))
+		#expect(JulianGregorianCalendar.easter(year: 1583) == GregorianCalendar.easter(year: 1583))
+		for Y in -1000 ... 1582 {
+			#expect(JulianGregorianCalendar.easter(year: Y) == JulianCalendar.easter(year: Y))
+		}
+		for Y in 1583 ... 3000 {
+			#expect(JulianGregorianCalendar.easter(year: Y) == GregorianCalendar.easter(year: Y))
+		}
+	}
+
+	@Test func easterIsASunday() throws {
+		var failures: [Int] = []
+		for Y in -1000 ... 3000 {
+			let (M, D) = JulianGregorianCalendar.easter(year: Y)
+			let J = try JulianGregorianCalendar.julianDayNumberFrom(year: Y, month: M, day: D)
+			if JulianGregorianCalendar.dayOfWeek(J) != 1 {
+				failures.append(Y)
+			}
+		}
+		#expect(failures.isEmpty)
+	}
+
+	@Test func agreesWithMeeus() throws {
+		// Meeus applies the Gregorian correction to dates on or after October 15, 1582
+		var failures: [YearMonthDay] = []
+		for Y in stride(from: -4000, through: 4000, by: 3) {
+			for M in 1 ... 12 {
+				for D in [1, 15, 28] {
+					let expected = meeusJulianDayNumber(year: Y, month: M, day: D, gregorian: (Y, M, D) >= (1582, 10, 15))
+					if try JulianGregorianCalendar.julianDayNumberFrom(year: Y, month: M, day: D) != expected || JulianGregorianCalendar.dateFromJulianDayNumber(expected) != (Y, M, D) {
+						failures.append((Y, M, D))
+					}
+				}
+			}
+		}
+		#expect(failures.isEmpty)
+	}
+}
+
+private func floorDivide(_ a: Int, _ b: Int) -> Int {
+	let (q, r) = a.quotientAndRemainder(dividingBy: b)
+	return r < 0 ? q - 1 : q
+}
+
+/// The Julian day number of a date using the algorithm in chapter 7 of Meeus,
+/// *Astronomical Algorithms*, 2nd ed. (1998), in integer arithmetic. Valid for years after -4716.
+private func meeusJulianDayNumber(year: Int, month: Int, day: Int, gregorian: Bool) -> JulianDayNumber {
+	let (Y, M) = month > 2 ? (year, month) : (year - 1, month + 12)
+	let A = floorDivide(Y, 100)
+	let B = gregorian ? 2 - A + floorDivide(A, 4) : 0
+	return floorDivide(1_461 * (Y + 4_716), 4) + (306_001 * (M + 1)) / 10_000 + day + B - 1_524
 }
