@@ -9,6 +9,8 @@
 public enum TimescaleConversionError: Error, Hashable, Sendable {
 	/// The resulting Julian day number cannot be represented as a ``JulianDayNumber``.
 	case dateOutOfRange
+	/// No Earth orientation data covers the date, and no model was provided.
+	case earthOrientationDataUnavailable
 	/// The time of day is invalid.
 	case invalidTimeOfDay
 	/// The leap second table from IERS Bulletin C is expired.
