@@ -78,6 +78,45 @@ public enum JulianGregorianCalendar {
 }
 
 extension JulianGregorianCalendar {
+	/// Returns a valid year, month, and day for the specified year and possibly
+	/// out-of-range month and day values.
+	///
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. The
+	///   calendar is then chosen by comparing the normalized year and month, together with
+	///   the unnormalized day, to October 15, 1582, and out-of-range days are counted forward
+	///   or backward in that calendar. The nonexistent dates October 5-14, 1582 are counted
+	///   forward from October 4, 1582 in the Julian calendar, so they normalize to October
+	///   15-24, 1582 in the Gregorian calendar.
+	/// - Parameters:
+	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
+	///   - M: The month number, possibly outside the closed interval [1, 12].
+	///   - D: The day number, possibly outside the days of the month.
+	/// - Returns: The equivalent valid date in the Julian-Gregorian calendar.
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
+	///   for the date cannot be represented as a ``JulianDayNumber``.
+	public static func normalizedDateFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> YearMonthDay {
+		try normalizedDate((Y, M, D))
+	}
+
+	/// Returns a valid year, month, and day for the specified year and possibly
+	/// out-of-range month and day values.
+	///
+	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years. The
+	///   calendar is then chosen by comparing the normalized year and month, together with
+	///   the unnormalized day, to October 15, 1582, and out-of-range days are counted forward
+	///   or backward in that calendar. The nonexistent dates October 5-14, 1582 are counted
+	///   forward from October 4, 1582 in the Julian calendar, so they normalize to October
+	///   15-24, 1582 in the Gregorian calendar.
+	/// - Parameter date: The year, month, and day, possibly out of range.
+	/// - Returns: The equivalent valid date in the Julian-Gregorian calendar.
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
+	///   for the date cannot be represented as a ``JulianDayNumber``.
+	public static func normalizedDate(_ date: YearMonthDay) throws(CalendarError) -> YearMonthDay {
+		try dateFromJulianDayNumber(julianDayNumberFromDate(date))
+	}
+}
+
+extension JulianGregorianCalendar {
 	/// Returns `true` if the specified Julian day number is less than 2,299,161
 	/// (October 15, 1582 in the Gregorian calendar), so its date is in the Julian calendar.
 	///
