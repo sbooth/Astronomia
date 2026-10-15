@@ -86,6 +86,29 @@ extension UTC {
 	}
 }
 
+extension UTC {
+	/// Returns TAI − UTC, in seconds, at the specified UTC.
+	///
+	/// From 1972, TAI − UTC is a whole number of seconds that changes at UTC midnight after a
+	/// leap second, so during 23:59:60 it still has the value from before the leap second.
+	/// Before 1972 it drifts linearly through each day.
+	///
+	/// - Parameters:
+	///   - utc: A Julian Date in UTC.
+	///   - context: The leap seconds and extrapolation policy.
+	/// - Returns: TAI − UTC, in seconds.
+	/// - Throws:
+	///   - ``TimescaleConversionError/unsupported`` if `utc` is before 1961.
+	///   - ``TimescaleConversionError/leapSecondTableExpired`` if `utc` is past the table's
+	///     horizon and the policy is ``ExtrapolationPolicy/strict``.
+	public static func taiMinusUTC(at utc: JulianDate, context: Context = defaultContext) throws(TimescaleConversionError) -> Double {
+		let day = try UTCDay(containing: utc, leapSecondTable: context.leapSecondTable)
+		try day.offsetSource.check(context.extrapolationPolicy)
+		// The drift accumulates over the day; any step only takes effect at the next midnight.
+		return day.offsetAtStart + utc.fractionSinceMidnight * (day.offsetChange - day.offsetStep)
+	}
+}
+
 extension UTCDay.OffsetSource {
 	/// Throws if `policy` does not allow this offset source.
 	func check(_ policy: UTC.ExtrapolationPolicy) throws(TimescaleConversionError) {
