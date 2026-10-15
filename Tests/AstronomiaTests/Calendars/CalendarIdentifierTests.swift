@@ -5,7 +5,6 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-import Foundation
 import Testing
 @testable import Astronomia
 
@@ -69,12 +68,6 @@ private func staticNumberOfDaysIn(_ calendar: CalendarIdentifier, month M: Int, 
 		#expect(CalendarIdentifier.julian.name == "Julian")
 		#expect(CalendarIdentifier.gregorian.name == "Gregorian")
 		#expect(CalendarIdentifier.julianGregorian.name == "Julian-Gregorian")
-	}
-
-	@Test(arguments: CalendarIdentifier.allCases)
-	func codableRoundTrip(_ calendar: CalendarIdentifier) throws {
-		let data = try JSONEncoder().encode(calendar)
-		#expect(try JSONDecoder().decode(CalendarIdentifier.self, from: data) == calendar)
 	}
 
 	@Test(arguments: CalendarIdentifier.allCases)
@@ -185,3 +178,17 @@ private func staticNumberOfDaysIn(_ calendar: CalendarIdentifier, month M: Int, 
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try calendar.julianDayNumberFromDecimalYear(1e18) }
 	}
 }
+
+#if canImport(Foundation)
+
+import Foundation
+
+@Suite struct CalendarIdentifierCodableTests {
+	@Test(arguments: CalendarIdentifier.allCases)
+	func codableRoundTrip(_ calendar: CalendarIdentifier) throws {
+		let data = try JSONEncoder().encode(calendar)
+		#expect(try JSONDecoder().decode(CalendarIdentifier.self, from: data) == calendar)
+	}
+}
+
+#endif

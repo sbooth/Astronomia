@@ -5,15 +5,8 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-import Foundation
 import Testing
 @testable import Astronomia
-
-/// An unvalidated day interval payload with the same coding keys as `DayInterval`.
-private struct RawDayInterval: Encodable {
-	let days: Int
-	let fractionalDay: Double
-}
 
 @Suite struct DayIntervalTests {
 	// MARK: - Creation
@@ -248,7 +241,19 @@ private struct RawDayInterval: Encodable {
 		#expect(try DayInterval(days: -3, fractionalDay: 0.5).description == "-2 - 0.5 days")
 		#expect(try DayInterval(days: 2, fractionalDay: -0.25).debugDescription == "DayInterval(days: 2, fractionalDay: -0.25)")
 	}
+}
 
+#if canImport(Foundation)
+
+import Foundation
+
+/// An unvalidated day interval payload with the same coding keys as `DayInterval`.
+private struct RawDayInterval: Encodable {
+	let days: Int
+	let fractionalDay: Double
+}
+
+@Suite struct DayIntervalCodableTests{
 	// MARK: - Coding
 
 	@Test func codableRoundTrip() throws {
@@ -282,3 +287,5 @@ private struct RawDayInterval: Encodable {
 		#expect(throws: DecodingError.self) { try decoder.decode(DayInterval.self, from: nonFinite) }
 	}
 }
+
+#endif
