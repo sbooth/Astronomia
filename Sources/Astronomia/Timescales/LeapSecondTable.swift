@@ -33,22 +33,40 @@ public struct LeapSecondTable: Hashable, Sendable {
 	/// Julian day number of the first UTC day whose length is not yet determined by IERS Bulletin C.
 	public let horizon: JulianDayNumber
 
-	public init(entries: [Entry], horizon: JulianDayNumber) {
+	/// Creates a leap second table.
+	///
+	/// A valid table has at least one entry, entries in strictly increasing order of effective
+	/// day with finite offsets and rates, a constant TAI - UTC after the last entry, and a
+	/// horizon after the last entry. TAI - UTC must stay in the right-open interval
+	/// [0, 86,400) s, because converting TAI to UTC assumes UTC is behind TAI by less than a
+	/// day.
+	///
+	/// - Parameters:
+	///   - entries: The entries, in increasing order of effective day.
+	///   - horizon: The Julian day number of the first UTC day whose length is not yet
+	///     determined.
+	/// - Throws: A ``ValidationError`` describing the first problem found.
+	public init(entries: [Entry], horizon: JulianDayNumber) throws(ValidationError) {
+		try Self.validate(entries: entries, horizon: horizon)
+		self.init(uncheckedEntries: entries, horizon: horizon)
+	}
+
+	/// Creates a leap second table from entries already known to be valid.
+	///
+	/// - Precondition: `entries` and `horizon` pass ``validate(entries:horizon:)``.
+	init(uncheckedEntries entries: [Entry], horizon: JulianDayNumber) {
+		assert((try? Self.validate(entries: entries, horizon: horizon)) != nil, "Leap second table is invalid")
 		self.entries = entries
 		self.horizon = horizon
 	}
 
 	/// Built-in leap second table.
-	public static let builtIn = LeapSecondTable(entries: taiUTCEntries, horizon: taiUTCHorizon)
+	public static let builtIn = LeapSecondTable(uncheckedEntries: taiUTCEntries, horizon: taiUTCHorizon)
 }
 
 extension LeapSecondTable {
 	/// Returns the entry applicable to the specified Julian day number, or `nil` if none.
 	func entryForUTCJulianDayNumber(_ J: JulianDayNumber) -> Entry? {
-#if false
-		// Most dates of interest are recent, so search from the end
-		entries.last { $0.effective <= J }
-#endif
 		var low = entries.startIndex
 		var high = entries.endIndex
 		while low != high {

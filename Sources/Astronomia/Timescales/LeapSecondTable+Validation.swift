@@ -32,7 +32,7 @@ extension LeapSecondTable {
 	/// day.
 	///
 	/// - Throws: A ``ValidationError`` describing the first problem found.
-	public func validate() throws(ValidationError) {
+	static func validate(entries: [Entry], horizon: JulianDayNumber) throws(ValidationError) {
 		guard let last = entries.last else { throw .noEntries }
 
 		for (index, entry) in entries.enumerated() {
