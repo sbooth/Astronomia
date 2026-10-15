@@ -85,7 +85,7 @@ extension JulianAndGregorianArithmetic.EraLayout {
 		// J = (era + zeroBlock + dayBlocks) × days + (doe + dayRem - 1 + zeroDayOfBlock)
 
 		// doe and dayRem are in [0, days) and zeroDayOfBlock is in [1, days), so dayOffset
-		// is in [0, 3 × days − 3) and cannot overflow
+		// is in [0, 3 × days - 3) and cannot overflow
 		let dayOffset = doe &+ dayRem &- 1 &+ zeroDayOfBlock
 
 		// `q` and `r` are the floored quotient and remainder of the JDN divided by `days`
