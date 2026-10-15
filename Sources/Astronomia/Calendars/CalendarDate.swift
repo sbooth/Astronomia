@@ -285,7 +285,7 @@ extension CalendarDate {
 			// the integer year is exact because both values are multiples of the decimal year's
 			// ulp and the difference is below 1.
 			let yearFraction = decimalYear - Double(Y)
-			// yearFraction × d − (N − 1) with a single rounding
+			// yearFraction × d - (N - 1) with a single rounding
 			let fraction = Double(-(N - 1)).addingProduct(yearFraction, Double(d))
 			fractionSinceMidnight = fraction > 0 ? min(fraction, Double(1).nextDown) : 0
 		}
