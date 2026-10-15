@@ -15,10 +15,13 @@
 /// as ``TAI``):
 ///
 /// ```
+///             GST, QZSST, IRNWT
+///                       │ 19 s
 /// UTC ──leap seconds── TAI ──19 s── GPS
-///                       │
-///                    32.184 s
-///                       │
+///  │                    ├──33 s── BDT
+/// 3 h               32.184 s
+///  │                    │
+/// GLONASS               │
 ///         TCG ──L_G──  TT  ──series── TDB ──L_B── TCB
 /// ```
 ///
