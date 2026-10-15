@@ -8,12 +8,6 @@
 import Testing
 @testable import Astronomia
 
-/// An unvalidated Julian Date payload with the same coding keys as `JulianDate`.
-private struct RawJulianDate: Encodable {
-	let julianDayNumber: Int
-	let fractionFromNoon: Double
-}
-
 @Suite struct JulianDateTests {
 	// MARK: - Epochs
 
@@ -412,6 +406,12 @@ private struct RawJulianDate: Encodable {
 #if canImport(Foundation)
 
 import Foundation
+
+/// An unvalidated Julian Date payload with the same coding keys as `JulianDate`.
+private struct RawJulianDate: Encodable {
+	let julianDayNumber: Int
+	let fractionFromNoon: Double
+}
 
 @Suite struct JulianDateCodableTests {
 	// MARK: - Coding

@@ -5,18 +5,8 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-import Foundation
 import Testing
 @testable import Astronomia
-
-/// An unvalidated calendar date payload with the same coding keys as `CalendarDate`.
-private struct RawCalendarDate: Encodable {
-	let year: Int
-	let month: Int
-	let day: Int
-	let fractionSinceMidnight: Double
-	let calendar: CalendarIdentifier
-}
 
 @Suite struct CalendarDateTests {
 	// MARK: - Creation
@@ -335,7 +325,22 @@ private struct RawCalendarDate: Encodable {
 		#expect(try CalendarDate(year: -44, month: 3, day: 15, .julian).description == "-44-3-15 +0.0 (Julian)")
 		#expect(try CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.25, .julianGregorian).description == "1582-10-15 +0.25 (Julian-Gregorian)")
 	}
+}
 
+#if canImport(Foundation)
+
+import Foundation
+
+/// An unvalidated calendar date payload with the same coding keys as `CalendarDate`.
+private struct RawCalendarDate: Encodable {
+	let year: Int
+	let month: Int
+	let day: Int
+	let fractionSinceMidnight: Double
+	let calendar: CalendarIdentifier
+}
+
+@Suite struct CalendarDateCodableTests {
 	// MARK: - Coding
 
 	@Test(arguments: CalendarIdentifier.allCases)
@@ -368,3 +373,5 @@ private struct RawCalendarDate: Encodable {
 		#expect(throws: DecodingError.self) { try decoder.decode(CalendarDate.self, from: nonFinite) }
 	}
 }
+
+#endif

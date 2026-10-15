@@ -5,7 +5,6 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-import Foundation
 import Testing
 @testable import Astronomia
 
@@ -26,14 +25,6 @@ struct CalendarDayTestComponents: Sendable, CustomTestStringConvertible {
 	var testDescription: String {
 		"\(year)-\(month)-\(day) (\(calendar.name))"
 	}
-}
-
-/// An unvalidated calendar day payload with the same coding keys as `CalendarDay`.
-private struct RawCalendarDay: Encodable {
-	let year: Int
-	let month: Int
-	let day: Int
-	let calendar: CalendarIdentifier
 }
 
 @Suite struct CalendarDayTests {
@@ -358,7 +349,21 @@ private struct RawCalendarDay: Encodable {
 		#expect(try CalendarDay(year: -44, month: 3, day: 15, .julian).description == "-44-3-15 (Julian)")
 		#expect(try CalendarDay(year: 1582, month: 10, day: 15, .julianGregorian).description == "1582-10-15 (Julian-Gregorian)")
 	}
+}
 
+#if canImport(Foundation)
+
+import Foundation
+
+/// An unvalidated calendar day payload with the same coding keys as `CalendarDay`.
+private struct RawCalendarDay: Encodable {
+	let year: Int
+	let month: Int
+	let day: Int
+	let calendar: CalendarIdentifier
+}
+
+@Suite struct CalendarDayCodingTests {
 	// MARK: - Coding
 
 	@Test(arguments: CalendarIdentifier.allCases)
@@ -386,3 +391,5 @@ private struct RawCalendarDay: Encodable {
 		#expect(try JSONDecoder().decode(CalendarDay.self, from: valid) == CalendarDay(year: 1582, month: 10, day: 10, .gregorian))
 	}
 }
+
+#endif
