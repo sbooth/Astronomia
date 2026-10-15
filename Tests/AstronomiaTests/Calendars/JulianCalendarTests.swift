@@ -287,4 +287,163 @@ import Testing
 		_ = JulianCalendar.dayOfWeek(.min)
 		_ = JulianCalendar.dayOfWeek(.max)
 	}
+
+	@Test func normalizeAcrossYears() throws {
+		#expect(try JulianCalendar.normalizedDateFrom(year: 2000, month: 25, day: 1) == (2002, 1, 1))
+		#expect(try JulianCalendar.normalizedDateFrom(year: 2000, month: -12, day: 1) == (1998, 12, 1))
+		#expect(try JulianCalendar.normalizedDateFrom(year: 1900, month: 2, day: 29) == (1900, 2, 29))
+		#expect(try JulianCalendar.normalizedDateFrom(year: 1900, month: 2, day: 30) == (1900, 3, 1))
+		#expect(try JulianCalendar.normalizedDateFrom(year: 2001, month: 1, day: -365) == (2000, 1, 1))
+		#expect(try JulianCalendar.normalizedDateFrom(year: 2000, month: 1, day: 1_462) == (2004, 1, 1))
+		#expect(try JulianCalendar.normalizedDate((-1, 13, 1)) == (0, 1, 1))
+
+		// Valid dates are unchanged
+		for J in stride(from: 1_700_000, through: 1_800_000, by: 13) {
+			let date = JulianCalendar.dateFromJulianDayNumber(J)
+			#expect(try JulianCalendar.normalizedDate(date) == date)
+		}
+
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try JulianCalendar.normalizedDateFrom(year: .min, month: 1, day: 1) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try JulianCalendar.normalizedDateFrom(year: 2000, month: 1, day: .max) }
+	}
+
+	@Test func invalidDates() {
+		#expect(JulianCalendar.isValid(year: -1, month: 2, day: 28))
+		#expect(!JulianCalendar.isValid(year: -1, month: 2, day: 29))
+		#expect(JulianCalendar.isValid(year: -4, month: 2, day: 29))
+		#expect(JulianCalendar.isValid(year: 1582, month: 10, day: 10))
+		#expect(!JulianCalendar.isValid(year: 2001, month: 2, day: 29))
+		#expect(!JulianCalendar.isValid(year: 2000, month: 6, day: 31))
+		#expect(!JulianCalendar.isValid(year: 2000, month: 0, day: 1))
+		#expect(!JulianCalendar.isValid(year: 2000, month: 13, day: 1))
+		#expect(!JulianCalendar.isValid(year: 2000, month: 1, day: 0))
+		#expect(!JulianCalendar.isValidDate((2000, 1, 32)))
+	}
+
+	@Test func proleptic() throws {
+		#expect(JulianCalendar.isProleptic(1_704_986))
+		#expect(!JulianCalendar.isProleptic(1_704_987))
+		#expect(JulianCalendar.isProleptic(try JulianCalendar.julianDayNumberFrom(year: -45, month: 12, day: 31)))
+		#expect(!JulianCalendar.isProleptic(try JulianCalendar.julianDayNumberFrom(year: -44, month: 1, day: 1)))
+		#expect(JulianCalendar.isProleptic(.min))
+		#expect(!JulianCalendar.isProleptic(.max))
+	}
+
+	@Test func dayOfWeekOfKnownDates() throws {
+		// Thursday, October 4, 1582
+		#expect(JulianCalendar.dayOfWeek(try JulianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 4)) == 5)
+		// Friday, January 1, 45 BCE
+		#expect(JulianCalendar.dayOfWeek(try JulianCalendar.julianDayNumberFrom(year: -44, month: 1, day: 1)) == 6)
+		// Saturday, December 19, 1999 (January 1, 2000 in the Gregorian calendar)
+		#expect(JulianCalendar.dayOfWeek(try JulianCalendar.julianDayNumberFrom(year: 1999, month: 12, day: 19)) == 7)
+
+		// The day of the week repeats every 28 years
+		for J in stride(from: 2_000_000, through: 2_001_000, by: 1) {
+			#expect(JulianCalendar.dayOfWeek(J) == JulianCalendar.dayOfWeek(J + 28 * 1_461 / 4))
+		}
+	}
+
+	@Test func dayOfYearFromJulianDayNumber() throws {
+		for (Y, daysInYear) in [(-5, 365), (-4, 366), (1900, 366), (1901, 365)] {
+			let jan1 = try JulianCalendar.julianDayNumberFrom(year: Y, month: 1, day: 1)
+			for N in 1 ... daysInYear {
+				#expect(JulianCalendar.dayOfYearFromJulianDayNumber(jan1 + N - 1) == N)
+				#expect(try JulianCalendar.dateFrom(year: Y, dayOfYear: N) == JulianCalendar.dateFromJulianDayNumber(jan1 + N - 1))
+			}
+			#expect(JulianCalendar.dayOfYearFromJulianDayNumber(jan1 + daysInYear) == 1)
+		}
+		#expect(throws: CalendarError.invalidDate) { try JulianCalendar.dayOfYearFrom(year: 1901, month: 2, day: 29) }
+		#expect(throws: CalendarError.invalidDate) { try JulianCalendar.dayOfYearFrom(year: 1901, month: 0, day: 1) }
+	}
+
+	@Test func decimalYearFromJulianDayNumber() throws {
+		#expect(JulianCalendar.decimalYearFromJulianDayNumber(0) == -4712)
+		#expect(JulianCalendar.decimalYearFromJulianDayNumber(JulianCalendar.epoch) == 1)
+		#expect(try JulianCalendar.decimalYearFrom(year: 1900, month: 7, day: 2) == 1900.5)
+		#expect(try JulianCalendar.dateFromDecimalYear(1900.5) == (1900, 7, 2))
+		#expect(try JulianCalendar.dateFromDecimalYear(-0.5) == (-1, 7, 2))
+		#expect(try JulianCalendar.julianDayNumberFromDecimalYear(1) == JulianCalendar.epoch)
+
+		var previous = -Double.infinity
+		var failures: [JulianDayNumber] = []
+		for J in stride(from: -2_000_000, through: 4_000_000, by: 97) {
+			let decimalYear = JulianCalendar.decimalYearFromJulianDayNumber(J)
+			if try decimalYear <= previous || JulianCalendar.julianDayNumberFromDecimalYear(decimalYear) != J {
+				failures.append(J)
+			}
+			previous = decimalYear
+		}
+		#expect(failures.isEmpty)
+
+		#expect(throws: CalendarError.invalidDate) { try JulianCalendar.decimalYearFrom(year: 1901, month: 2, day: 29) }
+		#expect(throws: CalendarError.nonFiniteValue) { try JulianCalendar.dateFromDecimalYear(-.infinity) }
+		#expect(throws: CalendarError.invalidDecimalYear) { try JulianCalendar.dateFromDecimalYear(-1e300) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try JulianCalendar.julianDayNumberFromDecimalYear(1e18) }
+	}
+
+	@Test func easterDates() {
+		#expect(JulianCalendar.easter(year: 325) == (4, 18))
+		#expect(JulianCalendar.easter(year: 1066) == (4, 16))
+		#expect(JulianCalendar.easter(year: 1582) == (4, 15))
+		// Orthodox Easter 2026 was April 12 in the Gregorian calendar
+		#expect(JulianCalendar.easter(year: 2026) == (3, 30))
+	}
+
+	@Test func easterIsASundayBetweenMarch22AndApril25() throws {
+		var failures: [Int] = []
+		for Y in -3000 ... 5000 {
+			let (M, D) = JulianCalendar.easter(year: Y)
+			let J = try JulianCalendar.julianDayNumberFrom(year: Y, month: M, day: D)
+			if JulianCalendar.dayOfWeek(J) != 1 || (M, D) < (3, 22) || (M, D) > (4, 25) {
+				failures.append(Y)
+			}
+		}
+		#expect(failures.isEmpty)
+	}
+
+	@Test func easterPeriodicity() {
+		for Y in -600 ... 600 {
+			#expect(JulianCalendar.easter(year: Y) == JulianCalendar.easter(year: Y + 532))
+		}
+		#expect(JulianCalendar.easter(year: .max) == JulianCalendar.easter(year: Int.max % 532))
+		_ = JulianCalendar.easter(year: .min)
+	}
+
+	@Test func julianDayNumberRoundTrip() throws {
+		var failures: [JulianDayNumber] = []
+		for J in stride(from: -2_000_000, through: 6_000_000, by: 29) {
+			let date = JulianCalendar.dateFromJulianDayNumber(J)
+			if try !JulianCalendar.isValidDate(date) || JulianCalendar.julianDayNumberFromDate(date) != J {
+				failures.append(J)
+			}
+		}
+		#expect(failures.isEmpty)
+	}
+
+	@Test func agreesWithMeeus() throws {
+		var failures: [YearMonthDay] = []
+		for Y in stride(from: -4000, through: 4000, by: 3) {
+			for M in 1 ... 12 {
+				for D in [1, 15, 28] {
+					let expected = meeusJulianDayNumber(year: Y, month: M, day: D)
+					if try JulianCalendar.julianDayNumberFrom(year: Y, month: M, day: D) != expected || JulianCalendar.dateFromJulianDayNumber(expected) != (Y, M, D) {
+						failures.append((Y, M, D))
+					}
+				}
+			}
+		}
+		#expect(failures.isEmpty)
+	}
+}
+
+private func floorDivide(_ a: Int, _ b: Int) -> Int {
+	let (q, r) = a.quotientAndRemainder(dividingBy: b)
+	return r < 0 ? q - 1 : q
+}
+
+/// The Julian day number of a proleptic Julian date using the algorithm in chapter 7 of
+/// Meeus, *Astronomical Algorithms*, 2nd ed. (1998), in integer arithmetic. Valid for years after -4716.
+private func meeusJulianDayNumber(year: Int, month: Int, day: Int) -> JulianDayNumber {
+	let (Y, M) = month > 2 ? (year, month) : (year - 1, month + 12)
+	return floorDivide(1_461 * (Y + 4_716), 4) + (306_001 * (M + 1)) / 10_000 + day - 1_524
 }

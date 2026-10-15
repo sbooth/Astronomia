@@ -524,23 +524,6 @@ extension JulianDate: CustomDebugStringConvertible {
 	}
 }
 
-/// Returns `lhs - rhs` as a `Double`.
-///
-/// The difference is rounded once to the nearest `Double`, even when it overflows `Int`.
-///
-/// - Returns: `lhs - rhs`, rounded to the nearest `Double`.
-func differenceAsDouble(_ lhs: Int, _ rhs: Int) -> Double {
-	let (difference, overflow) = lhs.subtractingReportingOverflow(rhs)
-	guard overflow else { return Double(difference) }
-	// Overflow means the operands have opposite signs, so the result is ±(|lhs| + |rhs|) with the
-	// sign of lhs. The magnitude is at most 2^64 - 1, exact in UInt, and converts with one
-	// rounding. Converting each operand to Double first would round up to three times.
-	if lhs >= 0 {
-		return Double(lhs.magnitude + rhs.magnitude)
-	}
-	return -Double(lhs.magnitude + rhs.magnitude)
-}
-
 extension JulianDate: Codable {
 	private enum CodingKeys: String, CodingKey {
 		case julianDayNumber, fractionFromNoon

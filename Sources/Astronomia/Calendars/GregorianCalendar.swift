@@ -47,7 +47,7 @@ public enum GregorianCalendar {
 	/// Julian day numbers are divided into blocks of 146,097 days counted from JDN 0, which is
 	/// November 24, 4714 BCE in the proleptic Gregorian calendar. Because a block is exactly one
 	/// 400-year cycle, every block begins on November 24, and block `k` begins in year
-	/// −4713 + 400 × `k`.
+	/// -4713 + 400 × `k`.
 	private enum Era: Arithmetic.EraLayout {
 		/// The number of years in one cycle of the Gregorian leap year rule.
 		static var years: Int { 400 }
