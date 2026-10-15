@@ -35,27 +35,40 @@ public struct LeapSecondTable: Hashable, Sendable {
 
 	/// Creates a leap second table.
 	///
-	/// A valid table has at least one entry, entries in strictly increasing order of effective
-	/// day with finite offsets and rates, a constant TAI - UTC after the last entry, and a
-	/// horizon after the last entry. TAI - UTC must stay in the right-open interval
-	/// [0, 86,400) s, because converting TAI to UTC assumes UTC is behind TAI by less than a
-	/// day.
-	///
 	/// - Parameters:
-	///   - entries: The entries, in increasing order of effective day.
+	///   - entries: At least one entry, in strictly increasing order of effective day, with
+	///     finite offsets and rates. The last entry must have a rate of zero, so TAI - UTC is
+	///     constant after it.
 	///   - horizon: The Julian day number of the first UTC day whose length is not yet
-	///     determined.
-	/// - Throws: A ``ValidationError`` describing the first problem found.
-	public init(entries: [Entry], horizon: JulianDayNumber) throws(ValidationError) {
-		try Self.validate(entries: entries, horizon: horizon)
+	///     determined. Must be after the last entry's effective day.
+	/// - Returns: `nil` if the entries or horizon are invalid, or if TAI - UTC leaves the
+	///   right-open interval [0, 86,400) s while any entry is in effect. Converting TAI to UTC
+	///   assumes UTC is behind TAI by less than a day.
+	public init?(entries: [Entry], horizon: JulianDayNumber) {
+		guard let last = entries.last, last.rate == 0, horizon > last.effective else { return nil }
+
+		for (index, entry) in entries.enumerated() {
+			guard entry.offset.isFinite, entry.rate.isFinite else { return nil }
+			if index > 0, entry.effective <= entries[index - 1].effective { return nil }
+
+			// TAI - UTC is linear while an entry is in effect, so it stays in range if it is in
+			// range at both ends: the entry's effective day and the start of the next entry.
+			let end = index + 1 < entries.count ? entries[index + 1].effective : entry.effective
+			for day in [entry.effective, end] {
+				let offset = entry.taiMinusUTC(atStartOfUTCDay: day)
+				// Also rejects a product that overflows to infinity.
+				guard offset >= 0, offset < secondsPerDay else { return nil }
+			}
+		}
+
 		self.init(uncheckedEntries: entries, horizon: horizon)
 	}
 
 	/// Creates a leap second table from entries already known to be valid.
 	///
-	/// - Precondition: `entries` and `horizon` pass ``validate(entries:horizon:)``.
+	/// - Precondition: `entries` and `horizon` satisfy the requirements of
+	///   ``init(entries:horizon:)``.
 	init(uncheckedEntries entries: [Entry], horizon: JulianDayNumber) {
-		assert((try? Self.validate(entries: entries, horizon: horizon)) != nil, "Leap second table is invalid")
 		self.entries = entries
 		self.horizon = horizon
 	}
