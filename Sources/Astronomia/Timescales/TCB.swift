@@ -31,7 +31,7 @@ public enum TCB: Timescale {
 	public static let tdb0: Double = -6.55e-5
 
 	/// T₀ = JD 2443144.5003725, the same Julian Date as ``TCG/epoch``.
-	public static var epoch: JulianDate { TCG.epoch }
+	public static let epoch = coordinateTimeEpoch
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		try TDB.toTT(toTDB(julianDate), context: context)
@@ -49,7 +49,7 @@ public enum TCB: Timescale {
 	///   represented.
 	public static func toTDB(_ tcb: JulianDate) throws(TimescaleConversionError) -> JulianDate {
 		// TDB = TCB - L_B × (TCB - T₀) + TDB₀
-		let correction = try TCG.scaledElapsedTime(since: epoch, until: tcb, by: rate)
+		let correction = try tcb.elapsedTime(since: epoch, scaledBy: rate)
 		do throws(JulianDateError) {
 			return try tcb.subtracting(correction).adding(seconds: tdb0)
 		}
@@ -70,7 +70,7 @@ public enum TCB: Timescale {
 		}
 		catch { throw TimescaleConversionError(error) }
 
-		let correction = try TCG.scaledElapsedTime(since: epoch, until: date, by: rateRelativeToTDB)
+		let correction = try date.elapsedTime(since: epoch, scaledBy: rateRelativeToTDB)
 		do throws(JulianDateError) {
 			return try date.adding(correction)
 		}

@@ -27,11 +27,11 @@ public enum TCG: Timescale {
 	static let rateRelativeToTT: Double = rate / (1 - rate)
 
 	/// T₀ = 1977-01-01T00:00:32.184 TT (JD 2443144.5003725), when TCG = TT.
-	public static let epoch = JulianDate(uncheckedJulianDayNumber: 2_443_145, fractionFromNoon: -0.5 + TT.offsetFromTAI / secondsPerDay)
+	public static let epoch = coordinateTimeEpoch
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		// TT = TCG - L_G × (TCG - T₀)
-		let correction = try scaledElapsedTime(since: epoch, until: julianDate, by: rate)
+		let correction = try julianDate.elapsedTime(since: epoch, scaledBy: rate)
 		do throws(JulianDateError) {
 			return try julianDate.subtracting(correction)
 		}
@@ -40,22 +40,9 @@ public enum TCG: Timescale {
 
 	public static func fromTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		// TCG = TT + L_G / (1 - L_G) × (TT - T₀), the exact inverse of toTT
-		let correction = try scaledElapsedTime(since: epoch, until: julianDate, by: rateRelativeToTT)
+		let correction = try julianDate.elapsedTime(since: epoch, scaledBy: rateRelativeToTT)
 		do throws(JulianDateError) {
 			return try julianDate.adding(correction)
-		}
-		catch { throw TimescaleConversionError(error) }
-	}
-}
-
-extension TCG {
-	/// Returns `(end - start) * rate` as a day interval.
-	///
-	/// The product is formed without intermediate rounding, so its error is negligible even
-	/// for intervals of millions of years.
-	static func scaledElapsedTime(since start: JulianDate, until end: JulianDate, by rate: Double) throws(TimescaleConversionError) -> DayInterval {
-		do throws(DayIntervalError) {
-			return try start.interval(to: end).multiplied(by: rate)
 		}
 		catch { throw TimescaleConversionError(error) }
 	}
