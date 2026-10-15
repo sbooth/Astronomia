@@ -5,7 +5,6 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-import Foundation
 import Testing
 @testable import Astronomia
 
@@ -123,6 +122,14 @@ import Testing
 	}
 }
 
+#if canImport(FoundationEssentials) || canImport(Foundation)
+
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#elseif canImport(Foundation)
+import Foundation
+#endif
+
 @Suite struct JulianDateFoundationDateTests {
 	@Test func referenceDate() throws {
 		let reference = try JulianDate(Date(timeIntervalSinceReferenceDate: 0))
@@ -161,3 +168,5 @@ import Testing
 		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate(Date(timeIntervalSinceReferenceDate: 1e300)) }
 	}
 }
+
+#endif

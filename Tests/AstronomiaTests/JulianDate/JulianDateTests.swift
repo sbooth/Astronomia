@@ -5,7 +5,6 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-import Foundation
 import Testing
 @testable import Astronomia
 
@@ -408,7 +407,13 @@ private struct RawJulianDate: Encodable {
 		#expect(try JulianDate(julianDayNumber: -1).description == "JD -1")
 		#expect(try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25).debugDescription == "JulianDate(julianDayNumber: 2451545, fractionFromNoon: 0.25)")
 	}
+}
 
+#if canImport(Foundation)
+
+import Foundation
+
+@Suite struct JulianDateCodableTests {
 	// MARK: - Coding
 
 	@Test func codableRoundTrip() throws {
@@ -443,3 +448,5 @@ private struct RawJulianDate: Encodable {
 		#expect(throws: DecodingError.self) { try decoder.decode(JulianDate.self, from: nonFinite) }
 	}
 }
+
+#endif
