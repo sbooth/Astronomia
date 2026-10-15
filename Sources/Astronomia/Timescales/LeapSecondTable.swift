@@ -67,7 +67,7 @@ extension LeapSecondTable {
 extension LeapSecondTable.Entry {
 	/// TAI - UTC, in seconds, at the start of the UTC day `J`.
 	func taiMinusUTC(atStartOfUTCDay J: JulianDayNumber) -> Double {
-		offset + Double(J - reference) * rate
+		offset + differenceAsDouble(J, reference) * rate
 	}
 }
 
