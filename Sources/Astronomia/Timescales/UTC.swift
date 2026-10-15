@@ -87,24 +87,29 @@ extension UTC {
 }
 
 extension UTC {
-	/// Returns TAI − UTC, in seconds, at the specified UTC.
+	/// Returns TAI - UTC, in seconds, at the specified UTC.
 	///
-	/// From 1972, TAI − UTC is a whole number of seconds that changes at UTC midnight after a
-	/// leap second, so during 23:59:60 it still has the value from before the leap second.
-	/// Before 1972 it drifts linearly through each day.
+	/// From 1972, TAI - UTC is a whole number of seconds that changes at the UTC midnight after
+	/// a leap second, so during 23:59:60 it still has the value from before the leap second.
+	/// Before 1972 it drifts linearly through each day, and any step takes effect at the next
+	/// midnight.
 	///
+	/// - Note: TAI - UTC is not the number of leap seconds. UTC began in 1972 already 10 s
+	///   behind TAI, so TAI - UTC = 37 s after 27 leap seconds.
 	/// - Parameters:
 	///   - utc: A Julian Date in UTC.
 	///   - context: The leap seconds and extrapolation policy.
-	/// - Returns: TAI − UTC, in seconds.
+	/// - Returns: TAI - UTC, in seconds.
 	/// - Throws:
+	///   - ``TimescaleConversionError/dateOutOfRange`` if the Julian day number is out of range.
 	///   - ``TimescaleConversionError/unsupported`` if `utc` is before 1961.
-	///   - ``TimescaleConversionError/leapSecondTableExpired`` if `utc` is past the table's
-	///     horizon and the policy is ``ExtrapolationPolicy/strict``.
+	///   - ``TimescaleConversionError/leapSecondTableExpired`` if `utc` is on or after the
+	///     table's horizon and the policy is ``ExtrapolationPolicy/strict``.
 	public static func taiMinusUTC(at utc: JulianDate, context: Context = defaultContext) throws(TimescaleConversionError) -> Double {
 		let day = try UTCDay(containing: utc, leapSecondTable: context.leapSecondTable)
 		try day.offsetSource.check(context.extrapolationPolicy)
-		// The drift accumulates over the day; any step only takes effect at the next midnight.
+		// The drift accumulates through the day; the step is excluded because it takes effect
+		// at the next midnight.
 		return day.offsetAtStart + utc.fractionSinceMidnight * (day.offsetChange - day.offsetStep)
 	}
 }
