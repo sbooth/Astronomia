@@ -11,13 +11,15 @@
 /// it follows Earth's irregular rotation and is determined by observation. It relates to TT
 /// through ΔT = TT - UT1, about 69 s in 2026 and growing irregularly.
 ///
-/// ΔT comes from the context's ``EarthOrientationTable`` within its range, and from its
-/// ``DeltaTModel`` elsewhere. The model and the observations can differ by several seconds,
-/// so conversions are not continuous at the ends of the table.
+/// ΔT comes from the first of the context's sources that covers the date: its
+/// ``EarthOrientationTable``, then its ``DeltaTTable``, then its ``DeltaTModel``. Sources can
+/// differ where one hands over to the next, by up to several seconds between the model and
+/// the tables, so conversions are not continuous there.
 public enum UT1: Timescale {
 	public static let abbreviation = "UT1"
 
-	/// No observations; ΔT from ``DeltaTModel/espenakMeeus2006``.
+	/// No Earth orientation data; ΔT from ``DeltaTTable/historic`` from 1657.0 to 1984.5 and
+	/// from ``DeltaTModel/espenakMeeus2006`` elsewhere.
 	public static let defaultContext = Context()
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
@@ -49,17 +51,22 @@ extension UT1 {
 	public struct Context: Hashable, Sendable {
 		/// Observed and predicted Earth orientation, used within its range.
 		public var earthOrientation: EarthOrientationTable?
-		/// The model used outside ``earthOrientation``, or `nil` to require observations.
+		/// Tabulated ΔT, used within its range outside ``earthOrientation``.
+		public var deltaTTable: DeltaTTable?
+		/// The model used outside ``earthOrientation`` and ``deltaTTable``, or `nil` to require
+		/// tabulated values.
 		public var model: DeltaTModel?
 
 		/// Creates a UT1 context.
 		///
 		/// - Parameters:
 		///   - earthOrientation: Observed and predicted Earth orientation.
-		///   - model: The model used outside `earthOrientation`, or `nil` to require
-		///     observations.
-		public init(earthOrientation: EarthOrientationTable? = nil, model: DeltaTModel? = .espenakMeeus2006) {
+		///   - deltaTTable: Tabulated ΔT, used outside `earthOrientation`.
+		///   - model: The model used outside `earthOrientation` and `deltaTTable`, or `nil` to
+		///     require tabulated values.
+		public init(earthOrientation: EarthOrientationTable? = nil, deltaTTable: DeltaTTable? = .historic, model: DeltaTModel? = .espenakMeeus2006) {
 			self.earthOrientation = earthOrientation
+			self.deltaTTable = deltaTTable
 			self.model = model
 		}
 	}
@@ -73,10 +80,13 @@ extension UT1 {
 	///   - context: The source of ΔT.
 	/// - Returns: ΔT, in seconds.
 	/// - Throws: ``TimescaleConversionError/earthOrientationDataUnavailable`` if `tt` is
-	///   outside the context's table and the context has no model.
+	///   outside the context's tables and the context has no model.
 	public static func deltaT(at tt: JulianDate, context: Context) throws(TimescaleConversionError) -> Double {
 		if let observed = context.earthOrientation?.deltaT(at: tt) {
 			return observed.seconds
+		}
+		if let tabulated = context.deltaTTable?.deltaT(at: tt) {
+			return tabulated.seconds
 		}
 		guard let model = context.model else { throw .earthOrientationDataUnavailable }
 		return model.deltaT(decimalYear: tt.decimalYear)
