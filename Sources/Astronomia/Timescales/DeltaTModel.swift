@@ -21,6 +21,24 @@ public enum DeltaTModel: Hashable, Sendable {
 	/// - SeeAlso: [Polynomial Expressions for Delta T](https://eclipse.gsfc.nasa.gov/SEhelp/deltatpoly2004.html)
 	case espenakMeeus2006
 
+	/// The cubic spline of Stephenson, Morrison & Hohenkerk (2016), fitted to observations of
+	/// eclipses and occultations from 720 BC to 2015, as revised by Morrison, Stephenson,
+	/// Hohenkerk & Zawilski (2021) with further medieval observations.
+	///
+	/// The spline covers -720 to 2019. Earlier, ΔT follows their long-term parabola,
+	/// -10 + 31.4 ((y - 1825) / 100)² s. Later, ΔT follows the parabola's trend offset to
+	/// continue the spline; this is a rough guide to the future only, rising about 1.2 s per
+	/// year in the 2020s while observed ΔT has been nearly constant.
+	///
+	/// This reconstruction uses more and re-analysed historical observations than the
+	/// Morrison & Stephenson (2004) data behind ``espenakMeeus2006``, and a tidal acceleration
+	/// of the Moon consistent with modern ephemerides. The two differ by up to about 4.5
+	/// minutes between 700 BC and AD 1500.
+	///
+	/// - SeeAlso: [Stephenson, Morrison & Hohenkerk (2016)](https://doi.org/10.1098/rspa.2016.0404)
+	/// - SeeAlso: [Morrison et al. (2021)](https://doi.org/10.1098/rspa.2020.0776)
+	case stephensonMorrisonHohenkerk2016
+
 	/// Returns ΔT, in seconds, for the specified decimal year.
 	///
 	/// - Parameter decimalYear: The decimal year in the Julian-Gregorian calendar.
@@ -29,6 +47,8 @@ public enum DeltaTModel: Hashable, Sendable {
 		switch self {
 		case .espenakMeeus2006:
 			Self.espenakMeeus2006(decimalYear)
+		case .stephensonMorrisonHohenkerk2016:
+			Self.stephensonMorrisonHohenkerk2016(decimalYear)
 		}
 	}
 }

@@ -99,14 +99,14 @@ import Testing
 	func modelBeforeTables(decimalYear: Double) throws {
 		let tt = try JulianDate(decimalYear: decimalYear)
 		#expect(DeltaTTable.historic.deltaT(at: tt) == nil)
-		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == DeltaTModel.espenakMeeus2006.deltaT(decimalYear: tt.decimalYear))
+		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: tt.decimalYear))
 		#expect(try UT1.deltaT(at: tt, context: .continuous()) == historicJoinedModel(tt.decimalYear))
 	}
 
 	@Test(arguments: [2035.0, 2100])
 	func modelAfterTrend(decimalYear: Double) throws {
 		// Past the modern table and the two years of its trend
-		let model = DeltaTModel.espenakMeeus2006
+		let model = DeltaTModel.stephensonMorrisonHohenkerk2016
 		let tt = try JulianDate(decimalYear: decimalYear)
 		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == model.deltaT(decimalYear: tt.decimalYear))
 

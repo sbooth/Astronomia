@@ -37,7 +37,7 @@ import Testing
 
 	@Test func defaultContextOrder() throws {
 		// The built-in table, then the model, each unchanged
-		let model = DeltaTModel.espenakMeeus2006
+		let model = DeltaTModel.stephensonMorrisonHohenkerk2016
 		for decimalYear in [1600.0, 1900.25, 1980, 2026] {
 			let tt = try JulianDate(decimalYear: decimalYear)
 			let expected = DeltaTTable.builtIn.deltaT(at: tt) ?? model.deltaT(decimalYear: tt.decimalYear)

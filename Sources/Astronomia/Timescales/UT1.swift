@@ -13,13 +13,13 @@
 ///
 /// ΔT comes from the context's ``DeltaTSource``. By default that is the first of Earth
 /// orientation data, if supplied, ``DeltaTTable/builtIn``, and
-/// ``DeltaTModel/espenakMeeus2006`` that covers the date. The most recent observations are
-/// continued along their trend over the last year for ``Context/defaultTrendYears`` Julian
-/// years; otherwise ΔT is a published value.
+/// ``DeltaTModel/stephensonMorrisonHohenkerk2016`` that covers the date. The most recent
+/// observations are continued along their trend over the last year for
+/// ``Context/defaultTrendYears`` Julian years; otherwise ΔT is a published value.
 ///
-/// Where one source hands over to the next, ΔT can be discontinuous: by default by 3.7 s at
-/// 1657.0, and by several seconds where the trend ends and the model begins. Where ΔT steps
-/// up, UT1 instants within the step have no exact TT, and where it steps down they have two,
+/// Where one source hands over to the next, ΔT can be discontinuous: by default by about
+/// 6.5 s at 1657.0, and by about 12 s where the trend ends and the model begins. Where ΔT
+/// steps up, UT1 instants within the step have no exact TT, and where it steps down they have two,
 /// so ``toTT(_:context:)`` and ``fromTT(_:context:)`` are not exact inverses within a step's
 /// width of a handover. Use ``Context/continuous(earthOrientation:deltaTTable:model:)`` to
 /// join the sources continuously instead.
@@ -28,7 +28,7 @@ public enum UT1: Timescale {
 
 	/// No Earth orientation data; ΔT from ``DeltaTTable/builtIn`` from 1657.0, continued along
 	/// its trend for ``Context/defaultTrendYears`` Julian years, and from
-	/// ``DeltaTModel/espenakMeeus2006`` elsewhere.
+	/// ``DeltaTModel/stephensonMorrisonHohenkerk2016`` elsewhere.
 	public static let defaultContext = Context()
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
@@ -96,7 +96,7 @@ extension UT1 {
 		public init(
 			earthOrientation: EarthOrientationTable? = nil,
 			deltaTTable: DeltaTTable? = .builtIn,
-			model: DeltaTModel? = .espenakMeeus2006,
+			model: DeltaTModel? = .stephensonMorrisonHohenkerk2016,
 			trendYears: Double? = defaultTrendYears
 		) {
 			let latest = Self.latestObservations(earthOrientation, deltaTTable)
@@ -122,7 +122,7 @@ extension UT1 {
 		/// observations.
 		///
 		/// The joined values are not published values: before 1657.0, for example, ΔT is the
-		/// model's plus about 3.7 s.
+		/// model's plus about 6.5 s.
 		///
 		/// - Parameters:
 		///   - earthOrientation: Observed and predicted Earth orientation.
@@ -131,7 +131,7 @@ extension UT1 {
 		public static func continuous(
 			earthOrientation: EarthOrientationTable? = nil,
 			deltaTTable: DeltaTTable? = .builtIn,
-			model: DeltaTModel? = .espenakMeeus2006
+			model: DeltaTModel? = .stephensonMorrisonHohenkerk2016
 		) -> Context {
 			let join = model.map { DeltaTExtrapolation.Method.following($0) }
 			let latest = Self.latestObservations(earthOrientation, deltaTTable)

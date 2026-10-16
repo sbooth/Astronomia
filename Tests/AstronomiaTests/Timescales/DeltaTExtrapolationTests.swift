@@ -8,10 +8,10 @@
 import Testing
 @testable import Astronomia
 
-/// ΔT from Espenak & Meeus (2006), offset to join the historic table at its nearer end, as in
-/// the default UT1 context outside the table.
+/// ΔT from the default model, offset to join the historic table at its nearer end, as in the
+/// continuous UT1 context outside the table.
 func historicJoinedModel(_ decimalYear: Double) -> Double {
-	let model = DeltaTModel.espenakMeeus2006
+	let model = DeltaTModel.stephensonMorrisonHohenkerk2016
 	let historic = DeltaTTable.historic
 	let end = decimalYear < 1657 ? historic.coverage.lowerBound : historic.coverage.upperBound
 	let endDeltaT = decimalYear < 1657 ? historic.entries[0].deltaT : historic.entries[historic.entries.count - 1].deltaT
@@ -142,7 +142,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 
 	@Test func handoverAtHistoricTable() throws {
 		// A thousandth of a year either side of 1657.0 changes ΔT by milliseconds in the
-		// continuous context, but by the 3.7 s between the model and the table in the default
+		// continuous context, but by the 6.5 s between the model and the table in the default
 		// context.
 		let inside = try JulianDate(decimalYear: 1657.001)
 		let outside = try JulianDate(decimalYear: 1656.999)
@@ -156,7 +156,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let end = table.coverage.upperBound
 		let endDeltaT = try #require(table.deltaT(at: end))
 		// Without the ΔT table, which covers these dates
-		let context = UT1.Context.continuous(earthOrientation: table, deltaTTable: nil)
+		let context = UT1.Context.continuous(earthOrientation: table, deltaTTable: nil, model: .espenakMeeus2006)
 
 		// A day after the last observation, ΔT is close to it, not the model's value
 		let nextDay = try table.range.upperBound.adding(days: 1)

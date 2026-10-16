@@ -68,12 +68,12 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 
 		// Past the trend, ΔT is the model's.
 		let pastTrend = try end.adding(days: (UT1.Context.defaultTrendYears + 0.1) * JulianDate.daysPerJulianYear)
-		let model = DeltaTModel.espenakMeeus2006.deltaT(decimalYear: pastTrend.decimalYear)
+		let model = DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: pastTrend.decimalYear)
 		#expect(try UT1.deltaT(at: pastTrend, context: UT1.defaultContext) == model)
 
 		// Without a trend, ΔT is the model's right after the table.
 		let published = UT1.Context(trendYears: nil)
-		let model2 = DeltaTModel.espenakMeeus2006.deltaT(decimalYear: later.decimalYear)
+		let model2 = DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: later.decimalYear)
 		#expect(try UT1.deltaT(at: later, context: published) == model2)
 	}
 
