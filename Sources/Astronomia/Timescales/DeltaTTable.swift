@@ -10,7 +10,7 @@
 /// Values between entries are interpolated linearly. Decimal years are calendar-based, as
 /// returned by ``JulianDate/decimalYear``, and are evaluated in TT; the difference between
 /// evaluating in TT and UT1 is negligible for ΔT.
-public struct DeltaTTable: Hashable, Sendable {
+public struct DeltaTTable: Sendable {
 	/// ΔT at a decimal year.
 	public struct Entry: Hashable, Sendable {
 		/// The decimal year.
@@ -35,11 +35,16 @@ public struct DeltaTTable: Hashable, Sendable {
 
 	/// The entries, in increasing order of decimal year.
 	public let entries: [Entry]
+	/// ΔT and its rate at the first entry, with the rate between the first two entries.
+	public let lowerEnd: DeltaTEndpoint
+	/// ΔT and its rate at the last entry, with the rate between the last two entries.
+	public let upperEnd: DeltaTEndpoint
 
 	/// Creates a table.
 	///
 	/// - Parameter entries: At least two entries in strictly increasing order of decimal year,
-	///   with finite values of ΔT and finite, nonnegative uncertainties.
+	///   with finite values of ΔT and finite, nonnegative uncertainties. The decimal years of
+	///   the first two and last two entries must be representable as Julian Dates.
 	/// - Returns: `nil` if the entries are invalid.
 	public init?(entries: [Entry]) {
 		guard entries.count >= 2 else { return nil }
@@ -51,6 +56,7 @@ public struct DeltaTTable: Hashable, Sendable {
 			}
 			if index > 0, entry.decimalYear <= entries[index - 1].decimalYear { return nil }
 		}
+		guard Self.endpoints(entries) != nil else { return nil }
 
 		self.init(uncheckedEntries: entries)
 	}
@@ -59,7 +65,32 @@ public struct DeltaTTable: Hashable, Sendable {
 	///
 	/// - Precondition: `entries` satisfy the requirements of ``init(entries:)``.
 	init(uncheckedEntries entries: [Entry]) {
+		guard let endpoints = Self.endpoints(entries) else {
+			preconditionFailure("Invalid ΔT table entries")
+		}
 		self.entries = entries
+		self.lowerEnd = endpoints.lower
+		self.upperEnd = endpoints.upper
+	}
+
+	/// Returns the endpoints of a table with `entries`, or `nil` if a decimal year at either
+	/// end cannot be represented as a Julian Date.
+	private static func endpoints(_ entries: [Entry]) -> (lower: DeltaTEndpoint, upper: DeltaTEndpoint)? {
+		/// Returns the endpoint at `end`, with the rate from `a` to `b`.
+		func endpoint(_ a: Entry, _ b: Entry, at end: Entry) -> DeltaTEndpoint? {
+			guard let ta = try? JulianDate(decimalYear: a.decimalYear),
+				  let tb = try? JulianDate(decimalYear: b.decimalYear)
+			else { return nil }
+			let tt = end.decimalYear == a.decimalYear ? ta : tb
+			return DeltaTEndpoint(tt: tt, deltaT: end.deltaT, rate: (b.deltaT - a.deltaT) / julianYears(from: ta, to: tb))
+		}
+
+		let count = entries.count
+		guard count >= 2,
+			  let lower = endpoint(entries[0], entries[1], at: entries[0]),
+			  let upper = endpoint(entries[count - 2], entries[count - 1], at: entries[count - 1])
+		else { return nil }
+		return (lower, upper)
 	}
 
 	/// The decimal years covered by the table.
@@ -115,6 +146,22 @@ extension DeltaTTable: DeltaTSource {
 	/// entries, or `nil` if `tt` is outside ``range``.
 	public func deltaT(at tt: JulianDate) -> Double? {
 		deltaTAndUncertainty(at: tt)?.seconds
+	}
+}
+
+extension DeltaTTable: Hashable {
+	/// Returns `true` if the two tables have the same entries.
+	///
+	/// - Returns: `true` if both tables have the same entries; otherwise, `false`.
+	public static func == (lhs: DeltaTTable, rhs: DeltaTTable) -> Bool {
+		lhs.entries == rhs.entries
+	}
+
+	/// Hashes the entries into the specified hasher.
+	///
+	/// - Parameter hasher: The hasher to use when combining the components of this instance.
+	public func hash(into hasher: inout Hasher) {
+		hasher.combine(entries)
 	}
 }
 

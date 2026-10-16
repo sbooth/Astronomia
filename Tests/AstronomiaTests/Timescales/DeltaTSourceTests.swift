@@ -36,10 +36,10 @@ import Testing
 	}
 
 	@Test func defaultContextOrder() throws {
-		// The historic table, then the model
+		// The historic table, then the model joined to it
 		for decimalYear in [1600.0, 1900.25, 2026] {
 			let tt = try JulianDate(decimalYear: decimalYear)
-			let expected = DeltaTTable.historic.deltaT(at: tt) ?? DeltaTModel.espenakMeeus2006.deltaT(decimalYear: tt.decimalYear)
+			let expected = DeltaTTable.historic.deltaT(at: tt) ?? historicJoinedModel(tt.decimalYear)
 			#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == expected)
 		}
 	}

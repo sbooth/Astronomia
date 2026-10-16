@@ -11,21 +11,20 @@
 /// it follows Earth's irregular rotation and is determined by observation. It relates to TT
 /// through ΔT = TT - UT1, about 69 s in 2026 and growing irregularly.
 ///
-/// ΔT comes from the context's ``DeltaTSource``. By default that is a ``DeltaTSourceList`` of
-/// Earth orientation data, if supplied, then ``DeltaTTable/historic``, then
-/// ``DeltaTModel/espenakMeeus2006``. Sources can differ where one hands over to the next, by
-/// up to several seconds between the model and the tables, so conversions are not
-/// continuous there.
+/// ΔT comes from the context's ``DeltaTSource``. By default that is Earth orientation data,
+/// if supplied, then ``DeltaTTable/historic``, with ``DeltaTModel/espenakMeeus2006`` offset to
+/// join the data continuously outside them. See
+/// ``Context/init(earthOrientation:deltaTTable:model:)``.
 public enum UT1: Timescale {
 	public static let abbreviation = "UT1"
 
 	/// No Earth orientation data; ΔT from ``DeltaTTable/historic`` from 1657.0 to 1984.5 and
-	/// from ``DeltaTModel/espenakMeeus2006`` elsewhere.
+	/// from ``DeltaTModel/espenakMeeus2006``, offset to join the table, elsewhere.
 	public static let defaultContext = Context()
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		// TT = UT1 + ΔT(TT). Each evaluation shrinks the error by a factor of dΔT/dt,
-		// at most about 2 × 10⁻⁶ even for the model in antiquity, so four suffice.
+		// at most about 2 × 10^-6 even for the model in antiquity, so four suffice.
 		var tt = julianDate
 		for _ in 0 ..< 4 {
 			let deltaT = try deltaT(at: tt, context: context)
@@ -60,19 +59,31 @@ extension UT1 {
 			self.deltaT = deltaT
 		}
 
-		/// Creates a UT1 context that takes ΔT from the first of the specified sources that
-		/// covers the date.
+		/// Creates a UT1 context that takes ΔT from Earth orientation data, a ΔT table, and a
+		/// model.
+		///
+		/// ΔT comes from `earthOrientation` within its range, then from `deltaTTable` within its
+		/// range. Past the end of `earthOrientation`, and before the start of `deltaTTable`, ΔT
+		/// follows `model` offset to join the data continuously. Between `deltaTTable` and
+		/// `earthOrientation`, or after `deltaTTable` without `earthOrientation`, ΔT follows
+		/// `model` offset to join `deltaTTable`.
 		///
 		/// - Parameters:
-		///   - earthOrientation: Observed and predicted Earth orientation, used within its range.
-		///   - deltaTTable: Tabulated ΔT, used within its range outside `earthOrientation`.
-		///   - model: The model used outside `earthOrientation` and `deltaTTable`, or `nil` to
-		///     require tabulated values.
+		///   - earthOrientation: Observed and predicted Earth orientation.
+		///   - deltaTTable: Tabulated ΔT.
+		///   - model: The model used outside the data, or `nil` to require tabulated values.
 		public init(earthOrientation: EarthOrientationTable? = nil, deltaTTable: DeltaTTable? = .historic, model: DeltaTModel? = .espenakMeeus2006) {
+			let join = model.map(DeltaTExtrapolation.Method.model)
 			var sources: [any DeltaTSource] = []
-			if let earthOrientation { sources.append(earthOrientation) }
-			if let deltaTTable { sources.append(deltaTTable) }
-			if let model { sources.append(model) }
+			if let earthOrientation {
+				sources.append(DeltaTExtrapolation(earthOrientation, after: join))
+			}
+			if let deltaTTable {
+				sources.append(DeltaTExtrapolation(deltaTTable, before: join, after: join))
+			}
+			if let model {
+				sources.append(model)
+			}
 			self.init(deltaT: DeltaTSourceList(sources))
 		}
 	}
@@ -86,7 +97,7 @@ extension UT1 {
 	///   - context: The source of ΔT.
 	/// - Returns: ΔT, in seconds.
 	/// - Throws:
-	///   - ``TimescaleConversionError/earthOrientationDataUnavailable`` if the context's source
+	///   - ``TimescaleConversionError/deltaTUnavailable`` if the context's source
 	///     does not cover `tt`.
 	///   - ``TimescaleConversionError/nonFiniteValue`` if the source returns NaN or infinity.
 	public static func deltaT(at tt: JulianDate, context: Context) throws(TimescaleConversionError) -> Double {

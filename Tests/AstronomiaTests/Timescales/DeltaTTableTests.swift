@@ -77,10 +77,10 @@ import Testing
 	}
 
 	@Test(arguments: [1600.0, 1656.9, 1985, 2026])
-	func modelOutsideTable(decimalYear: Double) throws {
+	func joinedModelOutsideTable(decimalYear: Double) throws {
 		let tt = try JulianDate(decimalYear: decimalYear)
 		#expect(DeltaTTable.historic.deltaT(at: tt) == nil)
-		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == DeltaTModel.espenakMeeus2006.deltaT(decimalYear: tt.decimalYear))
+		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == historicJoinedModel(tt.decimalYear))
 	}
 
 	@Test func tableAgreesWithModelAtHandover() throws {
