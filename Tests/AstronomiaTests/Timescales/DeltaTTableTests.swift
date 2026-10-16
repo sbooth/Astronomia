@@ -137,7 +137,7 @@ import Testing
 			try UT1.deltaT(at: outsideTable, context: context)
 		}
 
-		let noTable = UT1.Context(modernDeltaT: nil, historicDeltaT: nil, model: nil)
+		let noTable = UT1.Context(deltaTTable: nil, model: nil)
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.deltaT(at: inTable, context: noTable)
 		}

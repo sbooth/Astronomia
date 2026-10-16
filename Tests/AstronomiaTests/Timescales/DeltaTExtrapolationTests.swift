@@ -155,8 +155,8 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		let end = table.coverage.upperBound
 		let endDeltaT = try #require(table.deltaT(at: end))
-		// Without the modern table, which covers these dates
-		let context = UT1.Context.continuous(earthOrientation: table, modernDeltaT: nil)
+		// Without the ΔT table, which covers these dates
+		let context = UT1.Context.continuous(earthOrientation: table, deltaTTable: nil)
 
 		// A day after the last observation, ΔT is close to it, not the model's value
 		let nextDay = try table.range.upperBound.adding(days: 1)

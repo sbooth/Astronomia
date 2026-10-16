@@ -157,3 +157,12 @@ extension DeltaTTable {
 	/// - SeeAlso: [deltat.data](https://maia.usno.navy.mil/ser7/deltat.data)
 	public static let modern = DeltaTTable(uncheckedEntries: modernDeltaTEntries)
 }
+
+extension DeltaTTable {
+	/// ΔT from 1657.0 to the end of ``modern``: the entries of ``historic`` before ``modern``
+	/// begins in February 1973, then the entries of ``modern``.
+	///
+	/// Entries are half-yearly before 1973 and monthly after. Entries before 1973 carry the
+	/// uncertainty from ``historic``; later entries have none.
+	public static let builtIn = DeltaTTable(uncheckedEntries: historic.entries.filter { $0.tt < modern.coverage.lowerBound } + modern.entries)
+}

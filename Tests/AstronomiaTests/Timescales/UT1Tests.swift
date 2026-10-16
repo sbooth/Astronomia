@@ -171,12 +171,12 @@ func observedContext() throws -> UT1.Context {
 		let continuous = UT1.Context.continuous(earthOrientation: table)
 		#expect(try abs(UT1.deltaT(at: tt, context: continuous) - 63.8285) <= timescaleTolerance)
 
-		let observationsOnly = UT1.Context(earthOrientation: table, modernDeltaT: nil, historicDeltaT: nil, model: nil)
+		let observationsOnly = UT1.Context(earthOrientation: table, deltaTTable: nil, model: nil)
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.fromTT(tt, context: observationsOnly)
 		}
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
-			try UT1.deltaT(at: tt, context: UT1.Context(modernDeltaT: nil, historicDeltaT: nil, model: nil))
+			try UT1.deltaT(at: tt, context: UT1.Context(deltaTTable: nil, model: nil))
 		}
 	}
 

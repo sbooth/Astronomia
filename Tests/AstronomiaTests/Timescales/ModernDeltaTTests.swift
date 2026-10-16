@@ -24,6 +24,27 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		#expect(try DeltaTTable.modern.coverage == midnight(1973, 2, 1) ... midnight(2026, 10, 1))
 	}
 
+	@Test func builtIn() throws {
+		// 633 half-yearly historic entries from 1657.0 to 1973.0, then the 645 modern entries
+		let builtIn = DeltaTTable.builtIn
+		let historic = DeltaTTable.historic.entries
+		let modern = DeltaTTable.modern.entries
+		#expect(builtIn.entries.count == 1278)
+		#expect(DeltaTTable(entries: builtIn.entries) != nil)
+		#expect(Array(builtIn.entries.prefix(633)) == Array(historic.prefix(633)))
+		#expect(Array(builtIn.entries.suffix(645)) == modern)
+		#expect(try builtIn.entries[632].tt == JulianDate(decimalYear: 1973))
+		#expect(builtIn.coverage.lowerBound == DeltaTTable.historic.coverage.lowerBound)
+		#expect(builtIn.coverage.upperBound == DeltaTTable.modern.coverage.upperBound)
+
+		// Uncertainties before 1973, none after; the interval across the seam has none.
+		let before = try #require(builtIn.deltaTAndUncertainty(at: JulianDate(decimalYear: 1900.25)))
+		#expect(before.uncertainty != nil)
+		let seam = try #require(builtIn.deltaTAndUncertainty(at: midnight(1973, 1, 15)))
+		#expect(seam.uncertainty == nil)
+		#expect(seam.seconds > 43.373 && seam.seconds < 43.4724)
+	}
+
 	@Test func agreesWithHistoricTableWhereTheyOverlap() throws {
 		// Both are observations from 1973 to 1984.5, so they agree to milliseconds.
 		for year in stride(from: 1974.0, through: 1984.0, by: 1) {
@@ -57,8 +78,8 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 	}
 
 	@Test func trendContinuesLaterSource() throws {
-		// The Earth orientation data ends in 2017, before the modern table, so the modern
-		// table's values are used after it, and only the modern table is continued.
+		// The Earth orientation data ends in 2017, before the built-in table, so the table's
+		// values are used after it, and only the table is continued.
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		let context = UT1.Context(earthOrientation: table)
 		let mid2017 = try midnight(2017, 6, 1)
@@ -67,8 +88,8 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		let later = try DeltaTTable.modern.coverage.upperBound.adding(days: JulianDate.daysPerJulianYear)
 		#expect(try UT1.deltaT(at: later, context: context) == UT1.deltaT(at: later, context: UT1.defaultContext))
 
-		// Without the modern table, the Earth orientation data is continued instead.
-		let observationsOnly = UT1.Context(earthOrientation: table, modernDeltaT: nil)
+		// Without the ΔT table, the Earth orientation data is continued instead.
+		let observationsOnly = UT1.Context(earthOrientation: table, deltaTTable: nil)
 		let afterObservations = try table.coverage.upperBound.adding(days: 30)
 		let endDeltaT = try #require(table.deltaT(at: table.coverage.upperBound))
 		#expect(try abs(UT1.deltaT(at: afterObservations, context: observationsOnly) - endDeltaT) <= 0.1)

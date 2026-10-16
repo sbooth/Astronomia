@@ -36,20 +36,20 @@ import Testing
 	}
 
 	@Test func defaultContextOrder() throws {
-		// The modern table, then the historic table, then the model, each unchanged
+		// The built-in table, then the model, each unchanged
 		let model = DeltaTModel.espenakMeeus2006
 		for decimalYear in [1600.0, 1900.25, 1980, 2026] {
 			let tt = try JulianDate(decimalYear: decimalYear)
-			let expected = DeltaTTable.modern.deltaT(at: tt) ?? DeltaTTable.historic.deltaT(at: tt) ?? model.deltaT(decimalYear: tt.decimalYear)
+			let expected = DeltaTTable.builtIn.deltaT(at: tt) ?? model.deltaT(decimalYear: tt.decimalYear)
 			#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == expected)
 		}
 	}
 
 	@Test func continuousContextOrder() throws {
-		// The modern table, then the historic table, then the model joined to it
+		// The built-in table, then the model joined to it
 		for decimalYear in [1600.0, 1900.25, 1980, 2026] {
 			let tt = try JulianDate(decimalYear: decimalYear)
-			let expected = DeltaTTable.modern.deltaT(at: tt) ?? DeltaTTable.historic.deltaT(at: tt) ?? historicJoinedModel(tt.decimalYear)
+			let expected = DeltaTTable.builtIn.deltaT(at: tt) ?? historicJoinedModel(tt.decimalYear)
 			#expect(try UT1.deltaT(at: tt, context: .continuous()) == expected)
 		}
 	}
