@@ -25,8 +25,10 @@ Commands:
   their output is for Astronomia's built-in tables.
 
   finals FILE
-      IERS finals2000A or finals data (.all, .data, or .daily), as an array of
-      EarthOrientationTable.Entry with the Bulletin A values of UT1 - UTC. Pass the array to
+      IERS finals2000A data (.all, .data, or .daily), as an array of
+      EarthOrientationTable.Entry with the Bulletin A values of UT1 - UTC, polar motion, the
+      celestial pole offsets, and the excess length of day. For IAU 1980 finals data, pass
+      --ut1-only, since its nutation columns are not dX and dY. Pass the array to
       EarthOrientationTable(entries:leapSecondTable:). With --table, writes the table itself,
       built with the built-in leap seconds, so the entries are not kept after it is built.
       The values are written as a [Double] literal, which the compiler handles far better
@@ -240,24 +242,64 @@ def modern_delta_t(args: argparse.Namespace, data: bytes) -> str:
 # MARK: - finals
 
 
+def finals_field(line: str, first: int, last: int) -> str:
+	"""Returns the 1-based, inclusive columns `first` to `last` of `line`, without spaces."""
+	return line[first - 1 : last].replace(" ", "")
+
+
+def finals_flag(line: str, column: int, name: str, line_number: int) -> bool:
+	"""Returns whether the 1-based `column` of `line` flags a prediction (P) rather than an
+	IERS value (I)."""
+	flag = line[column - 1] if len(line) >= column else " "
+	if flag not in "IP":
+		raise DataError(f"line {line_number}: unknown {name} flag {flag!r}")
+	return flag == "P"
+
+
+def finals_pair(line: str, first: tuple[int, int], second: tuple[int, int], name: str, line_number: int) -> tuple[str, str] | None:
+	"""Returns the values in two column ranges as Swift literals, or None if both are blank."""
+	a = finals_field(line, *first)
+	b = finals_field(line, *second)
+	if not a and not b:
+		return None
+	if not a or not b:
+		raise DataError(f"line {line_number}: {name} has only one of its two values")
+	return swift_literal(a, line_number), swift_literal(b, line_number)
+
+
+def ranges(flags: list[bool]) -> list[tuple[int, int]]:
+	"""Returns the half-open ranges of indices where `flags` is true."""
+	result = []
+	start = None
+	for index, flag in enumerate(flags + [False]):
+		if flag and start is None:
+			start = index
+		elif not flag and start is not None:
+			result.append((start, index))
+			start = None
+	return result
+
+
 def finals(args: argparse.Namespace, data: bytes) -> str:
-	"""Uses the fixed columns of the IERS format: the MJD of 0h UTC in columns 8-15, the
-	IERS (I) or prediction (P) flag for UT1 - UTC in column 58, and Bulletin A UT1 - UTC in
-	columns 59-68. Rows without a value are skipped."""
+	"""Uses the fixed columns of the IERS finals2000A format and its Bulletin A values: the MJD
+	of 0h UTC in columns 8-15; polar motion x_p and y_p, in arcseconds, in columns 19-27 and
+	38-46, flagged as IERS (I) or predicted (P) values in column 17; UT1 - UTC in columns
+	59-68, flagged in column 58; the excess length of day, in milliseconds, in columns 80-86;
+	and the celestial pole offsets dX and dY, in milliarcseconds, in columns 98-106 and
+	117-125, flagged in column 96. Rows without UT1 - UTC are skipped. Without predictions,
+	predicted rows of UT1 - UTC are skipped and other predicted values are left out.
+
+	With --ut1-only, only UT1 - UTC is read. Use it for IAU 1980 finals files, whose columns
+	98-125 hold dψ and dε instead of dX and dY."""
 	start = civil_jdn(args.start) if args.start else None
 	end = civil_jdn(args.end) if args.end else None
 	rows = []
 	previous_day = None
 	for line_number, line in enumerate(data.decode("ascii").splitlines(), start=1):
-		if len(line) < 68:
-			continue
-		value = line[58:68].replace(" ", "")
+		value = finals_field(line, 59, 68)
 		if not value:
 			continue
-		flag = line[57]
-		if flag not in "IP":
-			raise DataError(f"line {line_number}: unknown UT1 - UTC flag {flag!r}")
-		is_predicted = flag == "P"
+		is_predicted = finals_flag(line, 58, "UT1 - UTC", line_number)
 		if is_predicted and not args.predictions:
 			continue
 
@@ -273,79 +315,211 @@ def finals(args: argparse.Namespace, data: bytes) -> str:
 			raise DataError(f"line {line_number}: MJD {mjd} does not increase")
 		previous_day = day
 
+		pole = offsets = lod = None
+		pole_predicted = offsets_predicted = False
+		if not args.ut1_only:
+			pole = finals_pair(line, (19, 27), (38, 46), "polar motion", line_number)
+			if pole is not None:
+				pole_predicted = finals_flag(line, 17, "polar motion", line_number)
+				if pole_predicted and not args.predictions:
+					pole = None
+			offsets = finals_pair(line, (98, 106), (117, 125), "dX and dY", line_number)
+			if offsets is not None:
+				offsets_predicted = finals_flag(line, 96, "nutation", line_number)
+				if offsets_predicted and not args.predictions:
+					offsets = None
+			lod_text = finals_field(line, 80, 86)
+			lod = swift_literal(lod_text, line_number) if lod_text else None
+
 		if (start is not None and day < start) or (end is not None and day > end):
 			continue
-		rows.append((day, ut1_minus_utc, is_predicted))
+		rows.append(
+			{
+				"day": day,
+				"ut1": ut1_minus_utc,
+				"ut1_predicted": is_predicted,
+				"pole": pole,
+				"pole_predicted": pole is not None and pole_predicted,
+				"offsets": offsets,
+				"offsets_predicted": offsets is not None and offsets_predicted,
+				"lod": lod,
+			}
+		)
 	if len(rows) < 2:
 		raise DataError("expected at least two rows with UT1 - UTC in the selected dates")
 
-	first, last = civil_date(rows[0][0]), civil_date(rows[-1][0])
-	days = [day for day, _, _ in rows]
-	values = [value for _, value, _ in rows]
-	flags = [is_predicted for _, _, is_predicted in rows]
-	predicted = sum(flags)
-
-	# Large array literals of struct initializers are slow for the Swift compiler to type
-	# check, so the values are written as a [Double] literal and the entries built from it
-	# on first use. Consecutive days and trailing predictions, the usual case, need only
-	# their first day and first prediction.
-	consecutive = all(b - a == 1 for a, b in zip(days, days[1:]))
-	first_predicted = flags.index(True) if predicted else len(flags)
-	predictions_trail = all(flags[first_predicted:])
+	first, last = civil_date(rows[0]["day"]), civil_date(rows[-1]["day"])
+	days = [row["day"] for row in rows]
+	predicted = sum(row["ut1_predicted"] for row in rows)
+	has_pole = any(row["pole"] for row in rows)
+	has_offsets = any(row["offsets"] for row in rows)
+	has_lod = any(row["lod"] for row in rows)
 
 	lines = header(args, "finals", data, args.source_url)
 	if args.import_module:
 		lines += ["import Astronomia", ""]
-	lines.append(f"/// IERS Bulletin A UT1 - UTC at 0h UTC, in seconds, from {first} to {last}.")
+	lines.append(f"/// IERS Bulletin A Earth orientation parameters at 0h UTC from {first} to {last}.")
+	lines.append("///")
+	included = ["UT1 - UTC"]
+	if has_pole:
+		included.append("polar motion")
+	if has_offsets:
+		included.append("celestial pole offsets")
+	if has_lod:
+		included.append("excess length of day")
+	text = included[0] if len(included) == 1 else ", ".join(included[:-1]) + (", and " if len(included) > 2 else " and ") + included[-1]
+	lines.append(f"/// {text[0].upper() + text[1:]}.")
 	if predicted:
-		entries = "entry is a prediction" if predicted == 1 else "entries are predictions"
-		lines.append("///")
+		entries = "entry's UT1 - UTC is a prediction" if predicted == 1 else "entries' UT1 - UTC are predictions"
 		lines.append(f"/// {predicted:,} {entries}, flagged by `isPredicted`.")
+
+	def pole_initializer(row: dict) -> str:
+		x, y = row["pole"]
+		return f"PolarMotion(x: Angle(arcseconds: {x}), y: Angle(arcseconds: {y}), isPredicted: {swift_bool(row['pole_predicted'])})"
+
+	def offsets_initializer(row: dict) -> str:
+		dx, dy = row["offsets"]
+		return f"CelestialPoleOffsets(dX: Angle(milliarcseconds: {dx}), dY: Angle(milliarcseconds: {dy}), isPredicted: {swift_bool(row['offsets_predicted'])})"
+
 	if args.array:
 		# One initializer per row: readable, but slow to compile for more than a few
 		# thousand rows.
-		width = max(len(value) for value in values)
+		width = max(len(row["ut1"]) for row in rows)
 		lines.append(declaration(args, "[EarthOrientationTable.Entry]"))
-		for day, value, is_predicted in rows:
-			lines.append(
-				f"\t.init(utcDay: {day:_}, ut1MinusUTC: {(value + ',').ljust(width + 1)} isPredicted: {'true' if is_predicted else 'false'}), // {civil_date(day)}"
-			)
+		for row in rows:
+			text = f"utcDay: {row['day']:_}, ut1MinusUTC: {(row['ut1'] + ',').ljust(width + 1)} isPredicted: {swift_bool(row['ut1_predicted'])}"
+			if row["pole"]:
+				text += f", polarMotion: {pole_initializer(row)}"
+			if row["offsets"]:
+				text += f", celestialPoleOffsets: {offsets_initializer(row)}"
+			if row["lod"]:
+				text += f", excessLengthOfDay: {row['lod']} / 1000"
+			lines.append(f"\t.init({text}), // {civil_date(row['day'])}")
 		lines.append("]")
 		return "\n".join(lines) + "\n"
 
+	# Large array literals of struct initializers are slow for the Swift compiler to type
+	# check, so the values are written as [Double] literals and the entries built from them
+	# on first use. Consecutive days, the usual case, need only the first. Predictions are
+	# written as ranges of indices. Each optional column runs from the first row with a value
+	# to the last, with NaN for a value missing in between.
 	if args.table:
 		lines.append("///")
 		lines.append("/// Converted to ΔT with the built-in leap seconds on first use.")
 		lines.append(declaration(args, "EarthOrientationTable", "{"))
 	else:
 		lines.append(declaration(args, "[EarthOrientationTable.Entry]", "{"))
+	consecutive = all(b - a == 1 for a, b in zip(days, days[1:]))
 	if consecutive:
 		lines.append(f"\tlet firstUTCDay = {days[0]:_}")
-	if predictions_trail:
-		lines.append(f"\tlet firstPrediction = {first_predicted:_}")
 
-	def column(name: str, type_name: str, items: list[str], per_line: int) -> None:
+	def column(name: str, type_name: str, items: list[str], per_line: int, per_row: int = 1, first_row: int = 0) -> None:
 		width = max(len(item) for item in items)
 		lines.append(f"\tlet {name}: [{type_name}] = [")
 		for start in range(0, len(items), per_line):
 			chunk = items[start : start + per_line]
 			text = " ".join((item + ",").ljust(width + 1) for item in chunk).rstrip()
-			lines.append(f"\t\t{text} // {civil_date(days[start])}")
+			lines.append(f"\t\t{text} // {civil_date(days[first_row + start // per_row])}")
 		lines.append("\t]")
+
+	def predictions(name: str, flags: list[bool]) -> bool:
+		spans = ranges(flags)
+		if spans:
+			items = ", ".join(f"{a:_} ..< {b:_}" for a, b in spans)
+			lines.append(f"\tlet {name}: [Range<Int>] = [{items}]")
+		return bool(spans)
+
+	def values(key: str, name: str) -> tuple[list, str]:
+		"""The values of `key` from the first row that has one to the last, and the expression
+		for a row's offset into them, declaring the first row's index if it is not 0."""
+		present = [index for index, row in enumerate(rows) if row[key]]
+		first_row = present[0]
+		if first_row:
+			lines.append(f"\tlet {name}Start = {first_row:_}")
+		return [row[key] for row in rows[first_row : present[-1] + 1]], f"index - {name}Start" if first_row else "index"
+
+	def first_present(key: str) -> int:
+		return next(index for index, row in enumerate(rows) if row[key])
 
 	if not consecutive:
 		column("utcDays", "Int", [f"{day:_}" for day in days], 8)
-	column("ut1MinusUTC", "Double", values, 8)
-	if not predictions_trail:
-		column("isPredicted", "Bool", ["true" if flag else "false" for flag in flags], 8)
+	column("ut1MinusUTC", "Double", [row["ut1"] for row in rows], 8)
+	ut1_ranges = predictions("ut1Predictions", [row["ut1_predicted"] for row in rows])
+	if has_pole:
+		lines.append("\t// x_p and y_p, in arcseconds")
+		pole_values, pole_index = values("pole", "polarMotion")
+		items = [item for pair in pole_values for item in (pair or (".nan", ".nan"))]
+		column("polarMotion", "Double", items, 8, 2, first_present("pole"))
+		pole_ranges = predictions("polarMotionPredictions", [row["pole_predicted"] for row in rows])
+	if has_offsets:
+		lines.append("\t// dX and dY, in milliarcseconds")
+		offsets_values, offsets_index = values("offsets", "celestialPoleOffsets")
+		items = [item for pair in offsets_values for item in (pair or (".nan", ".nan"))]
+		column("celestialPoleOffsets", "Double", items, 8, 2, first_present("offsets"))
+		offsets_ranges = predictions("celestialPoleOffsetPredictions", [row["offsets_predicted"] for row in rows])
+	if has_lod:
+		lines.append("\t// In milliseconds")
+		lod_values, lod_index = values("lod", "excessLengthOfDay")
+		column("excessLengthOfDay", "Double", [item or ".nan" for item in lod_values], 8, 1, first_present("lod"))
 
-	day = "firstUTCDay + index" if consecutive else "utcDays[index]"
-	flag = "index >= firstPrediction" if predictions_trail else "isPredicted[index]"
-	build = [
-		"ut1MinusUTC.indices.map { index in",
-		f"\tEarthOrientationTable.Entry(utcDay: {day}, ut1MinusUTC: ut1MinusUTC[index], isPredicted: {flag})",
-		"}",
+	if (ut1_ranges or (has_pole and pole_ranges) or (has_offsets and offsets_ranges)):
+		lines += [
+			"\tfunc isPredicted(_ index: Int, _ predictions: [Range<Int>]) -> Bool {",
+			"\t\tpredictions.contains { $0.contains(index) }",
+			"\t}",
+		]
+
+	def pair_index(index: str) -> str:
+		return "2 * index" if index == "index" else f"2 * ({index})"
+
+	def bounds(name: str, index: str) -> str:
+		"""The condition that `i` is within the column `name`, which starts at row 0 when
+		`index` is plain `index`."""
+		return f"i < {name}.count" if index == "index" else f"i >= 0, i < {name}.count"
+
+	def flag(ranges_present: bool, name: str) -> str:
+		return f"isPredicted(index, {name})" if ranges_present else "false"
+
+	arguments = [
+		f"utcDay: {'firstUTCDay + index' if consecutive else 'utcDays[index]'}",
+		"ut1MinusUTC: ut1MinusUTC[index]",
+		f"isPredicted: {flag(ut1_ranges, 'ut1Predictions')}",
 	]
+	if has_pole:
+		lines += [
+			"\tfunc pole(_ index: Int) -> PolarMotion? {",
+			f"\t\tlet i = {pair_index(pole_index)}",
+			f"\t\tguard {bounds('polarMotion', pole_index)}, !polarMotion[i].isNaN else {{ return nil }}",
+			"\t\tlet x = Angle(arcseconds: polarMotion[i])",
+			"\t\tlet y = Angle(arcseconds: polarMotion[i + 1])",
+			f"\t\treturn PolarMotion(x: x, y: y, isPredicted: {flag(pole_ranges, 'polarMotionPredictions')})",
+			"\t}",
+		]
+		arguments.append("polarMotion: pole(index)")
+	if has_offsets:
+		lines += [
+			"\tfunc offsets(_ index: Int) -> CelestialPoleOffsets? {",
+			f"\t\tlet i = {pair_index(offsets_index)}",
+			f"\t\tguard {bounds('celestialPoleOffsets', offsets_index)}, !celestialPoleOffsets[i].isNaN else {{ return nil }}",
+			"\t\tlet dX = Angle(milliarcseconds: celestialPoleOffsets[i])",
+			"\t\tlet dY = Angle(milliarcseconds: celestialPoleOffsets[i + 1])",
+			f"\t\treturn CelestialPoleOffsets(dX: dX, dY: dY, isPredicted: {flag(offsets_ranges, 'celestialPoleOffsetPredictions')})",
+			"\t}",
+		]
+		arguments.append("celestialPoleOffsets: offsets(index)")
+	if has_lod:
+		lines += [
+			"\tfunc lengthOfDay(_ index: Int) -> Double? {",
+			f"\t\tlet i = {lod_index}",
+			f"\t\tguard {bounds('excessLengthOfDay', lod_index)}, !excessLengthOfDay[i].isNaN else {{ return nil }}",
+			"\t\treturn excessLengthOfDay[i] / 1000",
+			"\t}",
+		]
+		arguments.append("excessLengthOfDay: lengthOfDay(index)")
+
+	build = ["ut1MinusUTC.indices.map { index in", "\tEarthOrientationTable.Entry("]
+	build += [f"\t\t{argument}," for argument in arguments[:-1]] + [f"\t\t{arguments[-1]}"]
+	build += ["\t)", "}"]
 	if args.table:
 		lines.append(f"\tlet entries = {build[0]}")
 		lines += [f"\t{line}" for line in build[1:]]
@@ -361,6 +535,10 @@ def finals(args: argparse.Namespace, data: bytes) -> str:
 		lines += [f"\t{line}" for line in build[1:]]
 	lines.append("}()")
 	return "\n".join(lines) + "\n"
+
+
+def swift_bool(value: bool) -> str:
+	return "true" if value else "false"
 
 
 # MARK: - Main
@@ -390,7 +568,7 @@ def main() -> None:
 	add_common(modern, "modernDeltaTEntries", "https://maia.usno.navy.mil/ser7/deltat.data")
 	modern.set_defaults(generate=modern_delta_t)
 
-	finals_command = commands.add_parser("finals", help="IERS finals2000A or finals", description=finals.__doc__)
+	finals_command = commands.add_parser("finals", help="IERS finals2000A", description=finals.__doc__)
 	add_common(finals_command, "finalsEntries, or earthOrientationTable with --table", "https://maia.usno.navy.mil/ser7/finals2000A.all")
 	finals_command.add_argument(
 		"--no-import",
@@ -412,7 +590,12 @@ def main() -> None:
 	finals_command.add_argument("--start", type=datetime.date.fromisoformat, help="the first UTC day to include, YYYY-MM-DD")
 	finals_command.add_argument("--end", type=datetime.date.fromisoformat, help="the last UTC day to include, YYYY-MM-DD")
 	finals_command.add_argument(
-		"--no-predictions", dest="predictions", action="store_false", help="leave out rows flagged as predictions"
+		"--no-predictions", dest="predictions", action="store_false", help="leave out values flagged as predictions"
+	)
+	finals_command.add_argument(
+		"--ut1-only",
+		action="store_true",
+		help="read only UT1 - UTC, as for IAU 1980 finals files, or for a smaller table",
 	)
 	finals_command.set_defaults(generate=finals)
 
