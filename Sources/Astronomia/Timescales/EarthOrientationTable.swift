@@ -14,6 +14,10 @@
 /// Values between entries are interpolated linearly in TT. For daily data this is accurate to
 /// about 50 µs. Gaps between entries are interpolated across.
 ///
+/// To build a table from data compiled into an app, rather than parsing a file at run time,
+/// generate its entries with `Scripts/generate-timescale-data.py finals` and pass them to
+/// ``init(entries:leapSecondTable:)``.
+///
 /// - SeeAlso: [IERS Rapid Service/Prediction Center](https://maia.usno.navy.mil)
 public struct EarthOrientationTable: Hashable, Sendable {
 	/// UT1 - UTC at 0h UTC on a day.
