@@ -11,15 +11,21 @@
 /// it follows Earth's irregular rotation and is determined by observation. It relates to TT
 /// through ΔT = TT - UT1, about 69 s in 2026 and growing irregularly.
 ///
-/// ΔT comes from the context's ``DeltaTSource``. By default that is Earth orientation data,
-/// if supplied, then ``DeltaTTable/historic``, with ``DeltaTModel/espenakMeeus2006`` offset to
-/// join the data continuously outside them. See
-/// ``Context/init(earthOrientation:deltaTTable:model:)``.
+/// ΔT comes from the context's ``DeltaTSource``. By default that is the first of Earth
+/// orientation data, if supplied, ``DeltaTTable/historic``, and
+/// ``DeltaTModel/espenakMeeus2006`` that covers the date, so ΔT is always a published value.
+///
+/// Where one source hands over to the next, ΔT can be discontinuous: by 3.7 s at 1657.0 and
+/// 0.04 s at 1984.5 by default. Where ΔT steps up, UT1 instants within the step have no exact
+/// TT, and where it steps down they have two, so ``toTT(_:context:)`` and
+/// ``fromTT(_:context:)`` are not exact inverses within a step's width of a handover. Use
+/// ``Context/continuous(earthOrientation:deltaTTable:model:)`` to join the sources
+/// continuously instead.
 public enum UT1: Timescale {
 	public static let abbreviation = "UT1"
 
 	/// No Earth orientation data; ΔT from ``DeltaTTable/historic`` from 1657.0 to 1984.5 and
-	/// from ``DeltaTModel/espenakMeeus2006``, offset to join the table, elsewhere.
+	/// from ``DeltaTModel/espenakMeeus2006`` elsewhere.
 	public static let defaultContext = Context()
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
@@ -59,20 +65,42 @@ extension UT1 {
 			self.deltaT = deltaT
 		}
 
-		/// Creates a UT1 context that takes ΔT from Earth orientation data, a ΔT table, and a
-		/// model.
+		/// Creates a UT1 context that takes ΔT from the first of Earth orientation data, a ΔT
+		/// table, and a model that covers the date.
+		///
+		/// Each value comes unchanged from one source, so ΔT can be discontinuous where one source
+		/// hands over to the next.
+		///
+		/// - Parameters:
+		///   - earthOrientation: Observed and predicted Earth orientation.
+		///   - deltaTTable: Tabulated ΔT, used outside `earthOrientation`.
+		///   - model: The model used outside the data, or `nil` to require tabulated values.
+		public init(earthOrientation: EarthOrientationTable? = nil, deltaTTable: DeltaTTable? = .historic, model: DeltaTModel? = .espenakMeeus2006) {
+			var sources: [any DeltaTSource] = []
+			if let earthOrientation { sources.append(earthOrientation) }
+			if let deltaTTable { sources.append(deltaTTable) }
+			if let model { sources.append(model) }
+			self.init(deltaT: DeltaTSourceList(sources))
+		}
+
+		/// Returns a UT1 context that takes ΔT from Earth orientation data and a ΔT table, with
+		/// a model offset to join them continuously.
 		///
 		/// ΔT comes from `earthOrientation` within its range, then from `deltaTTable` within its
 		/// range. Past the end of `earthOrientation`, and before the start of `deltaTTable`, ΔT
 		/// follows `model` offset to join the data continuously. Between `deltaTTable` and
 		/// `earthOrientation`, or after `deltaTTable` without `earthOrientation`, ΔT follows
-		/// `model` offset to join `deltaTTable`.
+		/// `model` offset to join `deltaTTable`, so ΔT can still step where `earthOrientation`
+		/// begins if the two do not overlap.
+		///
+		/// The joined values are not published values: before 1657.0, for example, ΔT is the
+		/// model's plus about 3.7 s.
 		///
 		/// - Parameters:
 		///   - earthOrientation: Observed and predicted Earth orientation.
 		///   - deltaTTable: Tabulated ΔT.
 		///   - model: The model used outside the data, or `nil` to require tabulated values.
-		public init(earthOrientation: EarthOrientationTable? = nil, deltaTTable: DeltaTTable? = .historic, model: DeltaTModel? = .espenakMeeus2006) {
+		public static func continuous(earthOrientation: EarthOrientationTable? = nil, deltaTTable: DeltaTTable? = .historic, model: DeltaTModel? = .espenakMeeus2006) -> Context {
 			let join = model.map { DeltaTExtrapolation.Method.following($0) }
 			var sources: [any DeltaTSource] = []
 			if let earthOrientation {
@@ -84,7 +112,7 @@ extension UT1 {
 			if let model {
 				sources.append(model)
 			}
-			self.init(deltaT: DeltaTSourceList(sources))
+			return Context(deltaT: DeltaTSourceList(sources))
 		}
 	}
 }

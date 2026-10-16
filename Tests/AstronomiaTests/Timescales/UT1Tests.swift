@@ -156,11 +156,11 @@ func observedContext() throws -> UT1.Context {
 	}
 
 	@Test func modelByDefault() throws {
-		// 2000-01-01T00:00 TT is decimal year 2000.0, after the historic table, where ΔT is the
-		// model's 63.86 s offset to join the table at 1984.5.
+		// 2000-01-01T00:00 TT is decimal year 2000.0, after the historic table, where the model
+		// gives ΔT = 63.86 s.
 		let tt = try uniformDate(civilDay(2000, 1, 1))
 		let ut1 = try Instant<TT>(tt).converted(to: UT1.self)
-		#expect(try abs(seconds(from: ut1.julianDate, to: tt) - historicJoinedModel(2000)) <= timescaleTolerance)
+		#expect(try abs(seconds(from: ut1.julianDate, to: tt) - 63.86) <= timescaleTolerance)
 	}
 
 	@Test func modelOutsideObservations() throws {
@@ -168,7 +168,9 @@ func observedContext() throws -> UT1.Context {
 		let tt = try uniformDate(civilDay(2000, 1, 1))
 
 		let withModel = UT1.Context(earthOrientation: table)
-		#expect(try abs(UT1.deltaT(at: tt, context: withModel) - historicJoinedModel(2000)) <= timescaleTolerance)
+		#expect(try abs(UT1.deltaT(at: tt, context: withModel) - 63.86) <= timescaleTolerance)
+		let continuous = UT1.Context.continuous(earthOrientation: table)
+		#expect(try abs(UT1.deltaT(at: tt, context: continuous) - historicJoinedModel(2000)) <= timescaleTolerance)
 
 		let observationsOnly = UT1.Context(earthOrientation: table, model: nil)
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
