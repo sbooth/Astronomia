@@ -109,7 +109,8 @@ extension UTCDay {
 	///   h * 3600 + m * 60 + s. On a day ending in a leap second, 23:59:60.5 is 86,400.5.
 	/// - Throws:
 	///   - ``TimescaleConversionError/nonFiniteValue`` if `seconds` is NaN or infinite.
-	///   - ``TimescaleConversionError/invalidTimeOfDay`` if the reading does not occur on this UTC day.
+	///   - ``TimescaleConversionError/invalidTimeOfDay`` if the reading does not occur on this
+	///     UTC day.
 	public func julianDate(secondsSinceMidnight seconds: Double) throws(TimescaleConversionError) -> JulianDate {
 		guard seconds.isFinite else { throw .nonFiniteValue }
 		let fraction = try fractionSinceMidnight(secondsSinceMidnight: seconds)
@@ -121,7 +122,8 @@ extension UTCDay {
 	/// The inverse of ``julianDate(secondsSinceMidnight:)``. On a day ending in a leap second,
 	/// the result is in the right-open interval [86,400, 86,401) during 23:59:60.
 	///
-	/// - Throws: ``TimescaleConversionError/dateOutOfRange`` if `julianDate` is not on this UTC day.
+	/// - Throws: ``TimescaleConversionError/dateOutOfRange`` if `julianDate` is not on this UTC
+	///   day.
 	public func secondsSinceMidnight(_ julianDate: JulianDate) throws(TimescaleConversionError) -> Double {
 		guard julianDate.julianDayNumber == julianDayNumber else { throw .dateOutOfRange }
 		return julianDate.fractionSinceMidnight * clockSeconds
@@ -132,7 +134,8 @@ extension UTCDay {
 	/// Returns the TAI Julian Date for a clock reading on this UTC day.
 	///
 	/// - Parameter seconds: The clock reading as seconds since midnight.
-	/// - Throws: ``TimescaleConversionError/invalidTimeOfDay`` if the reading does not occur on this UTC day.
+	/// - Throws: ``TimescaleConversionError/invalidTimeOfDay`` if the reading does not occur on
+	///   this UTC day.
 	public func toTAI(secondsSinceMidnight seconds: Double) throws(TimescaleConversionError) -> JulianDate {
 		guard seconds.isFinite else { throw .nonFiniteValue }
 		let fraction = try fractionSinceMidnight(secondsSinceMidnight: seconds)
@@ -140,7 +143,8 @@ extension UTCDay {
 	}
 
 	/// Returns the UTC fraction since midnight for a clock reading.
-	/// - Throws: ``TimescaleConversionError/invalidTimeOfDay`` if the reading does not occur on this UTC day.
+	/// - Throws: ``TimescaleConversionError/invalidTimeOfDay`` if the reading does not occur on
+	///   this UTC day.
 	func fractionSinceMidnight(secondsSinceMidnight seconds: Double) throws(TimescaleConversionError) -> Double {
 		assert(seconds.isFinite, "Seconds since midnight must be finite")
 		let clockSeconds = self.clockSeconds
@@ -151,7 +155,8 @@ extension UTCDay {
 
 	/// Returns the TAI Julian Date for a fraction since midnight of this UTC day.
 	///
-	/// - Parameter fraction: The fraction of the day since UTC midnight, in the closed interval [0, 1].
+	/// - Parameter fraction: The fraction of the day since UTC midnight, in the closed interval
+	///   [0, 1].
 	func tai(fractionSinceMidnight fraction: Double) throws(TimescaleConversionError) -> JulianDate {
 		assert(fraction.isFinite, "Fraction since midnight must be finite")
 		assert(fraction >= 0 && fraction <= 1, "Fraction since midnight is outside the closed interval [0, 1]")

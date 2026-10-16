@@ -220,8 +220,8 @@ extension CalendarDate {
 	///   - calendarDay: The calendar day.
 	///   - fractionSinceMidnight: The signed number of days, including any fraction of a day,
 	///     from midnight at the start of `calendarDay`.
-	/// - Returns: A calendar date with a fraction since midnight in the right-open interval [0, 1), in the
-	///   calendar of `calendarDay`.
+	/// - Returns: A calendar date with a fraction since midnight in the right-open interval
+	///   [0, 1), in the calendar of `calendarDay`.
 	/// - Throws:
 	///   - ``CalendarError/nonFiniteValue`` if the fraction since midnight is not finite.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the resulting day's Julian day
@@ -230,11 +230,12 @@ extension CalendarDate {
 		try CalendarDate(calendarDay: calendarDay, uncheckedFractionSinceMidnight: 0).adding(days: fractionSinceMidnight)
 	}
 
-	/// Creates a calendar date from possibly out-of-range month, day, and fraction since midnight values.
+	/// Creates a calendar date from possibly out-of-range month, day, and fraction since midnight
+	/// values.
 	///
 	/// - Note: Months outside the closed interval [1, 12] roll over into earlier or later
-	///   years, days are counted from the normalized month, and the fraction since midnight carries whole
-	///   days. See ``JulianGregorianCalendar/julianDayNumberFromDate(_:)`` for how
+	///   years, days are counted from the normalized month, and the fraction since midnight
+	///   carries whole days. See ``JulianGregorianCalendar/julianDayNumberFromDate(_:)`` for how
 	///   out-of-range values are interpreted in the Julian-Gregorian calendar.
 	/// - Parameters:
 	///   - year: The arithmetic year number. Year number 0 is 1 BCE.
@@ -243,8 +244,8 @@ extension CalendarDate {
 	///   - fractionSinceMidnight: The signed number of days, including any fraction of a day,
 	///     from midnight at the start of the normalized day.
 	///   - calendar: The calendar the year, month, and day belong to.
-	/// - Returns: A calendar date with valid components and a fraction since midnight in the right-open
-	///   interval [0, 1), in `calendar`.
+	/// - Returns: A calendar date with valid components and a fraction since midnight in the
+	///   right-open interval [0, 1), in `calendar`.
 	/// - Throws:
 	///   - ``CalendarError/nonFiniteValue`` if the fraction since midnight is not finite.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
@@ -323,8 +324,8 @@ extension CalendarDate {
 	/// regardless of calendar.
 	///
 	/// - Parameter other: The calendar date to compare with.
-	/// - Returns: `true` if both calendar dates have the same Julian day number and fraction since midnight;
-	///   otherwise, `false`.
+	/// - Returns: `true` if both calendar dates have the same Julian day number and fraction since
+	///   midnight; otherwise, `false`.
 	public func isSameInstantAs(_ other: CalendarDate) -> Bool {
 		calendarDay.isSameDayAs(other.calendarDay) && fractionSinceMidnight == other.fractionSinceMidnight
 	}

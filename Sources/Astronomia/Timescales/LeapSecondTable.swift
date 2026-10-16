@@ -30,7 +30,8 @@ public struct LeapSecondTable: Hashable, Sendable {
 
 	/// Leap second table entries.
 	public let entries: [Entry]
-	/// Julian day number of the first UTC day whose length is not yet determined by IERS Bulletin C.
+	/// Julian day number of the first UTC day whose length is not yet determined by IERS
+	/// Bulletin C.
 	public let horizon: JulianDayNumber
 
 	/// Creates a leap second table.

@@ -48,8 +48,8 @@ extension DayInterval {
 	///   - fractionalDay: The signed number of additional days.
 	/// - Throws:
 	///   - ``DayIntervalError/nonFiniteValue`` if `fractionalDay` is NaN or infinite.
-	///   - ``DayIntervalError/dayCountNotRepresentable`` if the total number of whole days cannot be
-	///     represented as an `Int`.
+	///   - ``DayIntervalError/dayCountNotRepresentable`` if the total number of whole days cannot
+	///     be represented as an `Int`.
 	public init(days: Int, fractionalDay: Double = 0) throws(DayIntervalError) {
 		try self.init { acc throws(DayAccumulator.Failure) in
 			try acc.add(days)
@@ -77,8 +77,8 @@ extension DayInterval {
 	///   - days2: The second part of the signed number of days.
 	/// - Throws:
 	///   - ``DayIntervalError/nonFiniteValue`` if `days1` or `days2` is NaN or infinite.
-	///   - ``DayIntervalError/dayCountNotRepresentable`` if the whole days in `days1 + days2` cannot be
-	///     represented as an `Int`.
+	///   - ``DayIntervalError/dayCountNotRepresentable`` if the whole days in `days1 + days2`
+	///     cannot be represented as an `Int`.
 	public init(days1: Double, days2: Double) throws(DayIntervalError) {
 		try self.init { acc throws(DayAccumulator.Failure) in
 			try acc.add(sum: days1, days2)
@@ -107,8 +107,8 @@ extension DayInterval {
 	///   - seconds2: The second part of the signed number of seconds.
 	/// - Throws:
 	///   - ``DayIntervalError/nonFiniteValue`` if `seconds1` or `seconds2` is NaN or infinite.
-	///   - ``DayIntervalError/dayCountNotRepresentable`` if the whole days in `seconds1 + seconds2` cannot be
-	///     represented as an `Int`.
+	///   - ``DayIntervalError/dayCountNotRepresentable`` if the whole days in
+	///     `seconds1 + seconds2` cannot be represented as an `Int`.
 	public init(seconds1: Double, seconds2: Double) throws(DayIntervalError) {
 		try self.init { acc throws(DayAccumulator.Failure) in
 			try acc.add(seconds: seconds1, seconds2)
