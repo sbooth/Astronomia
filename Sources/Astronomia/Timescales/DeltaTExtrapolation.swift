@@ -27,15 +27,6 @@ public struct DeltaTEndpoint: Hashable, Sendable {
 	}
 }
 
-/// Returns the Julian years of 365.25 days from `start` to `end`.
-///
-/// Converting each Julian day number to `Double` cannot overflow, and is exact for any date
-/// a table could cover.
-func julianYears(from start: JulianDate, to end: JulianDate) -> Double {
-	let days = (Double(end.julianDayNumber) - Double(start.julianDayNumber)) + (end.fractionFromNoon - start.fractionFromNoon)
-	return days / JulianDate.daysPerJulianYear
-}
-
 /// A source of ΔT that covers a single span of dates.
 public protocol BoundedDeltaTSource: DeltaTSource {
 	/// ΔT at the start of the span.
@@ -105,7 +96,9 @@ public struct DeltaTExtrapolation: DeltaTSource {
 			return nil
 		}
 		guard let method else { return nil }
-		let years = julianYears(from: end.tt, to: tt)
+		// An interval too long to represent is beyond any extrapolation
+		guard let days = try? end.tt.interval(to: tt).inDays else { return nil }
+		let years = days / JulianDate.daysPerJulianYear
 		if let limit, abs(years) > limit { return nil }
 
 		switch method {
@@ -135,6 +128,10 @@ extension EarthOrientationTable: BoundedDeltaTSource {
 
 	/// Returns the endpoint at `end`, with the rate from `a` to `b`.
 	private static func endpoint(_ a: Sample, _ b: Sample, at end: Sample) -> DeltaTEndpoint {
-		DeltaTEndpoint(tt: end.tt, deltaT: end.deltaT, rate: (b.deltaT - a.deltaT) / julianYears(from: a.tt, to: b.tt))
+		// Samples are days apart, so the interval between them is always representable.
+		guard let days = try? a.tt.interval(to: b.tt).inDays else {
+			preconditionFailure("Adjacent Earth orientation samples are too far apart")
+		}
+		return DeltaTEndpoint(tt: end.tt, deltaT: end.deltaT, rate: (b.deltaT - a.deltaT) / (days / JulianDate.daysPerJulianYear))
 	}
 }

@@ -74,15 +74,16 @@ public struct DeltaTTable: Sendable {
 	}
 
 	/// Returns the endpoints of a table with `entries`, or `nil` if a decimal year at either
-	/// end cannot be represented as a Julian Date.
+	/// end cannot be represented as a Julian Date, or the interval between them as days.
 	private static func endpoints(_ entries: [Entry]) -> (lower: DeltaTEndpoint, upper: DeltaTEndpoint)? {
 		/// Returns the endpoint at `end`, with the rate from `a` to `b`.
 		func endpoint(_ a: Entry, _ b: Entry, at end: Entry) -> DeltaTEndpoint? {
 			guard let ta = try? JulianDate(decimalYear: a.decimalYear),
-				  let tb = try? JulianDate(decimalYear: b.decimalYear)
+				  let tb = try? JulianDate(decimalYear: b.decimalYear),
+				  let days = try? ta.interval(to: tb).inDays
 			else { return nil }
 			let tt = end.decimalYear == a.decimalYear ? ta : tb
-			return DeltaTEndpoint(tt: tt, deltaT: end.deltaT, rate: (b.deltaT - a.deltaT) / julianYears(from: ta, to: tb))
+			return DeltaTEndpoint(tt: tt, deltaT: end.deltaT, rate: (b.deltaT - a.deltaT) / (days / JulianDate.daysPerJulianYear))
 		}
 
 		let count = entries.count

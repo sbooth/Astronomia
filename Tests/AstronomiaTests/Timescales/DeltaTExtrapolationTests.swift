@@ -84,11 +84,11 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let table = try Self.table()
 		// 1998-01-01 is 730 days before 2000-01-01, at 2 s per 366 days
 		let (before, beforeTT) = try Self.deltaT(source, 1998)
-		#expect(try abs(#require(before) - (60 + table.lowerEnd.rate * julianYears(from: table.lowerEnd.tt, to: beforeTT))) <= 1e-9)
+		#expect(try abs(#require(before) - (60 + table.lowerEnd.rate * table.lowerEnd.tt.interval(to: beforeTT).inDays / 365.25)) <= 1e-9)
 		#expect(try abs(#require(before) - (60 - 2.0 * 730 / 366)) <= 1e-9)
 		// 2005-01-01 is 1096 days after 2002-01-01, at 1 s per 365 days
 		let (after, afterTT) = try Self.deltaT(source, 2005)
-		#expect(try abs(#require(after) - (63 + table.upperEnd.rate * julianYears(from: table.upperEnd.tt, to: afterTT))) <= 1e-9)
+		#expect(try abs(#require(after) - (63 + table.upperEnd.rate * table.upperEnd.tt.interval(to: afterTT).inDays / 365.25)) <= 1e-9)
 		#expect(try abs(#require(after) - (63 + 1096.0 / 365)) <= 1e-9)
 	}
 
