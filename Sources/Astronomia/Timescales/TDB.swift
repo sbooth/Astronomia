@@ -5,18 +5,6 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-#if canImport(Darwin)
-import Darwin
-#elseif canImport(Glibc)
-import Glibc
-#elseif canImport(Musl)
-import Musl
-#elseif canImport(Android)
-import Android
-#elseif canImport(ucrt)
-import ucrt
-#endif
-
 /// Barycentric Dynamical Time (TDB).
 ///
 /// TDB is a linear transformation of ``TCB`` (IAU 2006 Resolution B3), chosen so that it
@@ -95,12 +83,12 @@ extension TDB {
 	/// - Parameter t: Julian centuries of TT from J2000.0.
 	static func circular179(julianCenturies t: Double) -> Double {
 		assert(t.isFinite, "Julian centuries must be finite")
-		return 0.001_657 * sin(628.3076 * t + 6.2401)
-			+ 0.000_022 * sin(575.3385 * t + 4.2970)
-			+ 0.000_014 * sin(1256.6152 * t + 6.1969)
-			+ 0.000_005 * sin(606.9777 * t + 4.0212)
-			+ 0.000_005 * sin(52.9691 * t + 0.4444)
-			+ 0.000_002 * sin(21.3299 * t + 5.5431)
-			+ 0.000_010 * t * sin(628.3076 * t + 4.2490)
+		return 0.001_657 * Math.sin(628.3076 * t + 6.2401)
+			+ 0.000_022 * Math.sin(575.3385 * t + 4.2970)
+			+ 0.000_014 * Math.sin(1256.6152 * t + 6.1969)
+			+ 0.000_005 * Math.sin(606.9777 * t + 4.0212)
+			+ 0.000_005 * Math.sin(52.9691 * t + 0.4444)
+			+ 0.000_002 * Math.sin(21.3299 * t + 5.5431)
+			+ 0.000_010 * t * Math.sin(628.3076 * t + 4.2490)
 	}
 }
