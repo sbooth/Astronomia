@@ -73,7 +73,7 @@ extension UT1 {
 		///   - deltaTTable: Tabulated ΔT.
 		///   - model: The model used outside the data, or `nil` to require tabulated values.
 		public init(earthOrientation: EarthOrientationTable? = nil, deltaTTable: DeltaTTable? = .historic, model: DeltaTModel? = .espenakMeeus2006) {
-			let join = model.map(DeltaTExtrapolation.Method.model)
+			let join = model.map { DeltaTExtrapolation.Method.following($0) }
 			var sources: [any DeltaTSource] = []
 			if let earthOrientation {
 				sources.append(DeltaTExtrapolation(earthOrientation, after: join))

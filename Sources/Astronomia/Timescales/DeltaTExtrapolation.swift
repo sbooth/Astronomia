@@ -20,11 +20,12 @@ public protocol BoundedDeltaTSource: DeltaTSource {
 ///
 /// ```swift
 /// // Observations, continued into the future along the model's trend
-/// let future = DeltaTExtrapolation(earthOrientation, after: .model(.espenakMeeus2006))
+/// let model = DeltaTModel.espenakMeeus2006
+/// let future = DeltaTExtrapolation(earthOrientation, after: .following(model))
 /// ```
 public struct DeltaTExtrapolation: DeltaTSource {
 	/// How ΔT continues past an end of the source's span.
-	public enum Method: Hashable, Sendable {
+	public enum Method: Sendable {
 		/// ΔT stays at its value at the end.
 		case constant
 		/// ΔT continues at its average rate over the last `years` Julian years of the source,
@@ -32,8 +33,11 @@ public struct DeltaTExtrapolation: DeltaTSource {
 		///
 		/// A year or more averages out the seasonal variation in daily Earth orientation data.
 		case linear(years: Double = 1)
-		/// ΔT follows `model`, offset to equal the source at the end, so ΔT is continuous.
-		case model(DeltaTModel)
+		/// ΔT follows another source, offset to equal the bounded source at the end, so ΔT is
+		/// continuous.
+		///
+		/// The other source must cover both the end and the date; otherwise there is no ΔT.
+		case following(any DeltaTSource)
 	}
 
 	/// The bounded source.
@@ -98,9 +102,9 @@ public struct DeltaTExtrapolation: DeltaTSource {
 				  let baseline = julianYears(from: inside, to: end)
 			else { return endDeltaT }
 			return endDeltaT + (endDeltaT - insideDeltaT) / baseline * years
-		case .model(let model):
-			// Models are defined on decimal years
-			return model.deltaT(decimalYear: tt.decimalYear) + (endDeltaT - model.deltaT(decimalYear: end.decimalYear))
+		case .following(let other):
+			guard let otherAtEnd = other.deltaT(at: end), let otherDeltaT = other.deltaT(at: tt) else { return nil }
+			return otherDeltaT + (endDeltaT - otherAtEnd)
 		}
 	}
 }

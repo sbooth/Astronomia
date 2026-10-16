@@ -97,11 +97,39 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 
 	@Test func model() throws {
 		let model = DeltaTModel.espenakMeeus2006
-		let source = DeltaTExtrapolation(try Self.table(), before: .model(model), after: .model(model))
+		let source = DeltaTExtrapolation(try Self.table(), before: .following(model), after: .following(model))
 		let (after, afterTT) = try Self.deltaT(source, 2010)
 		#expect(try abs(#require(after) - (63 + (model.deltaT(decimalYear: afterTT.decimalYear) - model.deltaT(decimalYear: 2002)))) <= 1e-9)
 		let (before, beforeTT) = try Self.deltaT(source, 1990)
 		#expect(try abs(#require(before) - (60 + (model.deltaT(decimalYear: beforeTT.decimalYear) - model.deltaT(decimalYear: 2000)))) <= 1e-9)
+	}
+
+	@Test func followingAnotherTable() throws {
+		// Another table, rising 1 s per year from 1990 to 2010
+		let other = try #require(DeltaTTable(entries: [
+			Entry(decimalYear: 1990, deltaT: 0),
+			Entry(decimalYear: 2010, deltaT: 20),
+		]))
+		let source = DeltaTExtrapolation(try Self.table(), before: .following(other), after: .following(other))
+		let end = try JulianDate(decimalYear: 2002)
+		let (after, afterTT) = try Self.deltaT(source, 2005)
+		let expected = try #require(other.deltaT(at: afterTT)) - #require(other.deltaT(at: end)) + 63
+		#expect(try abs(#require(after) - expected) <= 1e-9)
+		#expect(try abs(#require(after) - 66) <= 0.01)
+
+		// Outside the other table there is no ΔT
+		#expect(try Self.deltaT(source, 2011).deltaT == nil)
+		#expect(try Self.deltaT(source, 1989).deltaT == nil)
+	}
+
+	@Test func followingFunction() throws {
+		// Following a constant holds the end value
+		let constant = DeltaTExtrapolation(try Self.table(), after: .following(DeltaTFunction.constant(100)))
+		#expect(try Self.deltaT(constant, 2010).deltaT == 63)
+
+		// A source that covers nothing gives no ΔT
+		let empty = DeltaTExtrapolation(try Self.table(), after: .following(DeltaTFunction { _ in nil }))
+		#expect(try Self.deltaT(empty, 2010).deltaT == nil)
 	}
 
 	@Test func limit() throws {
