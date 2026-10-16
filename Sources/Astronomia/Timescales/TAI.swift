@@ -11,7 +11,7 @@
 ///
 /// - Note: TAI was defined in 1958 and took its current form in 1972. For earlier dates the
 ///   conversion is arithmetic only.
-public enum TAI: Timescale {
+public enum TAI: UniformTimescale {
 	public static let abbreviation = "TAI"
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {

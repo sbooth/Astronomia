@@ -16,7 +16,7 @@
 ///
 /// - Note: For dates before TAI existed (1958), TT is still well defined, but reaching it
 ///   from a civil time requires a model of ΔT = TT - UT1 rather than TAI.
-public enum TT: Timescale {
+public enum TT: UniformTimescale {
 	public static let abbreviation = "TT"
 
 	/// TT - TAI, in seconds.

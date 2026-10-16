@@ -27,6 +27,9 @@
 ///
 /// TT is the hub because it is the timescale of most astronomical models: TDB is a periodic
 /// series in TT, and ΔT is defined as TT - UT1.
+///
+/// Timescales without leap seconds or a variable day length conform to
+/// ``UniformTimescale``, which adds elapsed-time arithmetic to ``Instant``.
 public protocol Timescale: Sendable {
 	associatedtype Context: Sendable = Void
 	static var defaultContext: Context { get }

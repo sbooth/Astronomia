@@ -9,13 +9,11 @@
 ///
 /// Most GNSS system times are steered to a UTC realization at their start epoch and then run
 /// without leap seconds, so each is TAI minus the leap seconds in effect at that epoch.
-/// Conforming types only declare ``offsetFromTAI``; conversions are provided.
-public protocol FixedTAIOffsetTimescale: Timescale where Context == Void {
+/// Conforming types only declare ``offsetFromTAI``; conversions are provided. Like TAI, they
+/// are uniform, so ``Instant`` arithmetic is available.
+public protocol FixedTAIOffsetTimescale: UniformTimescale where Context == Void {
 	/// This timescale - TAI, in whole seconds.
 	static var offsetFromTAI: Int { get }
-
-	/// The start of week 0, as a Julian Date in this timescale.
-	static var epoch: JulianDate { get }
 }
 
 extension FixedTAIOffsetTimescale {

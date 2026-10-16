@@ -16,7 +16,7 @@
 ///
 /// TCB - TDB is about 11.25 s at J2000.0 and grows by about 0.489 s per year. Converting
 /// to TT goes through ``TDB``, so TCB takes TDB's context and shares its accuracy.
-public enum TCB: Timescale {
+public enum TCB: UniformTimescale {
 	public static let abbreviation = "TCB"
 	public typealias Context = TDB.Context
 	public static let defaultContext = TDB.defaultContext

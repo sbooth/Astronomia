@@ -25,7 +25,7 @@ import ucrt
 ///
 /// TDB - TT is computed from a series in TT selected by the context's ``Model``. The series
 /// are geocentric: the topocentric terms, at most about 2 µs, are omitted.
-public enum TDB: Timescale {
+public enum TDB: UniformTimescale {
 	public static let abbreviation = "TDB"
 	public static let defaultContext = Context()
 

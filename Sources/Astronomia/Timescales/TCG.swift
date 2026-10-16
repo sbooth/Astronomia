@@ -17,7 +17,7 @@
 ///
 /// TCG - TT is about 0.506 s at J2000.0, grows by about 22 ms per year, and is negative
 /// before 1977.
-public enum TCG: Timescale {
+public enum TCG: UniformTimescale {
 	public static let abbreviation = "TCG"
 
 	/// L_G = 1 - d(TT)/d(TCG). A defining constant.
