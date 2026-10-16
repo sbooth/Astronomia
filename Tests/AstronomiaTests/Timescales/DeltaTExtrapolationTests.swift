@@ -12,8 +12,10 @@ import Testing
 /// the default UT1 context outside the table.
 func historicJoinedModel(_ decimalYear: Double) -> Double {
 	let model = DeltaTModel.espenakMeeus2006
-	let end = decimalYear < 1657 ? DeltaTTable.historic.lowerEnd : DeltaTTable.historic.upperEnd
-	return model.deltaT(decimalYear: decimalYear) + (end.deltaT - model.deltaT(decimalYear: end.tt.decimalYear))
+	let historic = DeltaTTable.historic
+	let end = decimalYear < 1657 ? historic.coverage.lowerBound : historic.coverage.upperBound
+	let endDeltaT = decimalYear < 1657 ? historic.entries[0].deltaT : historic.entries[historic.entries.count - 1].deltaT
+	return model.deltaT(decimalYear: decimalYear) + (endDeltaT - model.deltaT(decimalYear: end.decimalYear))
 }
 
 @Suite struct DeltaTExtrapolationTests {
@@ -34,27 +36,19 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		return (source.deltaT(at: tt), tt)
 	}
 
-	@Test func endpoints() throws {
+	@Test func coverage() throws {
 		let table = try Self.table()
-		// Rates are per Julian year of 365.25 days: 2000 has 366 days and 2001 has 365.
-		#expect(try table.lowerEnd.tt == JulianDate(decimalYear: 2000))
-		#expect(table.lowerEnd.deltaT == 60)
-		#expect(abs(table.lowerEnd.rate - 2 * 365.25 / 366) <= 1e-12)
-		#expect(try table.upperEnd.tt == JulianDate(decimalYear: 2002))
-		#expect(table.upperEnd.deltaT == 63)
-		#expect(abs(table.upperEnd.rate - 365.25 / 365) <= 1e-12)
+		#expect(try table.coverage == JulianDate(decimalYear: 2000) ... JulianDate(decimalYear: 2002))
+		#expect(table.deltaT(at: table.coverage.lowerBound) == 60)
+		#expect(table.deltaT(at: table.coverage.upperBound) == 63)
 
-		// 1657.0 to 1657.5 is 182.5 days
 		let historic = DeltaTTable.historic
-		#expect(try historic.lowerEnd.tt == JulianDate(decimalYear: 1657))
-		#expect(historic.lowerEnd.deltaT == 44)
-		#expect(abs(historic.lowerEnd.rate - (-365.25 / 182.5)) <= 1e-12)
-		#expect(try historic.upperEnd.tt == JulianDate(decimalYear: 1984.5))
-		#expect(historic.upperEnd.deltaT == 54.087)
-	}
+		#expect(try historic.coverage == JulianDate(decimalYear: 1657) ... JulianDate(decimalYear: 1984.5))
+		#expect(historic.deltaT(at: historic.coverage.lowerBound) == 44)
+		#expect(historic.deltaT(at: historic.coverage.upperBound) == 54.087)
 
-	@Test func rejectsDecimalYearsWithoutJulianDates() {
-		#expect(DeltaTTable(entries: [Entry(decimalYear: 2000, deltaT: 60), Entry(decimalYear: 1e300, deltaT: 62)]) == nil)
+		let table2 = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
+		#expect(table2.coverage == table2.range)
 	}
 
 	@Test func withinSpanUsesSource() throws {
@@ -80,16 +74,25 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 	}
 
 	@Test func linear() throws {
-		let source = DeltaTExtrapolation(try Self.table(), before: .linear, after: .linear)
-		let table = try Self.table()
-		// 1998-01-01 is 730 days before 2000-01-01, at 2 s per 366 days
-		let (before, beforeTT) = try Self.deltaT(source, 1998)
-		#expect(try abs(#require(before) - (60 + table.lowerEnd.rate * table.lowerEnd.tt.interval(to: beforeTT).inDays / 365.25)) <= 1e-9)
-		#expect(try abs(#require(before) - (60 - 2.0 * 730 / 366)) <= 1e-9)
-		// 2005-01-01 is 1096 days after 2002-01-01, at 1 s per 365 days
-		let (after, afterTT) = try Self.deltaT(source, 2005)
-		#expect(try abs(#require(after) - (63 + table.upperEnd.rate * table.upperEnd.tt.interval(to: afterTT).inDays / 365.25)) <= 1e-9)
-		#expect(try abs(#require(after) - (63 + 1096.0 / 365)) <= 1e-9)
+		// The rate over a Julian year at each end of the table. A year after 2000-01-01 is
+		// 2000-12-31T06:00, where ΔT is 60 + 2 × 365.25 / 366 s, and a year before 2002-01-01
+		// is 2000-12-31T18:00, where ΔT is 60 + 2 × 365.75 / 366 s.
+		let source = DeltaTExtrapolation(try Self.table(), before: .linear(), after: .linear())
+		// 1998-01-01 is 730 days before 2000-01-01
+		let (before, _) = try Self.deltaT(source, 1998)
+		#expect(try abs(#require(before) - 56.01092896174863) <= 1e-9)
+		// 2005-01-01 is 1096 days after 2002-01-01
+		let (after, _) = try Self.deltaT(source, 2005)
+		#expect(try abs(#require(after) - 66.00478375841085) <= 1e-9)
+	}
+
+	@Test func linearOverShortSource() throws {
+		// Ten years is longer than the table, so the rate is over the whole table: 3 s in 731 days
+		let source = DeltaTExtrapolation(try Self.table(), before: .linear(years: 10), after: .linear(years: 10))
+		let (before, _) = try Self.deltaT(source, 1998)
+		#expect(try abs(#require(before) - 57.00410396716826) <= 1e-9)
+		let (after, _) = try Self.deltaT(source, 2005)
+		#expect(try abs(#require(after) - 67.49794801641586) <= 1e-9)
 	}
 
 	@Test func model() throws {
@@ -120,19 +123,20 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 
 	@Test func observationsContinueAlongModel() throws {
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
-		let end = table.upperEnd
+		let end = table.coverage.upperBound
+		let endDeltaT = try #require(table.deltaT(at: end))
 		let context = UT1.Context(earthOrientation: table)
 
 		// A day after the last observation, ΔT is close to it, not the model's value
 		let nextDay = try table.range.upperBound.adding(days: 1)
 		let joined = try UT1.deltaT(at: nextDay, context: context)
-		#expect(abs(joined - end.deltaT) <= 0.01)
+		#expect(abs(joined - endDeltaT) <= 0.01)
 		#expect(abs(joined - DeltaTModel.espenakMeeus2006.deltaT(decimalYear: nextDay.decimalYear)) > 1)
 
 		// Later, ΔT follows the model's change since the last observation
 		let later = try table.range.upperBound.adding(days: 365)
 		let model = DeltaTModel.espenakMeeus2006
-		let expected = end.deltaT + (model.deltaT(decimalYear: later.decimalYear) - model.deltaT(decimalYear: end.tt.decimalYear))
+		let expected = endDeltaT + (model.deltaT(decimalYear: later.decimalYear) - model.deltaT(decimalYear: end.decimalYear))
 		#expect(try abs(UT1.deltaT(at: later, context: context) - expected) <= 1e-9)
 	}
 }

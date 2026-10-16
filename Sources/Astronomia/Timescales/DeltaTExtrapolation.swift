@@ -5,34 +5,12 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// ΔT at one end of a bounded source's coverage.
-public struct DeltaTEndpoint: Hashable, Sendable {
-	/// The end, as a Julian Date in TT.
-	public let tt: JulianDate
-	/// ΔT at the end, in seconds.
-	public let deltaT: Double
-	/// The rate of change of ΔT at the end, in seconds per Julian year of 365.25 days.
-	public let rate: Double
-
-	/// Creates an endpoint.
-	///
-	/// - Parameters:
-	///   - tt: The end, as a Julian Date in TT.
-	///   - deltaT: ΔT at the end, in seconds.
-	///   - rate: The rate of change of ΔT at the end, in seconds per Julian year.
-	public init(tt: JulianDate, deltaT: Double, rate: Double) {
-		self.tt = tt
-		self.deltaT = deltaT
-		self.rate = rate
-	}
-}
-
 /// A source of ΔT that covers a single span of dates.
 public protocol BoundedDeltaTSource: DeltaTSource {
-	/// ΔT at the start of the span.
-	var lowerEnd: DeltaTEndpoint { get }
-	/// ΔT at the end of the span.
-	var upperEnd: DeltaTEndpoint { get }
+	/// The TT dates the source covers.
+	///
+	/// The source returns ΔT for every date in the range, including its ends.
+	var coverage: ClosedRange<JulianDate> { get }
 }
 
 /// A source of ΔT that extends a bounded source past the dates it covers.
@@ -49,8 +27,11 @@ public struct DeltaTExtrapolation: DeltaTSource {
 	public enum Method: Hashable, Sendable {
 		/// ΔT stays at its value at the end.
 		case constant
-		/// ΔT continues at its rate at the end.
-		case linear
+		/// ΔT continues at its average rate over the last `years` Julian years of the source,
+		/// or over the whole source if it is shorter.
+		///
+		/// A year or more averages out the seasonal variation in daily Earth orientation data.
+		case linear(years: Double = 1)
 		/// ΔT follows `model`, offset to equal the source at the end, so ΔT is continuous.
 		case model(DeltaTModel)
 	}
@@ -84,54 +65,58 @@ public struct DeltaTExtrapolation: DeltaTSource {
 			return deltaT
 		}
 
-		let end: DeltaTEndpoint
+		let coverage = source.coverage
+		let end: JulianDate
 		let method: Method?
-		if tt <= source.lowerEnd.tt {
-			end = source.lowerEnd
+		if tt <= coverage.lowerBound {
+			end = coverage.lowerBound
 			method = before
-		} else if tt >= source.upperEnd.tt {
-			end = source.upperEnd
+		} else if tt >= coverage.upperBound {
+			end = coverage.upperBound
 			method = after
 		} else {
 			return nil
 		}
-		guard let method else { return nil }
-		// An interval too long to represent is beyond any extrapolation
-		guard let days = try? end.tt.interval(to: tt).inDays else { return nil }
-		let years = days / JulianDate.daysPerJulianYear
+
+		guard let method,
+			  let endDeltaT = source.deltaT(at: end),
+			  // An interval too long to represent is beyond any extrapolation
+			  let years = julianYears(from: end, to: tt)
+		else { return nil }
 		if let limit, abs(years) > limit { return nil }
 
 		switch method {
 		case .constant:
-			return end.deltaT
-		case .linear:
-			return end.deltaT + end.rate * years
+			return endDeltaT
+		case .linear(let span):
+			// The average rate from `span` years inside the end, or the far end if nearer
+			let inward = end == coverage.lowerBound ? span : -span
+			guard let offset = try? end.adding(days: inward * JulianDate.daysPerJulianYear) else { return nil }
+			let inside = min(max(offset, coverage.lowerBound), coverage.upperBound)
+			guard inside != end,
+				  let insideDeltaT = source.deltaT(at: inside),
+				  let baseline = julianYears(from: inside, to: end)
+			else { return endDeltaT }
+			return endDeltaT + (endDeltaT - insideDeltaT) / baseline * years
 		case .model(let model):
 			// Models are defined on decimal years
-			return model.deltaT(decimalYear: tt.decimalYear) + (end.deltaT - model.deltaT(decimalYear: end.tt.decimalYear))
+			return model.deltaT(decimalYear: tt.decimalYear) + (endDeltaT - model.deltaT(decimalYear: end.decimalYear))
 		}
 	}
+}
+
+/// Returns the number of Julian years from `start` to `end`, or `nil` if the interval cannot
+/// be represented.
+private func julianYears(from start: JulianDate, to end: JulianDate) -> Double? {
+	guard let interval = try? start.interval(to: end) else { return nil }
+	return interval.inDays / JulianDate.daysPerJulianYear
 }
 
 extension DeltaTTable: BoundedDeltaTSource {}
 
 extension EarthOrientationTable: BoundedDeltaTSource {
-	public var lowerEnd: DeltaTEndpoint {
-		// Initialization requires at least two entries.
-		Self.endpoint(samples[0], samples[1], at: samples[0])
-	}
-
-	public var upperEnd: DeltaTEndpoint {
-		let count = samples.count
-		return Self.endpoint(samples[count - 2], samples[count - 1], at: samples[count - 1])
-	}
-
-	/// Returns the endpoint at `end`, with the rate from `a` to `b`.
-	private static func endpoint(_ a: Sample, _ b: Sample, at end: Sample) -> DeltaTEndpoint {
-		// Samples are days apart, so the interval between them is always representable.
-		guard let days = try? a.tt.interval(to: b.tt).inDays else {
-			preconditionFailure("Adjacent Earth orientation samples are too far apart")
-		}
-		return DeltaTEndpoint(tt: end.tt, deltaT: end.deltaT, rate: (b.deltaT - a.deltaT) / (days / JulianDate.daysPerJulianYear))
+	/// The TT dates covered by the table, the same as ``range``.
+	public var coverage: ClosedRange<JulianDate> {
+		range
 	}
 }
