@@ -155,29 +155,28 @@ func observedContext() throws -> UT1.Context {
 		#expect(try abs(clockReading(back.julianDate) - 86_400.5) <= timescaleTolerance)
 	}
 
-	@Test func modelByDefault() throws {
-		// 2000-01-01T00:00 TT is decimal year 2000.0, after the historic table, where the model
-		// gives ΔT = 63.86 s.
+	@Test func modernTableByDefault() throws {
+		// 2000-01-01T00:00 TT is an entry of the modern table, ΔT = 63.8285 s.
 		let tt = try uniformDate(civilDay(2000, 1, 1))
 		let ut1 = try Instant<TT>(tt).converted(to: UT1.self)
-		#expect(try abs(seconds(from: ut1.julianDate, to: tt) - 63.86) <= timescaleTolerance)
+		#expect(try abs(seconds(from: ut1.julianDate, to: tt) - 63.8285) <= timescaleTolerance)
 	}
 
-	@Test func modelOutsideObservations() throws {
+	@Test func tablesOutsideObservations() throws {
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		let tt = try uniformDate(civilDay(2000, 1, 1))
 
-		let withModel = UT1.Context(earthOrientation: table)
-		#expect(try abs(UT1.deltaT(at: tt, context: withModel) - 63.86) <= timescaleTolerance)
+		let withTables = UT1.Context(earthOrientation: table)
+		#expect(try abs(UT1.deltaT(at: tt, context: withTables) - 63.8285) <= timescaleTolerance)
 		let continuous = UT1.Context.continuous(earthOrientation: table)
-		#expect(try abs(UT1.deltaT(at: tt, context: continuous) - historicJoinedModel(2000)) <= timescaleTolerance)
+		#expect(try abs(UT1.deltaT(at: tt, context: continuous) - 63.8285) <= timescaleTolerance)
 
-		let observationsOnly = UT1.Context(earthOrientation: table, model: nil)
+		let observationsOnly = UT1.Context(earthOrientation: table, modernDeltaT: nil, historicDeltaT: nil, model: nil)
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.fromTT(tt, context: observationsOnly)
 		}
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
-			try UT1.deltaT(at: tt, context: UT1.Context(model: nil))
+			try UT1.deltaT(at: tt, context: UT1.Context(modernDeltaT: nil, historicDeltaT: nil, model: nil))
 		}
 	}
 

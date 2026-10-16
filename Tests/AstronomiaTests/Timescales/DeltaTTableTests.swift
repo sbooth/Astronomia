@@ -88,19 +88,33 @@ import Testing
 }
 
 @Suite struct UT1DeltaTSourceTests {
-	@Test(arguments: [1657.25, 1700.25, 1900, 1984.25])
+	@Test(arguments: [1657.25, 1700.25, 1900, 1972.5])
 	func defaultUsesHistoricTable(decimalYear: Double) throws {
 		let tt = try JulianDate(decimalYear: decimalYear)
 		let tabulated = try #require(DeltaTTable.historic.deltaT(at: tt))
 		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == tabulated)
 	}
 
-	@Test(arguments: [1600.0, 1656.9, 1985, 2026])
-	func modelOutsideTable(decimalYear: Double) throws {
+	@Test(arguments: [1600.0, 1656.9])
+	func modelBeforeTables(decimalYear: Double) throws {
 		let tt = try JulianDate(decimalYear: decimalYear)
 		#expect(DeltaTTable.historic.deltaT(at: tt) == nil)
 		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == DeltaTModel.espenakMeeus2006.deltaT(decimalYear: tt.decimalYear))
 		#expect(try UT1.deltaT(at: tt, context: .continuous()) == historicJoinedModel(tt.decimalYear))
+	}
+
+	@Test(arguments: [2035.0, 2100])
+	func modelAfterTrend(decimalYear: Double) throws {
+		// Past the modern table and the two years of its trend
+		let model = DeltaTModel.espenakMeeus2006
+		let tt = try JulianDate(decimalYear: decimalYear)
+		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == model.deltaT(decimalYear: tt.decimalYear))
+
+		// The continuous context follows the model joined to the end of the modern table.
+		let end = DeltaTTable.modern.coverage.upperBound
+		let endDeltaT = try #require(DeltaTTable.modern.deltaT(at: end))
+		let joined = model.deltaT(decimalYear: tt.decimalYear) + (endDeltaT - model.deltaT(decimalYear: end.decimalYear))
+		#expect(try abs(UT1.deltaT(at: tt, context: .continuous()) - joined) <= 1e-9)
 	}
 
 	@Test func tableAgreesWithModelAtHandover() throws {
@@ -118,12 +132,12 @@ import Testing
 		let tabulated = try #require(DeltaTTable.historic.deltaT(at: inTable))
 		#expect(try UT1.deltaT(at: inTable, context: context) == tabulated)
 
-		let outsideTable = try JulianDate(decimalYear: 2026)
+		let outsideTable = try JulianDate(decimalYear: 2035)
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.deltaT(at: outsideTable, context: context)
 		}
 
-		let noTable = UT1.Context(deltaTTable: nil, model: nil)
+		let noTable = UT1.Context(modernDeltaT: nil, historicDeltaT: nil, model: nil)
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.deltaT(at: inTable, context: noTable)
 		}

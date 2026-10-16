@@ -17,6 +17,13 @@ Commands:
       USNO historic_deltat.data, as an array of DeltaTTable.Entry. Pass the array to
       DeltaTTable(entries:).
 
+  modern-delta-t FILE
+      USNO deltat.data, monthly ΔT from 1973, as an array of DeltaTTable.Entry. Pass the
+      array to DeltaTTable(entries:).
+
+  The ΔT commands write each date with JulianDate's internal unchecked initializer, so
+  their output is for Astronomia's built-in tables.
+
   finals FILE
       IERS finals2000A or finals data (.all, .data, or .daily), as an array of
       EarthOrientationTable.Entry with the Bulletin A values of UT1 - UTC. Pass the array to
@@ -29,9 +36,11 @@ Commands:
 
 Examples:
 
-  # The built-in historic ΔT table
+  # The built-in ΔT tables
   Scripts/generate-timescale-data.py historic-delta-t historic_deltat.data --spdx \\
       > Sources/Astronomia/Timescales/HistoricDeltaTEntries.swift
+  Scripts/generate-timescale-data.py modern-delta-t deltat.data --spdx \\
+      > Sources/Astronomia/Timescales/ModernDeltaTEntries.swift
 
   # Observations from 2000 on, without predictions, for use in an app
   Scripts/generate-timescale-data.py finals finals2000A.all --name finalsEntries \\
@@ -185,6 +194,49 @@ def historic_delta_t(args: argparse.Namespace, data: bytes) -> str:
 	return "\n".join(lines) + "\n"
 
 
+# MARK: - modern-delta-t
+
+
+def modern_delta_t(args: argparse.Namespace, data: bytes) -> str:
+	"""Each row is: year, month, day, and ΔT = TT - UT1 in seconds, for 0h on the date. The
+	date is taken as TT; reading it as UT1 instead moves it by about a minute, which changes
+	ΔT by under a microsecond."""
+	rows = []
+	previous_day = None
+	for line_number, line in enumerate(data.decode("ascii").splitlines(), start=1):
+		fields = line.split()
+		if not fields:
+			continue
+		if len(fields) != 4:
+			raise DataError(f"line {line_number}: expected 4 columns, found {len(fields)}")
+		try:
+			date = datetime.date(int(fields[0]), int(fields[1]), int(fields[2]))
+		except ValueError:
+			raise DataError(f"line {line_number}: invalid date {' '.join(fields[:3])!r}") from None
+		delta_t = swift_literal(fields[3], line_number)
+		day = civil_jdn(date)
+		if previous_day is not None and day <= previous_day:
+			raise DataError(f"line {line_number}: {date} does not increase")
+		previous_day = day
+		rows.append((date, day, delta_t))
+	if len(rows) < 2:
+		raise DataError("expected at least two data rows")
+
+	width = max(len(delta_t) for _, _, delta_t in rows)
+	lines = header(args, "modern-delta-t", data, args.source_url)
+	lines += [
+		f"/// ΔT = TT - UT1, in seconds, at 0h TT from {rows[0][0]} to {rows[-1][0]}.",
+		"///",
+		"/// Each entry's comment gives the date in the source file.",
+		declaration(args, "[DeltaTTable.Entry]"),
+	]
+	for date, day, delta_t in rows:
+		tt = f"JulianDate(uncheckedJulianDayNumber: {day:_}, fractionFromNoon: -0.5)"
+		lines.append(f"\t.init(tt: {tt}, deltaT: {(delta_t + '),').ljust(width + 2)} // {date}")
+	lines.append("]")
+	return "\n".join(lines) + "\n"
+
+
 # MARK: - finals
 
 
@@ -334,6 +386,10 @@ def main() -> None:
 	add_common(historic, "historicDeltaTEntries", "https://maia.usno.navy.mil/ser7/historic_deltat.data")
 	historic.set_defaults(generate=historic_delta_t)
 
+	modern = commands.add_parser("modern-delta-t", help="USNO deltat.data", description=modern_delta_t.__doc__)
+	add_common(modern, "modernDeltaTEntries", "https://maia.usno.navy.mil/ser7/deltat.data")
+	modern.set_defaults(generate=modern_delta_t)
+
 	finals_command = commands.add_parser("finals", help="IERS finals2000A or finals", description=finals.__doc__)
 	add_common(finals_command, "finalsEntries, or earthOrientationTable with --table", "https://maia.usno.navy.mil/ser7/finals2000A.all")
 	finals_command.add_argument(
@@ -364,6 +420,8 @@ def main() -> None:
 	if args.name is None:
 		if args.command == "historic-delta-t":
 			args.name = "historicDeltaTEntries"
+		elif args.command == "modern-delta-t":
+			args.name = "modernDeltaTEntries"
 		else:
 			args.name = "earthOrientationTable" if args.table else "finalsEntries"
 	with open(args.file, "rb") as file:

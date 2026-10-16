@@ -140,23 +140,23 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		#expect(try Self.deltaT(source, 1998.5).deltaT == nil)
 	}
 
-	@Test(arguments: [(1657.0, 3.6), (1984.5, 0.03)])
-	func handoverAtHistoricTable(decimalYear: Double, step: Double) throws {
-		// A thousandth of a year either side of the end changes ΔT by milliseconds in the
-		// continuous context, but by the 3.7 s or 0.04 s between the model and the table in the
-		// default context.
-		let inside = try JulianDate(decimalYear: decimalYear + (decimalYear < 1700 ? 0.001 : -0.001))
-		let outside = try JulianDate(decimalYear: decimalYear + (decimalYear < 1700 ? -0.001 : 0.001))
+	@Test func handoverAtHistoricTable() throws {
+		// A thousandth of a year either side of 1657.0 changes ΔT by milliseconds in the
+		// continuous context, but by the 3.7 s between the model and the table in the default
+		// context.
+		let inside = try JulianDate(decimalYear: 1657.001)
+		let outside = try JulianDate(decimalYear: 1656.999)
 		let continuous = UT1.Context.continuous()
 		#expect(try abs(UT1.deltaT(at: inside, context: continuous) - UT1.deltaT(at: outside, context: continuous)) <= 0.01)
-		#expect(try abs(UT1.deltaT(at: inside, context: UT1.defaultContext) - UT1.deltaT(at: outside, context: UT1.defaultContext)) >= step)
+		#expect(try abs(UT1.deltaT(at: inside, context: UT1.defaultContext) - UT1.deltaT(at: outside, context: UT1.defaultContext)) >= 3.6)
 	}
 
 	@Test func observationsContinueAlongModel() throws {
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		let end = table.coverage.upperBound
 		let endDeltaT = try #require(table.deltaT(at: end))
-		let context = UT1.Context.continuous(earthOrientation: table)
+		// Without the modern table, which covers these dates
+		let context = UT1.Context.continuous(earthOrientation: table, modernDeltaT: nil)
 
 		// A day after the last observation, ΔT is close to it, not the model's value
 		let nextDay = try table.range.upperBound.adding(days: 1)
