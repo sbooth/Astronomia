@@ -60,7 +60,7 @@ func observedContext() throws -> UT1.Context {
 		let all = try #require(EarthOrientationTable(finals2000A: finalsWithPrediction))
 		#expect(all.entries.count == 2, "the row without a value is skipped")
 		#expect(all.entries.map(\.isPredicted) == [false, true])
-		#expect(all.deltaT(at: all.range.upperBound)?.isPredicted == true)
+		#expect(all.deltaTAndPredictionStatus(at: all.range.upperBound)?.isPredicted == true)
 
 		// Without the prediction only one entry remains, too few for a table.
 		#expect(EarthOrientationTable(finals2000A: finalsWithPrediction, includePredictions: false) == nil)
@@ -170,10 +170,10 @@ func observedContext() throws -> UT1.Context {
 		#expect(try abs(UT1.deltaT(at: tt, context: withModel) - 63.86) <= timescaleTolerance)
 
 		let observationsOnly = UT1.Context(earthOrientation: table, model: nil)
-		#expect(throws: TimescaleConversionError.earthOrientationDataUnavailable) {
+		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.fromTT(tt, context: observationsOnly)
 		}
-		#expect(throws: TimescaleConversionError.earthOrientationDataUnavailable) {
+		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.deltaT(at: tt, context: UT1.Context(model: nil))
 		}
 	}

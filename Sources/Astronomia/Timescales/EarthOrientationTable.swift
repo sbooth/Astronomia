@@ -93,7 +93,7 @@ public struct EarthOrientationTable: Hashable, Sendable {
 	/// - Parameter tt: A Julian Date in TT.
 	/// - Returns: ΔT, in seconds, and whether it depends on a predicted entry, or `nil` if
 	///   `tt` is outside ``range``.
-	public func deltaT(at tt: JulianDate) -> (seconds: Double, isPredicted: Bool)? {
+	public func deltaTAndPredictionStatus(at tt: JulianDate) -> (seconds: Double, isPredicted: Bool)? {
 		guard range.contains(tt) else { return nil }
 
 		// The last sample at or before `tt`.
@@ -159,5 +159,13 @@ extension EarthOrientationTable {
 		}
 
 		self.init(entries: entries, leapSecondTable: leapSecondTable)
+	}
+}
+
+extension EarthOrientationTable: DeltaTSource {
+	/// Returns ΔT = TT - UT1, in seconds, at the specified TT, interpolated linearly between
+	/// entries, or `nil` if `tt` is outside ``range``. Predicted entries are used.
+	public func deltaT(at tt: JulianDate) -> Double? {
+		deltaTAndPredictionStatus(at: tt)?.seconds
 	}
 }

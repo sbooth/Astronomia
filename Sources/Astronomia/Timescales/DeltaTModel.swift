@@ -90,3 +90,10 @@ extension DeltaTModel {
 		}
 	}
 }
+
+extension DeltaTModel: DeltaTSource {
+	/// Returns ΔT = TT - UT1, in seconds, at the specified TT. A model covers every date.
+	public func deltaT(at tt: JulianDate) -> Double? {
+		deltaT(decimalYear: tt.decimalYear)
+	}
+}

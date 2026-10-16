@@ -75,7 +75,7 @@ public struct DeltaTTable: Hashable, Sendable {
 	/// - Returns: ΔT and its uncertainty, in seconds, or `nil` if `decimalYear` is outside
 	///   ``range``. At an entry, the entry's values. Between entries, the uncertainty is
 	///   interpolated the same way, and is `nil` unless both neighboring entries have one.
-	public func deltaT(decimalYear: Double) -> (seconds: Double, uncertainty: Double?)? {
+	public func deltaTAndUncertainty(decimalYear: Double) -> (seconds: Double, uncertainty: Double?)? {
 		guard range.contains(decimalYear) else { return nil }
 
 		// The last entry at or before `decimalYear`.
@@ -104,8 +104,17 @@ public struct DeltaTTable: Hashable, Sendable {
 	///
 	/// - Parameter tt: A Julian Date in TT.
 	/// - Returns: ΔT and its uncertainty, in seconds, or `nil` if `tt` is outside ``range``.
-	public func deltaT(at tt: JulianDate) -> (seconds: Double, uncertainty: Double?)? {
-		deltaT(decimalYear: tt.decimalYear)
+	///   The uncertainty is as for ``deltaTAndUncertainty(decimalYear:)``.
+	public func deltaTAndUncertainty(at tt: JulianDate) -> (seconds: Double, uncertainty: Double?)? {
+		deltaTAndUncertainty(decimalYear: tt.decimalYear)
+	}
+}
+
+extension DeltaTTable: DeltaTSource {
+	/// Returns ΔT = TT - UT1, in seconds, at the specified TT, interpolated linearly between
+	/// entries, or `nil` if `tt` is outside ``range``.
+	public func deltaT(at tt: JulianDate) -> Double? {
+		deltaTAndUncertainty(at: tt)?.seconds
 	}
 }
 

@@ -35,21 +35,21 @@ import Testing
 		]))
 		#expect(table.range == 2000 ... 2003)
 
-		let start = try #require(table.deltaT(decimalYear: 2000))
+		let start = try #require(table.deltaTAndUncertainty(decimalYear: 2000))
 		#expect(start.seconds == 64 && start.uncertainty == 1)
-		let quarter = try #require(table.deltaT(decimalYear: 2000.25))
+		let quarter = try #require(table.deltaTAndUncertainty(decimalYear: 2000.25))
 		#expect(quarter.seconds == 64.25 && quarter.uncertainty == 1.5)
-		let entry = try #require(table.deltaT(decimalYear: 2001))
+		let entry = try #require(table.deltaTAndUncertainty(decimalYear: 2001))
 		#expect(entry.seconds == 65 && entry.uncertainty == 3)
 
 		// No uncertainty unless both neighbors have one
-		let later = try #require(table.deltaT(decimalYear: 2002))
+		let later = try #require(table.deltaTAndUncertainty(decimalYear: 2002))
 		#expect(later.seconds == 63 && later.uncertainty == nil)
-		let end = try #require(table.deltaT(decimalYear: 2003))
+		let end = try #require(table.deltaTAndUncertainty(decimalYear: 2003))
 		#expect(end.seconds == 61 && end.uncertainty == nil)
 
-		#expect(table.deltaT(decimalYear: 1999.999) == nil)
-		#expect(table.deltaT(decimalYear: 2003.001) == nil)
+		#expect(table.deltaTAndUncertainty(decimalYear: 1999.999) == nil)
+		#expect(table.deltaTAndUncertainty(decimalYear: 2003.001) == nil)
 	}
 
 	@Test func historic() throws {
@@ -73,7 +73,7 @@ import Testing
 	func defaultUsesHistoricTable(decimalYear: Double) throws {
 		let tt = try JulianDate(decimalYear: decimalYear)
 		let tabulated = try #require(DeltaTTable.historic.deltaT(at: tt))
-		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == tabulated.seconds)
+		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == tabulated)
 	}
 
 	@Test(arguments: [1600.0, 1656.9, 1985, 2026])
@@ -87,7 +87,7 @@ import Testing
 		// The model is fitted to Morrison & Stephenson (2004), not to this table, so the two
 		// differ by 3.7 s at 1657 (within the table's 12 s uncertainty) and 0.04 s at 1984.5.
 		for (decimalYear, tolerance) in [(1657.0, 4.0), (1984.5, 0.05)] {
-			let table = try #require(DeltaTTable.historic.deltaT(decimalYear: decimalYear))
+			let table = try #require(DeltaTTable.historic.deltaTAndUncertainty(decimalYear: decimalYear))
 			#expect(abs(table.seconds - DeltaTModel.espenakMeeus2006.deltaT(decimalYear: decimalYear)) < tolerance)
 		}
 	}
@@ -96,15 +96,15 @@ import Testing
 		let context = UT1.Context(model: nil)
 		let inTable = try JulianDate(decimalYear: 1900)
 		let tabulated = try #require(DeltaTTable.historic.deltaT(at: inTable))
-		#expect(try UT1.deltaT(at: inTable, context: context) == tabulated.seconds)
+		#expect(try UT1.deltaT(at: inTable, context: context) == tabulated)
 
 		let outsideTable = try JulianDate(decimalYear: 2026)
-		#expect(throws: TimescaleConversionError.earthOrientationDataUnavailable) {
+		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.deltaT(at: outsideTable, context: context)
 		}
 
 		let noTable = UT1.Context(deltaTTable: nil, model: nil)
-		#expect(throws: TimescaleConversionError.earthOrientationDataUnavailable) {
+		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.deltaT(at: inTable, context: noTable)
 		}
 	}
