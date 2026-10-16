@@ -291,10 +291,9 @@ let stepDays: [StepDay] = [
 @Suite struct UTCContextTests {
 	/// The built-in table plus a fictitious leap second at the end of 2027-06-30.
 	func tableWithExtraLeapSecond() throws -> LeapSecondTable {
-		var entries = LeapSecondTable.builtIn.entries
-		let last = try #require(entries.last)
-		entries.append(try .init(effective: civilDay(2027, 7, 1), offset: 38, reference: last.reference, rate: 0))
-		return try #require(LeapSecondTable(entries: entries, horizon: civilDay(2028, 1, 1)))
+		var leapSeconds = LeapSecondTable.builtIn.leapSeconds
+		leapSeconds.append(try .init(effective: civilDay(2027, 7, 1), taiMinusUTC: 38))
+		return try #require(LeapSecondTable(leapSeconds: leapSeconds, horizon: civilDay(2028, 1, 1)))
 	}
 
 	@Test func utcToTTUsesContextTable() throws {

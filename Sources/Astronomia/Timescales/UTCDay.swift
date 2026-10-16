@@ -50,15 +50,13 @@ public struct UTCDay: Sendable {
 		let (nextJ, overflow) = J.addingReportingOverflow(1)
 		guard !overflow else { throw .dateOutOfRange }
 
-		guard let startEntry = leapSecondTable.entryForUTCJulianDayNumber(J),
-			  let startOfNextEntry = leapSecondTable.entryForUTCJulianDayNumber(nextJ)
+		guard let start = leapSecondTable.taiMinusUTC(atStartOfUTCDay: J),
+			  let startOfNext = leapSecondTable.taiMinusUTC(atStartOfUTCDay: nextJ)
 		else { throw .unsupported }
 
-		let offsetAtStart = startEntry.taiMinusUTC(atStartOfUTCDay: J)
-		let offsetAtStartOfNext = startOfNextEntry.taiMinusUTC(atStartOfUTCDay: nextJ)
-
-		let offsetChange = offsetAtStartOfNext - offsetAtStart
-		let offsetStep = ((offsetChange - startEntry.rate) * 1e9).rounded() / 1e9
+		let offsetAtStart = start.seconds
+		let offsetChange = startOfNext.seconds - offsetAtStart
+		let offsetStep = ((offsetChange - start.rate) * 1e9).rounded() / 1e9
 
 		julianDayNumber = J
 		offsetSource = julianDayNumber < leapSecondTable.horizon ? .bulletin : .extrapolation

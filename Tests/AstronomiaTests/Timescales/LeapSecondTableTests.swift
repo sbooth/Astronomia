@@ -42,56 +42,104 @@ let taiUTCLines: [TAIUTCLine] = [
 
 @Suite struct LeapSecondTableTests {
 	@Test func builtInMatchesTAIUTCDat() throws {
-		let entries = LeapSecondTable.builtIn.entries
-		try #require(entries.count == taiUTCLines.count)
-		for (entry, line) in zip(entries, taiUTCLines) {
-			// The entry applies from the midnight that starts the civil day `effective`.
+		// The rate segments before 1972, then whole-second leap seconds
+		let segments = LeapSecondTable.RateSegment.all
+		let leapSeconds = LeapSecondTable.builtIn.leapSeconds
+		try #require(segments.count + leapSeconds.count == taiUTCLines.count)
+		for (segment, line) in zip(segments, taiUTCLines) {
+			// The segment applies from the midnight that starts the civil day `effective`.
 			let effective = try civilDay(line.year, line.month, line.day)
-			#expect(entry.effective == effective, "\(line.testDescription): effective")
+			#expect(segment.effective == effective, "\(line.testDescription): effective")
 			// MJD m starts at the midnight that begins civil day m + 2,400,001.
-			#expect(entry.reference == line.referenceMJD + 2_400_001, "\(line.testDescription): reference")
-			#expect(entry.offset == line.offset, "\(line.testDescription): offset")
-			#expect(entry.rate == line.rate, "\(line.testDescription): rate")
+			#expect(segment.reference == line.referenceMJD + 2_400_001, "\(line.testDescription): reference")
+			#expect(segment.offset == line.offset, "\(line.testDescription): offset")
+			#expect(segment.rate == line.rate, "\(line.testDescription): rate")
 		}
+		for (leapSecond, line) in zip(leapSeconds, taiUTCLines.dropFirst(segments.count)) {
+			#expect(try leapSecond.effective == civilDay(line.year, line.month, line.day), "\(line.testDescription): effective")
+			#expect(Double(leapSecond.taiMinusUTC) == line.offset, "\(line.testDescription): offset")
+			#expect(line.rate == 0, "\(line.testDescription): rate")
+		}
+	}
+
+	@Test func builtInIsGenerated() throws {
+		let table = LeapSecondTable.builtIn
+		#expect(table.leapSeconds == builtInLeapSeconds)
+		#expect(table.horizon == builtInLeapSecondsHorizon)
+		#expect(try table.leapSeconds.first == LeapSecondTable.LeapSecond(effective: civilDay(1972, 1, 1), taiMinusUTC: 10))
 	}
 
 	@Test func entriesAreOrdered() throws {
-		let table = LeapSecondTable.builtIn
-		for (previous, next) in zip(table.entries, table.entries.dropFirst()) {
+		let segments = LeapSecondTable.RateSegment.all
+		for (previous, next) in zip(segments, segments.dropFirst()) {
 			#expect(previous.effective < next.effective)
 		}
-		let last = try #require(table.entries.last)
+		#expect(segments.allSatisfy { $0.effective < LeapSecondTable.firstDayOf1972 && $0.rate > 0 })
+
+		let table = LeapSecondTable.builtIn
+		for (previous, next) in zip(table.leapSeconds, table.leapSeconds.dropFirst()) {
+			#expect(previous.effective < next.effective)
+		}
+		let last = try #require(table.leapSeconds.last)
 		#expect(table.horizon > last.effective)
 	}
 
-	@Test func lookupAtEntryBoundaries() throws {
-		let table = LeapSecondTable.builtIn
-		let first = try #require(table.entries.first)
-		#expect(table.entryForUTCJulianDayNumber(first.effective - 1) == nil)
-		#expect(table.entryForUTCJulianDayNumber(.min) == nil)
-
-		var previous: LeapSecondTable.Entry?
-		for entry in table.entries {
-			#expect(table.entryForUTCJulianDayNumber(entry.effective) == entry)
-			#expect(table.entryForUTCJulianDayNumber(entry.effective - 1) == previous)
-			previous = entry
+	@Test func segmentsStayInRange() {
+		// TAI - UTC is linear in each segment, so it is in range if it is at both ends.
+		let segments = LeapSecondTable.RateSegment.all
+		let ends = segments.dropFirst().map(\.effective) + [LeapSecondTable.firstDayOf1972]
+		for (segment, end) in zip(segments, ends) {
+			for day in [segment.effective, end] {
+				let offset = segment.taiMinusUTC(atStartOfUTCDay: day)
+				#expect(offset > 0 && offset < 10)
+			}
 		}
-		#expect(table.entryForUTCJulianDayNumber(.max) == table.entries.last)
+	}
+
+	@Test func lookupAtBoundaries() throws {
+		let table = LeapSecondTable.builtIn
+		let segments = LeapSecondTable.RateSegment.all
+		#expect(table.taiMinusUTC(atStartOfUTCDay: segments[0].effective - 1) == nil)
+		#expect(table.taiMinusUTC(atStartOfUTCDay: .min) == nil)
+
+		for segment in segments {
+			let value = try #require(table.taiMinusUTC(atStartOfUTCDay: segment.effective))
+			#expect(value.seconds == segment.taiMinusUTC(atStartOfUTCDay: segment.effective))
+			#expect(value.rate == segment.rate)
+		}
+		var previous: Int?
+		for leapSecond in table.leapSeconds {
+			#expect(table.taiMinusUTC(atStartOfUTCDay: leapSecond.effective)?.seconds == Double(leapSecond.taiMinusUTC))
+			#expect(table.taiMinusUTC(atStartOfUTCDay: leapSecond.effective)?.rate == 0)
+			if let previous {
+				#expect(table.taiMinusUTC(atStartOfUTCDay: leapSecond.effective - 1)?.seconds == Double(previous))
+			}
+			previous = leapSecond.taiMinusUTC
+		}
+		#expect(table.taiMinusUTC(atStartOfUTCDay: .max)?.seconds == 37)
 	}
 
 	@Test func lookupByDate() throws {
 		let table = LeapSecondTable.builtIn
-		#expect(try table.entryForUTCJulianDayNumber(civilDay(2016, 12, 31))?.offset == 36)
-		#expect(try table.entryForUTCJulianDayNumber(civilDay(2017, 1, 1))?.offset == 37)
-		#expect(try table.entryForUTCJulianDayNumber(civilDay(2026, 10, 14))?.offset == 37)
-		#expect(try table.entryForUTCJulianDayNumber(civilDay(1960, 12, 31)) == nil)
+		#expect(try table.taiMinusUTC(atStartOfUTCDay: civilDay(2016, 12, 31))?.seconds == 36)
+		#expect(try table.taiMinusUTC(atStartOfUTCDay: civilDay(2017, 1, 1))?.seconds == 37)
+		#expect(try table.taiMinusUTC(atStartOfUTCDay: civilDay(2026, 10, 14))?.seconds == 37)
+		#expect(try table.taiMinusUTC(atStartOfUTCDay: civilDay(1960, 12, 31)) == nil)
 	}
 
 	@Test func driftFormula() throws {
 		// TAI - UTC at 1965-06-15T00:00 UTC (MJD 38926) = 3.6401300 + 165 × 0.001296 s.
-		let day = try civilDay(1965, 6, 15)
-		let entry = try #require(LeapSecondTable.builtIn.entryForUTCJulianDayNumber(day))
-		let offset = entry.taiMinusUTC(atStartOfUTCDay: day)
-		#expect(abs(offset - 3.853_97) <= 1e-12)
+		let value = try #require(LeapSecondTable.builtIn.taiMinusUTC(atStartOfUTCDay: civilDay(1965, 6, 15)))
+		#expect(abs(value.seconds - 3.853_97) <= 1e-12)
+		#expect(value.rate == 0.001296)
+	}
+
+	@Test func stepInto1972() throws {
+		// The last rate segment ends at 4.2131700 + (41316 - 39126) × 0.002592 = 9.88965 s at
+		// the start of 1971-12-31, and the leap seconds begin at 10 s the next day.
+		let table = LeapSecondTable.builtIn
+		let last = try #require(table.taiMinusUTC(atStartOfUTCDay: civilDay(1971, 12, 31)))
+		#expect(abs(last.seconds - 9.889_65) <= 1e-12)
+		#expect(try table.taiMinusUTC(atStartOfUTCDay: civilDay(1972, 1, 1))?.seconds == 10)
 	}
 }

@@ -24,6 +24,13 @@ Commands:
   The ΔT commands write each date with JulianDate's internal unchecked initializer, so
   their output is for Astronomia's built-in tables.
 
+  leap-seconds FILE
+      The IERS/IETF leap-seconds.list, as an array of LeapSecondTable.LeapSecond with TAI - UTC
+      in whole seconds from 1972, and the horizon: the first UTC day on or after the file's
+      expiry that could end in a leap second, the last day of June or December. The file's
+      SHA-1 hash is checked. Pass both to LeapSecondTable(leapSeconds:horizon:). Before 1972
+      the table uses the fixed rate entries of tai-utc.dat.
+
   finals FILE
       IERS finals2000A data (.all, .data, or .daily), as an array of
       EarthOrientationTable.Entry with the Bulletin A values of UT1 - UTC, polar motion, the
@@ -43,6 +50,10 @@ Examples:
       > Sources/Astronomia/Timescales/HistoricDeltaTEntries.swift
   Scripts/generate-timescale-data.py modern-delta-t deltat.data --spdx \\
       > Sources/Astronomia/Timescales/ModernDeltaTEntries.swift
+
+  # The built-in leap seconds
+  Scripts/generate-timescale-data.py leap-seconds leap-seconds.list --spdx --no-import \\
+      > Sources/Astronomia/Timescales/BuiltInLeapSeconds.swift
 
   # Observations from 2000 on, without predictions, for use in an app
   Scripts/generate-timescale-data.py finals finals2000A.all --name finalsEntries \\
@@ -120,10 +131,10 @@ def header(args: argparse.Namespace, command: str, data: bytes, source_url: str)
 	return lines
 
 
-def declaration(args: argparse.Namespace, type_name: str, initial: str = "[") -> str:
-	"""Returns the declaration line of a constant of `type_name`."""
+def declaration(args: argparse.Namespace, type_name: str, initial: str = "[", name: str | None = None) -> str:
+	"""Returns the declaration line of a constant of `type_name`, named `name` or args.name."""
 	access = "" if args.access == "internal" else f"{args.access} "
-	return f"{access}let {args.name}: {type_name} = {initial}"
+	return f"{access}let {name or args.name}: {type_name} = {initial}"
 
 
 # MARK: - historic-delta-t
@@ -236,6 +247,95 @@ def modern_delta_t(args: argparse.Namespace, data: bytes) -> str:
 		tt = f"JulianDate(uncheckedJulianDayNumber: {day:_}, fractionFromNoon: -0.5)"
 		lines.append(f"\t.init(tt: {tt}, deltaT: {(delta_t + '),').ljust(width + 2)} // {date}")
 	lines.append("]")
+	return "\n".join(lines) + "\n"
+
+
+# MARK: - leap-seconds
+
+# Civil Julian day number of the NTP epoch, 1900-01-01
+NTP_TO_JDN = 2_415_021
+# Civil Julian day number of 1972-01-01, from which TAI - UTC is a whole number of seconds
+JDN_1972 = 2_441_318
+
+
+def leap_seconds(args: argparse.Namespace, data: bytes) -> str:
+	"""Reads the IERS/IETF leap-seconds.list: lines of NTP seconds since 1900-01-01 and TAI - UTC
+	in seconds, with the last update in the #$ line, the expiry in the #@ line, and a SHA-1
+	hash of both and the data in the #h line. The data must start at 1972-01-01 with 10 s, and
+	each later line must change TAI - UTC by one second on the first day of a month."""
+	updated = expires = digest = None
+	rows = []
+	for line_number, line in enumerate(data.decode("ascii").splitlines(), start=1):
+		if line.startswith("#$"):
+			updated = line[2:].split()[0]
+		elif line.startswith("#@"):
+			expires = line[2:].split()[0]
+		elif line.startswith("#h"):
+			digest = "".join(word.rjust(8, "0") for word in line[2:].split())
+		elif line.startswith("#") or not line.strip():
+			continue
+		else:
+			fields = line.split("#")[0].split()
+			if len(fields) != 2 or not all(field.isdigit() for field in fields):
+				raise DataError(f"line {line_number}: expected NTP seconds and TAI - UTC, found {line!r}")
+			rows.append((line_number, fields[0], fields[1]))
+	if updated is None or expires is None or digest is None:
+		raise DataError("expected #$ (last update), #@ (expiry), and #h (hash) lines")
+	if not updated.isdigit() or not expires.isdigit():
+		raise DataError("expected NTP seconds in the #$ and #@ lines")
+
+	# The hash covers the update time, the expiry, and the numbers of each data line.
+	hashed = updated + expires + "".join(ntp + offset for _, ntp, offset in rows)
+	if hashlib.sha1(hashed.encode("ascii")).hexdigest() != digest.lower():
+		raise DataError("the SHA-1 hash in the #h line does not match the data")
+
+	leaps = []
+	for line_number, ntp, offset in rows:
+		days, remainder = divmod(int(ntp), 86_400)
+		if remainder:
+			raise DataError(f"line {line_number}: {ntp} is not the start of a UTC day")
+		day = NTP_TO_JDN + days
+		if civil_date(day).day != 1:
+			raise DataError(f"line {line_number}: {civil_date(day)} is not the first day of a month")
+		if leaps:
+			previous_day, previous_offset = leaps[-1]
+			if day <= previous_day:
+				raise DataError(f"line {line_number}: {civil_date(day)} does not follow {civil_date(previous_day)}")
+			if abs(int(offset) - previous_offset) != 1:
+				raise DataError(f"line {line_number}: TAI - UTC changes from {previous_offset} s to {offset} s")
+		elif day != JDN_1972 or int(offset) != 10:
+			raise DataError(f"line {line_number}: expected 1972-01-01 with 10 s, the start of whole leap seconds")
+		leaps.append((day, int(offset)))
+
+	# The file expires at 0h UTC on a day, so lengths are known before that day. A leap second
+	# can end only the last day of June or December, so the first day whose length is not
+	# known is the first of those on or after the expiry.
+	expiry = civil_date(NTP_TO_JDN + int(expires) // 86_400)
+	horizon_date = datetime.date(expiry.year, 6, 30) if expiry <= datetime.date(expiry.year, 6, 30) else datetime.date(expiry.year, 12, 31)
+	horizon = civil_jdn(horizon_date)
+	if horizon <= leaps[-1][0]:
+		raise DataError(f"the file expires on {expiry}, before its last entry")
+	last_update = civil_date(NTP_TO_JDN + int(updated) // 86_400)
+
+	lines = header(args, "leap-seconds", data, args.source_url)
+	if args.import_module:
+		lines += ["import Astronomia", ""]
+	lines += [
+		f"/// TAI - UTC in whole seconds from the start of each UTC day listed, from {civil_date(leaps[0][0])}",
+		f"/// to {civil_date(leaps[-1][0])}, as of {last_update}.",
+		declaration(args, "[LeapSecondTable.LeapSecond]"),
+	]
+	for day, offset in leaps:
+		lines.append(f"\t.init(effective: {day:_}, taiMinusUTC: {offset}), // {civil_date(day)}")
+	lines += [
+		"]",
+		"",
+		"/// The first UTC day whose length is not yet determined.",
+		"///",
+		f"/// The source expires on {expiry}, and {horizon_date} is the first day on or after it",
+		"/// that a leap second could end.",
+		declaration(args, "JulianDayNumber", f"{horizon:_} // {horizon_date}", name=f"{args.name}Horizon"),
+	]
 	return "\n".join(lines) + "\n"
 
 
@@ -568,6 +668,16 @@ def main() -> None:
 	add_common(modern, "modernDeltaTEntries", "https://maia.usno.navy.mil/ser7/deltat.data")
 	modern.set_defaults(generate=modern_delta_t)
 
+	leap = commands.add_parser("leap-seconds", help="IERS/IETF leap-seconds.list", description=leap_seconds.__doc__)
+	add_common(leap, "builtInLeapSeconds", "https://hpiers.obspm.fr/iers/bul/bulc/ntp/leap-seconds.list")
+	leap.add_argument(
+		"--no-import",
+		dest="import_module",
+		action="store_false",
+		help="leave out `import Astronomia`, for a file in the Astronomia module itself",
+	)
+	leap.set_defaults(generate=leap_seconds)
+
 	finals_command = commands.add_parser("finals", help="IERS finals2000A", description=finals.__doc__)
 	add_common(finals_command, "finalsEntries, or earthOrientationTable with --table", "https://maia.usno.navy.mil/ser7/finals2000A.all")
 	finals_command.add_argument(
@@ -605,6 +715,8 @@ def main() -> None:
 			args.name = "historicDeltaTEntries"
 		elif args.command == "modern-delta-t":
 			args.name = "modernDeltaTEntries"
+		elif args.command == "leap-seconds":
+			args.name = "builtInLeapSeconds"
 		else:
 			args.name = "earthOrientationTable" if args.table else "finalsEntries"
 	with open(args.file, "rb") as file:
