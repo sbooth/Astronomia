@@ -30,7 +30,7 @@ public enum TDB: Timescale {
 	public static let defaultContext = Context()
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
-		// The series takes TT. Evaluating it at TDB is off by about 10⁻¹² s, which a second
+		// The series takes TT. Evaluating it at TDB is off by about 10^-12 s, which a second
 		// evaluation at the estimated TT removes, so the conversion inverts fromTT.
 		do throws(JulianDateError) {
 			let correctionUsingTDB = tdbMinusTT(at: julianDate, model: context.model)

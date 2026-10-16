@@ -11,7 +11,7 @@ import Testing
 @Suite struct TCGTests {
 	@Test func constants() throws {
 		#expect(TCG.rate == 6.969_290_134e-10)
-		// T₀ is 1977-01-01T00:00:00 TAI expressed in TT.
+		// T0 is 1977-01-01T00:00:00 TAI expressed in TT.
 		#expect(try TCG.epoch.isApproximatelyEqual(to: TAI.toTT(uniformDate(civilDay(1977, 1, 1))), toleranceSeconds: 1e-12))
 		#expect(abs(TCG.epoch.julianDate - 2_443_144.500_372_5) <= 1e-9)
 	}
@@ -63,7 +63,7 @@ import Testing
 	}
 
 	@Test func outOfRange() throws {
-		// T₀ to JDN Int.min is not representable as a day interval.
+		// T0 to JDN Int.min is not representable as a day interval.
 		let earliest = try JulianDate(julianDayNumber: .min, fractionFromNoon: 0)
 		#expect(throws: TimescaleConversionError.dateOutOfRange) {
 			try TCG.fromTT(earliest)

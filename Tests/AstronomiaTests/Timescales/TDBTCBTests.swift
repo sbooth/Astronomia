@@ -101,27 +101,27 @@ let tdbReferences: [TDBReference] = [
 	}
 
 	@Test func offsetAtEpoch() throws {
-		// At T₀ TCB, TDB = T₀ + TDB₀.
+		// At T0 TCB, TDB = T0 + TDB0.
 		let tdb = try TCB.toTDB(TCB.epoch)
 		#expect(try abs(seconds(from: tdb, to: TCB.epoch) - 6.55e-5) <= 1e-12)
 		#expect(try TCB.fromTDB(tdb).isApproximatelyEqual(to: TCB.epoch, toleranceSeconds: 1e-12))
 	}
 
 	@Test func agreesWithTTAtEpoch() throws {
-		// TDB₀ was chosen so that TCB = TT at T₀ at the geocenter. The difference is the
+		// TDB0 was chosen so that TCB = TT at T0 at the geocenter. The difference is the
 		// error of the TDB - TT series, here about 1.7 µs.
 		let tcb = try Instant<TT>(TCB.epoch).converted(to: TCB.self)
 		#expect(try abs(seconds(from: TCB.epoch, to: tcb.julianDate)) <= 1e-5)
 	}
 
 	@Test func offsetAtJ2000TDB() throws {
-		// TCB - TDB = -TDB₀ + L_B / (1 - L_B) × (J2000.0 - TDB₀ - T₀) at J2000.0 TDB.
+		// TCB - TDB = -TDB0 + L_B / (1 - L_B) × (J2000.0 - TDB0 - T0) at J2000.0 TDB.
 		let tcb = try TCB.fromTDB(.J2000)
 		#expect(try abs(seconds(from: .J2000, to: tcb) - 11.253_787_268_249) <= timescaleTolerance)
 	}
 
 	@Test func offsetAtJ2000TCB() throws {
-		// TCB - TDB = L_B × (J2000.0 - T₀) - TDB₀ at J2000.0 TCB.
+		// TCB - TDB = L_B × (J2000.0 - T0) - TDB0 at J2000.0 TCB.
 		let tdb = try TCB.toTDB(.J2000)
 		#expect(try abs(seconds(from: tdb, to: .J2000) - 11.253_787_093_757) <= timescaleTolerance)
 	}
@@ -161,7 +161,7 @@ let tdbReferences: [TDBReference] = [
 	}
 
 	@Test func outOfRange() throws {
-		// T₀ to JDN Int.min is not representable as a day interval.
+		// T0 to JDN Int.min is not representable as a day interval.
 		let earliest = try JulianDate(julianDayNumber: .min, fractionFromNoon: 0)
 		#expect(throws: TimescaleConversionError.dateOutOfRange) {
 			try TCB.toTDB(earliest)

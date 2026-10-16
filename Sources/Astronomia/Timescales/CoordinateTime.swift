@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// T₀ = 1977-01-01T00:00:32.184 TT (JD 2443144.5003725), the epoch of the IAU linear relations
+/// T0 = 1977-01-01T00:00:32.184 TT (JD 2443144.5003725), the epoch of the IAU linear relations
 /// between TCG and TT (IAU 2000 Resolution B1.9) and between TCB and TDB (IAU 2006 Resolution B3).
 ///
 /// It is 1977-01-01T00:00:00 TAI expressed in TT.

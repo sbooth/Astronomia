@@ -10,9 +10,9 @@
 /// TCB is the time coordinate of the Barycentric Celestial Reference System. TDB is defined
 /// as a linear transformation of TCB (IAU 2006 Resolution B3):
 ///
-/// TDB = TCB - L_B × (JD_TCB - T₀) × 86,400 s + TDB₀
+/// TDB = TCB - L_B × (JD_TCB - T0) × 86,400 s + TDB0
 ///
-/// where L_B = 1.550519768 × 10⁻⁸, TDB₀ = -6.55 × 10⁻⁵ s, and T₀ = JD 2443144.5003725.
+/// where L_B = 1.550519768 × 10^-8, TDB0 = -6.55 × 10^-5 s, and T0 = JD 2443144.5003725.
 ///
 /// TCB - TDB is about 11.25 s at J2000.0 and grows by about 0.489 s per year. Converting
 /// to TT goes through ``TDB``, so TCB takes TDB's context and shares its accuracy.
@@ -27,10 +27,10 @@ public enum TCB: Timescale {
 	/// L_B / (1 - L_B) = d(TCB)/d(TDB) - 1, the rate of TCB relative to TDB.
 	static let rateRelativeToTDB: Double = rate / (1 - rate)
 
-	/// TDB₀, in seconds. A defining constant.
+	/// TDB0, in seconds. A defining constant.
 	public static let tdb0: Double = -6.55e-5
 
-	/// T₀ = JD 2443144.5003725, the same Julian Date as ``TCG/epoch``.
+	/// T0 = JD 2443144.5003725, the same Julian Date as ``TCG/epoch``.
 	public static let epoch = coordinateTimeEpoch
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
@@ -48,7 +48,7 @@ public enum TCB: Timescale {
 	/// - Throws: ``TimescaleConversionError/dateOutOfRange`` if the result cannot be
 	///   represented.
 	public static func toTDB(_ tcb: JulianDate) throws(TimescaleConversionError) -> JulianDate {
-		// TDB = TCB - L_B × (TCB - T₀) + TDB₀
+		// TDB = TCB - L_B × (TCB - T0) + TDB0
 		let correction = try tcb.elapsedTime(since: epoch, scaledBy: rate)
 		do throws(JulianDateError) {
 			return try tcb.subtracting(correction).adding(seconds: tdb0)
@@ -63,7 +63,7 @@ public enum TCB: Timescale {
 	/// - Throws: ``TimescaleConversionError/dateOutOfRange`` if the result cannot be
 	///   represented.
 	public static func fromTDB(_ tdb: JulianDate) throws(TimescaleConversionError) -> JulianDate {
-		// TCB = (TDB - TDB₀) + L_B / (1 - L_B) × ((TDB - TDB₀) - T₀), the exact inverse of toTDB
+		// TCB = (TDB - TDB0) + L_B / (1 - L_B) × ((TDB - TDB0) - T0), the exact inverse of toTDB
 		let date: JulianDate
 		do throws(JulianDateError) {
 			date = try tdb.adding(seconds: -tdb0)
