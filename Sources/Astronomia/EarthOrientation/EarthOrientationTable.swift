@@ -165,11 +165,3 @@ extension EarthOrientationTable {
 		self.init(entries: entries, leapSecondTable: leapSecondTable)
 	}
 }
-
-extension EarthOrientationTable: DeltaTSource {
-	/// Returns ΔT = TT - UT1, in seconds, at the specified TT, interpolated linearly between
-	/// entries, or `nil` if `tt` is outside ``range``. Predicted entries are used.
-	public func deltaT(at tt: JulianDate) -> Double? {
-		deltaTAndPredictionStatus(at: tt)?.seconds
-	}
-}
