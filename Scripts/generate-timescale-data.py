@@ -20,7 +20,12 @@ Commands:
   finals FILE
       IERS finals2000A or finals data (.all, .data, or .daily), as an array of
       EarthOrientationTable.Entry with the Bulletin A values of UT1 - UTC. Pass the array to
-      EarthOrientationTable(entries:leapSecondTable:).
+      EarthOrientationTable(entries:leapSecondTable:). With --table, writes the table itself,
+      built with the built-in leap seconds, so the entries are not kept after it is built.
+      The values are written as a [Double] literal, which the compiler handles far better
+      than an array of initializers, and the entries or table are built on first use. With
+      --array, writes an array literal of initializers instead, one per row, which is easier
+      to read but slow to compile for more than a few thousand rows.
 
 Examples:
 
@@ -31,6 +36,10 @@ Examples:
   # Observations from 2000 on, without predictions, for use in an app
   Scripts/generate-timescale-data.py finals finals2000A.all --name finalsEntries \\
       --start 2000-01-01 --no-predictions > FinalsEntries.swift
+
+  # A table ready to use in a UT1 context
+  Scripts/generate-timescale-data.py finals finals2000A.all --table --name earthOrientation \\
+      > EarthOrientation.swift
 
 Run a command with --help for its options.
 """
@@ -100,10 +109,10 @@ def header(args: argparse.Namespace, command: str, data: bytes, source_url: str)
 	return lines
 
 
-def declaration(args: argparse.Namespace, type_name: str) -> str:
-	"""Returns the array's declaration line."""
+def declaration(args: argparse.Namespace, type_name: str, initial: str = "[") -> str:
+	"""Returns the declaration line of a constant of `type_name`."""
 	access = "" if args.access == "internal" else f"{args.access} "
-	return f"{access}let {args.name}: [{type_name}] = ["
+	return f"{access}let {args.name}: {type_name} = {initial}"
 
 
 # MARK: - historic-delta-t
@@ -167,7 +176,7 @@ def historic_delta_t(args: argparse.Namespace, data: bytes) -> str:
 		f"/// ΔT = TT - UT1 and its uncertainty, in seconds, from {rows[0][0]} to {rows[-1][0]}.",
 		"///",
 		"/// Each entry's comment gives the decimal year in the source file.",
-		declaration(args, "DeltaTTable.Entry"),
+		declaration(args, "[DeltaTTable.Entry]"),
 	]
 	for year, jdn, from_noon, delta_t, uncertainty in rows:
 		tt = f"JulianDate(uncheckedJulianDayNumber: {jdn:_}, fractionFromNoon: {float(from_noon)!r:>4})"
@@ -218,22 +227,87 @@ def finals(args: argparse.Namespace, data: bytes) -> str:
 	if len(rows) < 2:
 		raise DataError("expected at least two rows with UT1 - UTC in the selected dates")
 
-	width = max(len(value) for _, value, _ in rows)
 	first, last = civil_date(rows[0][0]), civil_date(rows[-1][0])
-	predicted = sum(1 for *_, is_predicted in rows if is_predicted)
+	days = [day for day, _, _ in rows]
+	values = [value for _, value, _ in rows]
+	flags = [is_predicted for _, _, is_predicted in rows]
+	predicted = sum(flags)
+
+	# Large array literals of struct initializers are slow for the Swift compiler to type
+	# check, so the values are written as a [Double] literal and the entries built from it
+	# on first use. Consecutive days and trailing predictions, the usual case, need only
+	# their first day and first prediction.
+	consecutive = all(b - a == 1 for a, b in zip(days, days[1:]))
+	first_predicted = flags.index(True) if predicted else len(flags)
+	predictions_trail = all(flags[first_predicted:])
+
 	lines = header(args, "finals", data, args.source_url)
-	lines += [
-		f"/// IERS Bulletin A UT1 - UTC at 0h UTC on each day from {first} to {last}, in seconds.",
-	]
+	if args.import_module:
+		lines += ["import Astronomia", ""]
+	lines.append(f"/// IERS Bulletin A UT1 - UTC at 0h UTC, in seconds, from {first} to {last}.")
 	if predicted:
+		entries = "entry is a prediction" if predicted == 1 else "entries are predictions"
 		lines.append("///")
-		lines.append(f"/// {predicted} entries are predictions, flagged by `isPredicted`.")
-	lines.append(declaration(args, "EarthOrientationTable.Entry"))
-	for day, value, is_predicted in rows:
-		lines.append(
-			f"\t.init(utcDay: {day:_}, ut1MinusUTC: {(value + ',').ljust(width + 1)} isPredicted: {'true' if is_predicted else 'false'}), // {civil_date(day)}"
-		)
-	lines.append("]")
+		lines.append(f"/// {predicted:,} {entries}, flagged by `isPredicted`.")
+	if args.array:
+		# One initializer per row: readable, but slow to compile for more than a few
+		# thousand rows.
+		width = max(len(value) for value in values)
+		lines.append(declaration(args, "[EarthOrientationTable.Entry]"))
+		for day, value, is_predicted in rows:
+			lines.append(
+				f"\t.init(utcDay: {day:_}, ut1MinusUTC: {(value + ',').ljust(width + 1)} isPredicted: {'true' if is_predicted else 'false'}), // {civil_date(day)}"
+			)
+		lines.append("]")
+		return "\n".join(lines) + "\n"
+
+	if args.table:
+		lines.append("///")
+		lines.append("/// Converted to ΔT with the built-in leap seconds on first use.")
+		lines.append(declaration(args, "EarthOrientationTable", "{"))
+	else:
+		lines.append(declaration(args, "[EarthOrientationTable.Entry]", "{"))
+	if consecutive:
+		lines.append(f"\tlet firstUTCDay = {days[0]:_}")
+	if predictions_trail:
+		lines.append(f"\tlet firstPrediction = {first_predicted:_}")
+
+	def column(name: str, type_name: str, items: list[str], per_line: int) -> None:
+		width = max(len(item) for item in items)
+		lines.append(f"\tlet {name}: [{type_name}] = [")
+		for start in range(0, len(items), per_line):
+			chunk = items[start : start + per_line]
+			text = " ".join((item + ",").ljust(width + 1) for item in chunk).rstrip()
+			lines.append(f"\t\t{text} // {civil_date(days[start])}")
+		lines.append("\t]")
+
+	if not consecutive:
+		column("utcDays", "Int", [f"{day:_}" for day in days], 8)
+	column("ut1MinusUTC", "Double", values, 8)
+	if not predictions_trail:
+		column("isPredicted", "Bool", ["true" if flag else "false" for flag in flags], 8)
+
+	day = "firstUTCDay + index" if consecutive else "utcDays[index]"
+	flag = "index >= firstPrediction" if predictions_trail else "isPredicted[index]"
+	build = [
+		"ut1MinusUTC.indices.map { index in",
+		f"\tEarthOrientationTable.Entry(utcDay: {day}, ut1MinusUTC: ut1MinusUTC[index], isPredicted: {flag})",
+		"}",
+	]
+	if args.table:
+		lines.append(f"\tlet entries = {build[0]}")
+		lines += [f"\t{line}" for line in build[1:]]
+		lines += [
+			"\t// The generator checked the entries, and the built-in leap seconds cover them.",
+			"\tguard let table = EarthOrientationTable(entries: entries) else {",
+			"\t\tpreconditionFailure(\"Invalid Earth orientation entries\")",
+			"\t}",
+			"\treturn table",
+		]
+	else:
+		lines.append(f"\treturn {build[0]}")
+		lines += [f"\t{line}" for line in build[1:]]
+	lines.append("}()")
 	return "\n".join(lines) + "\n"
 
 
@@ -246,12 +320,12 @@ def main() -> None:
 
 	def add_common(command: argparse.ArgumentParser, name: str, source_url: str) -> None:
 		command.add_argument("file", help="the data file to read")
-		command.add_argument("--name", default=name, help=f"the Swift array's name (default: {name})")
+		command.add_argument("--name", help=f"the Swift constant's name (default: {name})")
 		command.add_argument(
 			"--access",
 			choices=["public", "package", "internal", "fileprivate", "private"],
 			default="internal",
-			help="the Swift array's access level (default: internal)",
+			help="the Swift constant's access level (default: internal)",
 		)
 		command.add_argument("--source-url", default=source_url, help="the source recorded in the header")
 		command.add_argument("--spdx", action="store_true", help="begin with Astronomia's license header")
@@ -261,7 +335,24 @@ def main() -> None:
 	historic.set_defaults(generate=historic_delta_t)
 
 	finals_command = commands.add_parser("finals", help="IERS finals2000A or finals", description=finals.__doc__)
-	add_common(finals_command, "finalsEntries", "https://maia.usno.navy.mil/ser7/finals2000A.all")
+	add_common(finals_command, "finalsEntries, or earthOrientationTable with --table", "https://maia.usno.navy.mil/ser7/finals2000A.all")
+	finals_command.add_argument(
+		"--no-import",
+		dest="import_module",
+		action="store_false",
+		help="leave out `import Astronomia`, for a file in the Astronomia module itself",
+	)
+	form = finals_command.add_mutually_exclusive_group()
+	form.add_argument(
+		"--table",
+		action="store_true",
+		help="write an EarthOrientationTable built with the built-in leap seconds instead of an array of entries",
+	)
+	form.add_argument(
+		"--array",
+		action="store_true",
+		help="write the entries as an array literal of initializers, one per row; readable, but slow to compile for large files",
+	)
 	finals_command.add_argument("--start", type=datetime.date.fromisoformat, help="the first UTC day to include, YYYY-MM-DD")
 	finals_command.add_argument("--end", type=datetime.date.fromisoformat, help="the last UTC day to include, YYYY-MM-DD")
 	finals_command.add_argument(
@@ -270,6 +361,11 @@ def main() -> None:
 	finals_command.set_defaults(generate=finals)
 
 	args = parser.parse_args()
+	if args.name is None:
+		if args.command == "historic-delta-t":
+			args.name = "historicDeltaTEntries"
+		else:
+			args.name = "earthOrientationTable" if args.table else "finalsEntries"
 	with open(args.file, "rb") as file:
 		data = file.read()
 	try:
