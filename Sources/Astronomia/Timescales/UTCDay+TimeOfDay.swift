@@ -17,8 +17,8 @@ extension UTCDay {
 	///   day.
 	public func timeOfDay(_ julianDate: JulianDate) throws(TimescaleConversionError) -> TimeOfDay {
 		// A leap second table steps by at most a second, and the steps before 1972 were less,
-		// so a clock day is under 86,401 s. The product in secondsSinceMidnight can round up to
-		// the end of the day.
+		// so a clock day is at most 86,401 s and its readings are under 86,401. The product in
+		// secondsSinceMidnight can round up to the end of the day.
 		let seconds = try min(secondsSinceMidnight(julianDate), clockSeconds.nextDown)
 		return TimeOfDay(uncheckedSecondsSinceMidnight: seconds)
 	}
