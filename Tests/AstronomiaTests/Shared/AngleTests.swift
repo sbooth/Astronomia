@@ -8,10 +8,6 @@
 import Testing
 @testable import Astronomia
 
-#if canImport(Foundation)
-import Foundation
-#endif
-
 /// Returns `true` if two values agree to within `tolerance`.
 private func close(_ a: Double, _ b: Double, _ tolerance: Double = 1e-12) -> Bool {
 	Swift.abs(a - b) <= tolerance
@@ -128,13 +124,20 @@ private func close(_ a: Double, _ b: Double, _ tolerance: Double = 1e-12) -> Boo
 	@Test func description() {
 		#expect(Angle(degrees: 90).description == "90.0°")
 	}
+}
 
 #if canImport(Foundation)
+
+import Foundation
+
+@Suite struct AngleCodableTests {
 	@Test func codable() throws {
 		let angle = Angle(radians: 1.25)
 		let data = try JSONEncoder().encode(angle)
 		#expect(String(decoding: data, as: UTF8.self) == "1.25")
 		#expect(try JSONDecoder().decode(Angle.self, from: data) == angle)
 	}
-#endif
 }
+
+#endif
+
