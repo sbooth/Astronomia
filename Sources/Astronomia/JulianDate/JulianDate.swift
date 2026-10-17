@@ -452,7 +452,7 @@ extension JulianDate {
 	/// - Returns: This Julian Date moved back by `seconds` seconds.
 	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
-	func subtracting(seconds: Int) throws(JulianDateError) -> JulianDate {
+	public func subtracting(seconds: Int) throws(JulianDateError) -> JulianDate {
 		// The whole days and the remainder are subtracted in one sum, so neither is negated as
 		// an Int and nothing is rounded before the result.
 		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: integerSecondsPerDay)
