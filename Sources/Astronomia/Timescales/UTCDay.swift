@@ -15,8 +15,10 @@
 /// reads from 0 to 86,400 s plus any step, while its elapsed length also includes the drift.
 /// ``clockSeconds`` and ``duration`` give these two quantities.
 ///
-/// Two UTC days are equal when they have the same Julian day number.
-public struct UTCDay: Sendable {
+/// Two UTC days are equal when they have the same Julian day number and TAI - UTC. The same
+/// day from leap second tables that differ about it, such as one with a leap second at its
+/// end and one without, is not equal.
+public struct UTCDay: Hashable, Sendable {
 	/// The source of a UTC day's TAI - UTC offset.
 	public enum OffsetSource: Hashable, Sendable {
 		/// A published IERS Bulletin C.

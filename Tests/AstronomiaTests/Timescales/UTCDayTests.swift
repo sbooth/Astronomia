@@ -109,13 +109,18 @@ import Testing
 		#expect(day.julianDayNumber == utc.julianDayNumber)
 	}
 
-	// TODO: Equality depends on the leap second table used to construct the UTCDay.
-#if false
-	@Test func equalityIsByDay() throws {
+	@Test func equality() throws {
 		let j = try civilDay(2026, 10, 14)
 		#expect(try UTCDay(julianDayNumber: j) == UTCDay(julianDayNumber: j))
 		#expect(try UTCDay(julianDayNumber: j) != UTCDay(julianDayNumber: j + 1))
 		#expect(try Set([UTCDay(julianDayNumber: j), UTCDay(julianDayNumber: j)]).count == 1)
+
+		// Equality depends on the leap second table: with a leap second at the end of
+		// 2027-06-30, that day differs from the built-in table's, and earlier days do not.
+		let leapSecond = try LeapSecondTable.LeapSecond(effective: civilDay(2027, 7, 1), taiMinusUTC: 38)
+		let table = try #require(LeapSecondTable(leapSeconds: LeapSecondTable.builtIn.leapSeconds + [leapSecond], horizon: civilDay(2028, 1, 1)))
+		let lastDay = try civilDay(2027, 6, 30)
+		#expect(try UTCDay(julianDayNumber: lastDay, leapSecondTable: table) != UTCDay(julianDayNumber: lastDay))
+		#expect(try UTCDay(julianDayNumber: j, leapSecondTable: table) == UTCDay(julianDayNumber: j))
 	}
-#endif
 }
