@@ -185,6 +185,10 @@ public struct JoinedDeltaTSource: DeltaTSource {
 	public let offset: Double
 	/// The TT dates covered, from the end of the source to the end of the other source.
 	public let coverage: ClosedRange<JulianDate>
+	/// The end of the source where the two are joined.
+	let joinDate: JulianDate
+	/// ΔT of the source at the join, in seconds.
+	let joinDeltaT: Double
 
 	/// Creates a source following `other` before the start of `source`.
 	///
@@ -224,10 +228,16 @@ public struct JoinedDeltaTSource: DeltaTSource {
 		self.other = other
 		offset = sourceDeltaT - otherDeltaT
 		coverage = atStart ? other.coverage.lowerBound ... date : date ... other.coverage.upperBound
+		joinDate = date
+		joinDeltaT = sourceDeltaT
 	}
 
 	public func deltaT(at tt: JulianDate) -> Double? {
-		guard coverage.contains(tt), let otherDeltaT = other.deltaT(at: tt) else { return nil }
+		guard coverage.contains(tt) else { return nil }
+		// The other source's ΔT plus the offset can round away from the source's at the join, so
+		// the source's is returned there to meet it exactly.
+		guard tt != joinDate else { return joinDeltaT }
+		guard let otherDeltaT = other.deltaT(at: tt) else { return nil }
 		return otherDeltaT + offset
 	}
 }

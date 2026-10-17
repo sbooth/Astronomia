@@ -138,7 +138,7 @@ import Testing
 	}
 
 	@Test func joinedModelEnds() throws {
-		// The join starts at the end of the table, with ΔT of 65 s to within rounding.
+		// The join starts at the end of the table, with the table's ΔT of 65 s.
 		let table = try Self.table(64, 65)
 		let model = DeltaTModel.espenakMeeus2006
 		let after = try JoinedDeltaTSource(model, after: table)
@@ -148,6 +148,8 @@ import Testing
 		#expect(try abs(#require(after.deltaT(atUT1: ut1)) - 65) <= 1e-9)
 		// A year later ΔT has changed as the model's does, by well under a second
 		#expect(try abs(#require(after.deltaT(atUT1: ut1.adding(days: 365))) - 65) <= 1)
+		// At the join, ΔT is the table's exactly, so the two meet without a gap
+		#expect(after.deltaT(at: end) == table.deltaT(at: end))
 		// Before the join, the join gives no ΔT
 		#expect(try after.deltaT(atUT1: ut1.adding(seconds: -1)) == nil)
 	}

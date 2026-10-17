@@ -7,7 +7,7 @@
 
 /// A source of ΔT = TT - UT1 for a range of Julian Dates.
 public protocol DeltaTSource: Sendable {
-	/// The TT dates for which the source supplies ΔT.
+	/// The TT dates outside which the source supplies no ΔT.
 	var coverage: ClosedRange<JulianDate> { get }
 
 	/// Returns ΔT = TT - UT1, in seconds, at the specified TT.
