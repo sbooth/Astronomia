@@ -11,6 +11,9 @@
 /// it follows Earth's irregular rotation and is determined by observation. It relates to TT
 /// through ΔT = TT - UT1, about 69 s in 2026 and growing irregularly.
 ///
+/// UT1 is also the timescale for civil and astronomical times before UTC began in 1961.
+/// Historical times given as UT or GMT are UT1 to within the precision of the records.
+///
 /// ΔT comes from the context's ``DeltaTSource``. By default that is the first of Earth
 /// orientation data, if supplied, ``DeltaTTable/builtIn``, and
 /// ``DeltaTModel/stephensonMorrisonHohenkerk2016`` that covers the date. The most recent

@@ -15,6 +15,12 @@
 /// - Important: On a day ending in a leap second, or a pre-1972 day ending in a fractional
 ///   step, a UTC fraction is not seconds / 86,400. Use
 ///   ``UTCDay/julianDate(secondsSinceMidnight:)`` to convert a clock reading.
+///
+/// - Note: UTC began on 1961-01-01, and conversions of earlier dates throw
+///   ``TimescaleConversionError/unsupported``. For earlier times, use ``UT1``, whose ΔT
+///   reaches back to antiquity. Historical times given as UT or GMT are UT1 to within the
+///   precision of the records, but astronomical records before 1925 often count GMT from
+///   noon, 12 hours behind the civil reckoning from midnight.
 public enum UTC: Timescale {
 	public static let abbreviation = "UTC"
 	/// The built-in leap second table, assuming no further leap seconds past its horizon.
@@ -102,7 +108,8 @@ extension UTC {
 	/// - Returns: TAI - UTC, in seconds.
 	/// - Throws:
 	///   - ``TimescaleConversionError/dateOutOfRange`` if the Julian day number is out of range.
-	///   - ``TimescaleConversionError/unsupported`` if `utc` is before 1961.
+	///   - ``TimescaleConversionError/unsupported`` if `utc` is before 1961, when UTC began.
+	///     Use ``UT1`` for earlier times.
 	///   - ``TimescaleConversionError/leapSecondTableExpired`` if `utc` is on or after the
 	///     table's horizon and the policy is ``ExtrapolationPolicy/strict``.
 	public static func taiMinusUTC(at utc: JulianDate, context: Context = defaultContext) throws(TimescaleConversionError) -> Double {
