@@ -123,4 +123,18 @@ import Testing
 		#expect(try UTCDay(julianDayNumber: lastDay, leapSecondTable: table) != UTCDay(julianDayNumber: lastDay))
 		#expect(try UTCDay(julianDayNumber: j, leapSecondTable: table) == UTCDay(julianDayNumber: j))
 	}
+
+	@Test func equalityIgnoresOffsetSource() throws {
+		// The built-in leap seconds with a later horizon: 2027-07-01 is past the built-in
+		// table's horizon but within this one's, and the days are equal.
+		let builtIn = LeapSecondTable.builtIn
+		let refreshed = try #require(LeapSecondTable(leapSeconds: builtIn.leapSeconds, horizon: civilDay(2028, 1, 1)))
+		let j = try civilDay(2027, 7, 1)
+		let extrapolated = try UTCDay(julianDayNumber: j, leapSecondTable: builtIn)
+		let published = try UTCDay(julianDayNumber: j, leapSecondTable: refreshed)
+		#expect(extrapolated.offsetSource == .extrapolation)
+		#expect(published.offsetSource == .bulletin)
+		#expect(extrapolated == published)
+		#expect(Set([extrapolated, published]).count == 1)
+	}
 }

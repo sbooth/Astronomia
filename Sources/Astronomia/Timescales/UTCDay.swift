@@ -17,8 +17,10 @@
 ///
 /// Two UTC days are equal when they have the same Julian day number and TAI - UTC. The same
 /// day from leap second tables that differ about it, such as one with a leap second at its
-/// end and one without, is not equal.
-public struct UTCDay: Hashable, Sendable {
+/// end and one without, is not equal. Whether TAI - UTC comes from a bulletin or from
+/// extrapolation (``offsetSource``) is not part of the comparison, so a table with a later
+/// horizon but the same leap seconds gives equal days.
+public struct UTCDay: Sendable {
 	/// The source of a UTC day's TAI - UTC offset.
 	public enum OffsetSource: Hashable, Sendable {
 		/// A published IERS Bulletin C.
@@ -165,5 +167,23 @@ extension UTCDay {
 			return try start.adding(days1: fraction, days2: correction)
 		}
 		catch { throw TimescaleConversionError(error) }
+	}
+}
+
+extension UTCDay: Hashable {
+	/// Returns `true` if two UTC days have the same Julian day number and TAI - UTC, whatever
+	/// the source of their offsets.
+	public static func == (lhs: UTCDay, rhs: UTCDay) -> Bool {
+		lhs.julianDayNumber == rhs.julianDayNumber
+			&& lhs.offsetAtStart == rhs.offsetAtStart
+			&& lhs.offsetStep == rhs.offsetStep
+			&& lhs.offsetChange == rhs.offsetChange
+	}
+
+	public func hash(into hasher: inout Hasher) {
+		hasher.combine(julianDayNumber)
+		hasher.combine(offsetAtStart)
+		hasher.combine(offsetStep)
+		hasher.combine(offsetChange)
 	}
 }
