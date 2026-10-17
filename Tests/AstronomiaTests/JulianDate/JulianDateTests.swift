@@ -73,6 +73,25 @@ import Testing
 		#expect(try JulianDate(julianDayNumber: .max, fractionFromNoon: -1).julianDayNumber == .max - 1)
 	}
 
+	@Test func representableBounds() throws {
+		#expect(JulianDate.min.julianDayNumber == .min)
+		#expect(JulianDate.min.fractionFromNoon == -0.5)
+		#expect(JulianDate.max.julianDayNumber == .max)
+		#expect(JulianDate.max.fractionFromNoon == Double(0.5).nextDown)
+		#expect(JulianDate.min < JulianDate.max)
+
+		// Every other date lies between them
+		for date in [JulianDate.J2000, JulianDate.MJD0, JulianDate.B1900] {
+			#expect(JulianDate.min < date && date < JulianDate.max)
+		}
+		#expect(try JulianDate.min.adding(days: 0.25) > JulianDate.min)
+		#expect(try JulianDate.max.adding(days: -0.25) < JulianDate.max)
+
+		// Nothing lies a day beyond them
+		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate.min.adding(days: -1) }
+		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate.max.adding(days: 1) }
+	}
+
 	@Test func initFromTwoParts() throws {
 		#expect(try JulianDate(jd1: 2_451_545) == JulianDate.J2000)
 		#expect(try JulianDate(jd1: 2_451_545, jd2: 0.25) == JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25))
