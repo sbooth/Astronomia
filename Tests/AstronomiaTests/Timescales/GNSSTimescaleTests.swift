@@ -41,7 +41,21 @@ private func roundTripError<Scale: Timescale>(_ scale: Scale.Type, _ julianDate:
 	return try abs(secondsBetween(julianDate, back))
 }
 
+/// A timescale with the most negative offset an `Int` can hold, which cannot be negated.
+private enum MinimumOffsetTimescale: FixedTAIOffsetTimescale {
+	static var abbreviation: String { "MIN" }
+	static var offsetFromTAI: Int { .min }
+}
+
 @Suite struct FixedTAIOffsetTimescaleTests {
+	@Test func minimumOffset() throws {
+		// TAI is 2^63 s after this timescale's reading, about 10^14 days, which is representable.
+		let tt = try MinimumOffsetTimescale.toTT(.J2000)
+		let expected = try JulianDate.J2000.adding(seconds: Int.max).adding(seconds: 1).adding(seconds: TT.offsetFromTAI)
+		#expect(tt.isApproximatelyEqual(to: expected, toleranceSeconds: 1e-6))
+		#expect(try MinimumOffsetTimescale.fromTT(tt).isApproximatelyEqual(to: .J2000, toleranceSeconds: 1e-6))
+	}
+
 	@Test func offsets() throws {
 		let tai = try date(2026, 10, 15, seconds: 43_200)
 		#expect(try abs(offsetFromTAI(GPS.self, at: tai) + 19) <= 1e-9)

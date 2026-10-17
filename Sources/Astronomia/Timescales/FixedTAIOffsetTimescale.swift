@@ -20,7 +20,7 @@ extension FixedTAIOffsetTimescale {
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		let tai: JulianDate
 		do throws(JulianDateError) {
-			tai = try julianDate.adding(seconds: -offsetFromTAI)
+			tai = try julianDate.subtracting(seconds: offsetFromTAI)
 		}
 		catch { throw TimescaleConversionError(error) }
 		return try TAI.toTT(tai)
