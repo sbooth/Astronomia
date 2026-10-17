@@ -14,11 +14,9 @@ extension LeapSecondTable {
 	///
 	/// - Note: The file's `#h` hash is not checked. `Scripts/generate-timescale-data.py
 	///   leap-seconds` checks it when generating leap seconds to compile in.
-	///
 	/// - Parameter text: The contents of the file.
 	/// - Returns: `nil` if the expiry is missing, a data line is malformed or not at the start
 	///   of a UTC day, or the leap seconds fail the checks of ``init(leapSeconds:horizon:)``.
-	///
 	/// - SeeAlso: [leap-seconds.list](https://hpiers.obspm.fr/iers/bul/bulc/ntp/leap-seconds.list)
 	public init?(leapSecondsList text: String) {
 		/// The civil Julian day number of a whole number of NTP days, from 1900-01-01.
@@ -64,7 +62,6 @@ extension LeapSecondTable {
 	/// - Returns: `nil` if the expiry is missing or malformed, a data line is malformed or its
 	///   MJD does not match its date, or the leap seconds fail the checks of
 	///   ``init(leapSeconds:horizon:)``.
-	///
 	/// - SeeAlso: [Leap_Second.dat](https://hpiers.obspm.fr/iers/bul/bulc/Leap_Second.dat)
 	public init?(iersLeapSecondDat text: String) {
 		let months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
