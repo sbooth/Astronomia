@@ -313,6 +313,41 @@ struct CalendarDayTestComponents: Sendable, CustomTestStringConvertible {
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDay(julianDayNumber: 1, .julianGregorian).adding(days: .max) }
 	}
 
+	@Test func subtractingDays() throws {
+		let march1 = try CalendarDay(year: 2000, month: 3, day: 1, .gregorian)
+		#expect(try march1.subtracting(days: 1) == CalendarDay(year: 2000, month: 2, day: 29, .gregorian))
+		#expect(try march1.subtracting(days: 2) == CalendarDay(year: 2000, month: 2, day: 28, .gregorian))
+		#expect(try march1.subtracting(days: 61) == CalendarDay(year: 1999, month: 12, day: 31, .gregorian))
+		#expect(try march1.subtracting(days: -1) == CalendarDay(year: 2000, month: 3, day: 2, .gregorian))
+		#expect(try march1.subtracting(days: 0) == march1)
+		#expect(try march1.subtracting(days: 146_097) == CalendarDay(year: 1600, month: 3, day: 1, .gregorian))
+
+		let julian = try CalendarDay(year: 1900, month: 3, day: 1, .julian)
+		#expect(try julian.subtracting(days: 1) == CalendarDay(year: 1900, month: 2, day: 29, .julian))
+		#expect(try julian.subtracting(days: 1).calendar == .julian)
+
+		let october15 = try CalendarDay(year: 1582, month: 10, day: 15, .julianGregorian)
+		#expect(try october15.subtracting(days: 1) == CalendarDay(year: 1582, month: 10, day: 4, .julianGregorian))
+		#expect(try october15.subtracting(days: 1).adding(days: 1) == october15)
+
+		// Inverse of addition
+		for n in [-1_000_000, -1, 0, 1, 365, 1_000_000] {
+			#expect(try march1.subtracting(days: n) == march1.adding(days: -n))
+			#expect(try march1.adding(days: n).subtracting(days: n) == march1)
+			#expect(try march1.subtracting(days: n).days(to: march1) == n)
+		}
+
+		// Subtracting Int.min has no adding(days:) equivalent but is representable from a negative JDN
+		#expect(try CalendarDay(julianDayNumber: -1, .gregorian).subtracting(days: .min).julianDayNumber == .max)
+	}
+
+	@Test func subtractingDaysOverflowThrows() {
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDay(julianDayNumber: .min, .julian).subtracting(days: 1) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDay(julianDayNumber: .max, .gregorian).subtracting(days: -1) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDay(julianDayNumber: -2, .julianGregorian).subtracting(days: .max) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDay(julianDayNumber: 0, .gregorian).subtracting(days: .min) }
+	}
+
 	@Test func daysToDay() throws {
 		let start = try CalendarDay(year: 2000, month: 1, day: 1, .gregorian)
 		let end = try CalendarDay(year: 2001, month: 1, day: 1, .gregorian)
