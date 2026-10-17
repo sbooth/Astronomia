@@ -5,9 +5,9 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-extension EarthOrientationTable: DeltaTSource {
+extension EarthOrientationTable: BoundedDeltaTSource {
 	/// Returns ΔT = TT - UT1, in seconds, at the specified TT, interpolated linearly between
-	/// entries, or `nil` if `tt` is outside ``range``. Predicted entries are used.
+	/// entries, or `nil` if `tt` is outside ``coverage``. Predicted entries are used.
 	public func deltaT(at tt: JulianDate) -> Double? {
 		deltaTAndPredictionStatus(at: tt)?.seconds
 	}

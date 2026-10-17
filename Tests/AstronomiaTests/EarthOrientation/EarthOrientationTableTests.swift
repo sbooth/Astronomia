@@ -48,7 +48,7 @@ let finalsWithPredictedNutation = """
 		let all = try #require(EarthOrientationTable(finals2000A: finalsWithPrediction))
 		#expect(all.entries.count == 2, "the row without a value is skipped")
 		#expect(all.entries.map(\.isPredicted) == [false, true])
-		#expect(all.deltaTAndPredictionStatus(at: all.range.upperBound)?.isPredicted == true)
+		#expect(all.deltaTAndPredictionStatus(at: all.coverage.upperBound)?.isPredicted == true)
 
 		// Without the prediction only one entry remains, too few for a table.
 		#expect(EarthOrientationTable(finals2000A: finalsWithPrediction, includePredictions: false) == nil)
@@ -79,11 +79,11 @@ let finalsWithPredictedNutation = """
 		}
 	}
 
-	@Test func range() throws {
+	@Test func coverage() throws {
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		// 0h UTC on 2016-12-29 is 00:01:08.184 TT; 0h UTC on 2017-01-02 is 00:01:09.184 TT.
-		#expect(try table.range.lowerBound.isApproximatelyEqual(to: uniformDate(civilDay(2016, 12, 29), seconds: 68.184), toleranceSeconds: timescaleTolerance))
-		#expect(try table.range.upperBound.isApproximatelyEqual(to: uniformDate(civilDay(2017, 1, 2), seconds: 69.184), toleranceSeconds: timescaleTolerance))
+		#expect(try table.coverage.lowerBound.isApproximatelyEqual(to: uniformDate(civilDay(2016, 12, 29), seconds: 68.184), toleranceSeconds: timescaleTolerance))
+		#expect(try table.coverage.upperBound.isApproximatelyEqual(to: uniformDate(civilDay(2017, 1, 2), seconds: 69.184), toleranceSeconds: timescaleTolerance))
 		#expect(try table.deltaT(at: uniformDate(civilDay(2016, 12, 28))) == nil)
 		#expect(try table.deltaT(at: uniformDate(civilDay(2017, 1, 3))) == nil)
 	}
@@ -157,9 +157,9 @@ let finalsWithPredictedNutation = """
 
 		// At an entry, its values exactly; outside the table, none
 		let last = table.entries[table.entries.count - 1]
-		#expect(table.polarMotion(at: table.range.upperBound) == last.polarMotion)
-		#expect(table.celestialPoleOffsets(at: table.range.upperBound) == last.celestialPoleOffsets)
-		#expect(table.excessLengthOfDay(at: table.range.upperBound) == last.excessLengthOfDay)
+		#expect(table.polarMotion(at: table.coverage.upperBound) == last.polarMotion)
+		#expect(table.celestialPoleOffsets(at: table.coverage.upperBound) == last.celestialPoleOffsets)
+		#expect(table.excessLengthOfDay(at: table.coverage.upperBound) == last.excessLengthOfDay)
 		#expect(table.polarMotion(at: table.samples[1].tt) == table.entries[1].polarMotion)
 		#expect(try table.polarMotion(at: uniformDate(civilDay(2016, 12, 28))) == nil)
 		#expect(try table.celestialPoleOffsets(at: uniformDate(civilDay(2017, 1, 3))) == nil)

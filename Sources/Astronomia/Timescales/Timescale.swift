@@ -23,6 +23,8 @@
 ///  │                    │
 /// GLONASS               │
 ///         TCG ──L_G──  TT  ──series── TDB ──L_B── TCB
+///                       │ ΔT
+///                      UT1
 /// ```
 ///
 /// TT is the hub because it is the timescale of most astronomical models: TDB is a periodic

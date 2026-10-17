@@ -117,10 +117,3 @@ private func julianYears(from start: JulianDate, to end: JulianDate) -> Double? 
 }
 
 extension DeltaTTable: BoundedDeltaTSource {}
-
-extension EarthOrientationTable: BoundedDeltaTSource {
-	/// The TT dates covered by the table, the same as ``range``.
-	public var coverage: ClosedRange<JulianDate> {
-		range
-	}
-}

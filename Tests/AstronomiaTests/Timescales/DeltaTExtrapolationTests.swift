@@ -48,7 +48,8 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		#expect(historic.deltaT(at: historic.coverage.upperBound) == 54.087)
 
 		let table2 = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
-		#expect(table2.coverage == table2.range)
+		#expect(table2.deltaT(at: table2.coverage.lowerBound) != nil)
+		#expect(table2.deltaT(at: table2.coverage.upperBound) != nil)
 	}
 
 	@Test func withinSpanUsesSource() throws {
@@ -159,13 +160,13 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let context = UT1.Context.continuous(earthOrientation: table, deltaTTable: nil, model: .espenakMeeus2006)
 
 		// A day after the last observation, ΔT is close to it, not the model's value
-		let nextDay = try table.range.upperBound.adding(days: 1)
+		let nextDay = try table.coverage.upperBound.adding(days: 1)
 		let joined = try UT1.deltaT(at: nextDay, context: context)
 		#expect(abs(joined - endDeltaT) <= 0.01)
 		#expect(abs(joined - DeltaTModel.espenakMeeus2006.deltaT(decimalYear: nextDay.decimalYear)) > 1)
 
 		// Later, ΔT follows the model's change since the last observation
-		let later = try table.range.upperBound.adding(days: 365)
+		let later = try table.coverage.upperBound.adding(days: 365)
 		let model = DeltaTModel.espenakMeeus2006
 		let expected = endDeltaT + (model.deltaT(decimalYear: later.decimalYear) - model.deltaT(decimalYear: end.decimalYear))
 		#expect(try abs(UT1.deltaT(at: later, context: context) - expected) <= 1e-9)

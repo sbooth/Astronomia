@@ -131,8 +131,8 @@ public struct EarthOrientationTable: Hashable, Sendable {
 		self.samples = samples
 	}
 
-	/// The TT instants covered by the table.
-	public var range: ClosedRange<JulianDate> {
+	/// The TT dates covered by the table, from the first entry to the last.
+	public var coverage: ClosedRange<JulianDate> {
 		// Not empty: initialization requires at least two entries.
 		samples[0].tt ... samples[samples.count - 1].tt
 	}
@@ -141,7 +141,7 @@ public struct EarthOrientationTable: Hashable, Sendable {
 	///
 	/// - Parameter tt: A Julian Date in TT.
 	/// - Returns: ΔT, in seconds, and whether it depends on a predicted entry, or `nil` if
-	///   `tt` is outside ``range``.
+	///   `tt` is outside ``coverage``.
 	public func deltaTAndPredictionStatus(at tt: JulianDate) -> (seconds: Double, isPredicted: Bool)? {
 		guard let span = bracket(tt) else { return nil }
 		let a = samples[span.a]
@@ -154,7 +154,7 @@ public struct EarthOrientationTable: Hashable, Sendable {
 	///
 	/// - Parameter tt: A Julian Date in TT.
 	/// - Returns: The coordinates, predicted if either entry they depend on is, or `nil` if
-	///   `tt` is outside ``range`` or an entry it depends on has no coordinates.
+	///   `tt` is outside ``coverage`` or an entry it depends on has no coordinates.
 	public func polarMotion(at tt: JulianDate) -> PolarMotion? {
 		guard let span = bracket(tt),
 			  let pa = entries[span.a].polarMotion, let pb = entries[span.b].polarMotion
@@ -171,7 +171,7 @@ public struct EarthOrientationTable: Hashable, Sendable {
 	///
 	/// - Parameter tt: A Julian Date in TT.
 	/// - Returns: The offsets, predicted if either entry they depend on is, or `nil` if `tt` is
-	///   outside ``range`` or an entry it depends on has no offsets.
+	///   outside ``coverage`` or an entry it depends on has no offsets.
 	public func celestialPoleOffsets(at tt: JulianDate) -> CelestialPoleOffsets? {
 		guard let span = bracket(tt),
 			  let oa = entries[span.a].celestialPoleOffsets, let ob = entries[span.b].celestialPoleOffsets
@@ -187,7 +187,7 @@ public struct EarthOrientationTable: Hashable, Sendable {
 	/// linearly between entries.
 	///
 	/// - Parameter tt: A Julian Date in TT.
-	/// - Returns: The excess length of day, in seconds, or `nil` if `tt` is outside ``range``
+	/// - Returns: The excess length of day, in seconds, or `nil` if `tt` is outside ``coverage``
 	///   or an entry it depends on has no value.
 	public func excessLengthOfDay(at tt: JulianDate) -> Double? {
 		guard let span = bracket(tt),
@@ -197,10 +197,10 @@ public struct EarthOrientationTable: Hashable, Sendable {
 	}
 
 	/// Returns the indices of the entries on either side of `tt` and the fraction of the way
-	/// from the first to the second, or `nil` if `tt` is outside ``range``. When `tt` is at an
+	/// from the first to the second, or `nil` if `tt` is outside ``coverage``. When `tt` is at an
 	/// entry, both indices are that entry's, so values there need no neighbor.
 	private func bracket(_ tt: JulianDate) -> (a: Int, b: Int, fraction: Double)? {
-		guard range.contains(tt) else { return nil }
+		guard coverage.contains(tt) else { return nil }
 
 		// The last sample at or before `tt`.
 		var low = 0
