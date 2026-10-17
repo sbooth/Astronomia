@@ -290,7 +290,8 @@ extension JulianGregorianCalendar {
 			return try GregorianCalendar.dayOfYearFrom(year: Y, month: M, day: D)
 		}
 		guard isValid(year: Y, month: M, day: D) else { throw .invalidDate }
-		// A valid date in 1582 has a small JDN, so neither the conversion nor the subtraction can fail
+		// A valid date in 1582 has a small JDN, so neither the conversion nor the subtraction can
+		// fail
 		return try! julianDayNumberFrom(year: Y, month: M, day: D) &- firstDayOfChangeoverYear &+ 1
 	}
 

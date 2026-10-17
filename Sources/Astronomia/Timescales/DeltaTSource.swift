@@ -1,0 +1,173 @@
+//
+// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
+// SPDX-License-Identifier: MIT
+//
+// Part of https://github.com/sbooth/Astronomia
+//
+
+/// A source of ΔT = TT - UT1 for a range of Julian Dates.
+public protocol DeltaTSource: Sendable {
+	/// The TT dates outside which the source supplies no ΔT.
+	var coverage: ClosedRange<JulianDate> { get }
+
+	/// Returns ΔT = TT - UT1, in seconds, at the specified TT.
+	///
+	/// - Parameter tt: A Julian Date in TT.
+	/// - Returns: ΔT, in seconds, or `nil` if the source does not cover `tt`.
+	func deltaT(at tt: JulianDate) -> Double?
+
+	/// Returns ΔT = TT - UT1, in seconds, at the TT date whose UT1 is the specified date.
+	///
+	/// This solves TT = UT1 + ΔT(TT), so that UT1 + ΔT is the TT of `ut1`. The default
+	/// implementation iterates within ``coverage``.
+	///
+	/// - Note: To find every TT in the coverage, ΔT must be available, continuous, and change
+	///   more slowly than TT.
+	/// - Parameter ut1: A Julian Date in UT1.
+	/// - Returns: ΔT, in seconds, or `nil` if the source does not cover that TT.
+	func deltaT(atUT1 ut1: JulianDate) -> Double?
+}
+
+extension DeltaTSource {
+	/// Every representable Julian Date.
+	public var coverage: ClosedRange<JulianDate> {
+		.min ... .max
+	}
+
+	/// Returns ΔT at the TT date whose UT1 is the specified date.
+	///
+	/// - Parameter ut1: A Julian Date in UT1.
+	/// - Returns: ΔT, in seconds, or `nil` if the TT of `ut1` is outside ``coverage``, or ΔT is
+	///   unavailable at a date the iteration reaches.
+	public func deltaT(atUT1 ut1: JulianDate) -> Double? {
+		iteratedDeltaT(atUT1: ut1, within: coverage)
+	}
+
+	/// Returns ΔT at the TT date whose UT1 is `ut1`, for a source covering the TT dates in
+	/// `range`, by fixed-point iteration kept within those dates.
+	///
+	/// The iteration evaluates TT = UT1 + ΔT(TT), starting from `ut1` and clamping each
+	/// estimate to `range`, until an estimate repeats. Where ΔT changes more slowly than TT
+	/// the solution is unique, and each step shrinks the error by a factor of dΔT/dt, at most
+	/// about 2 × 10^-6 even for the model in antiquity, so an estimate repeats within a few
+	/// steps. Clamping cannot move an estimate away from a solution within `range`, so the
+	/// iteration never evaluates ΔT outside it.
+	///
+	/// The UT1 dates covered run from the UT1 of the first date in `range` to that of the
+	/// last, computed as ``UT1/fromTT(_:context:)`` computes them, so the UT1 of either end is
+	/// itself covered. An end at ``JulianDate/min`` or ``JulianDate/max`` is open: ΔT is not
+	/// evaluated there, where a model's value can overflow.
+	///
+	/// - Parameters:
+	///   - ut1: A Julian Date in UT1.
+	///   - range: The TT dates covered.
+	/// - Returns: ΔT, in seconds, or `nil` if `ut1` is outside the UT1 dates covered, ΔT is
+	///   unavailable or non-finite at a bounded end of `range`, or ΔT is unavailable at a date
+	///   the iteration reaches. A non-finite ΔT at a date the iteration reaches is returned for
+	///   the caller to report.
+	func iteratedDeltaT(atUT1 ut1: JulianDate, within range: ClosedRange<JulianDate>) -> Double? {
+		// Rejects a UT1 date before the UT1 of the first date covered or after that of the last.
+		for (end, isFirst) in [(range.lowerBound, true), (range.upperBound, false)] {
+			guard end != .min, end != .max else { continue }
+			// ΔT at an end only bounds the UT1 dates covered, so without a usable value there the
+			// coverage on that side is unknown.
+			guard let endDeltaT = deltaT(at: end), endDeltaT.isFinite,
+				  let endUT1 = try? end.adding(seconds: -endDeltaT)
+			else { return nil }
+			if isFirst ? (ut1 < endUT1) : (ut1 > endUT1) { return nil }
+		}
+
+		var tt = ut1.clamped(to: range)
+		var value = 0.0
+		for _ in 0 ..< 8 {
+			guard let next = deltaT(at: tt) else { return nil }
+			// A non-finite or unrepresentable step is left for the caller to report.
+			guard next.isFinite, let estimate = try? ut1.adding(seconds: next) else { return next }
+			let nextTT = estimate.clamped(to: range)
+			if nextTT == tt { return next }
+			(tt, value) = (nextTT, next)
+		}
+		return value
+	}
+}
+
+/// A source of ΔT that tries a list of sources in order.
+///
+/// ΔT comes from the first source that covers the date. Sources can differ where one hands
+/// over to the next, so ΔT need not be continuous there.
+///
+/// A list has the default ``coverage``, every date, since its sources can leave gaps and
+/// overlap. It finds the TT of a UT1 date through its sources. An empty list covers no dates,
+/// so conversions that need ΔT throw ``TimescaleConversionError/deltaTUnavailable``.
+public struct DeltaTSourceList: DeltaTSource {
+	/// The sources, in order of preference.
+	public let sources: [any DeltaTSource]
+
+	/// Creates a list of sources.
+	///
+	/// - Parameter sources: The sources, in order of preference.
+	public init(_ sources: [any DeltaTSource]) {
+		self.sources = sources
+	}
+
+	public func deltaT(at tt: JulianDate) -> Double? {
+		for source in sources {
+			if let deltaT = source.deltaT(at: tt) {
+				return deltaT
+			}
+		}
+		return nil
+	}
+
+	/// Returns ΔT at the TT date whose UT1 is the specified date, from the first source that
+	/// covers that UT1 date.
+	///
+	/// Sources are tried by the UT1 date rather than the TT date. The two orders agree except
+	/// within a step where one source hands over to the next, where a UT1 date has no TT or two.
+	public func deltaT(atUT1 ut1: JulianDate) -> Double? {
+		for source in sources {
+			if let value = source.deltaT(atUT1: ut1) {
+				return value
+			}
+		}
+		return nil
+	}
+}
+
+/// A source of ΔT given by a function.
+///
+/// ```swift
+/// // ΔT fixed at 69.2 s, as stated for a published prediction
+/// let context = UT1.Context(deltaT: DeltaTFunction.constant(69.2))
+/// ```
+public struct DeltaTFunction: DeltaTSource {
+	/// The TT dates covered.
+	public let coverage: ClosedRange<JulianDate>
+	/// The function, returning ΔT in seconds at a TT, or `nil` where it does not apply.
+	let function: @Sendable (JulianDate) -> Double?
+
+	/// Creates a source from a function.
+	///
+	/// - Parameters:
+	///   - coverage: The TT dates the function covers. Outside them the source gives no ΔT
+	///     without calling the function. For converting UT1 to TT near where the function
+	///     begins or ends, the function should give ΔT throughout.
+	///   - function: A function returning ΔT, in seconds, at a Julian Date in TT, or `nil` for
+	///     dates it does not cover.
+	public init(coverage: ClosedRange<JulianDate> = .min ... .max, _ function: @escaping @Sendable (JulianDate) -> Double?) {
+		self.coverage = coverage
+		self.function = function
+	}
+
+	/// Returns a source with the same ΔT at every date.
+	///
+	/// - Parameter seconds: ΔT, in seconds.
+	public static func constant(_ seconds: Double) -> DeltaTFunction {
+		DeltaTFunction { _ in seconds }
+	}
+
+	public func deltaT(at tt: JulianDate) -> Double? {
+		guard coverage.contains(tt) else { return nil }
+		return function(tt)
+	}
+}

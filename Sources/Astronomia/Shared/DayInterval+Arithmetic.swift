@@ -10,8 +10,8 @@ extension DayInterval {
 	///
 	/// - Parameter other: The day interval to add.
 	/// - Returns: This day interval plus `other`.
-	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result cannot be
-	///   represented as an `Int`.
+	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result
+	///   cannot be represented as an `Int`.
 	public func adding(_ other: DayInterval) throws(DayIntervalError) -> DayInterval {
 		try DayInterval { acc throws(DayAccumulator.Failure) in
 			try acc.add(self)
@@ -23,8 +23,8 @@ extension DayInterval {
 	///
 	/// - Parameter other: The day interval to subtract.
 	/// - Returns: This day interval minus `other`.
-	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result cannot be
-	///   represented as an `Int`.
+	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result
+	///   cannot be represented as an `Int`.
 	public func subtracting(_ other: DayInterval) throws(DayIntervalError) -> DayInterval {
 		try DayInterval { acc throws(DayAccumulator.Failure) in
 			try acc.add(self)
@@ -38,8 +38,8 @@ extension DayInterval {
 	///
 	/// - Parameter days: The signed number of days to add.
 	/// - Returns: This day interval plus `days`.
-	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result cannot be
-	///   represented as an `Int`.
+	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result
+	///   cannot be represented as an `Int`.
 	public func adding(days: Int) throws(DayIntervalError) -> DayInterval {
 		let (n, overflow) = self.days.addingReportingOverflow(days)
 		guard !overflow else { throw .dayCountNotRepresentable }
@@ -86,8 +86,8 @@ extension DayInterval {
 	/// Returns the interval with its sign reversed.
 	///
 	/// - Returns: The negation of this day interval.
-	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result cannot be
-	///   represented as an `Int`.
+	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result
+	///   cannot be represented as an `Int`.
 	public func negated() throws(DayIntervalError) -> DayInterval {
 		if fractionalDay == -0.5 {
 			// -(d - 0.5) = (1 - d) - 0.5, keeping the fraction in [-0.5, 0.5)
@@ -108,8 +108,8 @@ extension DayInterval {
 	///
 	/// - Parameter k: The multiplier.
 	/// - Returns: This day interval times `k`.
-	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result cannot be
-	///   represented as an `Int`.
+	/// - Throws: ``DayIntervalError/dayCountNotRepresentable`` if the whole days in the result
+	///   cannot be represented as an `Int`.
 	public func multiplied(by k: Int) throws(DayIntervalError) -> DayInterval {
 		switch k {
 		case 1:  return self

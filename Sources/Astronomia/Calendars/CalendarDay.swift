@@ -72,7 +72,8 @@ public struct CalendarDay: Sendable {
 }
 
 extension CalendarDay {
-	/// Creates a calendar day from an unchecked year, month, day, and Julian day number in the specified calendar.
+	/// Creates a calendar day from an unchecked year, month, day, and Julian day number in the
+	/// specified calendar.
 	init(uncheckedYear Y: Int, month M: Int, day D: Int, julianDayNumber J: JulianDayNumber, _ calendar: CalendarIdentifier) {
 		assert(calendar.isValid(year: Y, month: M, day: D), "Invalid date")
 		assert(calendar.dateFromJulianDayNumber(J) == (Y, M, D), "Mismatch between date and Julian day number")

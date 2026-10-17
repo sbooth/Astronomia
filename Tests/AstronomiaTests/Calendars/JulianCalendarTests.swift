@@ -442,7 +442,8 @@ private func floorDivide(_ a: Int, _ b: Int) -> Int {
 }
 
 /// The Julian day number of a proleptic Julian date using the algorithm in chapter 7 of
-/// Meeus, *Astronomical Algorithms*, 2nd ed. (1998), in integer arithmetic. Valid for years after -4716.
+/// Meeus, *Astronomical Algorithms*, 2nd ed. (1998), in integer arithmetic. Valid for years
+/// after -4716.
 private func meeusJulianDayNumber(year: Int, month: Int, day: Int) -> JulianDayNumber {
 	let (Y, M) = month > 2 ? (year, month) : (year - 1, month + 12)
 	return floorDivide(1_461 * (Y + 4_716), 4) + (306_001 * (M + 1)) / 10_000 + day - 1_524

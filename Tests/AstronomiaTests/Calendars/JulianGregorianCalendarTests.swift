@@ -178,9 +178,10 @@ import Testing
 		#expect(try JulianGregorianCalendar.julianDayNumberFrom(year: -4712, month: 1, day: 1) == 0)
 		#expect(try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 4) == 2299160)
 		#expect(try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 15) == 2299161)
-		// NASA (https://ssd.jpl.nasa.gov/tools/jdc/) uses the Gregorian calendar for dates after 1582-10-04.
-		// This means that 1582-10-05 through 1582-10-14 are 10 JDN earlier than if the Julian calendar is used.
-		// JulianGregorianCalendar uses a different rule and uses the Julian calendar for dates before 1582-10-15.
+		// NASA (https://ssd.jpl.nasa.gov/tools/jdc/) uses the Gregorian calendar for dates after
+		// 1582-10-04. This means that 1582-10-05 through 1582-10-14 are 10 JDN earlier than if the
+		// Julian calendar is used. JulianGregorianCalendar uses a different rule and uses the
+		// Julian calendar for dates before 1582-10-15.
 		// I'm not sure why but who wants to argue with NASA?
 //		#expect(try JulianGregorianCalendar.julianDayNumberFrom(year: 1582, month: 10, day: 7) == 2299153)
 		#expect(try JulianGregorianCalendar.julianDayNumberFrom(year: 2000, month: 1, day: 1) == 2451545)
@@ -261,7 +262,8 @@ import Testing
 		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1583, month: -2, day: 1) == (1582, 10, 1))
 		// September 45 is counted in the Julian calendar
 		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1582, month: 9, day: 45) == (1582, 10, 25))
-		// November -20 is counted back in the Gregorian calendar to Gregorian October 11, which is Julian October 1
+		// November -20 is counted back in the Gregorian calendar to Gregorian October 11, which is
+		// Julian October 1
 		#expect(try JulianGregorianCalendar.normalizedDateFrom(year: 1582, month: 11, day: -20) == (1582, 10, 1))
 	}
 
