@@ -69,7 +69,7 @@ extension Timescale where Context == Void {
 	///   - julianDate: A Julian Date in this timescale.
 	/// - Returns: The same instant as a Julian Date in TT.
 	/// - Throws: A ``TimescaleConversionError`` if the conversion fails.
-	static func toTT(_ julianDate: JulianDate) throws(TimescaleConversionError) -> JulianDate {
+	public static func toTT(_ julianDate: JulianDate) throws(TimescaleConversionError) -> JulianDate {
 		try toTT(julianDate, context: ())
 	}
 
@@ -79,7 +79,7 @@ extension Timescale where Context == Void {
 	///   - julianDate: A Julian Date in TT.
 	/// - Returns: The same instant as a Julian Date in this timescale.
 	/// - Throws: A ``TimescaleConversionError`` if the conversion fails.
-	static func fromTT(_ julianDate: JulianDate) throws(TimescaleConversionError) -> JulianDate {
+	public static func fromTT(_ julianDate: JulianDate) throws(TimescaleConversionError) -> JulianDate {
 		try fromTT(julianDate, context: ())
 	}
 }
