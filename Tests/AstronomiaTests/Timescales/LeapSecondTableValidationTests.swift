@@ -51,11 +51,24 @@ import Testing
 		}
 	}
 
-	@Test func offsetOutOfRange() {
-		// Negative, or a day or more
-		for offset in [-1, 86_400, .max] {
+	@Test func stepsOfOneSecond() {
+		// A positive or a negative leap second
+		for offset in [11, 9] {
 			let leapSeconds = [LeapSecond(effective: start, taiMinusUTC: 10), LeapSecond(effective: july, taiMinusUTC: offset)]
-			#expect(LeapSecondTable(leapSeconds: leapSeconds, horizon: july + 1) == nil)
+			#expect(LeapSecondTable(leapSeconds: leapSeconds, horizon: july + 1) != nil)
 		}
+		// No change, or a change of more than a second, is not a leap second.
+		for offset in [10, 12, 8, 50, -1, 86_400, .max, .min] {
+			let leapSeconds = [LeapSecond(effective: start, taiMinusUTC: 10), LeapSecond(effective: july, taiMinusUTC: offset)]
+			#expect(LeapSecondTable(leapSeconds: leapSeconds, horizon: july + 1) == nil, "\(offset)")
+		}
+	}
+
+	@Test func offsetOutOfRange() {
+		// Ten negative leap seconds from 10 s reach 0 s; an eleventh would make it negative.
+		let tenDown = (0 ... 10).map { LeapSecond(effective: start + 183 * $0, taiMinusUTC: 10 - $0) }
+		#expect(LeapSecondTable(leapSeconds: tenDown, horizon: start + 183 * 11) != nil)
+		let elevenDown = (0 ... 11).map { LeapSecond(effective: start + 183 * $0, taiMinusUTC: 10 - $0) }
+		#expect(LeapSecondTable(leapSeconds: elevenDown, horizon: start + 183 * 12) == nil)
 	}
 }

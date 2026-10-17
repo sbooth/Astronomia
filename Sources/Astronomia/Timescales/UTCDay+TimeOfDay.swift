@@ -13,17 +13,13 @@ extension UTCDay {
 	///
 	/// - Parameter julianDate: A UTC Julian Date on this UTC day.
 	/// - Returns: The time of day on the UTC clock.
-	/// - Throws:
-	///   - ``TimescaleConversionError/dateOutOfRange`` if `julianDate` is not on this UTC day.
-	///   - ``TimescaleConversionError/unsupported`` if the reading is 23:59:61 or later, which a
-	///     ``TimeOfDay`` cannot represent. Only a leap second table whose TAI - UTC steps by
-	///     more than a second at the end of the day gives such a reading.
+	/// - Throws: ``TimescaleConversionError/dateOutOfRange`` if `julianDate` is not on this UTC
+	///   day.
 	public func timeOfDay(_ julianDate: JulianDate) throws(TimescaleConversionError) -> TimeOfDay {
-		// The product in secondsSinceMidnight can round up to the end of the day.
+		// A leap second table steps by at most a second, and the steps before 1972 were less,
+		// so a clock day is under 86,401 s. The product in secondsSinceMidnight can round up to
+		// the end of the day.
 		let seconds = try min(secondsSinceMidnight(julianDate), clockSeconds.nextDown)
-		// A leap second or a pre-1972 step makes readings pass 86,400 s by less than a second,
-		// but a custom table can step by more.
-		guard seconds < secondsPerDay + 1 else { throw .unsupported }
 		return TimeOfDay(uncheckedSecondsSinceMidnight: seconds)
 	}
 

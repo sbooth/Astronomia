@@ -47,8 +47,10 @@ public struct LeapSecondTable: Hashable, Sendable {
 	///
 	/// - Parameters:
 	///   - leapSeconds: TAI - UTC from 1972-01-01, when it was 10 s, in strictly increasing
-	///     order of effective day, each in the right-open interval [0, 86,400) s. Converting
-	///     TAI to UTC assumes UTC is behind TAI by less than a day.
+	///     order of effective day. Each later entry is a leap second, so it differs from the
+	///     one before by exactly one second, either way. Each must be in the right-open
+	///     interval [0, 86,400) s, since converting TAI to UTC assumes UTC is behind TAI by
+	///     less than a day.
 	///   - horizon: The Julian day number of the first UTC day whose length is not yet
 	///     determined. Must be after the last leap second's effective day.
 	/// - Returns: `nil` if `leapSeconds` does not begin at 1972-01-01 with 10 s, or the leap
@@ -60,7 +62,12 @@ public struct LeapSecondTable: Hashable, Sendable {
 
 		for (index, leapSecond) in leapSeconds.enumerated() {
 			guard leapSecond.taiMinusUTC >= 0, leapSecond.taiMinusUTC < Int(secondsPerDay) else { return nil }
-			if index > 0, leapSecond.effective <= leapSeconds[index - 1].effective { return nil }
+			if index > 0 {
+				let previous = leapSeconds[index - 1]
+				guard leapSecond.effective > previous.effective,
+					  (leapSecond.taiMinusUTC - previous.taiMinusUTC).magnitude == 1
+				else { return nil }
+			}
 		}
 
 		self.init(uncheckedLeapSeconds: leapSeconds, horizon: horizon)

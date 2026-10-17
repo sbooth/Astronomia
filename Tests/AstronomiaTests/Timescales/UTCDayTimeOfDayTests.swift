@@ -70,20 +70,6 @@ import Testing
 		}
 	}
 
-	@Test func stepOfMoreThanASecond() throws {
-		// A custom table in which TAI - UTC steps by two seconds at the end of 2027-06-30
-		let leapSeconds = try LeapSecondTable.builtIn.leapSeconds + [.init(effective: civilDay(2027, 7, 1), taiMinusUTC: 39)]
-		let table = try #require(LeapSecondTable(leapSeconds: leapSeconds, horizon: civilDay(2028, 1, 1)))
-		let day = try UTCDay(julianDayNumber: civilDay(2027, 6, 30), leapSecondTable: table)
-		#expect(day.clockSeconds == 86_402)
-
-		// 23:59:60.5 is a time of day, but 86,401.5 s is past what one can hold.
-		let leap = try day.timeOfDay(day.julianDate(TimeOfDay(hour: 23, minute: 59, second: 60.5)))
-		#expect(leap.hour == 23 && leap.minute == 59 && abs(leap.second - 60.5) <= timescaleTolerance)
-		let late = try day.julianDate(secondsSinceMidnight: 86_401.5)
-		#expect(throws: TimescaleConversionError.unsupported) { try day.timeOfDay(late) }
-	}
-
 	@Test func stepBefore1972() throws {
 		// 1971-12-31 ended with a step of 0.107758 s, so its clock read up to 23:59:60.107758.
 		let day = try UTCDay(julianDayNumber: civilDay(1971, 12, 31))
