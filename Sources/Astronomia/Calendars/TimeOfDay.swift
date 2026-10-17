@@ -19,7 +19,8 @@ public struct TimeOfDay: Hashable, Sendable {
 	public let hour: Int
 	/// The minute, from 0 to 59.
 	public let minute: Int
-	/// The second, in the right-open interval [0, 60), or [0, 61) during a leap second.
+	/// The second, in the right-open interval [0, 60), or [0, 61) at 23:59 during a leap
+	/// second.
 	public let second: Double
 
 	/// Creates a time of day.
@@ -29,14 +30,20 @@ public struct TimeOfDay: Hashable, Sendable {
 	/// - Parameters:
 	///   - hour: The hour, from 0 to 23.
 	///   - minute: The minute, from 0 to 59.
-	///   - second: The second, in the right-open interval [0, 61). A second of 60 or more is a
-	///     leap second, valid only at 23:59 on a UTC day ending in one.
+	///   - second: The second, in the right-open interval [0, 60), or [0, 61) at 23:59. A
+	///     second of 60 or more is a leap second, which occurs only on a UTC day ending in one;
+	///     ``UTCDay/julianDate(_:)`` checks that it does.
 	/// - Throws:
 	///   - ``CalendarError/nonFiniteValue`` if `second` is NaN or infinite.
-	///   - ``CalendarError/invalidTimeOfDay`` if a component is out of range.
+	///   - ``CalendarError/invalidTimeOfDay`` if a component is out of range, or the second is
+	///     60 or more at a time other than 23:59.
 	public init(hour: Int, minute: Int, second: Double = 0) throws(CalendarError) {
 		guard second.isFinite else { throw .nonFiniteValue }
-		guard hour >= 0 && hour <= 23, minute >= 0 && minute <= 59, second >= 0 && second < 61 else {
+		guard hour >= 0 && hour <= 23, minute >= 0 && minute <= 59, second >= 0 else {
+			throw .invalidTimeOfDay
+		}
+		// Only the last minute of a UTC day can hold a leap second.
+		guard second < 60 || (hour == 23 && minute == 59 && second < 61) else {
 			throw .invalidTimeOfDay
 		}
 		self.hour = hour

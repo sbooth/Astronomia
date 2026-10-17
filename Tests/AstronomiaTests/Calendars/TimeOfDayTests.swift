@@ -13,6 +13,11 @@ import Testing
 		#expect(throws: Never.self) { try TimeOfDay(hour: 0, minute: 0) }
 		#expect(throws: Never.self) { try TimeOfDay(hour: 23, minute: 59, second: 60.5) }
 		#expect(try TimeOfDay(hour: 1, minute: 2, second: -0.0).second.sign == .plus)
+		// A leap second only in the last minute of the day
+		#expect(throws: Never.self) { try TimeOfDay(hour: 12, minute: 34, second: Double(60).nextDown) }
+		for (hour, minute, second) in [(12, 34, 60.5), (23, 58, 60), (0, 0, 60), (23, 59, 61)] {
+			#expect(throws: CalendarError.invalidTimeOfDay) { try TimeOfDay(hour: hour, minute: minute, second: second) }
+		}
 		for (hour, minute, second) in [(24, 0, 0.0), (-1, 0, 0), (0, 60, 0), (0, -1, 0), (0, 0, 61), (0, 0, -0.001)] {
 			#expect(throws: CalendarError.invalidTimeOfDay) { try TimeOfDay(hour: hour, minute: minute, second: second) }
 		}

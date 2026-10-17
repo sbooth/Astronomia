@@ -46,6 +46,44 @@ import Testing
 		}
 	}
 
+	@Test func lastInstantOfDay() throws {
+		// 23:59:59.999… sums to 86,400 s, but is before midnight on an ordinary day.
+		let day = try UTCDay(julianDayNumber: civilDay(2026, 10, 16))
+		let time = try TimeOfDay(hour: 23, minute: 59, second: Double(60).nextDown)
+		let utc = try day.julianDate(time)
+		#expect(utc.julianDayNumber == day.julianDayNumber)
+		let back = try day.timeOfDay(utc)
+		#expect(back.hour == 23 && back.minute == 59 && back.second < 60)
+
+		// On a day ending in a leap second, the same holds just before 23:59:61.
+		let leapDay = try UTCDay(julianDayNumber: civilDay(2016, 12, 31))
+		let leap = try leapDay.timeOfDay(leapDay.julianDate(TimeOfDay(hour: 23, minute: 59, second: Double(61).nextDown)))
+		#expect(leap.hour == 23 && leap.minute == 59 && leap.second >= 60 && leap.second < 61)
+	}
+
+	@Test func shortenedDay() throws {
+		// 1961-07-31 ended 0.05 s early, so its clock stopped at 23:59:59.95.
+		let day = try UTCDay(julianDayNumber: civilDay(1961, 7, 31))
+		#expect(throws: Never.self) { try day.julianDate(TimeOfDay(hour: 23, minute: 59, second: 59.9)) }
+		#expect(throws: TimescaleConversionError.invalidTimeOfDay) {
+			try day.julianDate(TimeOfDay(hour: 23, minute: 59, second: 59.95))
+		}
+	}
+
+	@Test func stepOfMoreThanASecond() throws {
+		// A custom table in which TAI - UTC steps by two seconds at the end of 2027-06-30
+		let leapSeconds = try LeapSecondTable.builtIn.leapSeconds + [.init(effective: civilDay(2027, 7, 1), taiMinusUTC: 39)]
+		let table = try #require(LeapSecondTable(leapSeconds: leapSeconds, horizon: civilDay(2028, 1, 1)))
+		let day = try UTCDay(julianDayNumber: civilDay(2027, 6, 30), leapSecondTable: table)
+		#expect(day.clockSeconds == 86_402)
+
+		// 23:59:60.5 is a time of day, but 86,401.5 s is past what one can hold.
+		let leap = try day.timeOfDay(day.julianDate(TimeOfDay(hour: 23, minute: 59, second: 60.5)))
+		#expect(leap.hour == 23 && leap.minute == 59 && abs(leap.second - 60.5) <= timescaleTolerance)
+		let late = try day.julianDate(secondsSinceMidnight: 86_401.5)
+		#expect(throws: TimescaleConversionError.unsupported) { try day.timeOfDay(late) }
+	}
+
 	@Test func stepBefore1972() throws {
 		// 1971-12-31 ended with a step of 0.107758 s, so its clock read up to 23:59:60.107758.
 		let day = try UTCDay(julianDayNumber: civilDay(1971, 12, 31))
