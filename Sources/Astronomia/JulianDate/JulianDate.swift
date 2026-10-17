@@ -68,6 +68,15 @@ extension JulianDate {
 }
 
 extension JulianDate {
+	/// The earliest representable Julian Date, the start of the day with the smallest Julian
+	/// day number.
+	public static let min = JulianDate(uncheckedJulianDayNumber: .min, fractionFromNoon: -0.5)
+	/// The latest representable Julian Date, the last representable instant of the day with the
+	/// largest Julian day number.
+	public static let max = JulianDate(uncheckedJulianDayNumber: .max, fractionFromNoon: Double(0.5).nextDown)
+}
+
+extension JulianDate {
 	/// Creates a Julian Date `fractionFromNoon` days from noon on `julianDayNumber`.
 	///
 	/// `fractionFromNoon` need not lie in the right-open interval [-0.5, 0.5). Whole days are
@@ -260,7 +269,7 @@ extension JulianDate {
 	var fractionSinceMidnight: Double {
 		// The exact value `fractionFromNoon + 0.5` lies in [0, 1) but can round to 1.
 		// Clamping to `1.nextDown` keeps the instant in ``julianDayNumber``.
-		min(fractionFromNoon + noonToMidnightOffset, Double(1).nextDown)
+		Swift.min(fractionFromNoon + noonToMidnightOffset, Double(1).nextDown)
 	}
 
 	/// The Julian Date as a single value.
