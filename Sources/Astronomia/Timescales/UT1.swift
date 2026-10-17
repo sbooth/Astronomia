@@ -83,9 +83,9 @@ extension UT1 {
 		/// table, and a model that covers the date.
 		///
 		/// Whichever of `earthOrientation` and `deltaTTable` ends later is continued along its
-		/// trend over the last year for `trendYears` Julian years. Every other value comes
-		/// unchanged from one source, so ΔT can be discontinuous where one source hands over to
-		/// the next, including where the trend ends.
+		/// trend over the last year for ``defaultTrendYears`` Julian years. Every other value
+		/// comes unchanged from one source, so ΔT can be discontinuous where one source hands
+		/// over to the next, including where the trend ends.
 		///
 		/// To use other tables for different eras, combine their entries into one table, or
 		/// pass a ``DeltaTSourceList`` to ``init(deltaT:)``.
@@ -94,18 +94,51 @@ extension UT1 {
 		///   - earthOrientation: Observed and predicted Earth orientation.
 		///   - deltaTTable: Tabulated ΔT, used outside `earthOrientation`.
 		///   - model: The model used outside the data, or `nil` to require data.
+		public init(
+			earthOrientation: EarthOrientationTable? = nil,
+			deltaTTable: DeltaTTable? = .builtIn,
+			model: DeltaTModel? = .stephensonMorrisonHohenkerk2016
+		) {
+			self.init(uncheckedEarthOrientation: earthOrientation, deltaTTable: deltaTTable, model: model, trendYears: Self.defaultTrendYears)
+		}
+
+		/// Creates a UT1 context like ``init(earthOrientation:deltaTTable:model:)``, continuing
+		/// the most recent observations along their trend for `trendYears` Julian years.
+		///
+		/// - Parameters:
+		///   - earthOrientation: Observed and predicted Earth orientation.
+		///   - deltaTTable: Tabulated ΔT, used outside `earthOrientation`.
+		///   - model: The model used outside the data, or `nil` to require data.
 		///   - trendYears: The number of Julian years to continue the most recent
 		///     observations, or `nil` to use only published values.
+		/// - Throws: ``TimescaleConversionError/invalidExtrapolationLimit`` if `trendYears` is
+		///   not finite and nonnegative.
 		public init(
 			earthOrientation: EarthOrientationTable? = nil,
 			deltaTTable: DeltaTTable? = .builtIn,
 			model: DeltaTModel? = .stephensonMorrisonHohenkerk2016,
-			trendYears: Double? = defaultTrendYears
+			trendYears: Double?
+		) throws(TimescaleConversionError) {
+			if let trendYears {
+				guard trendYears.isFinite, trendYears >= 0 else { throw .invalidExtrapolationLimit }
+			}
+			self.init(uncheckedEarthOrientation: earthOrientation, deltaTTable: deltaTTable, model: model, trendYears: trendYears)
+		}
+
+		/// Creates a UT1 context with a trend length already known to be valid.
+		///
+		/// - Precondition: `trendYears` satisfies the requirements of
+		///   ``init(earthOrientation:deltaTTable:model:trendYears:)``.
+		init(
+			uncheckedEarthOrientation earthOrientation: EarthOrientationTable?,
+			deltaTTable: DeltaTTable?,
+			model: DeltaTModel?,
+			trendYears: Double?
 		) {
 			let latest = Self.latestObservations(earthOrientation, deltaTTable)
 			func trend(_ source: some BoundedDeltaTSource, isLatest: Bool) -> any DeltaTSource {
 				guard isLatest, let trendYears else { return source }
-				return DeltaTExtrapolation(source, after: .linear(), limit: trendYears)
+				return DeltaTExtrapolation(uncheckedSource: source, before: nil, after: .linear(), limit: trendYears)
 			}
 
 			var sources: [any DeltaTSource] = []
@@ -140,10 +173,10 @@ extension UT1 {
 			let latest = Self.latestObservations(earthOrientation, deltaTTable)
 			var sources: [any DeltaTSource] = []
 			if let earthOrientation {
-				sources.append(DeltaTExtrapolation(earthOrientation, after: latest == .earthOrientation ? join : nil))
+				sources.append(DeltaTExtrapolation(uncheckedSource: earthOrientation, before: nil, after: latest == .earthOrientation ? join : nil, limit: nil))
 			}
 			if let deltaTTable {
-				sources.append(DeltaTExtrapolation(deltaTTable, before: join, after: latest == .deltaTTable ? join : nil))
+				sources.append(DeltaTExtrapolation(uncheckedSource: deltaTTable, before: join, after: latest == .deltaTTable ? join : nil, limit: nil))
 			}
 			if let model {
 				sources.append(model)

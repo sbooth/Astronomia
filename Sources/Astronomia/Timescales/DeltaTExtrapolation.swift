@@ -21,7 +21,7 @@ public protocol BoundedDeltaTSource: DeltaTSource {
 /// ```swift
 /// // Observations, continued into the future along the model's trend
 /// let model = DeltaTModel.espenakMeeus2006
-/// let future = DeltaTExtrapolation(earthOrientation, after: .following(model))
+/// let future = try DeltaTExtrapolation(earthOrientation, after: .following(model))
 /// ```
 public struct DeltaTExtrapolation: DeltaTSource {
 	/// How ΔT continues past an end of the source's span.
@@ -29,7 +29,7 @@ public struct DeltaTExtrapolation: DeltaTSource {
 		/// ΔT stays at its value at the end.
 		case constant
 		/// ΔT continues at its average rate over the last `years` Julian years of the source,
-		/// or over the whole source if it is shorter.
+		/// or over the whole source if it is shorter. `years` must be finite and positive.
 		///
 		/// A year or more averages out the seasonal variation in daily Earth orientation data.
 		case linear(years: Double = 1)
@@ -57,7 +57,26 @@ public struct DeltaTExtrapolation: DeltaTSource {
 	///   - after: How ΔT continues after the source's span, or `nil` to not extend it.
 	///   - limit: The number of Julian years past an end to extend the source, or `nil` for no
 	///     limit.
-	public init(_ source: some BoundedDeltaTSource, before: Method? = nil, after: Method? = nil, limit: Double? = nil) {
+	/// - Throws:
+	///   - ``TimescaleConversionError/invalidExtrapolationLimit`` if `limit` is not finite and
+	///     nonnegative.
+	///   - ``TimescaleConversionError/invalidExtrapolationSpan`` if the span of a
+	///     ``Method/linear(years:)`` method is not finite and positive.
+	public init(_ source: some BoundedDeltaTSource, before: Method? = nil, after: Method? = nil, limit: Double? = nil) throws(TimescaleConversionError) {
+		if let limit {
+			guard limit.isFinite, limit >= 0 else { throw .invalidExtrapolationLimit }
+		}
+		for case .linear(let years)? in [before, after] {
+			guard years.isFinite, years > 0 else { throw .invalidExtrapolationSpan }
+		}
+		self.init(uncheckedSource: source, before: before, after: after, limit: limit)
+	}
+
+	/// Creates a source from arguments already known to be valid.
+	///
+	/// - Precondition: `limit` and any linear span satisfy the requirements of
+	///   ``init(_:before:after:limit:)``.
+	init(uncheckedSource source: some BoundedDeltaTSource, before: Method?, after: Method?, limit: Double?) {
 		self.source = source
 		self.before = before
 		self.after = after
@@ -93,14 +112,18 @@ public struct DeltaTExtrapolation: DeltaTSource {
 		case .constant:
 			return endDeltaT
 		case .linear(let span):
-			// The average rate from `span` years inside the end, or the far end if nearer
-			let inward = end == coverage.lowerBound ? span : -span
-			guard let offset = try? end.adding(days: inward * JulianDate.daysPerJulianYear) else { return nil }
+			// The average rate from `span` years inside the end, or from the far end if nearer.
+			// Capping the span at the source's length keeps a long span from overflowing.
+			guard let length = julianYears(from: coverage.lowerBound, to: coverage.upperBound) else { return nil }
+			let inward = min(span, length)
+			guard let offset = try? end.adding(days: (end == coverage.lowerBound ? inward : -inward) * JulianDate.daysPerJulianYear)
+			else { return nil }
 			let inside = min(max(offset, coverage.lowerBound), coverage.upperBound)
-			guard inside != end,
-				  let insideDeltaT = source.deltaT(at: inside),
+			// A source covering a single date has no rate, so ΔT stays at its value.
+			guard inside != end else { return endDeltaT }
+			guard let insideDeltaT = source.deltaT(at: inside),
 				  let baseline = julianYears(from: inside, to: end)
-			else { return endDeltaT }
+			else { return nil }
 			return endDeltaT + (endDeltaT - insideDeltaT) / baseline * years
 		case .following(let other):
 			guard let otherAtEnd = other.deltaT(at: end), let otherDeltaT = other.deltaT(at: tt) else { return nil }

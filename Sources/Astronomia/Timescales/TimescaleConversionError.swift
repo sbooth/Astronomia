@@ -5,7 +5,8 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// Errors that can occur when converting from one timescale to another.
+/// Errors that can occur when configuring a timescale conversion or converting from one
+/// timescale to another.
 public enum TimescaleConversionError: Error, Hashable, Sendable {
 	/// The resulting Julian day number cannot be represented as a ``JulianDayNumber``.
 	case dateOutOfRange
@@ -13,6 +14,10 @@ public enum TimescaleConversionError: Error, Hashable, Sendable {
 	case deltaTUnavailable
 	/// The time of day is invalid.
 	case invalidTimeOfDay
+	/// The limit of a ΔT extrapolation is not finite and nonnegative.
+	case invalidExtrapolationLimit
+	/// The span of a linear ΔT extrapolation is not finite and positive.
+	case invalidExtrapolationSpan
 	/// The leap second table from IERS Bulletin C is expired.
 	case leapSecondTableExpired
 	/// The value is NaN or infinite.

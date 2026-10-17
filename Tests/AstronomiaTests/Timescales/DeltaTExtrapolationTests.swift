@@ -53,23 +53,23 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 	}
 
 	@Test func withinSpanUsesSource() throws {
-		let source = DeltaTExtrapolation(try Self.table(), before: .constant, after: .constant)
+		let source = try DeltaTExtrapolation(Self.table(), before: .constant, after: .constant)
 		let (value, _) = try Self.deltaT(source, 2001)
 		#expect(try abs(#require(value) - 62) <= 1e-6)
 	}
 
 	@Test func notExtendedByDefault() throws {
-		let source = DeltaTExtrapolation(try Self.table())
+		let source = try DeltaTExtrapolation(Self.table())
 		#expect(try Self.deltaT(source, 1999).deltaT == nil)
 		#expect(try Self.deltaT(source, 2003).deltaT == nil)
 
-		let beforeOnly = DeltaTExtrapolation(try Self.table(), before: .constant)
+		let beforeOnly = try DeltaTExtrapolation(Self.table(), before: .constant)
 		#expect(try Self.deltaT(beforeOnly, 1999).deltaT == 60)
 		#expect(try Self.deltaT(beforeOnly, 2003).deltaT == nil)
 	}
 
 	@Test func constant() throws {
-		let source = DeltaTExtrapolation(try Self.table(), before: .constant, after: .constant)
+		let source = try DeltaTExtrapolation(Self.table(), before: .constant, after: .constant)
 		#expect(try Self.deltaT(source, 1990).deltaT == 60)
 		#expect(try Self.deltaT(source, 2010).deltaT == 63)
 	}
@@ -78,7 +78,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		// The rate over a Julian year at each end of the table. A year after 2000-01-01 is
 		// 2000-12-31T06:00, where ΔT is 60 + 2 × 365.25 / 366 s, and a year before 2002-01-01
 		// is 2000-12-31T18:00, where ΔT is 60 + 2 × 365.75 / 366 s.
-		let source = DeltaTExtrapolation(try Self.table(), before: .linear(), after: .linear())
+		let source = try DeltaTExtrapolation(Self.table(), before: .linear(), after: .linear())
 		// 1998-01-01 is 730 days before 2000-01-01
 		let (before, _) = try Self.deltaT(source, 1998)
 		#expect(try abs(#require(before) - 56.01092896174863) <= 1e-9)
@@ -89,7 +89,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 
 	@Test func linearOverShortSource() throws {
 		// Ten years is longer than the table, so the rate is over the whole table: 3 s in 731 days
-		let source = DeltaTExtrapolation(try Self.table(), before: .linear(years: 10), after: .linear(years: 10))
+		let source = try DeltaTExtrapolation(Self.table(), before: .linear(years: 10), after: .linear(years: 10))
 		let (before, _) = try Self.deltaT(source, 1998)
 		#expect(try abs(#require(before) - 57.00410396716826) <= 1e-9)
 		let (after, _) = try Self.deltaT(source, 2005)
@@ -98,7 +98,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 
 	@Test func model() throws {
 		let model = DeltaTModel.espenakMeeus2006
-		let source = DeltaTExtrapolation(try Self.table(), before: .following(model), after: .following(model))
+		let source = try DeltaTExtrapolation(Self.table(), before: .following(model), after: .following(model))
 		let (after, afterTT) = try Self.deltaT(source, 2010)
 		#expect(try abs(#require(after) - (63 + (model.deltaT(decimalYear: afterTT.decimalYear) - model.deltaT(decimalYear: 2002)))) <= 1e-9)
 		let (before, beforeTT) = try Self.deltaT(source, 1990)
@@ -111,7 +111,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 			Entry(decimalYear: 1990, deltaT: 0),
 			Entry(decimalYear: 2010, deltaT: 20),
 		]))
-		let source = DeltaTExtrapolation(try Self.table(), before: .following(other), after: .following(other))
+		let source = try DeltaTExtrapolation(Self.table(), before: .following(other), after: .following(other))
 		let end = try JulianDate(decimalYear: 2002)
 		let (after, afterTT) = try Self.deltaT(source, 2005)
 		let expected = try #require(other.deltaT(at: afterTT)) - #require(other.deltaT(at: end)) + 63
@@ -125,16 +125,54 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 
 	@Test func followingFunction() throws {
 		// Following a constant holds the end value
-		let constant = DeltaTExtrapolation(try Self.table(), after: .following(DeltaTFunction.constant(100)))
+		let constant = try DeltaTExtrapolation(Self.table(), after: .following(DeltaTFunction.constant(100)))
 		#expect(try Self.deltaT(constant, 2010).deltaT == 63)
 
 		// A source that covers nothing gives no ΔT
-		let empty = DeltaTExtrapolation(try Self.table(), after: .following(DeltaTFunction { _ in nil }))
+		let empty = try DeltaTExtrapolation(Self.table(), after: .following(DeltaTFunction { _ in nil }))
 		#expect(try Self.deltaT(empty, 2010).deltaT == nil)
 	}
 
+	@Test func invalidArguments() throws {
+		let table = try Self.table()
+		for value in [-1, -Double.ulpOfOne, Double.infinity, Double.nan] {
+			#expect(throws: TimescaleConversionError.invalidExtrapolationLimit, "\(value)") {
+				try DeltaTExtrapolation(table, after: .constant, limit: value)
+			}
+		}
+		for years in [0, -1, Double.infinity, Double.nan] {
+			#expect(throws: TimescaleConversionError.invalidExtrapolationSpan, "\(years)") {
+				try DeltaTExtrapolation(table, before: .linear(years: years))
+			}
+			#expect(throws: TimescaleConversionError.invalidExtrapolationSpan, "\(years)") {
+				try DeltaTExtrapolation(table, after: .linear(years: years))
+			}
+		}
+		// No limit, and methods without a span, are valid.
+		#expect(throws: Never.self) { try DeltaTExtrapolation(table, before: .constant, after: .following(DeltaTModel.espenakMeeus2006)) }
+	}
+
+	@Test func zeroLimit() throws {
+		// A limit of zero extends the source to its ends and no further.
+		let table = try Self.table()
+		let source = try DeltaTExtrapolation(table, before: .constant, after: .constant, limit: 0)
+		#expect(source.deltaT(at: table.coverage.upperBound) == 63)
+		#expect(try source.deltaT(at: table.coverage.upperBound.adding(seconds: 1)) == nil)
+		#expect(try source.deltaT(at: table.coverage.lowerBound.adding(seconds: -1)) == nil)
+	}
+
+	@Test func linearOverVeryLongSpan() throws {
+		// A span far longer than any date range uses the whole table, as a span of 10 years does.
+		let long = try DeltaTExtrapolation(Self.table(), before: .linear(years: 1e300), after: .linear(years: 1e300))
+		let ten = try DeltaTExtrapolation(Self.table(), before: .linear(years: 10), after: .linear(years: 10))
+		for year in [1998.0, 2005] {
+			let (value, _) = try Self.deltaT(long, year)
+			#expect(try value == Self.deltaT(ten, year).deltaT, "\(year)")
+		}
+	}
+
 	@Test func limit() throws {
-		let source = DeltaTExtrapolation(try Self.table(), before: .constant, after: .constant, limit: 1)
+		let source = try DeltaTExtrapolation(Self.table(), before: .constant, after: .constant, limit: 1)
 		#expect(try Self.deltaT(source, 2002.5).deltaT == 63)
 		#expect(try Self.deltaT(source, 2003.5).deltaT == nil)
 		#expect(try Self.deltaT(source, 1999.5).deltaT == 60)

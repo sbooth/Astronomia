@@ -72,9 +72,25 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		#expect(try UT1.deltaT(at: pastTrend, context: UT1.defaultContext) == model)
 
 		// Without a trend, ΔT is the model's right after the table.
-		let published = UT1.Context(trendYears: nil)
+		let published = try UT1.Context(trendYears: nil)
 		let model2 = DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: later.decimalYear)
 		#expect(try UT1.deltaT(at: later, context: published) == model2)
+	}
+
+	@Test func trendYears() throws {
+		// The default trend, a chosen trend, and none
+		let end = DeltaTTable.modern.coverage.upperBound
+		let afterTrend = try end.adding(days: 1.5 * JulianDate.daysPerJulianYear)
+		let short = try UT1.Context(trendYears: 1)
+		let model = DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: afterTrend.decimalYear)
+		#expect(try UT1.deltaT(at: afterTrend, context: short) == model)
+		#expect(try UT1.deltaT(at: afterTrend, context: UT1.Context()) != model)
+
+		for years in [-1, Double.infinity, Double.nan] {
+			#expect(throws: TimescaleConversionError.invalidExtrapolationLimit, "\(years)") {
+				try UT1.Context(trendYears: years)
+			}
+		}
 	}
 
 	@Test func trendContinuesLaterSource() throws {
