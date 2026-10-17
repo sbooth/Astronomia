@@ -445,6 +445,24 @@ extension JulianDate {
 		}
 	}
 
+	/// Returns the Julian Date moved back by the specified number of seconds.
+	///
+	/// - Important: Assumes 86,400 seconds per day.
+	/// - Parameter seconds: The signed number of seconds to subtract.
+	/// - Returns: This Julian Date moved back by `seconds` seconds.
+	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
+	///   number cannot be represented as a ``JulianDayNumber``.
+	public func subtracting(seconds: Int) throws(JulianDateError) -> JulianDate {
+		// The whole days and the remainder are subtracted in one sum, so neither is negated as
+		// an Int and nothing is rounded before the result.
+		let (days, remainder) = seconds.quotientAndRemainder(dividingBy: integerSecondsPerDay)
+		return try JulianDate { acc throws(DayAccumulator.Failure) in
+			try acc.add(noonBased: self)
+			try acc.subtract(days)
+			try acc.add(seconds: -Double(remainder))
+		}
+	}
+
 	/// Returns the Julian Date advanced by the two-part interval `seconds1 + seconds2`.
 	///
 	/// For full precision pass whole seconds in `seconds1` and the remainder in `seconds2`.
