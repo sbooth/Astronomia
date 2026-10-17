@@ -186,6 +186,26 @@ import Testing
 		}
 	}
 
+	@Test func slowConvergence() throws {
+		// ΔT(T0 + t) = 32 + 0.5 t over 200 s changes half as fast as TT, so each step of the
+		// iteration only halves its error. For UT1 = T0 the TT is T0 + 64 s, which eight steps
+		// alone would miss by a quarter of a second.
+		let start = try JulianDate(decimalYear: 2000)
+		let end = try start.adding(seconds: 200)
+		let rising = DeltaTFunction(coverage: start ... end) { tt in
+			(try? start.interval(to: tt)).map { 32 + 0.5 * $0.inSeconds }
+		}
+		#expect(try abs(#require(rising.deltaT(atUT1: start)) - 64) <= 1e-6)
+		let tt = try UT1.toTT(start, context: UT1.Context(deltaT: rising))
+		#expect(try tt.isApproximatelyEqual(to: start.adding(seconds: 64), toleranceSeconds: 1e-6))
+
+		// Falling nearly as fast as TT rises, the iteration oscillates. TT = T0 + 100 / 1.9 s.
+		let falling = DeltaTFunction(coverage: start ... end) { tt in
+			(try? start.interval(to: tt)).map { 100 - 0.9 * $0.inSeconds }
+		}
+		#expect(try abs(#require(falling.deltaT(atUT1: start)) - 100 / 1.9) <= 1e-6)
+	}
+
 	@Test func nonFiniteDeltaT() throws {
 		let ut1 = try JulianDate(decimalYear: 2026)
 		#expect(throws: TimescaleConversionError.nonFiniteValue) {

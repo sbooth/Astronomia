@@ -53,6 +53,9 @@ extension DeltaTSource {
 	/// steps. Clamping cannot move an estimate away from a solution within `range`, so the
 	/// iteration never evaluates ΔT outside it.
 	///
+	/// A source whose ΔT changes nearly as fast as TT converges too slowly for that, so after
+	/// eight steps the TT is bracketed and found by bisection instead.
+	///
 	/// The UT1 dates covered run from the UT1 of the first date in `range` to that of the
 	/// last, computed as ``UT1/fromTT(_:context:)`` computes them, so the UT1 of either end is
 	/// itself covered. An end at ``JulianDate/min`` or ``JulianDate/max`` is open: ΔT is not
@@ -64,7 +67,8 @@ extension DeltaTSource {
 	/// - Returns: ΔT, in seconds, or `nil` if `ut1` is outside the UT1 dates covered, ΔT is
 	///   unavailable or non-finite at a bounded end of `range`, or ΔT is unavailable at a date
 	///   the iteration reaches. A non-finite ΔT at a date the iteration reaches is returned for
-	///   the caller to report.
+	///   the caller to report. If the iteration does not converge, the result is that of
+	///   bisection, which returns `nil` rather than an unconverged value.
 	func iteratedDeltaT(atUT1 ut1: JulianDate, within range: ClosedRange<JulianDate>) -> Double? {
 		// Rejects a UT1 date before the UT1 of the first date covered or after that of the last.
 		for (end, isFirst) in [(range.lowerBound, true), (range.upperBound, false)] {
@@ -78,16 +82,81 @@ extension DeltaTSource {
 		}
 
 		var tt = ut1.clamped(to: range)
-		var value = 0.0
 		for _ in 0 ..< 8 {
 			guard let next = deltaT(at: tt) else { return nil }
 			// A non-finite or unrepresentable step is left for the caller to report.
 			guard next.isFinite, let estimate = try? ut1.adding(seconds: next) else { return next }
 			let nextTT = estimate.clamped(to: range)
 			if nextTT == tt { return next }
-			(tt, value) = (nextTT, next)
+			tt = nextTT
 		}
-		return value
+		return bisectedDeltaT(atUT1: ut1, within: range, from: tt)
+	}
+
+	/// Returns ΔT at the TT date whose UT1 is `ut1`, by bisection within `range`.
+	///
+	/// UT1 = TT - ΔT increases with TT wherever ΔT changes more slowly than TT, so a date whose
+	/// UT1 is before `ut1` and one whose UT1 is after it bracket the TT. From `start`, the search
+	/// steps toward the TT, doubling the step, until it passes the TT, then halves the bracket
+	/// until its ends are neighboring dates, and takes the end whose UT1 is nearer `ut1`.
+	///
+	/// - Parameters:
+	///   - ut1: A Julian Date in UT1.
+	///   - range: The TT dates covered.
+	///   - start: A TT date in `range` to search from.
+	/// - Returns: ΔT, in seconds, or `nil` if ΔT is unavailable or non-finite at a date the
+	///   search reaches, or the search reaches an end of `range` without passing the TT.
+	private func bisectedDeltaT(atUT1 ut1: JulianDate, within range: ClosedRange<JulianDate>, from start: JulianDate) -> Double? {
+		/// A TT date, the seconds from `ut1` to its UT1, and ΔT there.
+		typealias Point = (date: JulianDate, seconds: Double, deltaT: Double)
+
+		/// Returns `tt` as a point, or `nil` if ΔT there is unavailable or non-finite.
+		func point(_ tt: JulianDate) -> Point? {
+			guard let value = deltaT(at: tt), value.isFinite,
+				  let pointUT1 = try? tt.adding(seconds: -value),
+				  let interval = try? ut1.interval(to: pointUT1)
+			else { return nil }
+			return (tt, interval.inSeconds, value)
+		}
+
+		guard let first = point(start) else { return nil }
+		guard first.seconds != 0 else { return first.deltaT }
+
+		// The TT is after `start` if the UT1 of `start` is before `ut1`. `inner` stays on the
+		// side of `start` and `outer`, once found, is on the other side or at the TT.
+		let isForward = first.seconds < 0
+		let end = isForward ? range.upperBound : range.lowerBound
+		var inner = first
+		var outer: Point?
+		var step = first.seconds.magnitude
+		for _ in 0 ..< 128 {
+			let date = ((try? start.adding(seconds: isForward ? step : -step)) ?? end).clamped(to: range)
+			guard let next = point(date) else { return nil }
+			if next.seconds != 0, (next.seconds < 0) == isForward {
+				guard date != end else { return nil }
+				inner = next
+				step *= 2
+			} else {
+				outer = next
+				break
+			}
+		}
+		guard var outer else { return nil }
+
+		for _ in 0 ..< 256 {
+			let (low, high) = isForward ? (inner.date, outer.date) : (outer.date, inner.date)
+			guard let span = try? low.interval(to: high),
+				  let mid = try? low.adding(days: span.inDays / 2),
+				  low < mid, mid < high
+			else { break }
+			guard let next = point(mid) else { return nil }
+			if next.seconds != 0, (next.seconds < 0) == isForward {
+				inner = next
+			} else {
+				outer = next
+			}
+		}
+		return inner.seconds.magnitude < outer.seconds.magnitude ? inner.deltaT : outer.deltaT
 	}
 }
 
