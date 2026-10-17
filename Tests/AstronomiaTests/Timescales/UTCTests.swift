@@ -277,6 +277,16 @@ let stepDays: [StepDay] = [
 		#expect(try abs(clockReading(extrapolated.julianDate) - 0.5) <= timescaleTolerance)
 	}
 
+	@Test func conversionsWithoutContextUseDefault() throws {
+		// Timescales with a context convert with their default context when none is given.
+		let utc = try utcDate(civilDay(2026, 10, 17), seconds: 43_200)
+		let tt = try UTC.toTT(utc)
+		#expect(try tt == UTC.toTT(utc, context: UTC.defaultContext))
+		#expect(try UTC.fromTT(tt) == UTC.fromTT(tt, context: UTC.defaultContext))
+		#expect(try UT1.fromTT(tt) == UT1.fromTT(tt, context: UT1.defaultContext))
+		#expect(try TDB.fromTT(tt) == TDB.fromTT(tt, context: TDB.defaultContext))
+	}
+
 	@Test func farFuture() throws {
 		let day = try civilDay(2200, 1, 1)
 		let utc = try Instant<UTC>(utcDate(day, seconds: 43_200))

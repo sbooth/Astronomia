@@ -33,7 +33,9 @@
 /// Timescales without leap seconds or a variable day length conform to
 /// ``UniformTimescale``, which adds elapsed-time arithmetic to ``Instant``.
 public protocol Timescale: Sendable {
+	/// Timescale-specific conversion data, such as leap second tables or Earth orientation data.
 	associatedtype Context: Sendable = Void
+	/// Default conversion data.
 	static var defaultContext: Context { get }
 
 	/// The conventional abbreviation of the timescale, such as `"TT"`.
@@ -43,8 +45,7 @@ public protocol Timescale: Sendable {
 	///
 	/// - Parameters:
 	///   - julianDate: A Julian Date in this timescale.
-	///   - context: Data used by conversions that depend on observations, such as leap
-	///     second tables or Earth orientation data.
+	///   - context: Timescale-specific conversion data.
 	/// - Returns: The same instant as a Julian Date in TT.
 	/// - Throws: A ``TimescaleConversionError`` if the conversion fails.
 	static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate
@@ -53,8 +54,7 @@ public protocol Timescale: Sendable {
 	///
 	/// - Parameters:
 	///   - julianDate: A Julian Date in TT.
-	///   - context: The data used by conversions that depend on observations, such as leap
-	///     seconds.
+	///   - context: Timescale-specific conversion data.
 	/// - Returns: The same instant as a Julian Date in this timescale.
 	/// - Throws: A ``TimescaleConversionError`` if the conversion fails.
 	static func fromTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate
@@ -62,24 +62,26 @@ public protocol Timescale: Sendable {
 
 extension Timescale where Context == Void {
 	public static var defaultContext: Void { () }
+}
 
-	/// Converts a Julian Date in this timescale to TT.
+extension Timescale {
+	/// Converts a Julian Date in this timescale to TT using the default conversion data.
 	///
 	/// - Parameters:
 	///   - julianDate: A Julian Date in this timescale.
 	/// - Returns: The same instant as a Julian Date in TT.
 	/// - Throws: A ``TimescaleConversionError`` if the conversion fails.
 	public static func toTT(_ julianDate: JulianDate) throws(TimescaleConversionError) -> JulianDate {
-		try toTT(julianDate, context: ())
+		try toTT(julianDate, context: defaultContext)
 	}
 
-	/// Converts a Julian Date from TT to this timescale.
+	/// Converts a Julian Date from TT to this timescale using the default conversion data.
 	///
 	/// - Parameters:
 	///   - julianDate: A Julian Date in TT.
 	/// - Returns: The same instant as a Julian Date in this timescale.
 	/// - Throws: A ``TimescaleConversionError`` if the conversion fails.
 	public static func fromTT(_ julianDate: JulianDate) throws(TimescaleConversionError) -> JulianDate {
-		try fromTT(julianDate, context: ())
+		try fromTT(julianDate, context: defaultContext)
 	}
 }
