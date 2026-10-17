@@ -14,7 +14,8 @@ public enum TimescaleConversionError: Error, Hashable, Sendable {
 	case deltaTUnavailable
 	/// The time of day is invalid.
 	case invalidTimeOfDay
-	/// The limit of a ΔT extrapolation is not finite and nonnegative.
+	/// The limit of a ΔT extrapolation is inside the bound it extends, or a number of years that
+	/// is not finite and nonnegative.
 	case invalidExtrapolationLimit
 	/// The span of a linear ΔT extrapolation is not finite and positive.
 	case invalidExtrapolationSpan

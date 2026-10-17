@@ -35,17 +35,13 @@ public enum UT1: Timescale {
 	public static let defaultContext = Context()
 
 	public static func toTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
-		// TT = UT1 + ΔT(TT). Each evaluation shrinks the error by a factor of dΔT/dt,
-		// at most about 2 × 10^-6 even for the model in antiquity, so four suffice.
-		var tt = julianDate
-		for _ in 0 ..< 4 {
-			let deltaT = try deltaT(at: tt, context: context)
-			do throws(JulianDateError) {
-				tt = try julianDate.adding(seconds: deltaT)
-			}
-			catch { throw TimescaleConversionError(error) }
+		// TT = UT1 + ΔT(TT), with the TT found by the source
+		guard let deltaT = context.deltaT.deltaT(atUT1: julianDate) else { throw .deltaTUnavailable }
+		guard deltaT.isFinite else { throw .nonFiniteValue }
+		do throws(JulianDateError) {
+			return try julianDate.adding(seconds: deltaT)
 		}
-		return tt
+		catch { throw TimescaleConversionError(error) }
 	}
 
 	public static func fromTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
@@ -136,14 +132,22 @@ extension UT1 {
 			trendYears: Double?
 		) {
 			let latest = Self.latestObservations(earthOrientation, deltaTTable)
-			func trend(_ source: some BoundedDeltaTSource, isLatest: Bool) -> any DeltaTSource {
-				guard isLatest, let trendYears else { return source }
-				return DeltaTExtrapolation(uncheckedSource: source, before: nil, after: .linear(), limit: trendYears)
+			var sources: [any DeltaTSource] = []
+			/// Appends `source`, followed by its trend if it has the most recent observations.
+			func append(_ source: some DeltaTSource, isLatest: Bool) {
+				sources.append(source)
+				guard isLatest, let trendYears else { return }
+				// A limit too far to represent leaves the trend unlimited.
+				let end = source.coverage.upperBound
+				let limit = (try? end.adding(days: trendYears * JulianDate.daysPerJulianYear)) ?? .max
+				// A valid table gives a finite ΔT throughout, so the trend can always be made.
+				if let trend = try? LinearDeltaTExtrapolation(after: source, through: limit) {
+					sources.append(trend)
+				}
 			}
 
-			var sources: [any DeltaTSource] = []
-			if let earthOrientation { sources.append(trend(earthOrientation, isLatest: latest == .earthOrientation)) }
-			if let deltaTTable { sources.append(trend(deltaTTable, isLatest: latest == .deltaTTable)) }
+			if let earthOrientation { append(earthOrientation, isLatest: latest == .earthOrientation) }
+			if let deltaTTable { append(deltaTTable, isLatest: latest == .deltaTTable) }
 			if let model { sources.append(model) }
 			self.init(deltaT: DeltaTSourceList(sources))
 		}
@@ -169,14 +173,24 @@ extension UT1 {
 			deltaTTable: DeltaTTable? = .builtIn,
 			model: DeltaTModel? = .stephensonMorrisonHohenkerk2016
 		) -> Context {
-			let join = model.map { DeltaTExtrapolation.Method.following($0) }
 			let latest = Self.latestObservations(earthOrientation, deltaTTable)
 			var sources: [any DeltaTSource] = []
+			// The models cover every date, and a valid table gives a finite ΔT at its ends, so
+			// the joins can always be made.
 			if let earthOrientation {
-				sources.append(DeltaTExtrapolation(uncheckedSource: earthOrientation, before: nil, after: latest == .earthOrientation ? join : nil, limit: nil))
+				sources.append(earthOrientation)
+				if latest == .earthOrientation, let model, let join = try? JoinedDeltaTSource(model, after: earthOrientation) {
+					sources.append(join)
+				}
 			}
 			if let deltaTTable {
-				sources.append(DeltaTExtrapolation(uncheckedSource: deltaTTable, before: join, after: latest == .deltaTTable ? join : nil, limit: nil))
+				sources.append(deltaTTable)
+				if let model, let join = try? JoinedDeltaTSource(model, before: deltaTTable) {
+					sources.append(join)
+				}
+				if latest == .deltaTTable, let model, let join = try? JoinedDeltaTSource(model, after: deltaTTable) {
+					sources.append(join)
+				}
 			}
 			if let model {
 				sources.append(model)

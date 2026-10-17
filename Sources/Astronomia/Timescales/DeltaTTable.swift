@@ -49,7 +49,9 @@ public struct DeltaTTable: Hashable, Sendable {
 	/// Creates a table.
 	///
 	/// - Parameter entries: At least two entries in strictly increasing order of date, with
-	///   finite values of ΔT and finite, nonnegative uncertainties.
+	///   finite values of ΔT and finite, nonnegative uncertainties. ΔT must change by less
+	///   than the time between neighboring entries, so that it changes more slowly than TT and
+	///   each UT1 date has one TT.
 	/// - Returns: `nil` if the entries are invalid.
 	public init?(entries: [Entry]) {
 		guard entries.count >= 2 else { return nil }
@@ -62,7 +64,8 @@ public struct DeltaTTable: Hashable, Sendable {
 			if index > 0 {
 				let previous = entries[index - 1].tt
 				// Interpolation needs the interval between neighboring entries.
-				guard entry.tt > previous, (try? previous.interval(to: entry.tt)) != nil else { return nil }
+				guard entry.tt > previous, let span = try? previous.interval(to: entry.tt) else { return nil }
+				guard (entry.deltaT - entries[index - 1].deltaT).magnitude < span.inSeconds else { return nil }
 			}
 		}
 
@@ -125,7 +128,19 @@ extension DeltaTTable: DeltaTSource {
 	public func deltaT(at tt: JulianDate) -> Double? {
 		deltaTAndUncertainty(at: tt)?.seconds
 	}
+
+	/// Returns ΔT at the TT date whose UT1 is the specified date, by inverse linear
+	/// interpolation between entries.
+	///
+	/// - Parameter ut1: A Julian Date in UT1.
+	/// - Returns: ΔT, in seconds, or `nil` if the TT of `ut1` is outside ``coverage``. At the UT1
+	///   of an entry, the entry's value.
+	public func deltaT(atUT1 ut1: JulianDate) -> Double? {
+		entries.inverseLinearDeltaT(atUT1: ut1)
+	}
 }
+
+extension DeltaTTable.Entry: DeltaTSample {}
 
 extension DeltaTTable {
 	/// ΔT at half-year intervals from 1657.0 to 1984.5, from the USNO file
