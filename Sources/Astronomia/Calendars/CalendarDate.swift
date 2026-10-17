@@ -103,15 +103,11 @@ extension CalendarDate {
 }
 
 extension CalendarDate {
-	/// Returns the calendar date the specified number of days plus fractional day before (for
-	/// negative values) or after (for positive values) this calendar date, in the same
-	/// calendar.
-	///
-	/// `days` may be negative but `fractionalDay` may not; to move back by a fraction of a day,
-	/// use ``adding(days:)-(Double)`` or pass one fewer day and the complementary fraction.
+	/// Returns the calendar date the specified number of days plus fractional day after this
+	/// calendar date, in the same calendar.
 	///
 	/// - Parameters:
-	///   - days: The signed number of whole days to add.
+	///   - days: The number of whole days to add.
 	///   - fractionalDay: The additional fraction of a day to add.
 	/// - Returns: The resulting calendar date, in this calendar date's calendar.
 	/// - Throws:
@@ -127,6 +123,29 @@ extension CalendarDate {
 			try acc.add(midnightBased: self)
 			try acc.add(days)
 			try acc.add(fractionalDay)
+		}
+	}
+
+	/// Returns the calendar date the specified number of days plus fractional day before this
+	/// calendar date, in the same calendar.
+	///
+	/// - Parameters:
+	///   - days: The number of whole days to subtract.
+	///   - fractionalDay: The additional fraction of a day to subtract.
+	/// - Returns: The resulting calendar date, in this calendar date's calendar.
+	/// - Throws:
+	///   - ``CalendarError/nonFiniteValue`` if the fractional day is not finite.
+	///   - ``CalendarError/invalidDayFraction`` if the fractional day is outside
+	///     the right-open interval [0, 1).
+	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the resulting day's Julian day
+	///     number cannot be represented as a ``JulianDayNumber``.
+	public func subtracting(days: Int, fractionalDay: Double = 0) throws(CalendarError) -> CalendarDate {
+		guard fractionalDay.isFinite else { throw .nonFiniteValue }
+		guard fractionalDay >= 0, fractionalDay < 1 else { throw .invalidDayFraction }
+		return try CalendarDate(calendar) { acc throws(DayAccumulator.Failure) in
+			try acc.add(midnightBased: self)
+			try acc.subtract(days)
+			try acc.add(-fractionalDay)
 		}
 	}
 
