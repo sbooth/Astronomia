@@ -153,7 +153,7 @@ extension Angle {
 	///
 	/// Equivalent to ``init(hourAngle:)``, for use where the type is known, as in `.hourAngle(2)`.
 	///
-	/// - Parameter degrees: The angle in hours.
+	/// - Parameter hourAngle: The angle in hours.
 	/// - Returns: The angle.
 	public static func hourAngle(_ hourAngle: Double) -> Angle { Angle(hourAngle: hourAngle) }
 }
