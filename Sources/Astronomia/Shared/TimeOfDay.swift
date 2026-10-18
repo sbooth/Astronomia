@@ -10,10 +10,6 @@
 /// The second is not rounded, so the components are always in range: 59.9999 s stays
 /// 59.9999 s rather than becoming 60 s. Rounding for display, with its carry into the minute,
 /// hour, and day, belongs to formatting.
-///
-/// The second can reach 60 only on a UTC day ending in a leap second, as 23:59:60. A
-/// ``CalendarDate`` assumes a day of 86,400 seconds, so its times of day have seconds below 60;
-/// use ``UTCDay/timeOfDay(_:)`` for UTC times on any day.
 public struct TimeOfDay: Hashable, Sendable {
 	/// The hour, from 0 to 23.
 	public let hour: Int
@@ -31,20 +27,19 @@ public struct TimeOfDay: Hashable, Sendable {
 	///   - hour: The hour, from 0 to 23.
 	///   - minute: The minute, from 0 to 59.
 	///   - second: The second, in the right-open interval [0, 60), or [0, 61) at 23:59. A
-	///     second of 60 or more is a leap second, which occurs only on a UTC day ending in one;
-	///     ``UTCDay/julianDate(_:)`` checks that it does.
+	///     second of 60 or more is a leap second, which occurs only on a UTC day ending in one.
 	/// - Throws:
-	///   - ``CalendarError/nonFiniteValue`` if `second` is NaN or infinite.
-	///   - ``CalendarError/invalidTimeOfDay`` if a component is out of range, or the second is
+	///   - ``TimeOfDayError/nonFiniteValue`` if `second` is NaN or infinite.
+	///   - ``TimeOfDayError/invalid`` if a component is out of range, or the second is
 	///     60 or more at a time other than 23:59.
-	public init(hour: Int, minute: Int, second: Double = 0) throws(CalendarError) {
+	public init(hour: Int, minute: Int, second: Double = 0) throws(TimeOfDayError) {
 		guard second.isFinite else { throw .nonFiniteValue }
 		guard hour >= 0 && hour <= 23, minute >= 0 && minute <= 59, second >= 0 else {
-			throw .invalidTimeOfDay
+			throw .invalid
 		}
 		// Only the last minute of a UTC day can hold a leap second.
 		guard second < 60 || (hour == 23 && minute == 59 && second < 61) else {
-			throw .invalidTimeOfDay
+			throw .invalid
 		}
 		self.hour = hour
 		self.minute = minute

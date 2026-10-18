@@ -23,3 +23,15 @@ public enum CalendarError: Error, Hashable, Sendable {
 	/// The day fraction or number of days is not finite.
 	case nonFiniteValue
 }
+
+extension CalendarError {
+	/// Creates a calendar error from the time of day error that caused it.
+	init(_ error: TimeOfDayError) {
+		switch error {
+		case .invalid:
+			self = .invalidTimeOfDay
+		case .nonFiniteValue:
+			self = .nonFiniteValue
+		}
+	}
+}

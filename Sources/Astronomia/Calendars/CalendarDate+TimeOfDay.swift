@@ -43,7 +43,11 @@ extension CalendarDate {
 	///     ``JulianDayNumber``.
 	public init(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Double = 0, _ calendar: CalendarIdentifier) throws(CalendarError) {
 		let calendarDay = try CalendarDay(year: year, month: month, day: day, calendar)
-		let timeOfDay = try TimeOfDay(hour: hour, minute: minute, second: second)
+		let timeOfDay: TimeOfDay
+		do throws(TimeOfDayError) {
+			timeOfDay = try TimeOfDay(hour: hour, minute: minute, second: second)
+		}
+		catch { throw CalendarError(error) }
 		try self.init(calendarDay: calendarDay, timeOfDay: timeOfDay)
 	}
 
