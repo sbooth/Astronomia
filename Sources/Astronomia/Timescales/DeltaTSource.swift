@@ -106,7 +106,7 @@ extension DeltaTSource {
 	///   - start: A TT date in `range` to search from.
 	/// - Returns: ΔT, in seconds, or `nil` if ΔT is unavailable or non-finite at a date the
 	///   search reaches, or the search reaches an end of `range` without passing the TT.
-	private func bisectedDeltaT(atUT1 ut1: JulianDate, within range: ClosedRange<JulianDate>, from start: JulianDate) -> Double? {
+	func bisectedDeltaT(atUT1 ut1: JulianDate, within range: ClosedRange<JulianDate>, from start: JulianDate) -> Double? {
 		/// A TT date, the seconds from `ut1` to its UT1, and ΔT there.
 		typealias Point = (date: JulianDate, seconds: Double, deltaT: Double)
 
