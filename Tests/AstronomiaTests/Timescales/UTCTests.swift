@@ -296,6 +296,23 @@ let stepDays: [StepDay] = [
 			try utc.converted(to: TAI.self, sourceContext: strictContext)
 		}
 	}
+
+	@Test func lastRepresentableDay() throws {
+		// 23:59:30 UTC on the day before the last representable day is 00:00:39.184 TT on the
+		// last, with TAI - UTC held at 37 s. A UTC day needs the next day's offset, so the last
+		// day itself cannot be a UTC day.
+		let utc = try utcDate(.max - 1, seconds: 86_370)
+		let tt = try UTC.toTT(utc, context: UTC.defaultContext)
+		#expect(tt.julianDayNumber == .max)
+		#expect(try abs(seconds(from: uniformDate(.max), to: tt) - 39.184) <= timescaleTolerance)
+		let back = try UTC.fromTT(tt, context: UTC.defaultContext)
+		#expect(back.julianDayNumber == .max - 1)
+		#expect(try abs(clockReading(back) - 86_370) <= timescaleTolerance)
+
+		// Past the end of that UTC day, the UTC day would be the last representable day.
+		let later = try uniformDate(.max, seconds: 90)
+		#expect(throws: TimescaleConversionError.dateOutOfRange) { try UTC.fromTT(later, context: UTC.defaultContext) }
+	}
 }
 
 @Suite struct UTCContextTests {

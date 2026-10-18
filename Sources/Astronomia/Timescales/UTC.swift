@@ -35,18 +35,12 @@ public enum UTC: Timescale {
 
 	public static func fromTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		let tai = try TAI.fromTT(julianDate)
-
-		// TAI is ahead of UTC by less than a day, so the UTC day is either TAI's calendar day
-		// or the day before
-		var day = try UTCDay(julianDayNumber: tai.julianDayNumber, leapSecondTable: context.leapSecondTable)
-		var startOfDay = try day.tai(fractionSinceMidnight: 0)
-		if tai < startOfDay {
-			let (previousJ, overflow) = day.julianDayNumber.subtractingReportingOverflow(1)
-			guard !overflow else { throw .dateOutOfRange }
-			day = try UTCDay(julianDayNumber: previousJ, leapSecondTable: context.leapSecondTable)
-			startOfDay = try day.tai(fractionSinceMidnight: 0)
-		}
+		let day = try UTCDay(containingTAI: tai, leapSecondTable: context.leapSecondTable)
+		let startOfDay = try day.tai(fractionSinceMidnight: 0)
 		let endOfDay = try day.tai(fractionSinceMidnight: 1)
+		// Only on the last representable day can TAI be past the end of the day before, which
+		// leaves the UTC day out of range.
+		guard tai < endOfDay else { throw .dateOutOfRange }
 
 		try day.offsetSource.check(context.extrapolationPolicy)
 
@@ -121,9 +115,30 @@ extension UTC {
 	}
 }
 
+extension UTCDay {
+	/// Creates the UTC day containing a TAI Julian Date.
+	///
+	/// TAI is ahead of UTC by less than a day, so the UTC day is either TAI's calendar day or
+	/// the day before. A UTC day needs the offset at the start of the next day, so the last
+	/// representable day cannot be one, and there only the day before is a candidate.
+	fileprivate init(containingTAI tai: JulianDate, leapSecondTable: LeapSecondTable) throws(TimescaleConversionError) {
+		let taiJDN = tai.julianDayNumber
+		if taiJDN < .max {
+			let candidate = try UTCDay(julianDayNumber: taiJDN, leapSecondTable: leapSecondTable)
+			if try tai >= candidate.tai(fractionSinceMidnight: 0) {
+				self = candidate
+				return
+			}
+		}
+		let (previousJ, overflow) = taiJDN.subtractingReportingOverflow(1)
+		guard !overflow else { throw .dateOutOfRange }
+		try self.init(julianDayNumber: previousJ, leapSecondTable: leapSecondTable)
+	}
+}
+
 extension UTCDay.OffsetSource {
 	/// Throws if `policy` does not allow this offset source.
-	func check(_ policy: UTC.ExtrapolationPolicy) throws(TimescaleConversionError) {
+	fileprivate func check(_ policy: UTC.ExtrapolationPolicy) throws(TimescaleConversionError) {
 		if policy == .strict && self == .extrapolation { throw .leapSecondTableExpired }
 	}
 }
