@@ -164,7 +164,7 @@ extension Angle {
 	///
 	/// Rotations need both, so this is a convenience for computing them together.
 	public var sinCos: (sin: Double, cos: Double) {
-		Math.sinCos(radians)
+		Math.sincos(radians)
 	}
 
 	/// Returns the angle whose sine is `x`, in the closed interval [-π/2, π/2].
