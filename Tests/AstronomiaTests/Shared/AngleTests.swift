@@ -141,3 +141,30 @@ import Foundation
 
 #endif
 
+@Suite struct AngleFactoryTests {
+	@Test(arguments: [0.0, -0.0, 1, -2.5, 30, 359.999, 1e-9, 1e9, .infinity])
+	func factoriesMatchInitializers(value: Double) {
+		// Each static method is the initializer of the same unit, bit for bit.
+		#expect(Angle.radians(value).radians.bitPattern == Angle(radians: value).radians.bitPattern)
+		#expect(Angle.degrees(value).radians.bitPattern == Angle(degrees: value).radians.bitPattern)
+		#expect(Angle.arcminutes(value).radians.bitPattern == Angle(arcminutes: value).radians.bitPattern)
+		#expect(Angle.arcseconds(value).radians.bitPattern == Angle(arcseconds: value).radians.bitPattern)
+		#expect(Angle.milliarcseconds(value).radians.bitPattern == Angle(milliarcseconds: value).radians.bitPattern)
+		#expect(Angle.hourAngle(value).radians.bitPattern == Angle(hourAngle: value).radians.bitPattern)
+	}
+
+	@Test func nanPropagates() {
+		#expect(Angle.degrees(.nan).radians.isNaN)
+		#expect(Angle.hourAngle(.nan).radians.isNaN)
+	}
+
+	@Test func usableWhereTheTypeIsKnown() {
+		// The leading-dot form works wherever an Angle is expected.
+		let right: Angle = .degrees(90)
+		#expect(right.radians == .pi / 2)
+		#expect(Angle(hourAngle: 12) == .radians(.pi))
+		#expect(.degrees(30) + .arcminutes(30) == Angle(degrees: 30) + Angle(arcminutes: 30))
+		#expect(Angle.arcseconds(1) < .arcminutes(1))
+		#expect([Angle.degrees(10), .degrees(-5), .degrees(3)].max() == .degrees(10))
+	}
+}
