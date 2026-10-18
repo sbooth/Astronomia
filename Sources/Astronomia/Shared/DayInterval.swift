@@ -117,6 +117,71 @@ extension DayInterval {
 }
 
 extension DayInterval {
+	/// Returns an interval of a whole number of days.
+	///
+	/// Equivalent to ``init(days:fractionalDay:)`` with no fractional day, for use where the
+	/// type is known, as in `.days(3)`.
+	///
+	/// - Parameter days: The signed number of days.
+	/// - Returns: The interval.
+	public static func days(_ days: Int) -> DayInterval {
+		DayInterval(uncheckedDays: days, fractionalDay: 0)
+	}
+
+	/// Returns an interval from a single number of days.
+	///
+	/// Equivalent to ``init(days:)``, for use where the type is known, as in `.days(1.5)`.
+	///
+	/// - Parameter days: The signed number of days.
+	/// - Returns: The interval.
+	/// - Throws:
+	///   - ``DayIntervalError/nonFiniteValue`` if `days` is NaN or infinite.
+	///   - ``DayIntervalError/dayCountNotRepresentable`` if the whole days in `days` cannot be
+	///     represented as an `Int`.
+	public static func days(_ days: Double) throws(DayIntervalError) -> DayInterval {
+		try DayInterval(days: days)
+	}
+
+	/// Returns an interval of a whole number of seconds.
+	///
+	/// For use where the type is known, as in `.seconds(30)`.
+	///
+	/// - Important: Assumes 86,400 seconds per day.
+	/// - Parameter seconds: The signed number of seconds.
+	/// - Returns: The interval.
+	public static func seconds(_ seconds: Int) -> DayInterval {
+		// Rounds to the nearest day, with halves up, leaving a remainder in [-43,200, 43,200).
+		var (days, remainder) = seconds.quotientAndRemainder(dividingBy: integerSecondsPerDay)
+		let halfDay = integerSecondsPerDay / 2
+		if remainder >= halfDay {
+			days += 1
+			remainder -= integerSecondsPerDay
+		} else if remainder < -halfDay {
+			days -= 1
+			remainder += integerSecondsPerDay
+		}
+		// The remainder converts exactly, so the quotient is rounded once.
+		return DayInterval(uncheckedDays: days, fractionalDay: Double(remainder) / secondsPerDay)
+	}
+
+	/// Returns an interval from a single number of seconds.
+	///
+	/// Equivalent to ``init(seconds:)``, for use where the type is known, as in
+	/// `.seconds(0.5)`.
+	///
+	/// - Important: Assumes 86,400 seconds per day.
+	/// - Parameter seconds: The signed number of seconds.
+	/// - Returns: The interval.
+	/// - Throws:
+	///   - ``DayIntervalError/nonFiniteValue`` if `seconds` is NaN or infinite.
+	///   - ``DayIntervalError/dayCountNotRepresentable`` if the whole days in `seconds` cannot be
+	///     represented as an `Int`.
+	public static func seconds(_ seconds: Double) throws(DayIntervalError) -> DayInterval {
+		try DayInterval(seconds: seconds)
+	}
+}
+
+extension DayInterval {
 	/// Creates an interval from the exact sum of the terms that `body` adds to an empty
 	/// accumulator, rounding the fractional day once at the end.
 	///
