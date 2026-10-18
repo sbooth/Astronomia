@@ -253,6 +253,28 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		#expect(try abs(UT1.deltaT(at: inside, context: UT1.defaultContext) - UT1.deltaT(at: outside, context: UT1.defaultContext)) >= 3.6)
 	}
 
+	@Test func observationsJoinModelBeforeTheirStart() throws {
+		// Without a ΔT table, dates before the first observation follow the model offset to
+		// meet it, rather than the model itself.
+		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
+		let model = DeltaTModel.espenakMeeus2006
+		let context = UT1.Context.continuous(earthOrientation: table, deltaTTable: nil, model: model)
+		let start = table.coverage.lowerBound
+		let startDeltaT = try #require(table.deltaT(at: start))
+		// The model is about 1.4 s from the first observation, so following it unadjusted
+		// would jump there.
+		#expect(abs(model.deltaT(decimalYear: start.decimalYear) - startDeltaT) > 1)
+
+		let before = try start.adding(seconds: -1)
+		#expect(try abs(UT1.deltaT(at: before, context: context) - startDeltaT) <= 1e-6)
+		#expect(try UT1.deltaT(at: start, context: context) == startDeltaT)
+
+		// UT1 advances by a second across the first observation, as TT does
+		let ut1Before = try UT1.fromTT(before, context: context)
+		let ut1Start = try UT1.fromTT(start, context: context)
+		#expect(try abs(seconds(from: ut1Before, to: ut1Start) - 1) <= 1e-6)
+	}
+
 	@Test func observationsContinueAlongModel() throws {
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		let end = table.coverage.upperBound

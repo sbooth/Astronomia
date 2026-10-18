@@ -155,9 +155,9 @@ extension UT1 {
 		/// Returns a UT1 context that takes ΔT from Earth orientation data and a ΔT table, with
 		/// a model offset to join them continuously.
 		///
-		/// ΔT comes from `earthOrientation`, then `deltaTTable`, within their ranges. After the
-		/// end of whichever ends later, and before the start of `deltaTTable`, ΔT follows
-		/// `model` offset to join the data continuously. ΔT can still step where
+		/// ΔT comes from `earthOrientation`, then `deltaTTable`, within their ranges. Before the
+		/// start of whichever starts earlier, and after the end of whichever ends later, ΔT
+		/// follows `model` offset to join the data continuously. ΔT can still step where
 		/// `earthOrientation` hands over to `deltaTTable`, by milliseconds between the
 		/// observations.
 		///
@@ -173,39 +173,55 @@ extension UT1 {
 			deltaTTable: DeltaTTable? = .builtIn,
 			model: DeltaTModel? = .stephensonMorrisonHohenkerk2016
 		) -> Context {
+			let earliest = Self.earliestObservations(earthOrientation, deltaTTable)
 			let latest = Self.latestObservations(earthOrientation, deltaTTable)
 			var sources: [any DeltaTSource] = []
-			// The models cover every date, and a valid table gives a finite ΔT at its ends, so
-			// the joins can always be made.
-			if let earthOrientation {
-				sources.append(earthOrientation)
-				if latest == .earthOrientation, let model, let join = try? JoinedDeltaTSource(model, after: earthOrientation) {
+			/// Appends `source`, followed by `model` joined before its start if it starts earliest
+			/// and after its end if it ends latest.
+			func append(_ source: some DeltaTSource, _ observations: Observations) {
+				sources.append(source)
+				guard let model else { return }
+				// The models cover every date, and a valid table gives a finite ΔT at its ends,
+				// so the joins can always be made.
+				if earliest == observations, let join = try? JoinedDeltaTSource(model, before: source) {
+					sources.append(join)
+				}
+				if latest == observations, let join = try? JoinedDeltaTSource(model, after: source) {
 					sources.append(join)
 				}
 			}
-			if let deltaTTable {
-				sources.append(deltaTTable)
-				if let model, let join = try? JoinedDeltaTSource(model, before: deltaTTable) {
-					sources.append(join)
-				}
-				if latest == .deltaTTable, let model, let join = try? JoinedDeltaTSource(model, after: deltaTTable) {
-					sources.append(join)
-				}
-			}
+
+			if let earthOrientation { append(earthOrientation, .earthOrientation) }
+			if let deltaTTable { append(deltaTTable, .deltaTTable) }
 			if let model {
 				sources.append(model)
 			}
 			return Context(deltaT: DeltaTSourceList(sources))
 		}
 
-		/// The source of the most recent observations.
-		private enum LatestObservations {
+		/// A source of observations.
+		private enum Observations {
 			case earthOrientation
 			case deltaTTable
 		}
 
+		/// Returns which of the sources starts earlier, preferring Earth orientation data on a
+		/// tie.
+		private static func earliestObservations(_ earthOrientation: EarthOrientationTable?, _ deltaTTable: DeltaTTable?) -> Observations? {
+			switch (earthOrientation, deltaTTable) {
+			case let (earthOrientation?, deltaTTable?):
+				earthOrientation.coverage.lowerBound <= deltaTTable.coverage.lowerBound ? .earthOrientation : .deltaTTable
+			case (_?, nil):
+				.earthOrientation
+			case (nil, _?):
+				.deltaTTable
+			case (nil, nil):
+				nil
+			}
+		}
+
 		/// Returns which of the sources ends later, preferring Earth orientation data on a tie.
-		private static func latestObservations(_ earthOrientation: EarthOrientationTable?, _ deltaTTable: DeltaTTable?) -> LatestObservations? {
+		private static func latestObservations(_ earthOrientation: EarthOrientationTable?, _ deltaTTable: DeltaTTable?) -> Observations? {
 			switch (earthOrientation, deltaTTable) {
 			case let (earthOrientation?, deltaTTable?):
 				earthOrientation.coverage.upperBound >= deltaTTable.coverage.upperBound ? .earthOrientation : .deltaTTable
