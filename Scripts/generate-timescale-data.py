@@ -47,13 +47,13 @@ Examples:
 
   # The built-in ΔT tables
   Scripts/generate-timescale-data.py historic-delta-t historic_deltat.data --spdx \\
-      > Sources/Astronomia/Timescales/HistoricDeltaTEntries.swift
+      > Sources/Astronomia/Timescales/DeltaT/HistoricDeltaTEntries.swift
   Scripts/generate-timescale-data.py modern-delta-t deltat.data --spdx \\
-      > Sources/Astronomia/Timescales/ModernDeltaTEntries.swift
+      > Sources/Astronomia/Timescales/DeltaT/ModernDeltaTEntries.swift
 
   # The built-in leap seconds
   Scripts/generate-timescale-data.py leap-seconds leap-seconds.list --spdx --no-import \\
-      > Sources/Astronomia/Timescales/BuiltInLeapSeconds.swift
+      > Sources/Astronomia/Timescales/LeapSeconds/BuiltInLeapSeconds.swift
 
   # Observations from 2000 on, without predictions, for use in an app
   Scripts/generate-timescale-data.py finals finals2000A.all --name finalsEntries \\
