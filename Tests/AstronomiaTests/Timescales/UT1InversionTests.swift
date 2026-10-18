@@ -206,6 +206,44 @@ import Testing
 		#expect(try abs(#require(falling.deltaT(atUT1: start)) - 100 / 1.9) <= 1e-6)
 	}
 
+	@Test func tableWithUnrepresentableEndUT1() throws {
+		// A table from the earliest date with ΔT = 64 s: its first entry's UT1 is before every
+		// representable date, which does not limit the dates covered.
+		let earlyEnd = try JulianDate.min.adding(days: 2)
+		let early = try #require(DeltaTTable(entries: [Entry(tt: .min, deltaT: 64), Entry(tt: earlyEnd, deltaT: 64)]))
+		let earlyContext = UT1.Context(deltaT: early)
+		try Self.expectUT1RoundTrip(JulianDate.min.adding(days: 1), earlyContext)
+		let earliestTT = try UT1.toTT(.min, context: earlyContext)
+		#expect(try earliestTT.isApproximatelyEqual(to: JulianDate.min.adding(seconds: 64), toleranceSeconds: timescaleTolerance))
+
+		// A table to the latest date with ΔT = -64 s: its last entry's UT1 is after every
+		// representable date.
+		let lateStart = try JulianDate.max.adding(days: -2)
+		let late = try #require(DeltaTTable(entries: [Entry(tt: lateStart, deltaT: -64), Entry(tt: .max, deltaT: -64)]))
+		let lateContext = UT1.Context(deltaT: late)
+		try Self.expectUT1RoundTrip(lateStart.adding(days: 1), lateContext)
+		let latestTT = try UT1.toTT(.max, context: lateContext)
+		#expect(try latestTT.isApproximatelyEqual(to: JulianDate.max.adding(seconds: -64), toleranceSeconds: timescaleTolerance))
+	}
+
+	@Test func functionWithUnrepresentableEndUT1() throws {
+		// Coverage from a second after the earliest date with ΔT = 64 s: the lower end's UT1 is
+		// before every representable date, outward, so it does not limit the dates covered.
+		let earlyStart = try JulianDate.min.adding(seconds: 1)
+		let early = try DeltaTFunction(coverage: earlyStart ... earlyStart.adding(days: 2)) { _ in 64 }
+		try Self.expectUT1RoundTrip(earlyStart.adding(days: 1), UT1.Context(deltaT: early))
+
+		// The mirror image at the latest date with ΔT = -64 s
+		let lateEnd = try JulianDate.max.adding(seconds: -1)
+		let late = try DeltaTFunction(coverage: lateEnd.adding(days: -2) ... lateEnd) { _ in -64 }
+		try Self.expectUT1RoundTrip(lateEnd.adding(days: -1), UT1.Context(deltaT: late))
+
+		// A lower end within 64 s of the latest date with ΔT = -64 s has a UT1 after every
+		// representable date, inward, so no UT1 date is covered.
+		let inward = try DeltaTFunction(coverage: JulianDate.max.adding(seconds: -30) ... .max) { _ in -64 }
+		#expect(inward.deltaT(atUT1: .max) == nil)
+	}
+
 	@Test func nonFiniteDeltaT() throws {
 		let ut1 = try JulianDate(decimalYear: 2026)
 		#expect(throws: TimescaleConversionError.nonFiniteValue) {

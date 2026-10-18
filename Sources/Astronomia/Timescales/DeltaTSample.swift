@@ -25,28 +25,28 @@ extension RandomAccessCollection where Element: DeltaTSample, Index == Int {
 	///
 	///     ΔT = ΔT_i + (ΔT_i+1 - ΔT_i) (UT1 - UT1_i) / ((TT_i+1 - TT_i) - (ΔT_i+1 - ΔT_i)).
 	///
+	/// The UT1 of a sample need not be representable: one too far to represent lies beyond every
+	/// representable UT1, and the elapsed time within a segment is measured from the sample's TT.
+	///
 	/// - Precondition: The samples' TT dates strictly increase, and ΔT changes between neighbors
 	///   by less than the time between them, so their UT1 dates strictly increase too.
 	/// - Parameter ut1: A Julian Date in UT1.
 	/// - Returns: ΔT, in seconds, or `nil` if `ut1` is before the first sample's UT1 or after the
 	///   last's. At a sample's UT1, the sample's ΔT.
 	func inverseLinearDeltaT(atUT1 ut1: JulianDate) -> Double? {
-		/// Returns the UT1 date of the sample at `index`.
-		func ut1At(_ index: Int) -> JulianDate? {
-			try? self[index].tt.adding(seconds: -self[index].deltaT)
+		/// Returns the seconds from `ut1` to the UT1 of the sample at `index`.
+		func offset(_ index: Int) -> Double {
+			secondsToUT1(of: self[index].tt, deltaT: self[index].deltaT, from: ut1)
 		}
 
-		guard !isEmpty, let firstUT1 = ut1At(startIndex), let lastUT1 = ut1At(endIndex - 1),
-			  firstUT1 <= ut1, ut1 <= lastUT1
-		else { return nil }
+		guard !isEmpty, offset(startIndex) <= 0, offset(endIndex - 1) >= 0 else { return nil }
 
 		// The last sample whose UT1 is at or before `ut1`.
 		var low = startIndex
 		var high = endIndex - 1
 		while low < high {
 			let mid = low + (high - low + 1) / 2
-			guard let midUT1 = ut1At(mid) else { return nil }
-			if midUT1 <= ut1 {
+			if offset(mid) <= 0 {
 				low = mid
 			} else {
 				high = mid - 1
@@ -55,12 +55,13 @@ extension RandomAccessCollection where Element: DeltaTSample, Index == Int {
 
 		// At a sample, return its value exactly.
 		let a = self[low]
-		guard let start = ut1At(low) else { return nil }
-		guard low + 1 < endIndex, start < ut1 else { return a.deltaT }
+		guard low + 1 < endIndex, offset(low) < 0 else { return a.deltaT }
 		let b = self[low + 1]
-		guard let elapsed = try? start.interval(to: ut1).inSeconds,
+		// UT1 - UT1_a = (UT1 - TT_a) + ΔT_a, which needs no representable UT1_a.
+		guard let fromTT = try? a.tt.interval(to: ut1).inSeconds,
 			  let span = try? a.tt.interval(to: b.tt).inSeconds
 		else { return nil }
+		let elapsed = fromTT + a.deltaT
 		let change = b.deltaT - a.deltaT
 		return a.deltaT + change * (elapsed / (span - change))
 	}

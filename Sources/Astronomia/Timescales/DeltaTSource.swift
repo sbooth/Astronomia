@@ -59,7 +59,9 @@ extension DeltaTSource {
 	/// The UT1 dates covered run from the UT1 of the first date in `range` to that of the
 	/// last, computed as ``UT1/fromTT(_:context:)`` computes them, so the UT1 of either end is
 	/// itself covered. An end at ``JulianDate/min`` or ``JulianDate/max`` is open: ΔT is not
-	/// evaluated there, where a model's value can overflow.
+	/// evaluated there, where a model's value can overflow. An end whose UT1 is too far to
+	/// represent lies beyond every representable UT1: outward it does not limit the dates
+	/// covered, and inward it leaves none.
 	///
 	/// - Parameters:
 	///   - ut1: A Julian Date in UT1.
@@ -71,14 +73,13 @@ extension DeltaTSource {
 	///   bisection, which returns `nil` rather than an unconverged value.
 	func iteratedDeltaT(atUT1 ut1: JulianDate, within range: ClosedRange<JulianDate>) -> Double? {
 		// Rejects a UT1 date before the UT1 of the first date covered or after that of the last.
-		for (end, isFirst) in [(range.lowerBound, true), (range.upperBound, false)] {
-			guard end != .min, end != .max else { continue }
+		for (bound, isLower) in [(range.lowerBound, true), (range.upperBound, false)] {
+			guard bound != .min, bound != .max else { continue }
 			// ΔT at an end only bounds the UT1 dates covered, so without a usable value there the
 			// coverage on that side is unknown.
-			guard let endDeltaT = deltaT(at: end), endDeltaT.isFinite,
-				  let endUT1 = try? end.adding(seconds: -endDeltaT)
-			else { return nil }
-			if isFirst ? (ut1 < endUT1) : (ut1 > endUT1) { return nil }
+			guard let endDeltaT = deltaT(at: bound), endDeltaT.isFinite else { return nil }
+			let offset = secondsToUT1(of: bound, deltaT: endDeltaT, from: ut1)
+			if isLower ? (offset > 0) : (offset < 0) { return nil }
 		}
 
 		var tt = ut1.clamped(to: range)
@@ -112,11 +113,8 @@ extension DeltaTSource {
 
 		/// Returns `tt` as a point, or `nil` if ΔT there is unavailable or non-finite.
 		func point(_ tt: JulianDate) -> Point? {
-			guard let value = deltaT(at: tt), value.isFinite,
-				  let pointUT1 = try? tt.adding(seconds: -value),
-				  let interval = try? ut1.interval(to: pointUT1)
-			else { return nil }
-			return (tt, interval.inSeconds, value)
+			guard let value = deltaT(at: tt), value.isFinite else { return nil }
+			return (tt, secondsToUT1(of: tt, deltaT: value, from: ut1), value)
 		}
 
 		guard let first = point(start) else { return nil }
@@ -158,6 +156,24 @@ extension DeltaTSource {
 		}
 		return inner.seconds.magnitude < outer.seconds.magnitude ? inner.deltaT : outer.deltaT
 	}
+}
+
+/// Returns the seconds from `ut1` to the UT1 of a TT date, TT - ΔT.
+///
+/// A UT1 too far to represent lies before every representable date when ΔT is positive and
+/// after every one when ΔT is negative, so the result is then negative or positive infinity.
+/// It is also infinite, with the sign of the direction, when the interval from `ut1` is too
+/// long to represent.
+///
+/// - Parameters:
+///   - tt: A Julian Date in TT.
+///   - deltaT: ΔT at `tt`, in seconds, which must be finite.
+///   - ut1: A Julian Date in UT1.
+/// - Returns: The seconds from `ut1` to the UT1 of `tt`, negative if it is earlier.
+func secondsToUT1(of tt: JulianDate, deltaT: Double, from ut1: JulianDate) -> Double {
+	guard let ttUT1 = try? tt.adding(seconds: -deltaT) else { return deltaT > 0 ? -.infinity : .infinity }
+	guard let interval = try? ut1.interval(to: ttUT1) else { return ttUT1 < ut1 ? -.infinity : .infinity }
+	return interval.inSeconds
 }
 
 /// A source of ΔT that tries a list of sources in order.
