@@ -93,6 +93,16 @@ import Testing
 		}
 	}
 
+	@Test func textualRepresentation() throws {
+		#expect(try UTCDay(julianDayNumber: civilDay(2016, 12, 31)).description == "2016-12-31 UTC, TAI - UTC = 36.0 s, leap second +1.0 s")
+		#expect(try UTCDay(julianDayNumber: civilDay(2017, 1, 1)).description == "2017-1-1 UTC, TAI - UTC = 37.0 s")
+		// Past the built-in table's horizon
+		#expect(try UTCDay(julianDayNumber: civilDay(2200, 1, 1)).description == "2200-1-1 UTC, TAI - UTC = 37.0 s, extrapolated")
+		// Before 1972, TAI - UTC drifts through the day, and steps by fractions of a second
+		#expect(try UTCDay(julianDayNumber: civilDay(1965, 1, 1)).description == "1965-1-1 UTC, TAI - UTC = 3.54013 s, drift 0.001296 s")
+		#expect(try UTCDay(julianDayNumber: civilDay(1965, 2, 28)).description == "1965-2-28 UTC, TAI - UTC = 3.615298 s, drift 0.001296 s, step +0.1 s")
+	}
+
 	@Test func toTAIMatchesConversion() throws {
 		let day = try UTCDay(julianDayNumber: civilDay(2016, 12, 31))
 		for reading in [0.0, 43_200, 86_400.5] {

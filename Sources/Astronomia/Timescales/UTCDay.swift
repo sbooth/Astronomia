@@ -193,12 +193,18 @@ extension UTCDay: CustomStringConvertible {
 	/// `2016-12-31 UTC, TAI - UTC = 36.0 s, leap second +1.0 s`.
 	///
 	/// A day before 1972 also shows the drift in TAI - UTC through the day, and a day past the
-	/// leap second table's horizon is marked as extrapolated.
+	/// leap second table's horizon is marked as extrapolated. Values are shown to the nearest
+	/// nanosecond, as the step already is, so the rounding of the offset arithmetic is hidden.
 	public var description: String {
+		/// Returns `seconds` rounded to the nearest nanosecond.
+		func toNanoseconds(_ seconds: Double) -> Double {
+			(seconds * 1e9).rounded() / 1e9
+		}
+
 		// UTC began in 1961, so its days are always Gregorian.
 		let date = CalendarDay(julianDayNumber: julianDayNumber, .gregorian)
-		var parts = ["\(date.year)-\(date.month)-\(date.day) UTC", "TAI - UTC = \(offsetAtStart) s"]
-		let drift = offsetChange - offsetStep
+		var parts = ["\(date.year)-\(date.month)-\(date.day) UTC", "TAI - UTC = \(toNanoseconds(offsetAtStart)) s"]
+		let drift = toNanoseconds(offsetChange - offsetStep)
 		if drift != 0 {
 			parts.append("drift \(drift) s")
 		}
