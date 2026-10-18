@@ -25,7 +25,8 @@
 /// steps up, UT1 instants within the step have no exact TT, and where it steps down they have two,
 /// so ``toTT(_:context:)`` and ``fromTT(_:context:)`` are not exact inverses within a step's
 /// width of a handover. Use ``Context/continuous(earthOrientation:deltaTTable:model:)`` to
-/// join the sources continuously instead.
+/// join the sources continuously instead. In either context, the default model itself steps
+/// by about 44 s at -720, where its spline hands over to its long-term parabola as published.
 public enum UT1: Timescale {
 	public static let abbreviation = "UT1"
 

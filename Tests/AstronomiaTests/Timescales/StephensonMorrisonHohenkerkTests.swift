@@ -44,8 +44,9 @@ import Testing
 			let u = (year - 1825) / 100
 			#expect(model.deltaT(decimalYear: year) == -10 + 31.4 * u * u)
 		}
-		// The spline and parabola nearly meet at -720.
-		#expect(abs(model.deltaT(decimalYear: -720) - model.deltaT(decimalYear: -720.000001)) < 50)
+		// As published, the parabola is about 44 s below the spline at -720, so ΔT steps there.
+		let step = model.deltaT(decimalYear: -720) - model.deltaT(decimalYear: -720.000001)
+		#expect(abs(step - 44) < 0.1)
 	}
 
 	@Test func parabolaTrendAfterSpline() {

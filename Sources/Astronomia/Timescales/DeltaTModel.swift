@@ -26,9 +26,11 @@ public enum DeltaTModel: Hashable, Sendable {
 	/// Hohenkerk & Zawilski (2021) with further medieval observations.
 	///
 	/// The spline covers -720 to 2019. Earlier, ΔT follows their long-term parabola,
-	/// -10 + 31.4 ((y - 1825) / 100)² s. Later, ΔT follows the parabola's trend offset to
-	/// continue the spline; this is a rough guide to the future only, rising about 1.2 s per
-	/// year in the 2020s while observed ΔT has been nearly constant.
+	/// -10 + 31.4 ((y - 1825) / 100)^2 s, as published, which is about 44 s below the spline at
+	/// -720, so ΔT steps there; the step is well within the uncertainty of ΔT at that date.
+	/// Later, ΔT follows the parabola's trend offset to continue the spline; this is a rough guide
+	/// to the future only, rising about 1.2 s per year in the 2020s while observed ΔT has been
+	/// nearly constant.
 	///
 	/// This reconstruction uses more and re-analysed historical observations than the
 	/// Morrison & Stephenson (2004) data behind ``espenakMeeus2006``, and a tidal acceleration
