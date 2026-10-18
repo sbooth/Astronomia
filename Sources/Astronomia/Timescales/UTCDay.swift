@@ -187,3 +187,28 @@ extension UTCDay: Hashable {
 		hasher.combine(offsetChange)
 	}
 }
+
+extension UTCDay: CustomStringConvertible {
+	/// A textual representation of the UTC day and TAI - UTC at its start, such as
+	/// `2016-12-31 UTC, TAI - UTC = 36.0 s, leap second +1.0 s`.
+	///
+	/// A day before 1972 also shows the drift in TAI - UTC through the day, and a day past the
+	/// leap second table's horizon is marked as extrapolated.
+	public var description: String {
+		// UTC began in 1961, so its days are always Gregorian.
+		let date = CalendarDay(julianDayNumber: julianDayNumber, .gregorian)
+		var parts = ["\(date.year)-\(date.month)-\(date.day) UTC", "TAI - UTC = \(offsetAtStart) s"]
+		let drift = offsetChange - offsetStep
+		if drift != 0 {
+			parts.append("drift \(drift) s")
+		}
+		if offsetStep != 0 {
+			let kind = offsetStep.magnitude == 1 ? "leap second" : "step"
+			parts.append("\(kind) \(offsetStep > 0 ? "+" : "")\(offsetStep) s")
+		}
+		if offsetSource == .extrapolation {
+			parts.append("extrapolated")
+		}
+		return parts.joined(separator: ", ")
+	}
+}
