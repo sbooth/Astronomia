@@ -92,9 +92,10 @@ let iersLeapSecondDatText = """
 	@Test func leapSecondsList() throws {
 		let table = try #require(LeapSecondTable(leapSecondsList: leapSecondsListText))
 		#expect(table.leapSeconds == LeapSecondTable.builtIn.leapSeconds)
-		// The file expires at 0h UTC on 2027-06-28, two days before the built-in horizon.
+		// The file expires at 0h UTC on 2027-06-28, which is the horizon, as for the built-in
+		// table generated from the same file.
 		#expect(try table.horizon == civilDay(2027, 6, 28))
-		#expect(try LeapSecondTable.builtIn.horizon == civilDay(2027, 6, 30))
+		#expect(table == LeapSecondTable.builtIn)
 	}
 
 	@Test func iersLeapSecondDat() throws {

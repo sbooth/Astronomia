@@ -8,9 +8,9 @@
 /// A table containing IERS Bulletin C leap second information.
 ///
 /// Since 1972, TAI - UTC has been a whole number of seconds, changed only by leap seconds,
-/// which the table holds with the first UTC day whose length is not yet determined. From 1961
-/// through 1971, UTC followed UT with a rate offset and fractional steps. That history does not
-/// change, so every table shares it.
+/// which the table holds with the expiry of the list they come from, the first UTC day it does
+/// not cover. From 1961 through 1971, UTC followed UT with a rate offset and fractional steps.
+/// That history does not change, so every table shares it.
 ///
 /// ``builtIn`` is current as of the release of this library. For later leap seconds or a later
 /// horizon, create a table from the IERS/IETF `leap-seconds.list` with
@@ -39,8 +39,8 @@ public struct LeapSecondTable: Hashable, Sendable {
 
 	/// TAI - UTC from 1972-01-01 on, in increasing order of effective day.
 	public let leapSeconds: [LeapSecond]
-	/// Julian day number of the first UTC day whose length is not yet determined by IERS
-	/// Bulletin C.
+	/// The Julian day number of the UTC day on which the published leap second list expires, the
+	/// first it does not cover.
 	public let horizon: JulianDayNumber
 
 	/// Creates a leap second table.
@@ -51,8 +51,8 @@ public struct LeapSecondTable: Hashable, Sendable {
 	///     one before by exactly one second, either way. Each must be in the right-open
 	///     interval [0, 86,400) s, since converting TAI to UTC assumes UTC is behind TAI by
 	///     less than a day.
-	///   - horizon: The Julian day number of the first UTC day whose length is not yet
-	///     determined. Must be after the last leap second's effective day.
+	///   - horizon: The Julian day number of the UTC day on which the leap second list expires,
+	///     the first it does not cover. Must be after the last leap second's effective day.
 	/// - Returns: `nil` if `leapSeconds` does not begin at 1972-01-01 with 10 s, or the leap
 	///   seconds or horizon are otherwise invalid.
 	public init?(leapSeconds: [LeapSecond], horizon: JulianDayNumber) {

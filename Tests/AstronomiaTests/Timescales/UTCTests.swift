@@ -233,11 +233,11 @@ let stepDays: [StepDay] = [
 }
 
 @Suite struct UTCExtrapolationTests {
-	/// 2027-06-30, the first day whose length Bulletin C has not determined.
-	let horizon: JulianDayNumber = 2_461_587
+	/// 2027-06-28, when the built-in leap second list expires.
+	let horizon: JulianDayNumber = 2_461_585
 
 	@Test func builtInHorizon() throws {
-		#expect(try LeapSecondTable.builtIn.horizon == civilDay(2027, 6, 30))
+		#expect(try LeapSecondTable.builtIn.horizon == civilDay(2027, 6, 28))
 	}
 
 	@Test func offsetSource() throws {

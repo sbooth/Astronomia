@@ -42,8 +42,5 @@ let builtInLeapSeconds: [LeapSecondTable.LeapSecond] = [
 	.init(effective: 2_457_755, taiMinusUTC: 37), // 2017-01-01
 ]
 
-/// The first UTC day whose length is not yet determined.
-///
-/// The source expires on 2027-06-28, and 2027-06-30 is the first day on or after it
-/// that a leap second could end.
-let builtInLeapSecondsHorizon: JulianDayNumber = 2_461_587 // 2027-06-30
+/// The UTC day on which the source expires, the first it does not cover.
+let builtInLeapSecondsHorizon: JulianDayNumber = 2_461_585 // 2027-06-28

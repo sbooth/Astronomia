@@ -26,10 +26,10 @@ Commands:
 
   leap-seconds FILE
       The IERS/IETF leap-seconds.list, as an array of LeapSecondTable.LeapSecond with TAI - UTC
-      in whole seconds from 1972, and the horizon: the first UTC day on or after the file's
-      expiry that could end in a leap second, the last day of June or December. The file's
-      SHA-1 hash is checked. Pass both to LeapSecondTable(leapSeconds:horizon:). Before 1972
-      the table uses the fixed rate entries of tai-utc.dat.
+      in whole seconds from 1972, and the horizon: the UTC day on which the file expires, the
+      first it does not cover. The file's SHA-1 hash is checked. Pass both to
+      LeapSecondTable(leapSeconds:horizon:). Before 1972 the table uses the fixed rate entries
+      of tai-utc.dat.
 
   finals FILE
       IERS finals2000A data (.all, .data, or .daily), as an array of
@@ -307,12 +307,9 @@ def leap_seconds(args: argparse.Namespace, data: bytes) -> str:
 			raise DataError(f"line {line_number}: expected 1972-01-01 with 10 s, the start of whole leap seconds")
 		leaps.append((day, int(offset)))
 
-	# The file expires at 0h UTC on a day, so lengths are known before that day. A leap second
-	# can end only the last day of June or December, so the first day whose length is not
-	# known is the first of those on or after the expiry.
-	expiry = civil_date(NTP_TO_JDN + int(expires) // 86_400)
-	horizon_date = datetime.date(expiry.year, 6, 30) if expiry <= datetime.date(expiry.year, 6, 30) else datetime.date(expiry.year, 12, 31)
-	horizon = civil_jdn(horizon_date)
+	# The file expires at 0h UTC on a day, the first it does not cover.
+	horizon = NTP_TO_JDN + int(expires) // 86_400
+	expiry = civil_date(horizon)
 	if horizon <= leaps[-1][0]:
 		raise DataError(f"the file expires on {expiry}, before its last entry")
 	last_update = civil_date(NTP_TO_JDN + int(updated) // 86_400)
@@ -330,11 +327,8 @@ def leap_seconds(args: argparse.Namespace, data: bytes) -> str:
 	lines += [
 		"]",
 		"",
-		"/// The first UTC day whose length is not yet determined.",
-		"///",
-		f"/// The source expires on {expiry}, and {horizon_date} is the first day on or after it",
-		"/// that a leap second could end.",
-		declaration(args, "JulianDayNumber", f"{horizon:_} // {horizon_date}", name=f"{args.name}Horizon"),
+		"/// The UTC day on which the source expires, the first it does not cover.",
+		declaration(args, "JulianDayNumber", f"{horizon:_} // {expiry}", name=f"{args.name}Horizon"),
 	]
 	return "\n".join(lines) + "\n"
 
