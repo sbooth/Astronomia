@@ -203,18 +203,30 @@ extension CalendarDay {
 }
 
 extension CalendarDay {
-	/// Returns the calendar day the specified number of days before (for negative values) or
-	/// after (for positive values) this calendar day, in the same calendar.
+	/// Returns the calendar day the specified number of days after this calendar day, in the
+	/// same calendar.
 	///
-	/// - Parameter n: The signed number of days to add.
+	/// - Parameter n: The number of days to add.
 	/// - Returns: The resulting calendar day, in this calendar day's calendar.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the resulting calendar
 	///   day's Julian day number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days n: Int) throws(CalendarError) -> CalendarDay {
-		if n == 0 {
-			return self
-		}
+		if n == 0 { return self }
 		let (J, overflow) = julianDayNumber.addingReportingOverflow(n)
+		guard !overflow else { throw .julianDayNumberNotRepresentable }
+		return CalendarDay(julianDayNumber: J, calendar)
+	}
+
+	/// Returns the calendar day the specified number of days before this calendar day, in the
+	/// same calendar.
+	///
+	/// - Parameter n: The number of days to subtract.
+	/// - Returns: The resulting calendar day, in this calendar day's calendar.
+	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the resulting calendar
+	///   day's Julian day number cannot be represented as a ``JulianDayNumber``.
+	public func subtracting(days n: Int) throws(CalendarError) -> CalendarDay {
+		if n == 0 { return self }
+		let (J, overflow) = julianDayNumber.subtractingReportingOverflow(n)
 		guard !overflow else { throw .julianDayNumberNotRepresentable }
 		return CalendarDay(julianDayNumber: J, calendar)
 	}

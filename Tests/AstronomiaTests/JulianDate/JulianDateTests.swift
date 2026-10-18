@@ -328,6 +328,27 @@ import Testing
 		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate(julianDayNumber: .max).adding(seconds: 86_400) }
 	}
 
+	@Test func subtractingSeconds() throws {
+		let j2000 = JulianDate.J2000
+		#expect(try j2000.subtracting(seconds: 43_200) == JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: -0.5))
+		#expect(try j2000.subtracting(seconds: 86_400) == JulianDate(julianDayNumber: 2_451_544))
+		#expect(try j2000.subtracting(seconds: -86_400) == JulianDate(julianDayNumber: 2_451_546))
+		#expect(try j2000.subtracting(seconds: 1).fractionFromNoon == -1.0 / 86_400)
+		// Subtracting agrees with adding the negation wherever the negation exists
+		for s in [-1_000_000, -86_401, -1, 0, 1, 43_199, 86_399, 1_000_000, Int.max] {
+			#expect(try j2000.subtracting(seconds: s) == j2000.adding(seconds: -s), "s = \(s)")
+		}
+
+		// Int.min seconds cannot be negated, but subtracting it moves forward by 2^63 s, which is
+		// 106751991167300 days and 55808 seconds
+		let later = try j2000.subtracting(seconds: Int.min)
+		#expect(later.julianDayNumber == 106_751_993_618_846)
+		#expect(try later.adding(seconds: Int.min).isApproximatelyEqual(to: j2000, toleranceSeconds: 1e-6))
+
+		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate.min.subtracting(seconds: 1) }
+		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate.max.subtracting(seconds: -1) }
+	}
+
 	@Test func interval() throws {
 		let start = try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25)
 		let end = try start.adding(days: 1.5)
