@@ -290,3 +290,64 @@ private struct RawDayInterval: Encodable {
 }
 
 #endif
+
+@Suite struct DayIntervalFactoryTests {
+	@Test func wholeDays() throws {
+		for days in [0, 1, -1, 365, -36_525, Int.max, Int.min] {
+			let interval = DayInterval.days(days)
+			#expect(interval.days == days && interval.fractionalDay == 0)
+		}
+		let three = try DayInterval(days: 3)
+		#expect(DayInterval.days(3) == three)
+	}
+
+	@Test func fractionalDays() throws {
+		#expect(try DayInterval.days(1.5) == DayInterval(days: 1.5))
+		#expect(try DayInterval.days(-0.75) == DayInterval(days: -0.75))
+		#expect(throws: DayIntervalError.nonFiniteValue) { try DayInterval.days(.nan) }
+		#expect(throws: DayIntervalError.dayCountNotRepresentable) { try DayInterval.days(1e300) }
+	}
+
+	@Test func wholeSecondsMatchTheInitializer() throws {
+		// Around each half day, where the rounding to the nearest day changes, and elsewhere
+		var values = [0, 1, -1, 30, -30, 86_400, -86_400, 1_000_000_007, -1_000_000_007]
+		for k in -3 ... 3 {
+			for offset in -2 ... 2 {
+				values.append(k * 86_400 + 43_200 + offset)
+			}
+		}
+		for seconds in values {
+			let expected = try DayInterval(seconds: Double(seconds))
+			#expect(DayInterval.seconds(seconds) == expected, "\(seconds)")
+		}
+		// A half day rounds up to the next day.
+		#expect(DayInterval.seconds(43_200).days == 1 && DayInterval.seconds(43_200).fractionalDay == -0.5)
+		#expect(DayInterval.seconds(-43_200).days == 0 && DayInterval.seconds(-43_200).fractionalDay == -0.5)
+	}
+
+	@Test func extremeWholeSeconds() throws {
+		// The exact sum of whole days and remaining seconds, rounded once, as the initializers
+		// compute it
+		for seconds in [Int.max, Int.min, Int.max - 43_200, Int.min + 43_200, Int.min + 43_199] {
+			let (days, remainder) = seconds.quotientAndRemainder(dividingBy: 86_400)
+			let expected = try DayInterval { acc throws(DayAccumulator.Failure) in
+				try acc.add(days)
+				try acc.add(seconds: Double(remainder))
+			}
+			#expect(DayInterval.seconds(seconds) == expected, "\(seconds)")
+		}
+	}
+
+	@Test func fractionalSeconds() throws {
+		#expect(try DayInterval.seconds(0.5) == DayInterval(seconds: 0.5))
+		#expect(throws: DayIntervalError.nonFiniteValue) { try DayInterval.seconds(.infinity) }
+	}
+
+	@Test func literalsChooseTheIntOverload() {
+		// Integer literals resolve to the non-throwing Int overloads, so no `try` is needed.
+		let day: DayInterval = .days(1)
+		let minute: DayInterval = .seconds(60)
+		#expect(day.inDays == 1)
+		#expect(minute.inSeconds == 60)
+	}
+}
