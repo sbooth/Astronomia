@@ -31,11 +31,12 @@ extension UTCDay {
 	/// - Throws: ``TimescaleConversionError/invalidTimeOfDay`` if the reading does not occur on
 	///   this UTC day.
 	public func julianDate(_ timeOfDay: TimeOfDay) throws(TimescaleConversionError) -> JulianDate {
-		// Check the reading against the end of the clock day before summing the components,
-		// which can round a reading just before the end up to it. Both terms of the difference
-		// are multiples of the spacing of doubles near 86,400 and below 2^17, so it is exact.
+		// Check the second against the end of the clock day before summing the components,
+		// which can round a reading just before the end up to it. The step is added to the
+		// whole seconds left in the day rather than to 86,400, which would round away part of a
+		// fractional step: 86,400 + 0.1 is 86,400.100000000006, and would admit 23:59:60.1.
 		let wholeSeconds = Double(timeOfDay.hour * 3_600 + timeOfDay.minute * 60)
-		guard timeOfDay.second < clockSeconds - wholeSeconds else { throw .invalidTimeOfDay }
+		guard timeOfDay.second < (secondsPerDay - wholeSeconds) + offsetStep else { throw .invalidTimeOfDay }
 		return try julianDate(secondsSinceMidnight: min(wholeSeconds + timeOfDay.second, clockSeconds.nextDown))
 	}
 }

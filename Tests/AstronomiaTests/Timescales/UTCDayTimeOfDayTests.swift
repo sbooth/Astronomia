@@ -68,6 +68,23 @@ import Testing
 		#expect(throws: TimescaleConversionError.invalidTimeOfDay) {
 			try day.julianDate(TimeOfDay(hour: 23, minute: 59, second: 59.95))
 		}
+		// The last reading before the end of the day is valid.
+		let last = try day.julianDate(TimeOfDay(hour: 23, minute: 59, second: Double(59.95).nextDown))
+		#expect(last.julianDayNumber == day.julianDayNumber)
+	}
+
+	@Test func lengthenedDayEnd() throws {
+		// 1965-02-28 ended with a step of 0.1 s, so its clock read up to, but not including,
+		// 23:59:60.1.
+		let day = try UTCDay(julianDayNumber: civilDay(1965, 2, 28))
+		#expect(day.offsetStep == 0.1)
+		#expect(throws: TimescaleConversionError.invalidTimeOfDay) {
+			try day.julianDate(TimeOfDay(hour: 23, minute: 59, second: 60.1))
+		}
+		let last = try day.julianDate(TimeOfDay(hour: 23, minute: 59, second: Double(60.1).nextDown))
+		#expect(last.julianDayNumber == day.julianDayNumber)
+		let back = try day.timeOfDay(last)
+		#expect(back.hour == 23 && back.minute == 59 && back.second < 60.1)
 	}
 
 	@Test func stepBefore1972() throws {
