@@ -1,0 +1,182 @@
+//
+// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
+// SPDX-License-Identifier: MIT
+//
+// Part of https://github.com/sbooth/Astronomia
+//
+
+/// A table of ΔT = TT - UT1 at TT dates.
+///
+/// Values between entries are interpolated linearly in TT.
+public struct DeltaTTable: Hashable, Sendable {
+	/// ΔT at a TT date.
+	public struct Entry: Hashable, Sendable {
+		/// The date, as a Julian Date in TT.
+		public let tt: JulianDate
+		/// ΔT = TT - UT1, in seconds.
+		public let deltaT: Double
+		/// The standard error of ``deltaT``, in seconds, if known.
+		public let uncertainty: Double?
+
+		/// Creates an entry.
+		///
+		/// - Parameters:
+		///   - tt: The date, as a Julian Date in TT.
+		///   - deltaT: ΔT = TT - UT1, in seconds.
+		///   - uncertainty: The standard error of `deltaT`, in seconds, if known.
+		public init(tt: JulianDate, deltaT: Double, uncertainty: Double? = nil) {
+			self.tt = tt
+			self.deltaT = deltaT
+			self.uncertainty = uncertainty
+		}
+
+		/// Creates an entry at a decimal year in TT, as ΔT tables are usually published.
+		///
+		/// - Parameters:
+		///   - decimalYear: The calendar-based decimal year, as for
+		///     ``JulianDate/init(decimalYear:_:)``.
+		///   - deltaT: ΔT = TT - UT1, in seconds.
+		///   - uncertainty: The standard error of `deltaT`, in seconds, if known.
+		/// - Throws: A ``CalendarError`` if `decimalYear` cannot be represented as a Julian Date.
+		public init(decimalYear: Double, deltaT: Double, uncertainty: Double? = nil) throws(CalendarError) {
+			self.init(tt: try JulianDate(decimalYear: decimalYear), deltaT: deltaT, uncertainty: uncertainty)
+		}
+	}
+
+	/// The entries, in increasing order of date.
+	public let entries: [Entry]
+
+	/// Creates a table.
+	///
+	/// - Parameter entries: At least two entries in strictly increasing order of date, with
+	///   finite values of ΔT and finite, nonnegative uncertainties. ΔT must change by less
+	///   than the time between neighboring entries, so that it changes more slowly than TT and
+	///   each UT1 date has one TT.
+	/// - Returns: `nil` if the entries are invalid.
+	public init?(entries: [Entry]) {
+		guard entries.count >= 2 else { return nil }
+
+		for (index, entry) in entries.enumerated() {
+			guard entry.deltaT.isFinite else { return nil }
+			if let uncertainty = entry.uncertainty {
+				guard uncertainty.isFinite, uncertainty >= 0 else { return nil }
+			}
+			if index > 0 {
+				let previous = entries[index - 1].tt
+				// Interpolation needs the interval between neighboring entries.
+				guard entry.tt > previous, let span = try? previous.interval(to: entry.tt) else { return nil }
+				guard (entry.deltaT - entries[index - 1].deltaT).magnitude < span.inSeconds else { return nil }
+			}
+		}
+
+		self.init(uncheckedEntries: entries)
+	}
+
+	/// Creates a table from entries already known to be valid.
+	///
+	/// - Precondition: `entries` satisfy the requirements of ``init(entries:)``.
+	init(uncheckedEntries entries: [Entry]) {
+		self.entries = entries
+	}
+
+	/// The TT dates covered by the table, from the first entry to the last.
+	public var coverage: ClosedRange<JulianDate> {
+		// Not empty: initialization requires at least two entries in increasing order.
+		entries[0].tt ... entries[entries.count - 1].tt
+	}
+
+	/// Returns ΔT = TT - UT1 at the specified TT, interpolated linearly between entries.
+	///
+	/// - Parameter tt: A Julian Date in TT.
+	/// - Returns: ΔT and its uncertainty, in seconds, or `nil` if `tt` is outside ``coverage``.
+	///   At an entry, the entry's values. Between entries, the uncertainty is interpolated the
+	///   same way, and is `nil` unless both neighboring entries have one.
+	public func deltaTAndUncertainty(at tt: JulianDate) -> (seconds: Double, uncertainty: Double?)? {
+		guard coverage.contains(tt) else { return nil }
+
+		// The last entry at or before `tt`.
+		var low = 0
+		var high = entries.count - 1
+		while low < high {
+			let mid = (low + high + 1) / 2
+			if entries[mid].tt <= tt {
+				low = mid
+			} else {
+				high = mid - 1
+			}
+		}
+
+		let a = entries[low]
+		// At an entry, return it exactly, without the next entry's uncertainty
+		guard low + 1 < entries.count, a.tt < tt else { return (a.deltaT, a.uncertainty) }
+		let b = entries[low + 1]
+		// Initialization checked that the interval between neighbors is representable, and
+		// `tt` lies between them.
+		guard let elapsed = try? a.tt.interval(to: tt).inDays,
+			  let span = try? a.tt.interval(to: b.tt).inDays
+		else { return nil }
+		let fraction = elapsed / span
+		let seconds = a.deltaT + fraction * (b.deltaT - a.deltaT)
+		guard let ua = a.uncertainty, let ub = b.uncertainty else { return (seconds, nil) }
+		return (seconds, ua + fraction * (ub - ua))
+	}
+}
+
+extension DeltaTTable: DeltaTSource {
+	/// Returns ΔT = TT - UT1, in seconds, at the specified TT, interpolated linearly between
+	/// entries, or `nil` if `tt` is outside ``coverage``.
+	public func deltaT(at tt: JulianDate) -> Double? {
+		deltaTAndUncertainty(at: tt)?.seconds
+	}
+
+	/// Returns ΔT at the TT date whose UT1 is the specified date, by inverse linear
+	/// interpolation between entries.
+	///
+	/// - Parameter ut1: A Julian Date in UT1.
+	/// - Returns: ΔT, in seconds, or `nil` if the TT of `ut1` is outside ``coverage``. At the UT1
+	///   of an entry, the entry's value.
+	public func deltaT(atUT1 ut1: JulianDate) -> Double? {
+		entries.inverseLinearDeltaT(atUT1: ut1)
+	}
+}
+
+extension DeltaTTable.Entry: DeltaTSample {}
+
+extension DeltaTTable {
+	/// ΔT at half-year intervals from 1657.0 to 1984.5, from the USNO file
+	/// `historic_deltat.data`.
+	///
+	/// The uncertainty falls from up to 19 s in the 17th century to 3 ms or less from 1956.
+	///
+	/// The entries are generated by `Scripts/generate-timescale-data.py historic-delta-t`,
+	/// which takes each decimal year in the file as calendar-based in TT, so 1657.5 is noon on
+	/// July 2, 1657. Other readings move a sample by under a day, which changes ΔT by at most a
+	/// few milliseconds.
+	///
+	/// - SeeAlso: [historic_deltat.data](https://maia.usno.navy.mil/ser7/historic_deltat.data)
+	public static let historic = DeltaTTable(uncheckedEntries: historicDeltaTEntries)
+}
+
+extension DeltaTTable {
+	/// ΔT at monthly intervals from 1973-02-01, from the USNO file `deltat.data`.
+	///
+	/// Each value is ΔT at 0h TT on the first of the month, derived from IERS observations of
+	/// UT1. Linear interpolation between months misses the seasonal variation in Earth's
+	/// rotation, which leaves errors of a few milliseconds. For better accuracy, use an
+	/// ``EarthOrientationTable``.
+	///
+	/// The entries are generated by `Scripts/generate-timescale-data.py modern-delta-t`, and
+	/// end at the date of the file used, so they are refreshed with each release.
+	///
+	/// - SeeAlso: [deltat.data](https://maia.usno.navy.mil/ser7/deltat.data)
+	public static let modern = DeltaTTable(uncheckedEntries: modernDeltaTEntries)
+}
+
+extension DeltaTTable {
+	/// ΔT from 1657.0 to the end of ``modern``: the entries of ``historic`` before ``modern``
+	/// begins in February 1973, then the entries of ``modern``.
+	///
+	/// Entries are half-yearly before 1973 and monthly after. Entries before 1973 carry the
+	/// uncertainty from ``historic``; later entries have none.
+	public static let builtIn = DeltaTTable(uncheckedEntries: historic.entries.filter { $0.tt < modern.coverage.lowerBound } + modern.entries)
+}

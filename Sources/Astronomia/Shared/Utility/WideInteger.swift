@@ -105,7 +105,8 @@ struct WideInteger: Hashable {
 
 	/// This value as an `Int`, or `nil` if it cannot be represented as one.
 	var intValue: Int? {
-		// The value fits in 64 bits exactly when the high word is the sign extension of the low word.
+		// The value fits in 64 bits exactly when the high word is the sign extension of the low
+		// word.
 		guard high == Int64(bitPattern: low) >> 63 else { return nil }
 		return Int(exactly: Int64(bitPattern: low))
 	}

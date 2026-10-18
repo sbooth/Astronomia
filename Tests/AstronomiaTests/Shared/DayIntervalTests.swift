@@ -26,7 +26,8 @@ import Testing
 	}
 
 	@Test func fractionalDayIsNormalized() throws {
-		// days is the nearest whole number of days with halves rounded up, and the fraction is in [-0.5, 0.5)
+		// days is the nearest whole number of days with halves rounded up, and the fraction is in
+		// [-0.5, 0.5)
 		#expect(try DayInterval(days: 1, fractionalDay: 0.75) == DayInterval(days: 2, fractionalDay: -0.25))
 		#expect(try DayInterval(days: 0, fractionalDay: -0.75) == DayInterval(days: -1, fractionalDay: 0.25))
 		#expect(try DayInterval(days: 0, fractionalDay: 10.25) == DayInterval(days: 10, fractionalDay: 0.25))

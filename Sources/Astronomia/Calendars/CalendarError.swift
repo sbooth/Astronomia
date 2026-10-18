@@ -16,8 +16,22 @@ public enum CalendarError: Error, Hashable, Sendable {
 	case invalidDayFraction
 	/// The number of years in the decimal year cannot be represented as an `Int`.
 	case invalidDecimalYear
+	/// The hour, minute, or second is outside its range.
+	case invalidTimeOfDay
 	/// A date's Julian day number cannot be represented as a ``JulianDayNumber``.
 	case julianDayNumberNotRepresentable
 	/// The day fraction or number of days is not finite.
 	case nonFiniteValue
+}
+
+extension CalendarError {
+	/// Creates a calendar error from the time of day error that caused it.
+	init(_ error: TimeOfDayError) {
+		switch error {
+		case .invalid:
+			self = .invalidTimeOfDay
+		case .nonFiniteValue:
+			self = .nonFiniteValue
+		}
+	}
 }
