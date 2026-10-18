@@ -109,6 +109,56 @@ extension Angle {
 }
 
 extension Angle {
+	/// Returns an angle from radians.
+	///
+	/// Equivalent to ``init(radians:)``, for use where the type is known, as in `.radians(.pi/6)`.
+	///
+	/// - Parameter radians: The angle in radians.
+	/// - Returns: The angle.
+	public static func radians(_ radians: Double) -> Angle { Angle(radians: radians) }
+
+	/// Returns an angle from degrees.
+	///
+	/// Equivalent to ``init(degrees:)``, for use where the type is known, as in `.degrees(30)`.
+	///
+	/// - Parameter degrees: The angle in degrees.
+	/// - Returns: The angle.
+	public static func degrees(_ degrees: Double) -> Angle { Angle(degrees: degrees) }
+
+	/// Returns an angle from arcminutes.
+	///
+	/// Equivalent to ``init(arcminutes:)``, for use where the type is known, as in `.arcminutes(1_800)`.
+	///
+	/// - Parameter arcminutes: The angle in arcminutes.
+	/// - Returns: The angle.
+	public static func arcminutes(_ arcminutes: Double) -> Angle { Angle(arcminutes: arcminutes) }
+
+	/// Returns an angle from arcseconds.
+	///
+	/// Equivalent to ``init(arcseconds:)``, for use where the type is known, as in `.arcseconds(1.08e5)`.
+	///
+	/// - Parameter arcseconds: The angle in arcseconds.
+	/// - Returns: The angle.
+	public static func arcseconds(_ arcseconds: Double) -> Angle { Angle(arcseconds: arcseconds) }
+
+	/// Returns an angle from milliarcseconds.
+	///
+	/// Equivalent to ``init(milliarcseconds:)``, for use where the type is known, as in `.milliarcseconds(1.08e8)`.
+	///
+	/// - Parameter milliarcseconds: The angle in milliarcseconds.
+	/// - Returns: The angle.
+	public static func milliarcseconds(_ milliarcseconds: Double) -> Angle { Angle(milliarcseconds: milliarcseconds) }
+
+	/// Returns an angle from hours of time measure, where 1 hour is 15°.
+	///
+	/// Equivalent to ``init(hourAngle:)``, for use where the type is known, as in `.hourAngle(2)`.
+	///
+	/// - Parameter hourAngle: The angle in hours.
+	/// - Returns: The angle.
+	public static func hourAngle(_ hourAngle: Double) -> Angle { Angle(hourAngle: hourAngle) }
+}
+
+extension Angle {
 	/// Returns the angle reduced to the right-open interval [0, 2π).
 	///
 	/// Use this for quantities measured around a full circle, such as longitude, right
