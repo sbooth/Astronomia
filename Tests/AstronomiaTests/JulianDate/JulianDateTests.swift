@@ -286,8 +286,10 @@ import Testing
 		#expect(try date.subtracting(days: -2_451_545) == JulianDate(julianDayNumber: 0, fractionFromNoon: 0.25))
 		#expect(try date.subtracting(days: 0) == date)
 
+		#expect(try JulianDate(julianDayNumber: -1).subtracting(days: .min) == JulianDate(julianDayNumber: .max))
 		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate(julianDayNumber: .max).subtracting(days: -1) }
 		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate(julianDayNumber: .min).subtracting(days: 1) }
+		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate(julianDayNumber: 0).subtracting(days: .min) }
 		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try date.subtracting(days: .max) }
 	}
 
