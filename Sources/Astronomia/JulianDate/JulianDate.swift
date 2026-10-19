@@ -398,7 +398,7 @@ extension JulianDate {
 	///
 	/// The fraction of the day is unchanged, so the result is exact in any timescale.
 	///
-	/// - Parameter days: The signed number of days to subtract.
+	/// - Parameter days: The number of days to subtract.
 	/// - Returns: This Julian Date moved back by `days` days.
 	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
