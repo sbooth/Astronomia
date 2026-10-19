@@ -19,7 +19,13 @@ let package = Package(
 	],
 	targets: [
 		.target(
-			name: "Astronomia"
+			name: "Astronomia",
+			dependencies: [
+				"AstronomiaData",
+			]
+		),
+		.target(
+			name: "AstronomiaData"
 		),
 		.testTarget(
 			name: "AstronomiaTests",
