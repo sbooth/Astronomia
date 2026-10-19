@@ -88,7 +88,12 @@ extension Position where Frame: FixedReferenceFrame {
 	}
 }
 
-extension Position {
+extension Position: AdditiveArithmetic {
+	/// The position at the origin.
+	public static var zero: Position {
+		.origin
+	}
+
 	/// Returns the sum of two positions, as for a position relative to an intermediate
 	/// origin added to that origin's position.
 	public static func + (lhs: Position, rhs: Position) -> Position {
@@ -99,12 +104,16 @@ extension Position {
 	public static func - (lhs: Position, rhs: Position) -> Position {
 		Position(lhs.vector - rhs.vector)
 	}
+}
 
+extension Position {
 	/// Returns the position reflected through the origin.
 	public static prefix func - (operand: Position) -> Position {
 		Position(-operand.vector)
 	}
+}
 
+extension Position {
 	/// Returns the position scaled by a factor.
 	public static func * (lhs: Position, rhs: Double) -> Position {
 		Position(lhs.vector * rhs)
@@ -113,6 +122,21 @@ extension Position {
 	/// Returns the position scaled by a factor.
 	public static func * (lhs: Double, rhs: Position) -> Position {
 		Position(lhs * rhs.vector)
+	}
+
+	/// Returns the position divided by a divisor.
+	public static func / (lhs: Position, rhs: Double) -> Position {
+		Position(lhs.vector / rhs)
+	}
+
+	/// Scales the position by a factor.
+	public static func *= (lhs: inout Position, rhs: Double) {
+		lhs = lhs * rhs
+	}
+
+	/// Divides the position by a divisor.
+	public static func /= (lhs: inout Position, rhs: Double) {
+		lhs = lhs / rhs
 	}
 }
 

@@ -24,9 +24,6 @@ struct Vector3: Hashable, Sendable {
 		self.z = z
 	}
 
-	/// The zero vector.
-	static let zero = Vector3(0, 0, 0)
-
 	/// The Euclidean length.
 	var length: Double {
 		dot(self).squareRoot()
@@ -41,6 +38,11 @@ struct Vector3: Hashable, Sendable {
 	func cross(_ other: Vector3) -> Vector3 {
 		Vector3(y * other.z - z * other.y, z * other.x - x * other.z, x * other.y - y * other.x)
 	}
+}
+
+extension Vector3: AdditiveArithmetic {
+	/// The zero vector.
+	static let zero = Vector3(0, 0, 0)
 
 	static func + (lhs: Vector3, rhs: Vector3) -> Vector3 {
 		Vector3(lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z)
@@ -49,11 +51,15 @@ struct Vector3: Hashable, Sendable {
 	static func - (lhs: Vector3, rhs: Vector3) -> Vector3 {
 		Vector3(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z)
 	}
+}
 
+extension Vector3 {
 	static prefix func - (operand: Vector3) -> Vector3 {
 		Vector3(-operand.x, -operand.y, -operand.z)
 	}
+}
 
+extension Vector3 {
 	static func * (lhs: Vector3, rhs: Double) -> Vector3 {
 		Vector3(lhs.x * rhs, lhs.y * rhs, lhs.z * rhs)
 	}
@@ -64,6 +70,14 @@ struct Vector3: Hashable, Sendable {
 
 	static func / (lhs: Vector3, rhs: Double) -> Vector3 {
 		Vector3(lhs.x / rhs, lhs.y / rhs, lhs.z / rhs)
+	}
+
+	static func *= (lhs: inout Vector3, rhs: Double) {
+		lhs = lhs * rhs
+	}
+
+	static func /= (lhs: inout Vector3, rhs: Double) {
+		lhs = lhs / rhs
 	}
 }
 
