@@ -11,11 +11,11 @@
 /// a frame.
 struct Vector3: Hashable, Sendable {
 	/// The x component.
-	var x: Double
+	let x: Double
 	/// The y component.
-	var y: Double
+	let y: Double
 	/// The z component.
-	var z: Double
+	let z: Double
 
 	/// Creates a vector from its components.
 	init(_ x: Double, _ y: Double, _ z: Double) {
