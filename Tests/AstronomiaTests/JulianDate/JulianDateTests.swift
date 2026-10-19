@@ -280,6 +280,17 @@ import Testing
 		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try date.adding(days: .max) }
 	}
 
+	@Test func subtractingWholeDays() throws {
+		let date = try JulianDate(julianDayNumber: -2_451_545, fractionFromNoon: 0.25)
+		#expect(try date.subtracting(days: 1) == JulianDate(julianDayNumber: -2_451_546, fractionFromNoon: 0.25))
+		#expect(try date.subtracting(days: -2_451_545) == JulianDate(julianDayNumber: 0, fractionFromNoon: 0.25))
+		#expect(try date.subtracting(days: 0) == date)
+
+		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate(julianDayNumber: .max).subtracting(days: -1) }
+		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try JulianDate(julianDayNumber: .min).subtracting(days: 1) }
+		#expect(throws: JulianDateError.julianDayNumberNotRepresentable) { try date.subtracting(days: .max) }
+	}
+
 	@Test func addingFractionalDays() throws {
 		let date = try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25)
 		#expect(try date.adding(days: 0.25) == JulianDate(julianDayNumber: 2_451_546, fractionFromNoon: -0.5))
