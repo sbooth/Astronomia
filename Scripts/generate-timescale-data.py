@@ -38,10 +38,10 @@ Commands:
       --ut1-only, since its nutation columns are not dX and dY. Pass the array to
       EarthOrientationTable(entries:leapSecondTable:). With --table, writes the table itself,
       built with the built-in leap seconds, so the entries are not kept after it is built.
-      The values are written as a [Double] literal, which the compiler handles far better
-      than an array of initializers, and the entries or table are built on first use. With
-      --array, writes an array literal of initializers instead, one per row, which is easier
-      to read but slow to compile for more than a few thousand rows.
+      The values are written as private [Double] literals at file scope, which the compiler
+      handles far better than an array of initializers, and the entries or table are built
+      on first use. With --array, writes an array literal of initializers instead, one per
+      row, which is easier to read but slow to compile for more than a few thousand rows.
 
 Examples:
 
@@ -452,6 +452,7 @@ def finals(args: argparse.Namespace, data: bytes) -> str:
 	lines = header(args, "finals", data, args.source_url)
 	if args.import_module:
 		lines += ["import Astronomia", ""]
+	documentation = len(lines)
 	lines.append(f"/// IERS Bulletin A Earth orientation parameters at 0h UTC from {first} to {last}.")
 	lines.append("///")
 	included = ["UT1 - UTC"]
@@ -494,9 +495,12 @@ def finals(args: argparse.Namespace, data: bytes) -> str:
 
 	# Large array literals of struct initializers are slow for the Swift compiler to type
 	# check, so the values are written as [Double] literals and the entries built from them
-	# on first use. Consecutive days, the usual case, need only the first. Predictions are
-	# written as ranges of indices. Each optional column runs from the first row with a value
-	# to the last, with NaN for a value missing in between.
+	# on first use. The arrays are private constants at file scope, ahead of the declaration:
+	# inside the closure that builds the entries, the compiler type checks them with the rest
+	# of the closure's body, which is several times slower. Consecutive days, the usual case,
+	# need only the first. Predictions are written as ranges of indices. Each optional column
+	# runs from the first row with a value to the last, with NaN for a value missing in
+	# between.
 	if args.table:
 		lines.append("///")
 		lines.append("/// Converted to ΔT with the built-in leap seconds on first use.")
@@ -507,14 +511,18 @@ def finals(args: argparse.Namespace, data: bytes) -> str:
 	if consecutive:
 		lines.append(f"\tlet firstUTCDay = {days[0]:_}")
 
-	def column(name: str, type_name: str, items: list[str], per_line: int, per_row: int = 1, first_row: int = 0) -> None:
+	columns: list[str] = []
+
+	def column(name: str, type_name: str, items: list[str], per_line: int, per_row: int = 1, first_row: int = 0, comment: str | None = None) -> None:
 		width = max(len(item) for item in items)
-		lines.append(f"\tlet {name}: [{type_name}] = [")
+		if comment:
+			columns.append(f"// {comment}")
+		columns.append(f"private let {name}: [{type_name}] = [")
 		for start in range(0, len(items), per_line):
 			chunk = items[start : start + per_line]
 			text = " ".join((item + ",").ljust(width + 1) for item in chunk).rstrip()
-			lines.append(f"\t\t{text} // {civil_date(days[first_row + start // per_row])}")
-		lines.append("\t]")
+			columns.append(f"\t{text} // {civil_date(days[first_row + start // per_row])}")
+		columns.extend(["]", ""])
 
 	def predictions(name: str, flags: list[bool]) -> bool:
 		spans = ranges(flags)
@@ -537,24 +545,21 @@ def finals(args: argparse.Namespace, data: bytes) -> str:
 
 	if not consecutive:
 		column("utcDays", "Int", [f"{day:_}" for day in days], 8)
-	column("ut1MinusUTC", "Double", [row["ut1"] for row in rows], 8)
+	column("ut1MinusUTC", "Double", [row["ut1"] for row in rows], 8, comment="UT1 - UTC, in seconds")
 	ut1_ranges = predictions("ut1Predictions", [row["ut1_predicted"] for row in rows])
 	if has_pole:
-		lines.append("\t// x_p and y_p, in arcseconds")
 		pole_values, pole_index = values("pole", "polarMotion")
 		items = [item for pair in pole_values for item in (pair or (".nan", ".nan"))]
-		column("polarMotion", "Double", items, 8, 2, first_present("pole"))
+		column("polarMotion", "Double", items, 8, 2, first_present("pole"), "x_p and y_p, in arcseconds")
 		pole_ranges = predictions("polarMotionPredictions", [row["pole_predicted"] for row in rows])
 	if has_offsets:
-		lines.append("\t// dX and dY, in milliarcseconds")
 		offsets_values, offsets_index = values("offsets", "celestialPoleOffsets")
 		items = [item for pair in offsets_values for item in (pair or (".nan", ".nan"))]
-		column("celestialPoleOffsets", "Double", items, 8, 2, first_present("offsets"))
+		column("celestialPoleOffsets", "Double", items, 8, 2, first_present("offsets"), "dX and dY, in milliarcseconds")
 		offsets_ranges = predictions("celestialPoleOffsetPredictions", [row["offsets_predicted"] for row in rows])
 	if has_lod:
-		lines.append("\t// In milliseconds")
 		lod_values, lod_index = values("lod", "excessLengthOfDay")
-		column("excessLengthOfDay", "Double", [item or ".nan" for item in lod_values], 8, 1, first_present("lod"))
+		column("excessLengthOfDay", "Double", [item or ".nan" for item in lod_values], 8, 1, first_present("lod"), "Excess length of day, in milliseconds")
 
 	if (ut1_ranges or (has_pole and pole_ranges) or (has_offsets and offsets_ranges)):
 		lines += [
@@ -628,6 +633,7 @@ def finals(args: argparse.Namespace, data: bytes) -> str:
 		lines.append(f"\treturn {build[0]}")
 		lines += [f"\t{line}" for line in build[1:]]
 	lines.append("}()")
+	lines[documentation:documentation] = columns
 	return "\n".join(lines) + "\n"
 
 
