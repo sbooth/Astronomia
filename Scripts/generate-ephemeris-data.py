@@ -177,25 +177,25 @@ def vsop2013(args: argparse.Namespace) -> None:
 			'#include "AstronomiaData.h"',
 			"",
 			"// Variable (1 to 6 for a, λ, k, h, q, p), power of time, and number of terms",
-			"static const int32_t series[] = {",
+			"static const struct astronomia_vsop_series series[] = {",
 		]
 		for variable, power, count in kept_series:
-			lines.append(f"\t{variable}, {power:2}, {count:6}, // {VARIABLES[variable - 1]} T^{power}")
+			lines.append(f"\t{{{variable}, {power:2}, {count:6}}}, // {VARIABLES[variable - 1]} T^{power}")
 		lines += [
 			"};",
 			"",
 			"// Phase at J2000.0 (radians), frequency (radians per thousand Julian years), S, C",
-			"static const double terms[] = {",
+			"static const struct astronomia_vsop_term terms[] = {",
 		]
 		for multipliers, s, c in kept_terms:
 			phase, frequency = phase_and_frequency(multipliers)
-			lines.append("\t" + ", ".join(value.hex() for value in (phase, frequency, s, c)) + ",")
+			lines.append("\t{" + ", ".join(value.hex() for value in (phase, frequency, s, c)) + "},")
 		lines += [
 			"};",
 			"",
-			f"const struct astronomia_series {symbol} = {{",
-			"\tseries, sizeof(series) / sizeof(series[0]) / 3,",
-			"\tterms, sizeof(terms) / sizeof(terms[0]) / 4,",
+			f"const struct astronomia_vsop_series_set {symbol} = {{",
+			"\tsizeof(series) / sizeof(series[0]), series,",
+			"\tsizeof(terms) / sizeof(terms[0]), terms,",
 			"};",
 			"",
 		]
