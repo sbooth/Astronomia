@@ -261,6 +261,10 @@ extension ELPMPP02.Solution {
 
 	/// Returns rectangular coordinates referred to the ecliptic of J2000.0 from the sums of the
 	/// series, following `EVALUATE` of `ELPMPP02.for`.
+	///
+	/// `ELPMPP02.for` scales the distance by the ratio of the semimajor axes of DE405 and ELP but
+	/// not its rate, so its velocity differs from the derivative of its position by about 5e-8
+	/// of the radial velocity, up to 3e-4 km/day. Both are scaled here.
 	private static func rectangular(longitude: Double, latitude: Double, distance: Double, rates: [Double], meanLongitude: ELPPolynomial, at t: Double) -> (position: Vector3, velocity: Vector3) {
 		let rad = arcsecondsPerRadian
 		// The ratio of the semimajor axes of DE405 and ELP, which scales the distance
@@ -272,7 +276,7 @@ extension ELPMPP02.Solution {
 		let r = distance * a405 / aelp
 		let lambdaRate = rates[0] / rad + meanLongitude.rate(at: t)
 		let betaRate = rates[1] / rad
-		let rRate = rates[2]
+		let rRate = rates[2] * a405 / aelp
 
 		let (slamb, clamb) = Math.sincos(lambda)
 		let (sbeta, cbeta) = Math.sincos(beta)

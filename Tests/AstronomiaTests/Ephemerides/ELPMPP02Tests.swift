@@ -97,15 +97,37 @@ import Testing
 		}
 	}
 
+	/// Returns the five-point central difference of a function, with an error of order h⁴.
+	static func derivative(_ f: (Double) -> Double, at t: Double, step h: Double) -> Double {
+		(-f(t + 2 * h) + 8 * f(t + h) - 8 * f(t - h) + f(t - 2 * h)) / (12 * h)
+	}
+
 	@Test func velocityIsTheDerivative() {
-		// The analytic velocity agrees with a central difference of the positions.
-		for days in [-300_000.0, -1000, 0, 8000.25, 350_000] {
-			let h = 0.01
-			let state = ELPMPP02.seriesState(at: days, fit: .laserRanging)
-			let after = ELPMPP02.seriesState(at: days + h, fit: .laserRanging).position
-			let before = ELPMPP02.seriesState(at: days - h, fit: .laserRanging).position
-			let numeric = (after - before) * (1 / (2 * h))
-			#expect((state.velocity - numeric).length <= 1e-4 * state.velocity.length, "\(days)")
+		// The analytic velocity agrees with a five-point difference of the positions, with
+		// steps of 0.02 day, to a few 1e-7 km/day near J2000.0.
+		for fit in [ELPMPP02.Fit.laserRanging, .de405] {
+			for days in [-7305.5, 0.25, 4000.25] {
+				let velocity = ELPMPP02.seriesState(at: days, fit: fit).velocity
+				let x = Self.derivative({ ELPMPP02.seriesState(at: $0, fit: fit).position.x }, at: days, step: 0.02)
+				let y = Self.derivative({ ELPMPP02.seriesState(at: $0, fit: fit).position.y }, at: days, step: 0.02)
+				let z = Self.derivative({ ELPMPP02.seriesState(at: $0, fit: fit).position.z }, at: days, step: 0.02)
+				#expect((velocity - Vector3(x, y, z)).length <= 3e-6, "\(fit) \(days)")
+			}
+		}
+	}
+
+	@Test func radialVelocityIsTheDerivativeOfDistance() {
+		// The rate of the distance is scaled as the distance is. Unscaled, as in ELPMPP02.for,
+		// the radial velocity would be off by 5e-8 of itself, 1.3e-4 km/day or more at these
+		// dates, where the five-point difference is good to 1e-5 km/day.
+		for fit in [ELPMPP02.Fit.laserRanging, .de405] {
+			for days in [-365_000.0, -100_000.3, -7305.5, 0.25, 250_000, 365_000] {
+				let state = ELPMPP02.seriesState(at: days, fit: fit)
+				let radial = state.velocity.dot(state.position) / state.position.length
+				#expect(abs(radial) >= 2500, "\(fit) \(days)")
+				let numeric = Self.derivative({ ELPMPP02.seriesState(at: $0, fit: fit).position.length }, at: days, step: 0.02)
+				#expect(abs(radial - numeric) <= 2e-5, "\(fit) \(days)")
+			}
 		}
 	}
 
