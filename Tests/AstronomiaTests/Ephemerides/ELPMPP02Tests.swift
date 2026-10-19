@@ -56,14 +56,15 @@ import Testing
 	}
 
 	@Test func agreesWithDE421() throws {
-		// The rotation to the ICRS is fitted to DE421 from 1950 to 2050, where the two agree to
-		// 12 mas with either fit.
+		// With the published frame angles, the fit to DE405 agrees with DE421 from 1950 to 2050
+		// to 12 mas. The fit to lunar laser ranging differs by about 40 mas, mostly in its
+		// origin of longitudes.
 		for value in de421Moon {
 			let date = try JulianDate(julianDate: value.julianDate)
 			let check = Self.vector(value.position) * (1 / Distance.kilometersPerAstronomicalUnit)
-			for fit in [ELPMPP02.Fit.laserRanging, .de405] {
+			for (fit, limit) in [(ELPMPP02.Fit.laserRanging, 55.0), (.de405, 13)] {
 				let state = try #require(ELPMPP02.state(at: date, fit: fit))
-				#expect(Self.milliarcseconds(state.position, check) <= 15, "\(fit) \(value.julianDate)")
+				#expect(Self.milliarcseconds(state.position, check) <= limit, "\(fit) \(value.julianDate)")
 			}
 		}
 	}
@@ -74,14 +75,25 @@ import Testing
 			let series = ELPMPP02.seriesState(at: date.daysSinceJ2000, fit: fit)
 			let ecliptic = try #require(ELPMPP02.eclipticState(at: date, fit: fit))
 			let icrs = try #require(ELPMPP02.state(at: date, fit: fit))
-			// The fit's origin of longitudes moves the Moon along the ecliptic only.
+			// The ecliptic state is the series in astronomical units.
 			let au = Distance.kilometersPerAstronomicalUnit
-			#expect(abs(ecliptic.position.z * au - series.position.z) <= 1e-9)
-			#expect(abs(ecliptic.position.length * au - series.position.length) <= 1e-9)
-			let offset = Angle(radians: (ecliptic.position * au - series.position).length / series.position.length)
-			#expect(abs(offset.arcseconds - fit.longitudeOffset.arcseconds) <= 1e-6)
-			#expect(icrs.position == ELPMPP02.rotationToICRS.apply(to: ecliptic.position))
-			#expect(icrs.velocity == ELPMPP02.rotationToICRS.apply(to: ecliptic.velocity))
+			#expect((ecliptic.position * au - series.position).length <= 1e-9)
+			#expect((ecliptic.velocity * au - series.velocity).length <= 1e-9)
+			#expect(icrs.position == fit.rotationToICRS.apply(to: ecliptic.position))
+			#expect(icrs.velocity == fit.rotationToICRS.apply(to: ecliptic.velocity))
+		}
+	}
+
+	@Test func publishedFrameAngles() {
+		// The pole of each fit's ecliptic in the ICRS is at declination 90° - ε and right
+		// ascension 270° + φ, from the angles of Chapront et al. (2002).
+		for (fit, epsilon, phi) in [(ELPMPP02.Fit.laserRanging, 84_381.411_00, -0.055_42), (.de405, 84_381.409_60, -0.050_28)] {
+			let pole = Position<ICRS>(fit.rotationToICRS.apply(to: Vector3(0, 0, 1))).spherical
+			#expect(abs(pole.latitude.arcseconds - (324_000 - epsilon)) <= 1e-9, "\(fit)")
+			#expect(abs(pole.longitude.arcseconds - (972_000 + phi)) <= 1e-8, "\(fit)")
+			// The ecliptic's x axis, its ascending node, is on the equator at right ascension φ.
+			let node = Position<ICRS>(fit.rotationToICRS.apply(to: Vector3(1, 0, 0))).spherical
+			#expect(abs(node.latitude.arcseconds) <= 1e-9 && abs(node.longitude.normalizedSigned().arcseconds - phi) <= 1e-9, "\(fit)")
 		}
 	}
 

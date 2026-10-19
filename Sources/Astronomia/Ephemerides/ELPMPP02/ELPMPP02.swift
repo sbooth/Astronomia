@@ -25,21 +25,13 @@ enum ELPMPP02 {
 		case de405
 	}
 
-	/// The inertial mean ecliptic and equinox of J2000.0 as realized by ELP/MPP02.
-	enum Ecliptic: EclipticFrame, FixedReferenceFrame {
-		static let name = "ELP/MPP02 ecliptic J2000"
-
-		static let rotationFromICRS = rotationToICRS.inverse
-	}
-
-	/// The rotation from the solution's ecliptic to the ICRS, R3(-φ) R1(-ε), with
-	/// ε = 23° 26′ 21.41045″ and φ = -0.05242″.
+	/// The inertial mean ecliptic and equinox of J2000.0 as realized by a fit of ELP/MPP02.
 	///
-	/// The angles are fitted to DE421 from 1950 to 2050, together with each fit's
-	/// ``Fit/longitudeOffset``. They are within 1 mas and 3 mas of those Chapront et al. (2002)
-	/// find for the ICRS, ε = 23° 26′ 21.41100″ and φ = -0.05542″, from an earlier solution.
-	static let rotationToICRS = Rotation<Ecliptic, ICRS>.aboutZ(.arcseconds(0.052_42))
-		* Rotation<Ecliptic, Ecliptic>.aboutX(.arcseconds(-84_381.410_45))
+	/// The frame is not a ``FixedReferenceFrame`` because its orientation depends on the fit;
+	/// see ``Fit/rotationToICRS``.
+	enum Ecliptic: EclipticFrame {
+		static let name = "ELP/MPP02 ecliptic J2000"
+	}
 
 	/// The TDB dates of the built-in series, J1000.0 to J3000.0.
 	static let coverage = JulianDate(uncheckedJulianDayNumber: 2_086_295, fractionFromNoon: 0)
@@ -50,17 +42,32 @@ enum ELPMPP02 {
 }
 
 extension ELPMPP02.Fit {
-	/// The offset of the fit's origin of longitudes from the x axis of ``ELPMPP02/Ecliptic``,
-	/// fitted to DE421.
+	/// The rotation from the fit's ecliptic to the ICRS, R3(-φ) R1(-ε), with the angles of
+	/// Chapront et al. (2002), Table 9.
 	///
-	/// The two fits differ mainly by their origin of longitudes at J2000.0, by about 0.036″, as
-	/// Chapront and Francou (2003) note.
-	var longitudeOffset: Angle {
+	/// For the fit to lunar laser ranging the angles are those of the ICRS,
+	/// ε = 23° 26′ 21.41100″ and φ = -0.05542″. For the fit to DE405 they are those of DE405,
+	/// ε = 23° 26′ 21.40960″ and φ = -0.05028″, whose axes are within a few milliarcseconds of
+	/// the ICRS.
+	///
+	/// - Note: The angles come from the solution S2001, which precedes ELP/MPP02. Chapront and
+	///   Francou (2003) note that the two fits differ mainly by their origin of longitudes, by
+	///   about 0.036″, and the fit to lunar laser ranging differs from DE421 by about 40 mas,
+	///   mostly in longitude, where the fit to DE405 agrees with it to about 6 mas.
+	var rotationToICRS: Rotation<ELPMPP02.Ecliptic, ICRS> {
 		switch self {
-		case .laserRanging: .arcseconds(0.039_41)
-		case .de405: .arcseconds(0.004_24)
+		case .laserRanging: Self.laserRangingRotation
+		case .de405: Self.de405Rotation
 		}
 	}
+
+	/// The rotation from the fit to lunar laser ranging's ecliptic to the ICRS.
+	private static let laserRangingRotation = Rotation<ELPMPP02.Ecliptic, ICRS>.aboutZ(.arcseconds(0.055_42))
+		* Rotation<ELPMPP02.Ecliptic, ELPMPP02.Ecliptic>.aboutX(.arcseconds(-84_381.411_00))
+
+	/// The rotation from the fit to DE405's ecliptic to the axes of DE405.
+	private static let de405Rotation = Rotation<ELPMPP02.Ecliptic, ICRS>.aboutZ(.arcseconds(0.050_28))
+		* Rotation<ELPMPP02.Ecliptic, ELPMPP02.Ecliptic>.aboutX(.arcseconds(-84_381.409_60))
 
 	/// The solution for this fit.
 	var solution: ELPMPP02.Solution {
@@ -84,7 +91,7 @@ extension ELPMPP02 {
 		fit.solution.state(at: days / daysPerCentury)
 	}
 
-	/// Returns the Moon's geocentric position and velocity in the solution's ecliptic.
+	/// Returns the Moon's geocentric position and velocity in the fit's ecliptic.
 	///
 	/// - Parameters:
 	///   - tdb: A Julian Date in TDB.
@@ -94,9 +101,8 @@ extension ELPMPP02 {
 	static func eclipticState(at tdb: JulianDate, fit: Fit) -> (position: Vector3, velocity: Vector3)? {
 		guard coverage.contains(tdb) else { return nil }
 		let state = seriesState(at: tdb.daysSinceJ2000, fit: fit)
-		let offset = Rotation<Ecliptic, Ecliptic>.aboutZ(-fit.longitudeOffset)
 		let scale = 1 / Distance.kilometersPerAstronomicalUnit
-		return (offset.apply(to: state.position) * scale, offset.apply(to: state.velocity) * scale)
+		return (state.position * scale, state.velocity * scale)
 	}
 
 	/// Returns the Moon's geocentric position and velocity in the ICRS.
@@ -108,6 +114,7 @@ extension ELPMPP02 {
 	///   day, or `nil` if `tdb` is outside ``coverage``.
 	static func state(at tdb: JulianDate, fit: Fit) -> (position: Vector3, velocity: Vector3)? {
 		guard let ecliptic = eclipticState(at: tdb, fit: fit) else { return nil }
-		return (rotationToICRS.apply(to: ecliptic.position), rotationToICRS.apply(to: ecliptic.velocity))
+		let rotation = fit.rotationToICRS
+		return (rotation.apply(to: ecliptic.position), rotation.apply(to: ecliptic.velocity))
 	}
 }
