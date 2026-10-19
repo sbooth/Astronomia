@@ -64,6 +64,35 @@ extension Distance {
 	}
 }
 
+extension Distance {
+	/// Returns a distance from astronomical units.
+	///
+	/// Equivalent to ``init(astronomicalUnits:)``, for use where the type is known, as in
+	/// `.astronomicalUnits(5.2)`.
+	///
+	/// - Parameter astronomicalUnits: The distance in astronomical units.
+	/// - Returns: The distance.
+	public static func astronomicalUnits(_ astronomicalUnits: Double) -> Distance { Distance(astronomicalUnits: astronomicalUnits) }
+
+	/// Returns a distance from kilometers.
+	///
+	/// Equivalent to ``init(kilometers:)``, for use where the type is known, as in
+	/// `.kilometers(384_400)`.
+	///
+	/// - Parameter kilometers: The distance in kilometers.
+	/// - Returns: The distance.
+	public static func kilometers(_ kilometers: Double) -> Distance { Distance(kilometers: kilometers) }
+
+	/// Returns a distance from meters.
+	///
+	/// Equivalent to ``init(meters:)``, for use where the type is known, as in
+	/// `.meters(6_378_137)`.
+	///
+	/// - Parameter meters: The distance in meters.
+	/// - Returns: The distance.
+	public static func meters(_ meters: Double) -> Distance { Distance(meters: meters) }
+}
+
 extension Distance: AdditiveArithmetic {
 	/// The zero distance.
 	public static let zero = Distance(astronomicalUnits: 0)
