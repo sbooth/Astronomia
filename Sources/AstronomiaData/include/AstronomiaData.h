@@ -65,4 +65,64 @@ extern const struct astronomia_vsop_series_set astronomia_vsop2013_uranus;
 extern const struct astronomia_vsop_series_set astronomia_vsop2013_neptune;
 extern const struct astronomia_vsop_series_set astronomia_vsop2013_pluto;
 
+// Series of the lunar theory ELP/MPP02, whose terms have arguments that are sums of integer
+// multiples of fundamental arguments, polynomials in time. The terms keep their multipliers,
+// because the fundamental arguments depend on the fit of the solution.
+
+/// A series: the terms of one variable with the same power of time α.
+struct astronomia_elp_series {
+	/// The variable, numbered from 1: longitude, latitude, distance.
+	int32_t variable;
+	/// The power of time α.
+	int32_t power;
+	/// The number of terms.
+	int32_t count;
+};
+
+/// A term of the main problem, A sin(Σ iₖ Dₖ) in longitude and latitude and A cos(Σ iₖ Dₖ) in
+/// distance, where D₁ to D₄ are the Delaunay arguments D, F, l, l′.
+struct astronomia_elp_main_term {
+	/// The amplitude A, before the corrections of the fit.
+	double amplitude;
+	/// The partial derivatives B₁ to B₅ of the amplitude, which correct it for the fit.
+	double partials[5];
+	/// The multipliers iₖ of D, F, l, l′.
+	int8_t multipliers[4];
+};
+
+/// A term of the perturbations, T^α (S sin(Σ iₖ Aₖ) + C cos(Σ iₖ Aₖ)), where A₁ to A₁₃ are the
+/// Delaunay arguments D, F, l, l′, the mean longitudes of Mercury to Neptune, and ζ.
+struct astronomia_elp_perturbation_term {
+	/// The coefficient of the sine, S.
+	double s;
+	/// The coefficient of the cosine, C.
+	double c;
+	/// The multipliers iₖ of the thirteen arguments.
+	int8_t multipliers[13];
+};
+
+/// The series of the main problem and of the perturbations, with their terms in the order of
+/// the series.
+struct astronomia_elp_series_set {
+	/// The number of series of the main problem.
+	size_t main_series_count;
+	/// The series of the main problem.
+	const struct astronomia_elp_series *main_series;
+	/// The number of terms of the main problem, the sum of the series' counts.
+	size_t main_term_count;
+	/// The terms of the main problem.
+	const struct astronomia_elp_main_term *main_terms;
+	/// The number of series of the perturbations.
+	size_t perturbation_series_count;
+	/// The series of the perturbations.
+	const struct astronomia_elp_series *perturbation_series;
+	/// The number of terms of the perturbations, the sum of the series' counts.
+	size_t perturbation_term_count;
+	/// The terms of the perturbations.
+	const struct astronomia_elp_perturbation_term *perturbation_terms;
+};
+
+// ELP/MPP02 geocentric lunar coordinates, from J1000.0 to J3000.0
+extern const struct astronomia_elp_series_set astronomia_elpmpp02;
+
 #endif

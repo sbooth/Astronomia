@@ -30,10 +30,29 @@ Commands:
       the mean longitude is left out, as VSOP2013.f leaves it out; the evaluator adds the
       body's mean motion separately.
 
-Example:
+  elpmpp02 DIRECTORY
+      The ELP/MPP02 lunar solution (Chapront and Francou 2003) in DIRECTORY, the files
+      ELP_MAIN.S1 to ELP_MAIN.S3 and ELP_PERT.S1 to ELP_PERT.S3. Writes ELPMPP02.c to the
+      output directory.
+
+      Terms are kept when their amplitude, times the largest |T| of the span to the power of
+      the term's power of time, is at least the threshold of the variable: an angle, in
+      arcseconds, for longitude and latitude, and a distance, in kilometers, for distance.
+      T is TDB in Julian centuries from J2000.0. The default span, J1000.0 to J3000.0, and
+      thresholds keep the error from truncation near 0.2 mas in direction and 10 m in
+      distance.
+
+      Each term is written as in the files, with its integer multipliers of the fundamental
+      arguments, because the arguments depend on the fit of the solution, to lunar laser
+      ranging or to DE405, which the evaluator chooses. The terms of the main problem keep
+      the partial derivatives by which the fit corrects their amplitudes.
+
+Examples:
 
   Scripts/generate-ephemeris-data.py vsop2013 VSOP2013/solution \\
       --output Sources/AstronomiaData/VSOP2013
+  Scripts/generate-ephemeris-data.py elpmpp02 ELPMPP02 \\
+      --output Sources/AstronomiaData/ELPMPP02
 
 Run a command with --help for its options.
 """
@@ -205,6 +224,172 @@ def vsop2013(args: argparse.Namespace) -> None:
 	print("\n".join(summary), file=sys.stderr)
 
 
+ELP_VARIABLES = ["longitude", "latitude", "distance"]
+
+
+def elp_number(text: str, path: str, line_number: int) -> float:
+	"""Reads a Fortran number, whose exponent may be written with D."""
+	try:
+		return float(text.replace("D", "e").replace("d", "e"))
+	except ValueError:
+		raise DataError(f"{path}:{line_number}: expected a number, found {text!r}") from None
+
+
+def elp_count(line: str, path: str, line_number: int, expected: str) -> list[int]:
+	"""Reads the counts of a series header, "MAIN PROBLEM. LONGITUDE.       1023"."""
+	if not line.startswith(expected):
+		raise DataError(f"{path}:{line_number}: expected a header {expected!r}, found {line!r}")
+	try:
+		return [int(field) for field in line[25:].split()]
+	except ValueError:
+		raise DataError(f"{path}:{line_number}: unexpected header {line!r}") from None
+
+
+def read_elp_main(path: str, variable: int) -> list[tuple[list[int], float, list[float]]]:
+	"""Returns the terms of a main problem file, each (multipliers, amplitude, partials)."""
+	with open(path) as file:
+		lines = file.read().split("\n")
+	(count,) = elp_count(lines[0], path, 1, f"MAIN PROBLEM. {ELP_VARIABLES[variable - 1].upper()}.")
+	terms = []
+	for index in range(1, count + 1):
+		text = lines[index]
+		# Fortran format (4i3,2x,f13.5,5f12.2); the files' seventh column is unused
+		try:
+			multipliers = [int(text[3 * i : 3 * i + 3]) for i in range(4)]
+		except ValueError:
+			raise DataError(f"{path}:{index + 1}: expected multipliers, found {text!r}") from None
+		amplitude = elp_number(text[14:27], path, index + 1)
+		partials = [elp_number(text[27 + 12 * i : 39 + 12 * i], path, index + 1) for i in range(5)]
+		terms.append((multipliers, amplitude, partials))
+	return terms
+
+
+def read_elp_perturbations(path: str, variable: int) -> list[tuple[int, list[tuple[float, float, list[int]]]]]:
+	"""Returns the series of a perturbations file as (power, terms), each term (S, C, multipliers)."""
+	with open(path) as file:
+		lines = file.read().split("\n")
+	series = []
+	index = 0
+	for power in range(4):
+		count, file_power = elp_count(lines[index], path, index + 1, f"PERTURBATIONS. {ELP_VARIABLES[variable - 1].upper()}.")
+		if file_power != power:
+			raise DataError(f"{path}:{index + 1}: expected power {power}, found {file_power}")
+		index += 1
+		terms = []
+		for _ in range(count):
+			text = lines[index]
+			index += 1
+			# Fortran format (i5,2d20.13,16i3); the last three multipliers are unused
+			s = elp_number(text[5:25], path, index)
+			c = elp_number(text[25:45], path, index)
+			try:
+				multipliers = [int(text[45 + 3 * i : 48 + 3 * i]) for i in range(16)]
+			except ValueError:
+				raise DataError(f"{path}:{index}: expected multipliers, found {text!r}") from None
+			if any(multipliers[13:]):
+				raise DataError(f"{path}:{index}: unexpected multipliers {multipliers[13:]}")
+			terms.append((s, c, multipliers[:13]))
+		series.append((power, terms))
+	return series
+
+
+def c_int8_list(values: list[int]) -> str:
+	if any(not -128 <= value <= 127 for value in values):
+		raise DataError(f"multipliers out of range: {values}")
+	return "{" + ", ".join(str(value) for value in values) + "}"
+
+
+def elpmpp02(args: argparse.Namespace) -> None:
+	span = max(abs(args.start - 2000), abs(args.end - 2000)) / 100
+	thresholds = [args.angle_threshold, args.angle_threshold, args.distance_threshold]
+	os.makedirs(args.output, exist_ok=True)
+
+	digests = []
+	main_series = []
+	main_terms = []
+	perturbation_series = []
+	perturbation_terms = []
+	summary = []
+	for variable in (1, 2, 3):
+		threshold = thresholds[variable - 1]
+		for kind in ("MAIN", "PERT"):
+			path = os.path.join(args.directory, f"ELP_{kind}.S{variable}")
+			with open(path, "rb") as file:
+				digests.append((os.path.basename(path), hashlib.sha256(file.read()).hexdigest()))
+		path = os.path.join(args.directory, f"ELP_MAIN.S{variable}")
+		terms = read_elp_main(path, variable)
+		kept = [term for term in terms if abs(term[1]) >= threshold]
+		main_series.append((variable, 0, len(kept)))
+		main_terms += kept
+		total = len(terms)
+		count = len(kept)
+
+		path = os.path.join(args.directory, f"ELP_PERT.S{variable}")
+		for power, terms in read_elp_perturbations(path, variable):
+			kept = [term for term in terms if (term[0] ** 2 + term[1] ** 2) ** 0.5 * span ** power >= threshold]
+			total += len(terms)
+			count += len(kept)
+			if kept:
+				perturbation_series.append((variable, power, len(kept)))
+				perturbation_terms += kept
+		summary.append(f"{ELP_VARIABLES[variable - 1].capitalize()}: {count:,} of {total:,} terms")
+
+	lines = list(SPDX_HEADER)
+	lines += ["// Generated by Scripts/generate-ephemeris-data.py elpmpp02. Do not edit."]
+	lines += ["// Source: ELP/MPP02 (Chapront and Francou 2003), as distributed with ELPMPP02.for"]
+	lines += [f"// SHA-256 {digest}  {name}" for name, digest in digests]
+	lines += [
+		f"// {len(main_terms) + len(perturbation_terms):,} terms, thresholds {args.angle_threshold:g}″ and "
+		f"{args.distance_threshold:g} km, J{args.start:g} to J{args.end:g}",
+		"",
+		'#include "AstronomiaData.h"',
+		"",
+		"// Variable (1 to 3 for longitude, latitude, distance), power of time, and number of terms",
+		"static const struct astronomia_elp_series main_series[] = {",
+	]
+	for variable, power, count in main_series:
+		lines.append(f"\t{{{variable}, {power}, {count:6}}}, // {ELP_VARIABLES[variable - 1]}")
+	lines += [
+		"};",
+		"",
+		"// Amplitude, partial derivatives B1 to B5, multipliers of D, F, l, l′",
+		"static const struct astronomia_elp_main_term main_terms[] = {",
+	]
+	for multipliers, amplitude, partials in main_terms:
+		partial_list = ", ".join(value.hex() for value in partials)
+		lines.append(f"\t{{{amplitude.hex()}, {{{partial_list}}}, {c_int8_list(multipliers)}}},")
+	lines += [
+		"};",
+		"",
+		"// Variable (1 to 3 for longitude, latitude, distance), power of time, and number of terms",
+		"static const struct astronomia_elp_series perturbation_series[] = {",
+	]
+	for variable, power, count in perturbation_series:
+		lines.append(f"\t{{{variable}, {power}, {count:6}}}, // {ELP_VARIABLES[variable - 1]} T^{power}")
+	lines += [
+		"};",
+		"",
+		"// S, C, multipliers of D, F, l, l′, Mercury to Neptune, and ζ",
+		"static const struct astronomia_elp_perturbation_term perturbation_terms[] = {",
+	]
+	for s, c, multipliers in perturbation_terms:
+		lines.append(f"\t{{{s.hex()}, {c.hex()}, {c_int8_list(multipliers)}}},")
+	lines += [
+		"};",
+		"",
+		"const struct astronomia_elp_series_set astronomia_elpmpp02 = {",
+		"\tsizeof(main_series) / sizeof(main_series[0]), main_series,",
+		"\tsizeof(main_terms) / sizeof(main_terms[0]), main_terms,",
+		"\tsizeof(perturbation_series) / sizeof(perturbation_series[0]), perturbation_series,",
+		"\tsizeof(perturbation_terms) / sizeof(perturbation_terms[0]), perturbation_terms,",
+		"};",
+		"",
+	]
+	with open(os.path.join(args.output, "ELPMPP02.c"), "w") as file:
+		file.write("\n".join(lines))
+	print("\n".join(summary), file=sys.stderr)
+
+
 def main() -> None:
 	parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	commands = parser.add_subparsers(dest="command", required=True)
@@ -215,6 +400,14 @@ def main() -> None:
 	command.add_argument("--end", type=float, default=3000, help="the last Julian epoch covered (default: 3000)")
 	command.add_argument("--thresholds", type=float, nargs=9, metavar="T", help="the nine thresholds, Mercury to Pluto")
 	command.set_defaults(generate=vsop2013)
+	command = commands.add_parser("elpmpp02", help="the ELP/MPP02 lunar solution", description=elpmpp02.__doc__)
+	command.add_argument("directory", help="the directory holding ELP_MAIN.S1 to ELP_PERT.S3")
+	command.add_argument("--output", required=True, help="the directory to write the C file to")
+	command.add_argument("--start", type=float, default=1000, help="the first Julian epoch covered (default: 1000)")
+	command.add_argument("--end", type=float, default=3000, help="the last Julian epoch covered (default: 3000)")
+	command.add_argument("--angle-threshold", type=float, default=1e-5, metavar="ARCSECONDS", help="the threshold for longitude and latitude (default: 1e-5)")
+	command.add_argument("--distance-threshold", type=float, default=1e-4, metavar="KILOMETERS", help="the threshold for distance (default: 1e-4)")
+	command.set_defaults(generate=elpmpp02)
 	args = parser.parse_args()
 	try:
 		args.generate(args)
