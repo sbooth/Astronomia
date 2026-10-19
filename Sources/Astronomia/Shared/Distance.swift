@@ -104,7 +104,9 @@ extension Distance: AdditiveArithmetic {
 	public static func - (lhs: Distance, rhs: Distance) -> Distance {
 		Distance(astronomicalUnits: lhs.astronomicalUnits - rhs.astronomicalUnits)
 	}
+}
 
+extension Distance {
 	/// Returns the distance with its sign reversed.
 	public static prefix func - (operand: Distance) -> Distance {
 		Distance(astronomicalUnits: -operand.astronomicalUnits)

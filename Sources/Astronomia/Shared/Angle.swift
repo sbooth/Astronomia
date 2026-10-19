@@ -266,7 +266,9 @@ extension Angle: AdditiveArithmetic {
 	public static func - (lhs: Angle, rhs: Angle) -> Angle {
 		Angle(radians: lhs.radians - rhs.radians)
 	}
+}
 
+extension Angle {
 	/// Returns the angle with its sign reversed.
 	public static prefix func - (operand: Angle) -> Angle {
 		Angle(radians: -operand.radians)
