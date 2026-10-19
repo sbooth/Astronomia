@@ -380,17 +380,30 @@ extension JulianDate {
 }
 
 extension JulianDate {
-	/// Returns the Julian Date the specified whole number of days after (for positive values)
-	/// or before (for negative values) this Julian Date.
+	/// Returns the Julian Date the specified whole number of days after this Julian Date.
 	///
 	/// The fraction of the day is unchanged, so the result is exact in any timescale.
 	///
-	/// - Parameter days: The signed number of days to add.
+	/// - Parameter days: The number of days to add.
 	/// - Returns: This Julian Date advanced by `days` days.
 	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///   number cannot be represented as a ``JulianDayNumber``.
 	public func adding(days: Int) throws(JulianDateError) -> JulianDate {
 		let (day, overflow) = self.julianDayNumber.addingReportingOverflow(days)
+		guard !overflow else { throw .julianDayNumberNotRepresentable }
+		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: fractionFromNoon)
+	}
+
+	/// Returns the Julian Date the specified whole number of days before this Julian Date.
+	///
+	/// The fraction of the day is unchanged, so the result is exact in any timescale.
+	///
+	/// - Parameter days: The number of days to subtract.
+	/// - Returns: This Julian Date moved back by `days` days.
+	/// - Throws: ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
+	///   number cannot be represented as a ``JulianDayNumber``.
+	public func subtracting(days: Int) throws(JulianDateError) -> JulianDate {
+		let (day, overflow) = self.julianDayNumber.subtractingReportingOverflow(days)
 		guard !overflow else { throw .julianDayNumberNotRepresentable }
 		return JulianDate(uncheckedJulianDayNumber: day, fractionFromNoon: fractionFromNoon)
 	}
