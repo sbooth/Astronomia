@@ -7,9 +7,39 @@
 
 @testable import Astronomia
 
+/// The two fits of ELP/MPP02 as values, for the fixtures.
+enum ELPFit: CaseIterable {
+	case laserRanging
+	case de405
+
+	/// The fit's series.
+	var series: ELPMPP02.Series {
+		switch self {
+		case .laserRanging: ELPMPP02.LaserRanging.series
+		case .de405: ELPMPP02.DE405.series
+		}
+	}
+
+	/// Returns a vector in the fit's ecliptic in the ICRS.
+	func icrs(_ vector: Vector3) -> Vector3 {
+		switch self {
+		case .laserRanging: ELPMPP02.LaserRanging.Ecliptic.rotation(to: ICRS.self).apply(to: vector)
+		case .de405: ELPMPP02.DE405.Ecliptic.rotation(to: ICRS.self).apply(to: vector)
+		}
+	}
+
+	/// Returns the Moon's geocentric state in the ICRS.
+	func state(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
+		switch self {
+		case .laserRanging: ELPMPP02.state(at: tdb, fit: ELPMPP02.LaserRanging.self)
+		case .de405: ELPMPP02.state(at: tdb, fit: ELPMPP02.DE405.self)
+		}
+	}
+}
+
 /// ELPMPP02.TXT: positions, in km, and velocities, in km/day, of the full series in the fit's
 /// ecliptic, from ELPMPP02.for. The first 21 are fitted to LLR, the rest to DE405.
-let elpmpp02CheckValues: [(fit: ELPMPP02.Fit, julianDate: Double, position: [Double], velocity: [Double])] = [
+let elpmpp02CheckValues: [(fit: ELPFit, julianDate: Double, position: [Double], velocity: [Double])] = [
 	(.laserRanging, 2444239.5, [43890.2824005, 381188.7274523, -31633.3816524], [-87516.1974842, 13707.6644351, 2754.2212424]),
 	(.laserRanging, 2444739.5, [-395312.6864169, -73819.813607, 32262.0231496], [13487.5346155, -83003.4932636, 3210.026625]),
 	(.laserRanging, 2445239.5, [161465.2190343, -369353.7449927, -8520.1408542], [75857.5627011, 34976.2071995, -7132.1286815]),
@@ -51,7 +81,7 @@ let elpmpp02CheckValues: [(fit: ELPMPP02.Fit, julianDate: Double, position: [Dou
 /// The built-in series evaluated by an independent implementation that sums them in the order
 /// of ELPMPP02.for, with the rate of the distance scaled as the distance is: days from J2000.0
 /// TDB, position in km, velocity in km/day.
-let elpmpp02Reference: [(fit: ELPMPP02.Fit, days: Double, position: [Double], velocity: [Double])] = [
+let elpmpp02Reference: [(fit: ELPFit, days: Double, position: [Double], velocity: [Double])] = [
 	(.laserRanging, -365250.0, [336958.19503173657, 166664.71781895676, -8412.98331112502], [-44424.245410419746, 77844.36211512481, 7966.668308455832]),
 	(.laserRanging, -300000.5, [-49954.40240389435, 365340.91066220944, -32950.766542242], [-89808.8078714471, -17856.988272345905, 1343.6565639029911]),
 	(.laserRanging, -182621.25, [-381203.1987925416, 77367.316454158, 35620.68506461681], [-13035.352455498982, -85774.36613305708, 213.07882425125447]),

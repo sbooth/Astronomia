@@ -20,11 +20,11 @@ import Testing
 		return Vector3(w[0], w[1], w[2])
 	}
 
-	@Test func elementsMatchTheData() {
+	@Test func elementsMatchTheData() throws {
 		// The built-in series, summed as an independent implementation sums them
 		for value in vsop2013CheckValues {
 			let t = Double(value.julianDayNumber - 2_451_545) / VSOP2013.daysPerMillennium
-			let elements = VSOP2013.elements(of: value.body, at: t)
+			let elements = try VSOP2013.elements(of: #require(value.body.series), at: t)
 			let actual = [elements.a, elements.meanLongitude, elements.k, elements.h, elements.q, elements.p]
 			for (a, b) in zip(actual, value.elements) {
 				#expect(abs(a - b) <= 1e-13, "\(value.body) \(value.julianDayNumber)")
@@ -35,7 +35,7 @@ import Testing
 	@Test func statesMatchTheData() throws {
 		for value in vsop2013CheckValues {
 			let date = JulianDate(uncheckedJulianDayNumber: value.julianDayNumber, fractionFromNoon: 0)
-			let state = try #require(VSOP2013.eclipticState(of: value.body, at: date))
+			let state = try #require(VSOP2013.heliocentricState(of: value.body, at: date))
 			#expect(Self.difference(state.position, value.position) <= 1e-12, "\(value.body) \(value.julianDayNumber)")
 			#expect(Self.difference(state.velocity, value.velocity) <= 1e-15, "\(value.body) \(value.julianDayNumber)")
 		}
@@ -46,10 +46,10 @@ import Testing
 		// 0.5 mas, or 1.5 mas for Pluto, whose solution is less accurate.
 		for value in vsop2013CheckValues {
 			let date = JulianDate(uncheckedJulianDayNumber: value.julianDayNumber, fractionFromNoon: 0)
-			let state = try #require(VSOP2013.eclipticState(of: value.body, at: date))
+			let state = try #require(VSOP2013.heliocentricState(of: value.body, at: date))
 			let check = Self.vector(value.checkEcliptic.prefix(3))
 			let angle = (state.position - check).length / check.length
-			let limit = Angle.milliarcseconds(value.body == .pluto ? 1.5 : 0.6).radians
+			let limit = Angle.milliarcseconds(value.body == .plutoBarycenter ? 1.5 : 0.6).radians
 			#expect(angle <= limit, "\(value.body) \(value.julianDayNumber): \(Angle(radians: angle).milliarcseconds) mas")
 			// Velocities are printed to 1e-10 au/day
 			#expect(Self.difference(state.velocity, value.checkEcliptic.suffix(3)) <= 2e-10, "\(value.body) \(value.julianDayNumber)")
@@ -59,8 +59,8 @@ import Testing
 	@Test func rotationToICRS() {
 		// The check file's ecliptic values rotate to its ICRS values, to its printed precision.
 		for value in vsop2013CheckValues {
-			let position = VSOP2013.rotationToICRS.apply(to: Self.vector(value.checkEcliptic.prefix(3)))
-			let velocity = VSOP2013.rotationToICRS.apply(to: Self.vector(value.checkEcliptic.suffix(3)))
+			let position = VSOP2013.Ecliptic.rotationToICRS.apply(to: Self.vector(value.checkEcliptic.prefix(3)))
+			let velocity = VSOP2013.Ecliptic.rotationToICRS.apply(to: Self.vector(value.checkEcliptic.suffix(3)))
 			#expect(Self.difference(position, value.checkICRS.prefix(3)) <= 1.5e-10, "\(value.body) \(value.julianDayNumber)")
 			#expect(Self.difference(velocity, value.checkICRS.suffix(3)) <= 1.5e-10, "\(value.body) \(value.julianDayNumber)")
 		}
@@ -69,19 +69,21 @@ import Testing
 	@Test func icrsState() throws {
 		let value = vsop2013CheckValues[30]
 		let date = JulianDate(uncheckedJulianDayNumber: value.julianDayNumber, fractionFromNoon: 0)
-		let ecliptic = try #require(VSOP2013.eclipticState(of: value.body, at: date))
-		let icrs = try #require(VSOP2013.state(of: value.body, at: date))
-		#expect(icrs.position == VSOP2013.rotationToICRS.apply(to: ecliptic.position))
-		#expect(icrs.velocity == VSOP2013.rotationToICRS.apply(to: ecliptic.velocity))
+		let ecliptic = try #require(VSOP2013.heliocentricState(of: value.body, at: date))
+		let icrs = try VSOP2013.Solution().state(of: value.body, at: Instant<TDB>(date)).converted(to: ICRS.self)
+		#expect(icrs.position.vector == VSOP2013.Ecliptic.rotationToICRS.apply(to: ecliptic.position))
+		#expect(icrs.velocity.vector == VSOP2013.Ecliptic.rotationToICRS.apply(to: ecliptic.velocity))
 	}
 
 	@Test func coverage() throws {
-		let start = VSOP2013.coverage.lowerBound
-		let end = VSOP2013.coverage.upperBound
-		#expect(VSOP2013.state(of: .mars, at: start) != nil)
-		#expect(VSOP2013.state(of: .mars, at: end) != nil)
-		#expect(try VSOP2013.state(of: .mars, at: start.adding(seconds: -1)) == nil)
-		#expect(try VSOP2013.state(of: .mars, at: end.adding(seconds: 1)) == nil)
+		let start = builtInEphemerisCoverage.lowerBound
+		let end = builtInEphemerisCoverage.upperBound
+		for body in [VSOP2013.Body.mars, .sun, .solarSystemBarycenter] {
+			#expect(VSOP2013.heliocentricState(of: body, at: start) != nil)
+			#expect(VSOP2013.heliocentricState(of: body, at: end) != nil)
+			#expect(try VSOP2013.heliocentricState(of: body, at: start.adding(seconds: -1)) == nil)
+			#expect(try VSOP2013.heliocentricState(of: body, at: end.adding(seconds: 1)) == nil)
+		}
 		// J1000.0 and J3000.0 are a thousand Julian years either side of J2000.0.
 		#expect(start.daysSinceJ2000 == -365_250 && end.daysSinceJ2000 == 365_250)
 	}
@@ -98,7 +100,8 @@ import Testing
 	}
 
 	@Test func termCounts() {
-		let counts = VSOP2013.Body.allCases.map(\.series.termCount)
+		let counts = VSOP2013.Body.allCases.compactMap(\.series).map(\.terms.termCount)
+		#expect(VSOP2013.Body.sun.series == nil && VSOP2013.Body.solarSystemBarycenter.series == nil)
 		#expect(counts == [5_735, 21_481, 32_666, 72_791, 43_148, 82_504, 60_725, 49_125, 51_884])
 	}
 }

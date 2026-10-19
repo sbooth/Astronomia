@@ -32,7 +32,7 @@ import Testing
 		// this one sums multiples of the reduced fundamental arguments, so the two differ by
 		// millimeters ten centuries from J2000.0.
 		for value in elpmpp02Reference {
-			let state = ELPMPP02.seriesState(at: value.days, fit: value.fit)
+			let state = ELPMPP02.seriesState(at: value.days, series: value.fit.series)
 			#expect(Self.difference(state.position, value.position) <= 1e-5, "\(value.fit) \(value.days)")
 			#expect(Self.difference(state.velocity, value.velocity) <= 2e-6, "\(value.fit) \(value.days)")
 		}
@@ -44,8 +44,8 @@ import Testing
 		var checked = 0
 		for value in elpmpp02CheckValues {
 			let date = try JulianDate(julianDate: value.julianDate)
-			guard ELPMPP02.coverage.contains(date) else { continue }
-			let state = ELPMPP02.seriesState(at: date.daysSinceJ2000, fit: value.fit)
+			guard builtInEphemerisCoverage.contains(date) else { continue }
+			let state = ELPMPP02.seriesState(at: date.daysSinceJ2000, series: value.fit.series)
 			let check = Self.vector(value.position)
 			#expect(Self.milliarcseconds(state.position, check) <= 0.25, "\(value.fit) \(value.julianDate)")
 			#expect(abs(state.position.length - check.length) <= 0.01, "\(value.fit) \(value.julianDate)")
@@ -62,8 +62,8 @@ import Testing
 		for value in de421Moon {
 			let date = try JulianDate(julianDate: value.julianDate)
 			let check = Self.vector(value.position) * (1 / Distance.kilometersPerAstronomicalUnit)
-			for (fit, limit) in [(ELPMPP02.Fit.laserRanging, 55.0), (.de405, 13)] {
-				let state = try #require(ELPMPP02.state(at: date, fit: fit))
+			for (fit, limit) in [(ELPFit.laserRanging, 55.0), (.de405, 13)] {
+				let state = try #require(fit.state(at: date))
 				#expect(Self.milliarcseconds(state.position, check) <= limit, "\(fit) \(value.julianDate)")
 			}
 		}
@@ -71,30 +71,37 @@ import Testing
 
 	@Test func icrsState() throws {
 		let date = try JulianDate(julianDate: 2_460_000.5)
-		for fit in [ELPMPP02.Fit.laserRanging, .de405] {
-			let series = ELPMPP02.seriesState(at: date.daysSinceJ2000, fit: fit)
-			let ecliptic = try #require(ELPMPP02.eclipticState(at: date, fit: fit))
-			let icrs = try #require(ELPMPP02.state(at: date, fit: fit))
+		for fit in [ELPFit.laserRanging, .de405] {
+			let series = ELPMPP02.seriesState(at: date.daysSinceJ2000, series: fit.series)
+			let ecliptic = try #require(ELPMPP02.eclipticState(at: date, series: fit.series))
+			let icrs = try #require(fit.state(at: date))
 			// The ecliptic state is the series in astronomical units.
 			let au = Distance.kilometersPerAstronomicalUnit
 			#expect((ecliptic.position * au - series.position).length <= 1e-9)
 			#expect((ecliptic.velocity * au - series.velocity).length <= 1e-9)
-			#expect(icrs.position == fit.rotationToICRS.apply(to: ecliptic.position))
-			#expect(icrs.velocity == fit.rotationToICRS.apply(to: ecliptic.velocity))
+			#expect(icrs.position == fit.icrs(ecliptic.position))
+			#expect(icrs.velocity == fit.icrs(ecliptic.velocity))
 		}
 	}
 
+	/// Expects a frame's pole in the ICRS at declination 90° - ε and right ascension 270° + φ,
+	/// and its x axis, the ascending node of the ecliptic, on the equator at right ascension φ.
+	static func expectFrameAngles<F: FixedReferenceFrame>(_ frame: F.Type, epsilon: Double, phi: Double, sourceLocation: SourceLocation = #_sourceLocation) {
+		let pole = Position<F>(Vector3(0, 0, 1)).converted(to: ICRS.self).spherical
+		#expect(abs(pole.latitude.arcseconds - (324_000 - epsilon)) <= 1e-9, sourceLocation: sourceLocation)
+		#expect(abs(pole.longitude.arcseconds - (972_000 + phi)) <= 1e-8, sourceLocation: sourceLocation)
+		let node = Position<F>(Vector3(1, 0, 0)).converted(to: ICRS.self).spherical
+		#expect(abs(node.latitude.arcseconds) <= 1e-9, sourceLocation: sourceLocation)
+		#expect(abs(node.longitude.normalizedSigned().arcseconds - phi) <= 1e-9, sourceLocation: sourceLocation)
+	}
+
 	@Test func publishedFrameAngles() {
-		// The pole of each fit's ecliptic in the ICRS is at declination 90° - ε and right
-		// ascension 270° + φ, from the angles of Chapront et al. (2002).
-		for (fit, epsilon, phi) in [(ELPMPP02.Fit.laserRanging, 84_381.411_00, -0.055_42), (.de405, 84_381.409_60, -0.050_28)] {
-			let pole = Position<ICRS>(fit.rotationToICRS.apply(to: Vector3(0, 0, 1))).spherical
-			#expect(abs(pole.latitude.arcseconds - (324_000 - epsilon)) <= 1e-9, "\(fit)")
-			#expect(abs(pole.longitude.arcseconds - (972_000 + phi)) <= 1e-8, "\(fit)")
-			// The ecliptic's x axis, its ascending node, is on the equator at right ascension φ.
-			let node = Position<ICRS>(fit.rotationToICRS.apply(to: Vector3(1, 0, 0))).spherical
-			#expect(abs(node.latitude.arcseconds) <= 1e-9 && abs(node.longitude.normalizedSigned().arcseconds - phi) <= 1e-9, "\(fit)")
-		}
+		// The angles of Chapront et al. (2002), Table 9, and of VSOP2013
+		Self.expectFrameAngles(ELPMPP02.LaserRanging.Ecliptic.self, epsilon: 84_381.411_00, phi: -0.055_42)
+		Self.expectFrameAngles(ELPMPP02.DE405.Ecliptic.self, epsilon: 84_381.409_60, phi: -0.050_28)
+		Self.expectFrameAngles(VSOP2013.Ecliptic.self, epsilon: 84_381.411_36, phi: -0.051_88)
+		#expect(ELPMPP02.DE405.Ecliptic.self == ELPMPP02.DE405.Ecliptic.self)
+		#expect(ELPMPP02.LaserRanging.Ecliptic.self == ELPMPP02.LaserRanging.Ecliptic.self)
 	}
 
 	/// Returns the five-point central difference of a function, with an error of order h⁴.
@@ -105,12 +112,12 @@ import Testing
 	@Test func velocityIsTheDerivative() {
 		// The analytic velocity agrees with a five-point difference of the positions, with
 		// steps of 0.02 day, to a few 1e-7 km/day near J2000.0.
-		for fit in [ELPMPP02.Fit.laserRanging, .de405] {
+		for fit in [ELPFit.laserRanging, .de405] {
 			for days in [-7305.5, 0.25, 4000.25] {
-				let velocity = ELPMPP02.seriesState(at: days, fit: fit).velocity
-				let x = Self.derivative({ ELPMPP02.seriesState(at: $0, fit: fit).position.x }, at: days, step: 0.02)
-				let y = Self.derivative({ ELPMPP02.seriesState(at: $0, fit: fit).position.y }, at: days, step: 0.02)
-				let z = Self.derivative({ ELPMPP02.seriesState(at: $0, fit: fit).position.z }, at: days, step: 0.02)
+				let velocity = ELPMPP02.seriesState(at: days, series: fit.series).velocity
+				let x = Self.derivative({ ELPMPP02.seriesState(at: $0, series: fit.series).position.x }, at: days, step: 0.02)
+				let y = Self.derivative({ ELPMPP02.seriesState(at: $0, series: fit.series).position.y }, at: days, step: 0.02)
+				let z = Self.derivative({ ELPMPP02.seriesState(at: $0, series: fit.series).position.z }, at: days, step: 0.02)
 				#expect((velocity - Vector3(x, y, z)).length <= 3e-6, "\(fit) \(days)")
 			}
 		}
@@ -120,31 +127,31 @@ import Testing
 		// The rate of the distance is scaled as the distance is. Unscaled, as in ELPMPP02.for,
 		// the radial velocity would be off by 5e-8 of itself, 1.3e-4 km/day or more at these
 		// dates, where the five-point difference is good to 1e-5 km/day.
-		for fit in [ELPMPP02.Fit.laserRanging, .de405] {
+		for fit in [ELPFit.laserRanging, .de405] {
 			for days in [-365_000.0, -100_000.3, -7305.5, 0.25, 250_000, 365_000] {
-				let state = ELPMPP02.seriesState(at: days, fit: fit)
+				let state = ELPMPP02.seriesState(at: days, series: fit.series)
 				let radial = state.velocity.dot(state.position) / state.position.length
 				#expect(abs(radial) >= 2500, "\(fit) \(days)")
-				let numeric = Self.derivative({ ELPMPP02.seriesState(at: $0, fit: fit).position.length }, at: days, step: 0.02)
+				let numeric = Self.derivative({ ELPMPP02.seriesState(at: $0, series: fit.series).position.length }, at: days, step: 0.02)
 				#expect(abs(radial - numeric) <= 2e-5, "\(fit) \(days)")
 			}
 		}
 	}
 
 	@Test func coverage() throws {
-		let start = ELPMPP02.coverage.lowerBound
-		let end = ELPMPP02.coverage.upperBound
-		#expect(ELPMPP02.state(at: start, fit: .laserRanging) != nil)
-		#expect(ELPMPP02.state(at: end, fit: .de405) != nil)
-		#expect(try ELPMPP02.state(at: start.adding(seconds: -1), fit: .laserRanging) == nil)
-		#expect(try ELPMPP02.state(at: end.adding(seconds: 1), fit: .de405) == nil)
+		let start = builtInEphemerisCoverage.lowerBound
+		let end = builtInEphemerisCoverage.upperBound
+		#expect(ELPFit.laserRanging.state(at: start) != nil)
+		#expect(ELPFit.de405.state(at: end) != nil)
+		#expect(try ELPFit.laserRanging.state(at: start.adding(seconds: -1)) == nil)
+		#expect(try ELPFit.de405.state(at: end.adding(seconds: 1)) == nil)
 		#expect(start.daysSinceJ2000 == -365_250 && end.daysSinceJ2000 == 365_250)
 	}
 
 	@Test func termCounts() {
-		let solution = ELPMPP02.Solution.laserRanging
-		#expect(solution.mainTerms.count == 2_447)
-		#expect(solution.perturbationTerms.count == 23_328)
-		#expect(solution.mainAmplitudes.count == solution.mainTerms.count)
+		let series = ELPMPP02.LaserRanging.series
+		#expect(series.mainTerms.count == 2_447)
+		#expect(series.perturbationTerms.count == 23_328)
+		#expect(series.mainAmplitudes.count == series.mainTerms.count)
 	}
 }

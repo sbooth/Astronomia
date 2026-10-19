@@ -67,9 +67,8 @@ public enum ICRS: EquatorialFrame, FixedReferenceFrame {
 /// obliquity of the ecliptic at J2000.0, 84,381.406″.
 ///
 /// - Note: The planetary and lunar theories each refer to their own realization of the
-///   J2000 ecliptic, which differs from this one by milliarcseconds. Their positions are
-///   rotated to the ICRS by each theory's own transformation, so they do not depend on this
-///   frame.
+///   J2000 ecliptic, which differs from this one by milliarcseconds, such as
+///   ``VSOP2013/Ecliptic``. Their positions convert to this frame through the ICRS.
 public enum EclipticJ2000: EclipticFrame, FixedReferenceFrame {
 	public static let name = "Ecliptic J2000"
 
