@@ -75,8 +75,11 @@ extension Position {
 	/// latitude are zero, and on the z axis the longitude is zero.
 	public var spherical: SphericalPosition<Frame> {
 		let rho = (vector.x * vector.x + vector.y * vector.y).squareRoot()
+		// On the z axis the longitude is undefined. The arctangent of two zeros depends on
+		// their signs, and atan2(-0, -0), as for a negated position, would give 180°.
+		let onAxis = vector.x == 0 && vector.y == 0
 		return SphericalPosition(
-			longitude: Angle.atan2(y: vector.y, x: vector.x),
+			longitude: onAxis ? .zero : Angle.atan2(y: vector.y, x: vector.x),
 			latitude: Angle.atan2(y: vector.z, x: rho),
 			distance: distance
 		)

@@ -69,7 +69,12 @@ extension Position {
 	/// - Returns: The angle, in the closed interval [0, π], or zero if either position is the
 	///   origin.
 	public func angularSeparation(from other: Position) -> Angle {
-		Angle.atan2(y: vector.cross(other.vector).length, x: vector.dot(other.vector))
+		// With the origin the dot product is a zero whose sign depends on the coordinates,
+		// and atan2(+0, -0) would give π.
+		if vector == .zero || other.vector == .zero {
+			return .zero
+		}
+		return Angle.atan2(y: vector.cross(other.vector).length, x: vector.dot(other.vector))
 	}
 }
 

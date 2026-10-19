@@ -56,6 +56,24 @@ import Testing
 		#expect(abs((Double.pi / 2 - nearPole.latitude.radians) - 1e-12) <= 3e-16)
 	}
 
+	@Test func sphericalSignedZeros() {
+		// Negation and scaling give negative zeros, for which the arctangent of the
+		// horizontal components would give 180°. The longitude on the z axis is still zero.
+		let negatedOrigin = (-Position<ICRS>.origin).spherical
+		#expect(negatedOrigin.longitude == .zero && negatedOrigin.latitude == .zero && negatedOrigin.distance == .zero)
+		let scaledOrigin = (Position<ICRS>.origin * -1).spherical
+		#expect(scaledOrigin.longitude == .zero && scaledOrigin.latitude == .zero)
+		let southPole = (-Self.au(0, 0, 2)).spherical
+		#expect(southPole.longitude == .zero && southPole.latitude.degrees == -90 && southPole.distance.astronomicalUnits == 2)
+		let northPole = (-Self.au(0, 0, -2)).spherical
+		#expect(northPole.longitude == .zero && northPole.latitude.degrees == 90)
+		let scaledPole = (Self.au(0, 0, 1) * -3).spherical
+		#expect(scaledPole.longitude == .zero && scaledPole.latitude.degrees == -90)
+		// Off the axis, the signs of the coordinates still choose the quadrant.
+		#expect(abs((-Self.au(1, 0, 0)).spherical.longitude.degrees - 180) <= 1e-12)
+		#expect(abs((-Self.au(0, 1, 5)).spherical.longitude.degrees - 270) <= 1e-12)
+	}
+
 	@Test func equatorialNames() {
 		let spherical = SphericalPosition<ICRS>(rightAscension: Angle(hourAngle: 18), declination: Angle(degrees: -30), distance: Distance(astronomicalUnits: 1))
 		#expect(spherical.rightAscension == spherical.longitude)
@@ -71,6 +89,17 @@ import Testing
 		let tiny = a.angularSeparation(from: Self.au(1, 1e-10, 0))
 		#expect(abs(tiny.radians - 1e-10) <= 1e-24)
 		#expect(a.angularSeparation(from: .origin) == .zero)
+	}
+
+	@Test func angularSeparationFromTheOrigin() {
+		// The dot product with the origin is -0 for negative coordinates, where the arctangent
+		// would give 180°. Either operand order, and the origin negated, gives zero.
+		let p = Self.au(-1, -1, -1)
+		#expect(p.angularSeparation(from: .origin) == .zero)
+		#expect(Position<ICRS>.origin.angularSeparation(from: p) == .zero)
+		#expect(p.angularSeparation(from: -.origin) == .zero)
+		#expect((-Position<ICRS>.origin).angularSeparation(from: p) == .zero)
+		#expect(Position<ICRS>.origin.angularSeparation(from: .origin) == .zero)
 	}
 
 	@Test func northEclipticPole() {
