@@ -20,6 +20,24 @@ private struct NoDeltaT: DeltaTSource {
 	}
 }
 
+/// A lunar ephemeris of our own, the built-in DE405 fit for 2000 to 2100 only.
+private struct CenturyMoon: Ephemeris {
+	typealias Body = ELPMPP02.Body
+	typealias Frame = ELPMPP02.DE405.Ecliptic
+
+	static let defaultOrigin = Body.earth
+
+	var coverage: ClosedRange<Instant<TDB>> {
+		Instant(JulianDate(uncheckedJulianDayNumber: 2_451_545, fractionFromNoon: 0))
+			... Instant(JulianDate(uncheckedJulianDayNumber: 2_488_070, fractionFromNoon: 0))
+	}
+
+	func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<Frame> {
+		guard coverage.contains(tdb) else { throw .outsideCoverage }
+		return try ELPMPP02.de405.state(of: body, relativeTo: origin, at: tdb)
+	}
+}
+
 /// An instant in TDB within the coverage of the built-in ephemerides.
 private let tdb = Instant<TDB>(JulianDate(uncheckedJulianDayNumber: 2_460_000, fractionFromNoon: 0.25))
 
@@ -76,22 +94,21 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 	}
 }
 
-@Suite struct ELPMPP02SolutionTests {
+@Suite struct ELPMPP02EphemerisTests {
 	@Test func nativeFrameAndOrigin() throws {
-		let solution = ELPMPP02.Solution()
+		let solution = ELPMPP02.de405
 		let moon = try solution.state(of: .moon, at: tdb)
 		let ecliptic = try #require(ELPMPP02.eclipticState(at: tdb.julianDate, series: ELPMPP02.DE405.series))
 		#expect(moon.position.vector == ecliptic.position && moon.velocity.vector == ecliptic.velocity)
 		#expect(try solution.state(of: .earth, relativeTo: .moon, at: tdb) == -moon)
 		#expect(try solution.state(of: .moon, relativeTo: .moon, at: tdb) == .zero)
-		#expect(ELPMPP02.Solution<ELPMPP02.DE405>.defaultOrigin == .earth)
+		#expect(ELPMPP02.DE405.defaultOrigin == .earth && ELPMPP02.LaserRanging.defaultOrigin == .earth)
 	}
 
 	@Test func fits() throws {
 		// The fit chooses the constants and the frame.
-		let de405 = ELPMPP02.Solution()
-		let laserRanging = ELPMPP02.Solution(fit: ELPMPP02.LaserRanging.self)
-		#expect(type(of: de405) == ELPMPP02.Solution<ELPMPP02.DE405>.self)
+		let de405 = ELPMPP02.de405
+		let laserRanging = ELPMPP02.laserRanging
 		let a: StateVector<ELPMPP02.DE405.Ecliptic> = try de405.state(of: .moon, at: tdb)
 		let b: StateVector<ELPMPP02.LaserRanging.Ecliptic> = try laserRanging.state(of: .moon, at: tdb)
 		let ecliptic = try #require(ELPMPP02.eclipticState(at: tdb.julianDate, series: ELPMPP02.LaserRanging.series))
@@ -102,7 +119,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 	}
 
 	@Test func coverage() throws {
-		let solution = ELPMPP02.Solution()
+		let solution = ELPMPP02.de405
 		let late = try solution.coverage.upperBound.julianDate.adding(seconds: 1)
 		#expect(throws: EphemerisError.outsideCoverage) {
 			try solution.state(of: .moon, at: Instant<TDB>(late))
@@ -121,21 +138,35 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 		#expect(SolarSystemEphemeris.earth == .earth && SolarSystemEphemeris.sun == .sun)
 		#expect(SolarSystemEphemeris.solarSystemBarycenter == .solarSystemBarycenter)
 		// The default lunar fit is DE405.
-		let moon = try #require(ephemeris.geocentricMoon(tdb.julianDate))
+		let moon = try ephemeris.geocentricMoon(tdb)
 		let de405 = try #require(ELPMPP02.state(at: tdb.julianDate, fit: ELPMPP02.DE405.self))
-		#expect(moon.position == de405.position && moon.velocity == de405.velocity)
-		let laserRanging = try #require(SolarSystemEphemeris(lunarFit: ELPMPP02.LaserRanging.self).geocentricMoon(tdb.julianDate))
-		#expect(laserRanging.position != de405.position)
+		#expect((moon.position.vector - de405.position).length <= 1e-16)
+		#expect((moon.velocity.vector - de405.velocity).length <= 1e-18)
+		let laserRanging = try SolarSystemEphemeris(moon: ELPMPP02.laserRanging).geocentricMoon(tdb)
+		#expect((laserRanging.position.vector - de405.position).length > 1e-12)
+		#expect(ephemeris.coverage == ELPMPP02.de405.coverage)
+	}
+
+	@Test func anyLunarEphemeris() throws {
+		// Another lunar ephemeris can replace ELP/MPP02, and narrows the coverage to its own.
+		let ephemeris = SolarSystemEphemeris(moon: CenturyMoon())
+		#expect(ephemeris.coverage == CenturyMoon().coverage)
+		let moon = try ephemeris.state(of: .moon, relativeTo: .earth, at: tdb)
+		#expect(try moon == self.ephemeris.state(of: .moon, relativeTo: .earth, at: tdb))
+		let early = Instant<TDB>(JulianDate(uncheckedJulianDayNumber: 2_440_000, fractionFromNoon: 0))
+		#expect(throws: EphemerisError.outsideCoverage) {
+			try ephemeris.state(of: .mars, relativeTo: .sun, at: early)
+		}
 	}
 
 	@Test func moonIsELPMPP02() throws {
 		let moon = try ephemeris.state(of: .moon, relativeTo: .earth, at: tdb)
-		let elp = try ELPMPP02.Solution().state(of: .moon, at: tdb).converted(to: ICRS.self)
+		let elp = try ELPMPP02.de405.state(of: .moon, at: tdb).converted(to: ICRS.self)
 		#expect((moon.position.vector - elp.position.vector).length <= 1e-15)
 		#expect((moon.velocity.vector - elp.velocity.vector).length <= 1e-17)
-		let laserRanging = SolarSystemEphemeris(lunarFit: ELPMPP02.LaserRanging.self)
+		let laserRanging = SolarSystemEphemeris(moon: ELPMPP02.laserRanging)
 		let other = try laserRanging.state(of: .moon, relativeTo: .earth, at: tdb)
-		let elpOther = try ELPMPP02.Solution(fit: ELPMPP02.LaserRanging.self).state(of: .moon, at: tdb).converted(to: ICRS.self)
+		let elpOther = try ELPMPP02.laserRanging.state(of: .moon, at: tdb).converted(to: ICRS.self)
 		#expect((other.position.vector - elpOther.position.vector).length <= 1e-15)
 	}
 
@@ -152,7 +183,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 		// The combination as documented, from the two solutions
 		let μ = SolarSystemEphemeris.earthMoonMassRatio
 		let barycenter = try VSOP2013.Solution().state(of: .earthMoonBarycenter, at: tdb).converted(to: ICRS.self)
-		let geocentricMoon = try ELPMPP02.Solution().state(of: .moon, at: tdb).converted(to: ICRS.self)
+		let geocentricMoon = try ELPMPP02.de405.state(of: .moon, at: tdb).converted(to: ICRS.self)
 		let earth = barycenter - geocentricMoon * (1 / (1 + μ))
 		let moon = barycenter + geocentricMoon * (μ / (1 + μ))
 		let expectedEarth = try ephemeris.state(of: .earth, relativeTo: .sun, at: tdb)

@@ -8,10 +8,10 @@
 /// The built-in ephemeris of the solar system, from the planetary solution VSOP2013 and the
 /// lunar solution ELP/MPP02, in the ICRS, for J1000.0 to J3000.0.
 ///
-/// ``VSOP2013`` gives the Sun, the planets, and the Earth-Moon barycenter, and ``ELPMPP02``
-/// the geocentric Moon. Each solution's states are rotated from its own ecliptic to the ICRS,
-/// and the geocentric Moon divides the barycenter into the Earth and the Moon by the ratio of
-/// their masses:
+/// ``VSOP2013`` gives the Sun, the planets, and the Earth-Moon barycenter, and a lunar
+/// ephemeris, by default ``ELPMPP02/de405``, the geocentric Moon. Each solution's states are
+/// rotated from its own ecliptic to the ICRS, and the geocentric Moon divides the barycenter
+/// into the Earth and the Moon by the ratio of their masses:
 ///
 /// ```swift
 /// let earth = barycenter - geocentricMoon * (1 / (1 + μ))
@@ -25,7 +25,7 @@
 /// ```swift
 /// let ephemeris = SolarSystemEphemeris()
 /// let mars = try ephemeris.state(of: .mars, relativeTo: .earth, at: instant)
-/// let laserRanging = SolarSystemEphemeris(lunarFit: ELPMPP02.LaserRanging.self)
+/// let laserRanging = SolarSystemEphemeris(moon: ELPMPP02.laserRanging)
 /// ```
 ///
 /// The truncated series keep the error from truncation near 0.5 mas for the planets and
@@ -75,24 +75,30 @@ public struct SolarSystemEphemeris: GeocentricEphemeris {
 	public static let sun = Body.sun
 	public static let solarSystemBarycenter = Body.solarSystemBarycenter
 
-	/// Returns the geocentric Moon from the lunar solution with the chosen fit, in the ICRS, or
-	/// `nil` outside the coverage.
-	let geocentricMoon: @Sendable (JulianDate) -> (position: Vector3, velocity: Vector3)?
+	/// Returns the geocentric Moon from the lunar ephemeris, in the ICRS.
+	let geocentricMoon: @Sendable (Instant<TDB>) throws(EphemerisError) -> StateVector<ICRS>
 
-	/// Creates the ephemeris with the default fit of the lunar solution, ``ELPMPP02/DE405``.
+	public let coverage: ClosedRange<Instant<TDB>>
+
+	/// Creates the ephemeris with the default lunar ephemeris, ``ELPMPP02/de405``.
 	public init() {
-		self.init(lunarFit: ELPMPP02.DE405.self)
+		self.init(moon: ELPMPP02.de405)
 	}
 
-	/// Creates the ephemeris with a fit of the lunar solution's constants.
+	/// Creates the ephemeris with a lunar ephemeris.
 	///
-	/// - Parameter lunarFit: The fit of ELP/MPP02.
-	public init<LunarFit: ELPMPP02.Fit>(lunarFit: LunarFit.Type) {
-		geocentricMoon = { ELPMPP02.state(at: $0, fit: LunarFit.self) }
-	}
-
-	public var coverage: ClosedRange<Instant<TDB>> {
-		Instant(builtInEphemerisCoverage.lowerBound) ... Instant(builtInEphemerisCoverage.upperBound)
+	/// The ephemeris covers the instants that both VSOP2013 and the lunar ephemeris cover.
+	///
+	/// - Parameter moon: An ephemeris of the Moon relative to the Earth, such as
+	///   ``ELPMPP02/laserRanging``.
+	public init<Moon: Ephemeris>(moon: Moon) where Moon.Body == ELPMPP02.Body {
+		geocentricMoon = { tdb throws(EphemerisError) in
+			try moon.state(of: .moon, relativeTo: .earth, at: tdb).converted(to: ICRS.self)
+		}
+		let planets = Instant<TDB>(builtInEphemerisCoverage.lowerBound) ... Instant<TDB>(builtInEphemerisCoverage.upperBound)
+		let lower = max(planets.lowerBound, moon.coverage.lowerBound)
+		let upper = max(lower, min(planets.upperBound, moon.coverage.upperBound))
+		coverage = lower ... upper
 	}
 
 	public func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<ICRS> {
@@ -116,12 +122,10 @@ public struct SolarSystemEphemeris: GeocentricEphemeris {
 			velocity = rotation.apply(to: state.velocity - originState.velocity)
 		}
 		if moonFraction != originMoonFraction {
-			guard let moon = geocentricMoon(date) else {
-				preconditionFailure("\(date) is outside the coverage of ELP/MPP02")
-			}
+			let moon = try geocentricMoon(tdb)
 			let fraction = moonFraction - originMoonFraction
-			position = position + moon.position * fraction
-			velocity = velocity + moon.velocity * fraction
+			position = position + moon.position.vector * fraction
+			velocity = velocity + moon.velocity.vector * fraction
 		}
 		return StateVector(position, velocity)
 	}

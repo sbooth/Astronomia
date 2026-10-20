@@ -26,6 +26,28 @@ struct ELPPolynomial: Sendable {
 	}
 }
 
+extension ELPMPP02 {
+	/// The solution's series with the constants of a fit.
+	struct Series: @unchecked Sendable {
+		// The data is immutable, so the pointers into it can be shared.
+		/// The series of the main problem.
+		let mainSeries: UnsafeBufferPointer<astronomia_elp_series>
+		/// The terms of the main problem.
+		let mainTerms: UnsafeBufferPointer<astronomia_elp_main_term>
+		/// The amplitudes of the main problem, corrected for the fit.
+		let mainAmplitudes: [Double]
+		/// The series of the perturbations.
+		let perturbationSeries: UnsafeBufferPointer<astronomia_elp_series>
+		/// The terms of the perturbations.
+		let perturbationTerms: UnsafeBufferPointer<astronomia_elp_perturbation_term>
+		/// The Moon's mean longitude W1.
+		let meanLongitude: ELPPolynomial
+		/// The thirteen fundamental arguments: D, F, l, l′, the mean longitudes of Mercury to
+		/// Neptune, and ζ.
+		let arguments: [ELPPolynomial]
+	}
+}
+
 extension ELPMPP02.Series {
 	/// Arcseconds per radian.
 	private static let arcsecondsPerRadian = 648_000 / Double.pi

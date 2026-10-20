@@ -100,8 +100,8 @@ import Testing
 		Self.expectFrameAngles(ELPMPP02.LaserRanging.Ecliptic.self, epsilon: 84_381.411_00, phi: -0.055_42)
 		Self.expectFrameAngles(ELPMPP02.DE405.Ecliptic.self, epsilon: 84_381.409_60, phi: -0.050_28)
 		Self.expectFrameAngles(VSOP2013.Ecliptic.self, epsilon: 84_381.411_36, phi: -0.051_88)
-		#expect(ELPMPP02.DE405.Ecliptic.self == ELPMPP02.DE405.Ecliptic.self)
-		#expect(ELPMPP02.LaserRanging.Ecliptic.self == ELPMPP02.LaserRanging.Ecliptic.self)
+		#expect(ELPMPP02.DE405.Frame.self == ELPMPP02.DE405.Ecliptic.self)
+		#expect(ELPMPP02.LaserRanging.Frame.self == ELPMPP02.LaserRanging.Ecliptic.self)
 	}
 
 	/// Returns the five-point central difference of a function, with an error of order h⁴.
