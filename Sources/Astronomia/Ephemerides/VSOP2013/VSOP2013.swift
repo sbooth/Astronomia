@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-internal import AstronomiaData
+internal import CAstronomiaData
 
 /// The planetary solution VSOP2013 (Simon et al. 2013), fitted to the INPOP10a ephemeris.
 ///

@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-internal import AstronomiaData
+internal import CAstronomiaData
 
 /// A polynomial of degree 4 in time, in radians with time in Julian centuries.
 struct ELPPolynomial: Sendable {

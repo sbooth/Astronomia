@@ -50,9 +50,9 @@ Commands:
 Examples:
 
   Scripts/generate-ephemeris-data.py vsop2013 VSOP2013/solution \\
-      --output Sources/AstronomiaData/VSOP2013
+      --output Sources/CAstronomiaData/VSOP2013
   Scripts/generate-ephemeris-data.py elpmpp02 ELPMPP02 \\
-      --output Sources/AstronomiaData/ELPMPP02
+      --output Sources/CAstronomiaData/ELPMPP02
 
 Run a command with --help for its options.
 """
@@ -193,7 +193,7 @@ def vsop2013(args: argparse.Namespace) -> None:
 			f"// {name}: {len(kept_terms):,} of {total:,} terms, threshold {thresholds[body]:g}, "
 			f"J{args.start:g} to J{args.end:g}",
 			"",
-			'#include "AstronomiaData.h"',
+			'#include "CAstronomiaData.h"',
 			"",
 			"// Variable (1 to 6 for a, λ, k, h, q, p), power of time, and number of terms",
 			"static const struct astronomia_vsop_series series[] = {",
@@ -342,7 +342,7 @@ def elpmpp02(args: argparse.Namespace) -> None:
 		f"// {len(main_terms) + len(perturbation_terms):,} terms, thresholds {args.angle_threshold:g}\" and "
 		f"{args.distance_threshold:g} km, J{args.start:g} to J{args.end:g}",
 		"",
-		'#include "AstronomiaData.h"',
+		'#include "CAstronomiaData.h"',
 		"",
 		"// Variable (1 to 3 for longitude, latitude, distance), power of time, and number of terms",
 		"static const struct astronomia_elp_series main_series[] = {",

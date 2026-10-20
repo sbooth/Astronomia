@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-internal import AstronomiaData
+internal import CAstronomiaData
 
 extension VSOP2013 {
 	/// A body's series from the built-in data, terms T^α (S sin(φ + ν T) + C cos(φ + ν T))

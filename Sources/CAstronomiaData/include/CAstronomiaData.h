@@ -5,8 +5,8 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-#ifndef ASTRONOMIADATA_H
-#define ASTRONOMIADATA_H
+#ifndef CASTRONOMIADATA_H
+#define CASTRONOMIADATA_H
 
 #include <stddef.h>
 #include <stdint.h>
