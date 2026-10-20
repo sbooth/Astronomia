@@ -46,8 +46,8 @@ extension ELPMPP02 {
 		/// The fit's realization of the inertial mean ecliptic and equinox of J2000.0.
 		associatedtype Ecliptic: EclipticFrame, FixedReferenceFrame
 
-		/// The solution's series with the fit's constants.
-		static var series: FittedSeries { get }
+		/// The solution's series fitted with the fit's constants.
+		static var fittedSeries: FittedSeries { get }
 	}
 
 	/// The corrections of a fit to the solution's nominal constants, in arcseconds and
@@ -93,7 +93,7 @@ extension ELPMPP02.Fit {
 	///   day, or `nil` if `tdb` is outside the coverage.
 	static func eclipticState(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
 		guard builtInEphemerisCoverage.contains(tdb) else { return nil }
-		let state = series.state(at: tdb.julianCenturiesSinceJ2000)
+		let state = fittedSeries.state(at: tdb.julianCenturiesSinceJ2000)
 		let scale = 1 / Distance.kilometersPerAstronomicalUnit
 		return (state.position * scale, state.velocity * scale)
 	}

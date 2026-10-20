@@ -15,8 +15,8 @@ enum ELPFit: CaseIterable {
 	/// The fit's series.
 	var series: ELPMPP02.FittedSeries {
 		switch self {
-		case .laserRanging: ELPMPP02.LaserRanging.series
-		case .de405: ELPMPP02.DE405.series
+		case .laserRanging: ELPMPP02.LaserRanging.fittedSeries
+		case .de405: ELPMPP02.DE405.fittedSeries
 		}
 	}
 

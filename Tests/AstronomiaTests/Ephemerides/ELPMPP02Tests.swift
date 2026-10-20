@@ -149,7 +149,7 @@ import Testing
 	}
 
 	@Test func termCounts() {
-		let series = ELPMPP02.LaserRanging.series
+		let series = ELPMPP02.LaserRanging.fittedSeries
 		#expect(series.mainTerms.count == 2_447)
 		#expect(series.perturbationTerms.count == 23_328)
 		#expect(series.mainAmplitudes.count == series.mainTerms.count)

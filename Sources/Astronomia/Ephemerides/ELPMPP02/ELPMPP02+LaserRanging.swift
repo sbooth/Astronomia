@@ -36,7 +36,7 @@ extension ELPMPP02 {
 		public static let defaultOrigin = Body.earth
 
 		/// The series with the constants fitted to lunar laser ranging, from `ELPMPP02.for`.
-		static let series = FittedSeries(corrections: Corrections(
+		static let fittedSeries = FittedSeries(corrections: Corrections(
 			w10: -0.105_25, w20: 0.168_26, w30: -0.107_60, earth0: -0.040_12, perihelion0: -0.048_54,
 			w11: -0.323_11, gamma: 0.000_69, e: 0.000_05, earth1: 0.014_42, eccentricity: 0.002_26,
 			w21: 0.080_17, w31: -0.043_17, w12: -0.037_94,
