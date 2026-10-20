@@ -28,7 +28,7 @@ struct ELPPolynomial: Sendable {
 
 extension ELPMPP02 {
 	/// The solution's series with the constants of a fit.
-	struct Series: @unchecked Sendable {
+	struct FittedSeries: @unchecked Sendable {
 		// The data is immutable, so the pointers into it can be shared.
 		/// The series of the main problem.
 		let mainSeries: UnsafeBufferPointer<astronomia_elp_series>
@@ -48,7 +48,7 @@ extension ELPMPP02 {
 	}
 }
 
-extension ELPMPP02.Series {
+extension ELPMPP02.FittedSeries {
 	/// Arcseconds per radian.
 	private static let arcsecondsPerRadian = 648_000 / Double.pi
 
@@ -168,7 +168,7 @@ extension ELPMPP02.Series {
 	}
 }
 
-extension ELPMPP02.Series {
+extension ELPMPP02.FittedSeries {
 	/// Returns the Moon's position and velocity, following `EVALUATE` of `ELPMPP02.for`.
 	///
 	/// - Parameter t: TDB in Julian centuries from J2000.0.

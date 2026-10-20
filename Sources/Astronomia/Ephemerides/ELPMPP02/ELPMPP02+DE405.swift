@@ -36,7 +36,7 @@ extension ELPMPP02 {
 		public static let defaultOrigin = Body.earth
 
 		/// The series with the constants fitted to DE405, from `ELPMPP02.for`.
-		static let series = Series(corrections: Corrections(
+		static let series = FittedSeries(corrections: Corrections(
 			w10: -0.070_08, w20: 0.207_94, w30: -0.072_15, earth0: -0.000_33, perihelion0: -0.007_49,
 			w11: -0.351_06, gamma: 0.000_85, e: -0.000_06, earth1: 0.007_32, eccentricity: 0.002_24,
 			w21: 0.080_17, w31: -0.043_17, w12: -0.037_43,

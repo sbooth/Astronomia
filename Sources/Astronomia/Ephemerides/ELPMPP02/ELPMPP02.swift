@@ -47,7 +47,7 @@ extension ELPMPP02 {
 		associatedtype Ecliptic: EclipticFrame, FixedReferenceFrame
 
 		/// The solution's series with the fit's constants.
-		static var series: Series { get }
+		static var series: FittedSeries { get }
 	}
 
 	/// The corrections of a fit to the solution's nominal constants, in arcseconds and
