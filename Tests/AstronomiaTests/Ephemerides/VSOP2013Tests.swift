@@ -24,7 +24,7 @@ import Testing
 		// The built-in series, summed as an independent implementation sums them
 		for value in vsop2013CheckValues {
 			let t = Double(value.julianDayNumber - 2_451_545) / daysPerJulianMillennium
-			let elements = try VSOP2013.elements(of: #require(value.body.series), at: t)
+			let elements = try VSOP2013.elements(of: value.body, at: t)
 			let actual = [elements.a, elements.meanLongitude, elements.k, elements.h, elements.q, elements.p]
 			for (a, b) in zip(actual, value.elements) {
 				#expect(abs(a - b) <= 1e-13, "\(value.body) \(value.julianDayNumber)")
@@ -100,8 +100,11 @@ import Testing
 	}
 
 	@Test func termCounts() {
-		let counts = VSOP2013.Body.allCases.compactMap(\.series).map(\.terms.termCount)
-		#expect(VSOP2013.Body.sun.series == nil && VSOP2013.Body.solarSystemBarycenter.series == nil)
+		let counts = VSOP2013.Body.allCases.compactMap(\.seriesData).map(\.termCount)
+		#expect(VSOP2013.Body.sun.seriesData == nil && VSOP2013.Body.solarSystemBarycenter.seriesData == nil)
+		#expect(VSOP2013.Body.sun.meanMotion == nil && VSOP2013.Body.solarSystemBarycenter.meanMotion == nil)
+		#expect(VSOP2013.Body.sun.gravitationalParameter == VSOP2013.sunGravitationalParameter)
+		#expect(VSOP2013.Body.solarSystemBarycenter.gravitationalParameter == nil)
 		#expect(counts == [5_735, 21_481, 32_666, 72_791, 43_148, 82_504, 60_725, 49_125, 51_884])
 	}
 }

@@ -6,7 +6,7 @@
 //
 
 extension VSOP2013 {
-	/// The elliptic elements of the VSOP planetary theories.
+	/// The elliptic elements of the solution.
 	///
 	/// The elements avoid the singularities of the classical elements at zero eccentricity and
 	/// inclination. With e the eccentricity, ϖ the longitude of perihelion, i the inclination, and

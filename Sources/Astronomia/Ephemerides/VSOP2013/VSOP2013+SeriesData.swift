@@ -8,8 +8,8 @@
 internal import AstronomiaData
 
 extension VSOP2013 {
-	/// Series of the VSOP planetary theories, terms T^α (S sin(φ + ν T) + C cos(φ + ν T)) grouped
-	/// by variable and power of time, from the built-in data.
+	/// A body's series from the built-in data, terms T^α (S sin(φ + ν T) + C cos(φ + ν T))
+	/// grouped by variable and power of time.
 	///
 	/// The arguments are linear in time. Theories whose arguments are polynomials in time, such
 	/// as the lunar theory ELP/MPP02, need their own form.
@@ -25,7 +25,7 @@ extension VSOP2013 {
 		/// The largest power of time.
 		let maximumPower: Int
 
-		/// Creates series from generated data.
+		/// Creates the series of a body from its generated data.
 		init(_ data: astronomia_vsop_series_set) {
 			series = UnsafeBufferPointer(start: data.series, count: data.series_count)
 			terms = UnsafeBufferPointer(start: data.terms, count: data.term_count)
@@ -57,11 +57,11 @@ extension VSOP2013.SeriesData {
 
 		var sums = [Double](repeating: 0, count: variables)
 		var index = 0
-		for series in series {
-			let variable = Int(series.variable) - 1
-			let power = powers[Int(series.power)]
+		for header in series {
+			let variable = Int(header.variable) - 1
+			let power = powers[Int(header.power)]
 			var sum = sums[variable]
-			for _ in 0 ..< Int(series.count) {
+			for _ in 0 ..< Int(header.count) {
 				let term = terms[index]
 				let (s, c) = Math.sincos(term.phase + term.frequency * t)
 				sum = sum + power * (term.s * s + term.c * c)

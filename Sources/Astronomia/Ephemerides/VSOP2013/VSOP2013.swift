@@ -77,77 +77,104 @@ let builtInEphemerisCoverage = JulianDate(uncheckedJulianDayNumber: 2_086_295, f
 let builtInEphemerisInstants = Instant<TDB>(builtInEphemerisCoverage.lowerBound) ... Instant(builtInEphemerisCoverage.upperBound)
 
 extension VSOP2013 {
-	/// The series and constants of a body with series in the solution.
-	struct Series {
-		/// The position of the body's series in the data.
-		let index: Int
-		/// The mean motion in longitude, in radians per thousand Julian years, from VSOP2013.f.
-		///
-		/// The series of the mean longitude leave out this term, which is added separately.
-		let meanMotion: Double
-		/// The gravitational parameter of the body, with its satellites, in au³/day², from
-		/// INPOP10a as given in VSOP2013.f.
-		let bodyGravitationalParameter: Double
-
-		/// The body's series.
-		var terms: SeriesData {
-			Self.all[index]
-		}
-
-		/// The gravitational parameter of the Sun and the body, in au³/day².
-		var gravitationalParameter: Double {
-			VSOP2013.sunGravitationalParameter + bodyGravitationalParameter
-		}
-
-		/// The series of each body, in the order of the data.
-		private static let all = [
-			SeriesData(astronomia_vsop2013_mercury),
-			SeriesData(astronomia_vsop2013_venus),
-			SeriesData(astronomia_vsop2013_earth_moon_barycenter),
-			SeriesData(astronomia_vsop2013_mars),
-			SeriesData(astronomia_vsop2013_jupiter),
-			SeriesData(astronomia_vsop2013_saturn),
-			SeriesData(astronomia_vsop2013_uranus),
-			SeriesData(astronomia_vsop2013_neptune),
-			SeriesData(astronomia_vsop2013_pluto),
-		]
-	}
+	/// The series of each body, in the order of the data.
+	fileprivate static let seriesData = [
+		SeriesData(astronomia_vsop2013_mercury),
+		SeriesData(astronomia_vsop2013_venus),
+		SeriesData(astronomia_vsop2013_earth_moon_barycenter),
+		SeriesData(astronomia_vsop2013_mars),
+		SeriesData(astronomia_vsop2013_jupiter),
+		SeriesData(astronomia_vsop2013_saturn),
+		SeriesData(astronomia_vsop2013_uranus),
+		SeriesData(astronomia_vsop2013_neptune),
+		SeriesData(astronomia_vsop2013_pluto),
+	]
 }
 
 extension VSOP2013.Body {
-	/// The body's series and constants, or `nil` for the Sun and the solar system barycenter,
-	/// which have none.
-	var series: VSOP2013.Series? {
+	/// The body's series, or `nil` for the Sun and the solar system barycenter, which have
+	/// none.
+	var seriesData: VSOP2013.SeriesData? {
 		switch self {
 		case .solarSystemBarycenter, .sun: nil
-		case .mercury: .init(index: 0, meanMotion: 0.260_879_031_406_855_5e5, bodyGravitationalParameter: 4.912_547_451_450_811_869_9e-11)
-		case .venus: .init(index: 1, meanMotion: 0.102_132_855_474_344_5e5, bodyGravitationalParameter: 7.243_452_486_162_702_700_0e-10)
-		case .earthMoonBarycenter: .init(index: 2, meanMotion: 0.628_307_585_035_321_5e4, bodyGravitationalParameter: 8.997_011_603_631_609_118_2e-10)
-		case .mars: .init(index: 3, meanMotion: 0.334_061_243_414_545_7e4, bodyGravitationalParameter: 9.549_535_105_779_258_059_8e-11)
-		case .jupiterBarycenter: .init(index: 4, meanMotion: 0.529_690_961_562_325_0e3, bodyGravitationalParameter: 2.825_345_842_083_778_000_0e-7)
-		case .saturnBarycenter: .init(index: 5, meanMotion: 0.213_299_086_108_488_0e3, bodyGravitationalParameter: 8.459_715_185_680_658_739_8e-8)
-		case .uranusBarycenter: .init(index: 6, meanMotion: 0.747_816_590_307_780_0e2, bodyGravitationalParameter: 1.292_024_916_781_969_390_0e-8)
-		case .neptuneBarycenter: .init(index: 7, meanMotion: 0.381_329_722_261_250_0e2, bodyGravitationalParameter: 1.524_358_900_784_276_280_0e-8)
-		case .plutoBarycenter: .init(index: 8, meanMotion: 0.253_356_602_043_700_0e2, bodyGravitationalParameter: 2.188_699_765_425_969_680_0e-12)
+		case .mercury: VSOP2013.seriesData[0]
+		case .venus: VSOP2013.seriesData[1]
+		case .earthMoonBarycenter: VSOP2013.seriesData[2]
+		case .mars: VSOP2013.seriesData[3]
+		case .jupiterBarycenter: VSOP2013.seriesData[4]
+		case .saturnBarycenter: VSOP2013.seriesData[5]
+		case .uranusBarycenter: VSOP2013.seriesData[6]
+		case .neptuneBarycenter: VSOP2013.seriesData[7]
+		case .plutoBarycenter: VSOP2013.seriesData[8]
+		}
+	}
+
+	/// The mean motion in longitude, in radians per thousand Julian years, from VSOP2013.f, or
+	/// `nil` for the Sun and the solar system barycenter.
+	///
+	/// The series of the mean longitude leave out this term, which is added separately.
+	var meanMotion: Double? {
+		switch self {
+		case .solarSystemBarycenter, .sun: nil
+		case .mercury: 0.260_879_031_406_855_5e5
+		case .venus: 0.102_132_855_474_344_5e5
+		case .earthMoonBarycenter: 0.628_307_585_035_321_5e4
+		case .mars: 0.334_061_243_414_545_7e4
+		case .jupiterBarycenter: 0.529_690_961_562_325_0e3
+		case .saturnBarycenter: 0.213_299_086_108_488_0e3
+		case .uranusBarycenter: 0.747_816_590_307_780_0e2
+		case .neptuneBarycenter: 0.381_329_722_261_250_0e2
+		case .plutoBarycenter: 0.253_356_602_043_700_0e2
+		}
+	}
+
+	/// The gravitational parameter of the body, with its satellites, in au³/day², from
+	/// INPOP10a as given in VSOP2013.f, or `nil` for the solar system barycenter.
+	var gravitationalParameter: Double? {
+		switch self {
+		case .solarSystemBarycenter: nil
+		case .sun: VSOP2013.sunGravitationalParameter
+		case .mercury: 4.912_547_451_450_811_869_9e-11
+		case .venus: 7.243_452_486_162_702_700_0e-10
+		case .earthMoonBarycenter: 8.997_011_603_631_609_118_2e-10
+		case .mars: 9.549_535_105_779_258_059_8e-11
+		case .jupiterBarycenter: 2.825_345_842_083_778_000_0e-7
+		case .saturnBarycenter: 8.459_715_185_680_658_739_8e-8
+		case .uranusBarycenter: 1.292_024_916_781_969_390_0e-8
+		case .neptuneBarycenter: 1.524_358_900_784_276_280_0e-8
+		case .plutoBarycenter: 2.188_699_765_425_969_680_0e-12
 		}
 	}
 }
 
 extension VSOP2013 {
-	/// Returns the elliptic elements of a body's series at a time.
+	/// Returns the elliptic elements of a body at a time.
 	///
 	/// - Parameters:
-	///   - series: The body's series.
+	///   - body: A body with series.
 	///   - t: TDB in thousands of Julian years from J2000.0.
 	/// - Returns: The elements, with the mean longitude in the right-open interval [0, 2π).
-	static func elements(of series: Series, at t: Double) -> EllipticElements {
-		let sums = series.terms.evaluate(at: t, variables: 6)
+	static func elements(of body: Body, at t: Double) -> EllipticElements {
+		guard let seriesData = body.seriesData, let meanMotion = body.meanMotion else {
+			preconditionFailure("\(body) has no series")
+		}
+		let sums = seriesData.evaluate(at: t, variables: 6)
 		let twoPi = 2 * Double.pi
-		var meanLongitude = (sums[1] + series.meanMotion * t).truncatingRemainder(dividingBy: twoPi)
+		var meanLongitude = (sums[1] + meanMotion * t).truncatingRemainder(dividingBy: twoPi)
 		if meanLongitude < 0 {
 			meanLongitude += twoPi
 		}
 		return EllipticElements(a: sums[0], meanLongitude: meanLongitude, k: sums[2], h: sums[3], q: sums[4], p: sums[5])
+	}
+
+	/// Returns the state of a body with series on its heliocentric orbit.
+	///
+	/// - Parameters:
+	///   - body: A body with series.
+	///   - t: TDB in thousands of Julian years from J2000.0.
+	private static func orbitalState(of body: Body, at t: Double) -> (position: Vector3, velocity: Vector3) {
+		guard let gm = body.gravitationalParameter else { preconditionFailure("\(body) has no series") }
+		return elements(of: body, at: t).state(gm: sunGravitationalParameter + gm)
 	}
 
 	/// Returns a body's heliocentric position and velocity in the solution's ecliptic.
@@ -165,8 +192,7 @@ extension VSOP2013 {
 		case .solarSystemBarycenter:
 			return barycenter(at: tdb.daysSinceJ2000 / daysPerJulianMillennium)
 		default:
-			guard let series = body.series else { preconditionFailure("\(body) has no series") }
-			return elements(of: series, at: tdb.daysSinceJ2000 / daysPerJulianMillennium).state(gm: series.gravitationalParameter)
+			return orbitalState(of: body, at: tdb.daysSinceJ2000 / daysPerJulianMillennium)
 		}
 	}
 
@@ -178,11 +204,12 @@ extension VSOP2013 {
 		var position = Vector3.zero
 		var velocity = Vector3.zero
 		var total = sunGravitationalParameter
-		for series in Body.allCases.compactMap(\.series) {
-			let state = elements(of: series, at: t).state(gm: series.gravitationalParameter)
-			position = position + state.position * series.bodyGravitationalParameter
-			velocity = velocity + state.velocity * series.bodyGravitationalParameter
-			total += series.bodyGravitationalParameter
+		for body in Body.allCases where body.seriesData != nil {
+			guard let gm = body.gravitationalParameter else { preconditionFailure("\(body) has no mass") }
+			let state = orbitalState(of: body, at: t)
+			position = position + state.position * gm
+			velocity = velocity + state.velocity * gm
+			total += gm
 		}
 		return (position / total, velocity / total)
 	}

@@ -57,9 +57,9 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 		let sun = try solution.state(of: .sun, relativeTo: .solarSystemBarycenter, at: tdb)
 		var moment = sun.position.vector * VSOP2013.sunGravitationalParameter
 		for body in VSOP2013.Body.allCases {
-			guard let series = body.series else { continue }
+			guard body.seriesData != nil, let gm = body.gravitationalParameter else { continue }
 			let helio = try #require(VSOP2013.heliocentricState(of: body, at: tdb.julianDate))
-			moment = moment + (helio.position + sun.position.vector) * series.bodyGravitationalParameter
+			moment = moment + (helio.position + sun.position.vector) * gm
 		}
 		#expect(moment.length <= 1e-19)
 		// The Sun is within about two solar radii of the barycenter.
