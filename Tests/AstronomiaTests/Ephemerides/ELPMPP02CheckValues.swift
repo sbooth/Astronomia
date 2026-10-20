@@ -31,8 +31,8 @@ enum ELPFit: CaseIterable {
 	/// Returns the Moon's geocentric state in the ICRS.
 	func state(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
 		switch self {
-		case .laserRanging: ELPMPP02.state(at: tdb, fit: ELPMPP02.LaserRanging.self)
-		case .de405: ELPMPP02.state(at: tdb, fit: ELPMPP02.DE405.self)
+		case .laserRanging: ELPMPP02.laserRanging.icrsState(at: tdb)
+		case .de405: ELPMPP02.de405.icrsState(at: tdb)
 		}
 	}
 }

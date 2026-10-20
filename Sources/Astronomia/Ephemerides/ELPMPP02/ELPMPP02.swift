@@ -121,17 +121,17 @@ extension ELPMPP02 {
 		let scale = 1 / Distance.kilometersPerAstronomicalUnit
 		return (state.position * scale, state.velocity * scale)
 	}
+}
 
+extension ELPMPP02.Fit {
 	/// Returns the Moon's geocentric position and velocity in the ICRS.
 	///
-	/// - Parameters:
-	///   - tdb: A Julian Date in TDB.
-	///   - fit: The fit of the solution.
+	/// - Parameter tdb: A Julian Date in TDB.
 	/// - Returns: The position, in astronomical units, and velocity, in astronomical units per
 	///   day, or `nil` if `tdb` is outside the coverage.
-	static func state<F: Fit>(at tdb: JulianDate, fit: F.Type) -> (position: Vector3, velocity: Vector3)? {
-		guard let ecliptic = eclipticState(at: tdb, series: F.series) else { return nil }
-		let rotation = F.Ecliptic.rotation(to: ICRS.self)
+	func icrsState(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
+		guard let ecliptic = ELPMPP02.eclipticState(at: tdb, series: Self.series) else { return nil }
+		let rotation = Ecliptic.rotation(to: ICRS.self)
 		return (rotation.apply(to: ecliptic.position), rotation.apply(to: ecliptic.velocity))
 	}
 }

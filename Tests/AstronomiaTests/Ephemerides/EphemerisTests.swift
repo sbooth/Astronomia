@@ -124,10 +124,10 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 		#expect(ephemeris == SolarSystemEphemeris(lunarFit: .de405))
 		#expect(ephemeris != SolarSystemEphemeris(lunarFit: .laserRanging))
 		let moon = try #require(ephemeris.geocentricMoon(at: tdb.julianDate))
-		let de405 = try #require(ELPMPP02.state(at: tdb.julianDate, fit: ELPMPP02.DE405.self))
+		let de405 = try #require(ELPMPP02.de405.icrsState(at: tdb.julianDate))
 		#expect(moon.position == de405.position && moon.velocity == de405.velocity)
 		let laserRanging = try #require(SolarSystemEphemeris(lunarFit: .laserRanging).geocentricMoon(at: tdb.julianDate))
-		let expected = try #require(ELPMPP02.state(at: tdb.julianDate, fit: ELPMPP02.LaserRanging.self))
+		let expected = try #require(ELPMPP02.laserRanging.icrsState(at: tdb.julianDate))
 		#expect(laserRanging.position == expected.position && laserRanging.velocity == expected.velocity)
 	}
 
