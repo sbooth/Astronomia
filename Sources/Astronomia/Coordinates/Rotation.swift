@@ -20,29 +20,51 @@
 /// The elementary rotations ``aboutX(_:)``, ``aboutY(_:)``, and ``aboutZ(_:)`` follow the
 /// SOFA convention: R1(θ), R2(θ), and R3(θ) rotate the axes by θ counterclockwise about the
 /// x, y, and z axes, seen from the positive end of the axis.
+///
+/// A rotation to or from a frame of date, a ``DatedReferenceFrame``, is for one epoch of that
+/// frame. It gives values at its `To` epoch, and a rotation from a frame of date applies only
+/// to values at its `From` epoch, so it rotates and composes with the throwing
+/// `apply(to:)` and `composed(after:)` in place of `*`. A rotation between two epochs of the
+/// same frame of date, such as precession from one date to another, is a `Rotation<F, F>`.
 public struct Rotation<From: ReferenceFrame, To: ReferenceFrame>: Hashable, Sendable {
 	/// The rows of the rotation matrix.
 	let storage: (Vector3, Vector3, Vector3)
+	/// The epoch of the `From` frame, ``NoEpoch`` for a fixed frame.
+	let fromFrameEpoch: From.Epoch
+	/// The epoch of the `To` frame, ``NoEpoch`` for a fixed frame.
+	let toFrameEpoch: To.Epoch
 
-	/// Creates a rotation from the rows of an orthogonal matrix.
+	/// Creates a rotation from the rows of an orthogonal matrix and the epochs of its frames.
 	///
 	/// - Precondition: The matrix is orthogonal with determinant 1.
-	init(uncheckedRows r0: Vector3, _ r1: Vector3, _ r2: Vector3) {
+	init(uncheckedRows r0: Vector3, _ r1: Vector3, _ r2: Vector3, fromFrameEpoch: From.Epoch, toFrameEpoch: To.Epoch) {
 		storage = (r0, r1, r2)
+		self.fromFrameEpoch = fromFrameEpoch
+		self.toFrameEpoch = toFrameEpoch
 	}
 
 	public static func == (lhs: Rotation, rhs: Rotation) -> Bool {
 		lhs.storage.0 == rhs.storage.0 && lhs.storage.1 == rhs.storage.1 && lhs.storage.2 == rhs.storage.2
+			&& lhs.fromFrameEpoch == rhs.fromFrameEpoch && lhs.toFrameEpoch == rhs.toFrameEpoch
 	}
 
 	public func hash(into hasher: inout Hasher) {
 		hasher.combine(storage.0)
 		hasher.combine(storage.1)
 		hasher.combine(storage.2)
+		hasher.combine(fromFrameEpoch)
+		hasher.combine(toFrameEpoch)
 	}
 }
 
-extension Rotation {
+extension Rotation where From: FixedReferenceFrame, To: FixedReferenceFrame {
+	/// Creates a rotation between fixed frames from the rows of an orthogonal matrix.
+	///
+	/// - Precondition: The matrix is orthogonal with determinant 1.
+	init(uncheckedRows r0: Vector3, _ r1: Vector3, _ r2: Vector3) {
+		self.init(uncheckedRows: r0, r1, r2, fromFrameEpoch: NoEpoch(), toFrameEpoch: NoEpoch())
+	}
+
 	/// The rotation that leaves coordinates unchanged, as between two frames with the same
 	/// axes.
 	public static var identity: Rotation {
@@ -84,6 +106,35 @@ extension Rotation {
 		let (s, c) = angle.sinCos
 		return Rotation(uncheckedRows: Vector3(c, s, 0), Vector3(-s, c, 0), Vector3(0, 0, 1))
 	}
+}
+
+extension Rotation where From: DatedReferenceFrame {
+	/// The epoch of the `From` frame of date, at which values must be to be rotated.
+	public var fromEpoch: Instant<TT> {
+		fromFrameEpoch
+	}
+}
+
+extension Rotation where To: DatedReferenceFrame {
+	/// The epoch of the `To` frame of date, at which rotated values are.
+	public var toEpoch: Instant<TT> {
+		toFrameEpoch
+	}
+}
+
+extension Rotation {
+	/// Returns a rotation with these rows between other frames, at their epochs.
+	///
+	/// Rotations of dated frames are built from elementary rotations between fixed frames,
+	/// then given their frames and epochs with this.
+	///
+	/// - Parameters:
+	///   - fromFrameEpoch: The epoch of the new `From` frame.
+	///   - toFrameEpoch: The epoch of the new `To` frame.
+	/// - Returns: The rotation with the same matrix.
+	func relabeled<NewFrom: ReferenceFrame, NewTo: ReferenceFrame>(fromFrameEpoch: NewFrom.Epoch, toFrameEpoch: NewTo.Epoch) -> Rotation<NewFrom, NewTo> {
+		Rotation<NewFrom, NewTo>(uncheckedRows: storage.0, storage.1, storage.2, fromFrameEpoch: fromFrameEpoch, toFrameEpoch: toFrameEpoch)
+	}
 
 	/// The rows of the rotation matrix.
 	///
@@ -114,10 +165,14 @@ extension Rotation {
 		Rotation<To, From>(
 			uncheckedRows: Vector3(storage.0.x, storage.1.x, storage.2.x),
 			Vector3(storage.0.y, storage.1.y, storage.2.y),
-			Vector3(storage.0.z, storage.1.z, storage.2.z)
+			Vector3(storage.0.z, storage.1.z, storage.2.z),
+			fromFrameEpoch: toFrameEpoch,
+			toFrameEpoch: fromFrameEpoch
 		)
 	}
+}
 
+extension Rotation where From: FixedReferenceFrame {
 	/// Returns the rotation that applies `rhs` and then `lhs`.
 	///
 	/// - Parameters:
@@ -125,11 +180,7 @@ extension Rotation {
 	///   - rhs: The rotation applied first.
 	/// - Returns: The composed rotation.
 	public static func * <Start: ReferenceFrame>(lhs: Rotation<From, To>, rhs: Rotation<Start, From>) -> Rotation<Start, To> {
-		Rotation<Start, To>(
-			uncheckedRows: rhs.applyInverse(to: lhs.storage.0),
-			rhs.applyInverse(to: lhs.storage.1),
-			rhs.applyInverse(to: lhs.storage.2)
-		)
+		lhs.uncheckedComposed(after: rhs)
 	}
 
 	/// Returns a position's coordinates in the `To` frame.
@@ -139,6 +190,44 @@ extension Rotation {
 	///   - rhs: A position in the `From` frame.
 	/// - Returns: The same position in the `To` frame.
 	public static func * (lhs: Rotation, rhs: Position<From>) -> Position<To> {
-		Position(lhs.apply(to: rhs.vector))
+		Position<To>(lhs.apply(to: rhs.vector), frameEpoch: lhs.toFrameEpoch)
+	}
+}
+
+extension Rotation where From: DatedReferenceFrame {
+	/// Returns the rotation that applies another rotation and then this one.
+	///
+	/// - Parameter other: The rotation applied first, to the `From` frame at this rotation's
+	///   `From` epoch.
+	/// - Returns: The composed rotation.
+	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if `other` gives values
+	///   at another epoch.
+	public func composed<Start: ReferenceFrame>(after other: Rotation<Start, From>) throws(CoordinateError) -> Rotation<Start, To> {
+		try checkEpoch(expected: fromEpoch, actual: other.toEpoch)
+		return uncheckedComposed(after: other)
+	}
+
+	/// Returns a position in the `From` frame of date expressed in the `To` frame.
+	///
+	/// - Parameter position: A position at the rotation's `From` epoch.
+	/// - Returns: The same position in the `To` frame.
+	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the position is at
+	///   another epoch.
+	public func apply(to position: Position<From>) throws(CoordinateError) -> Position<To> {
+		try checkEpoch(expected: fromEpoch, actual: position.epoch)
+		return Position<To>(apply(to: position.vector), frameEpoch: toFrameEpoch)
+	}
+}
+
+extension Rotation {
+	/// Returns the rotation that applies `other` and then this one, whatever their epochs.
+	func uncheckedComposed<Start: ReferenceFrame>(after other: Rotation<Start, From>) -> Rotation<Start, To> {
+		Rotation<Start, To>(
+			uncheckedRows: other.applyInverse(to: storage.0),
+			other.applyInverse(to: storage.1),
+			other.applyInverse(to: storage.2),
+			fromFrameEpoch: other.fromFrameEpoch,
+			toFrameEpoch: toFrameEpoch
+		)
 	}
 }
