@@ -90,7 +90,7 @@ extension VSOP2013 {
 		let bodyGravitationalParameter: Double
 
 		/// The body's series.
-		var terms: VSOPSeries {
+		var terms: SeriesData {
 			Self.all[index]
 		}
 
@@ -101,15 +101,15 @@ extension VSOP2013 {
 
 		/// The series of each body, in the order of the data.
 		private static let all = [
-			VSOPSeries(astronomia_vsop2013_mercury),
-			VSOPSeries(astronomia_vsop2013_venus),
-			VSOPSeries(astronomia_vsop2013_earth_moon_barycenter),
-			VSOPSeries(astronomia_vsop2013_mars),
-			VSOPSeries(astronomia_vsop2013_jupiter),
-			VSOPSeries(astronomia_vsop2013_saturn),
-			VSOPSeries(astronomia_vsop2013_uranus),
-			VSOPSeries(astronomia_vsop2013_neptune),
-			VSOPSeries(astronomia_vsop2013_pluto),
+			SeriesData(astronomia_vsop2013_mercury),
+			SeriesData(astronomia_vsop2013_venus),
+			SeriesData(astronomia_vsop2013_earth_moon_barycenter),
+			SeriesData(astronomia_vsop2013_mars),
+			SeriesData(astronomia_vsop2013_jupiter),
+			SeriesData(astronomia_vsop2013_saturn),
+			SeriesData(astronomia_vsop2013_uranus),
+			SeriesData(astronomia_vsop2013_neptune),
+			SeriesData(astronomia_vsop2013_pluto),
 		]
 	}
 }

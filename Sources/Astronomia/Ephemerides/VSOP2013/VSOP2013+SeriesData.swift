@@ -16,7 +16,7 @@ extension VSOP2013 {
 	///
 	/// The series of each variable are summed term by term in the order of the data, which is the
 	/// order of the source files, as the reference implementations sum them.
-	struct VSOPSeries: @unchecked Sendable {
+	struct SeriesData: @unchecked Sendable {
 		// The data is immutable, so the pointers into it can be shared.
 		/// The series, each a variable, power of time, and number of terms.
 		let series: UnsafeBufferPointer<astronomia_vsop_series>
@@ -34,7 +34,7 @@ extension VSOP2013 {
 	}
 }
 
-extension VSOP2013.VSOPSeries {
+extension VSOP2013.SeriesData {
 	/// The number of terms.
 	var termCount: Int {
 		terms.count
