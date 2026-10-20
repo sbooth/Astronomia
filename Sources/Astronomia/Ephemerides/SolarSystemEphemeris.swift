@@ -8,10 +8,10 @@
 /// The built-in ephemeris of the solar system, from the planetary solution VSOP2013 and the
 /// lunar solution ELP/MPP02, in the ICRS, for J1000.0 to J3000.0.
 ///
-/// ``VSOP2013`` gives the Sun, the planets, and the Earth-Moon barycenter, and a lunar
-/// ephemeris, by default ``ELPMPP02/de405``, the geocentric Moon. Each solution's states are
-/// rotated from its own ecliptic to the ICRS, and the geocentric Moon divides the barycenter
-/// into the Earth and the Moon by the ratio of their masses:
+/// ``VSOP2013`` gives the Sun, the planets, and the Earth-Moon barycenter, and a fit of
+/// ``ELPMPP02``, by default ``ELPMPP02/de405``, the geocentric Moon. Each solution's states
+/// are rotated from its own ecliptic to the ICRS, and the geocentric Moon divides the
+/// barycenter into the Earth and the Moon by the ratio of their masses:
 ///
 /// ```swift
 /// let earth = barycenter - geocentricMoon * (1 / (1 + μ))
@@ -25,7 +25,7 @@
 /// ```swift
 /// let ephemeris = SolarSystemEphemeris()
 /// let mars = try ephemeris.state(of: .mars, relativeTo: .earth, at: instant)
-/// let laserRanging = SolarSystemEphemeris(moon: ELPMPP02.laserRanging)
+/// let laserRanging = SolarSystemEphemeris(lunarFit: .laserRanging)
 /// ```
 ///
 /// The truncated series keep the error from truncation near 0.5 mas for the planets and
@@ -36,7 +36,7 @@
 /// - Note: VSOP2013 gives the outer planets as the barycenters of their systems, which differ
 ///   from the planets by up to a few hundred kilometers. Pluto's solution is less accurate
 ///   than the planets'.
-public struct SolarSystemEphemeris: GeocentricEphemeris {
+public struct SolarSystemEphemeris: GeocentricEphemeris, Hashable {
 	/// A body of the ephemeris.
 	public enum Body: Hashable, Sendable, CaseIterable {
 		/// The barycenter of the solar system.
@@ -75,30 +75,26 @@ public struct SolarSystemEphemeris: GeocentricEphemeris {
 	public static let sun = Body.sun
 	public static let solarSystemBarycenter = Body.solarSystemBarycenter
 
-	/// Returns the geocentric Moon from the lunar ephemeris, in the ICRS.
-	let geocentricMoon: @Sendable (Instant<TDB>) throws(EphemerisError) -> StateVector<ICRS>
-
-	public let coverage: ClosedRange<Instant<TDB>>
-
-	/// Creates the ephemeris with the default lunar ephemeris, ``ELPMPP02/de405``.
-	public init() {
-		self.init(moon: ELPMPP02.de405)
+	/// A fit of the lunar solution ELP/MPP02.
+	public enum LunarFit: Hashable, Sendable, CaseIterable {
+		/// ``ELPMPP02/de405``, the fit to DE405, the default.
+		case de405
+		/// ``ELPMPP02/laserRanging``, the fit to lunar laser ranging.
+		case laserRanging
 	}
 
-	/// Creates the ephemeris with a lunar ephemeris.
+	/// The fit of the lunar solution.
+	public let lunarFit: LunarFit
+
+	/// Creates the ephemeris.
 	///
-	/// The ephemeris covers the instants that both VSOP2013 and the lunar ephemeris cover.
-	///
-	/// - Parameter moon: An ephemeris of the Moon relative to the Earth, such as
-	///   ``ELPMPP02/laserRanging``.
-	public init<Moon: Ephemeris>(moon: Moon) where Moon.Body == ELPMPP02.Body {
-		geocentricMoon = { tdb throws(EphemerisError) in
-			try moon.state(of: .moon, relativeTo: .earth, at: tdb).converted(to: ICRS.self)
-		}
-		let planets = Instant<TDB>(builtInEphemerisCoverage.lowerBound) ... Instant<TDB>(builtInEphemerisCoverage.upperBound)
-		let lower = max(planets.lowerBound, moon.coverage.lowerBound)
-		let upper = max(lower, min(planets.upperBound, moon.coverage.upperBound))
-		coverage = lower ... upper
+	/// - Parameter lunarFit: The fit of the lunar solution, by default ``LunarFit/de405``.
+	public init(lunarFit: LunarFit = .de405) {
+		self.lunarFit = lunarFit
+	}
+
+	public var coverage: ClosedRange<Instant<TDB>> {
+		Instant(builtInEphemerisCoverage.lowerBound) ... Instant(builtInEphemerisCoverage.upperBound)
 	}
 
 	public func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<ICRS> {
@@ -122,10 +118,13 @@ public struct SolarSystemEphemeris: GeocentricEphemeris {
 			velocity = rotation.apply(to: state.velocity - originState.velocity)
 		}
 		if moonFraction != originMoonFraction {
-			let moon = try geocentricMoon(tdb)
+			// The coverage of ELP/MPP02 is that of VSOP2013, checked above.
+			guard let moon = geocentricMoon(at: date) else {
+				preconditionFailure("\(date) is outside the coverage of ELP/MPP02")
+			}
 			let fraction = moonFraction - originMoonFraction
-			position = position + moon.position.vector * fraction
-			velocity = velocity + moon.velocity.vector * fraction
+			position = position + moon.position * fraction
+			velocity = velocity + moon.velocity * fraction
 		}
 		return StateVector(position, velocity)
 	}
@@ -134,6 +133,18 @@ public struct SolarSystemEphemeris: GeocentricEphemeris {
 extension SolarSystemEphemeris {
 	/// The ratio of the masses of the Earth and the Moon, from INPOP10.
 	static let earthMoonMassRatio = 81.300_57
+
+	/// Returns the geocentric Moon from the lunar solution, in the ICRS.
+	///
+	/// - Parameter tdb: A Julian Date in TDB.
+	/// - Returns: The position, in astronomical units, and velocity, in astronomical units per
+	///   day, or `nil` if `tdb` is outside the coverage.
+	func geocentricMoon(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
+		switch lunarFit {
+		case .de405: ELPMPP02.state(at: tdb, fit: ELPMPP02.DE405.self)
+		case .laserRanging: ELPMPP02.state(at: tdb, fit: ELPMPP02.LaserRanging.self)
+		}
+	}
 }
 
 extension SolarSystemEphemeris.Body {
