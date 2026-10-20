@@ -37,9 +37,6 @@ public enum ELPMPP02 {
 
 	/// The solution fitted to lunar laser ranging.
 	public static let laserRanging = LaserRanging()
-
-	/// Julian days per Julian century, the unit of time of the series.
-	static let daysPerCentury: Double = 36_525
 }
 
 extension ELPMPP02 {
@@ -96,7 +93,7 @@ extension ELPMPP02.Fit {
 	///   day, or `nil` if `tdb` is outside the coverage.
 	static func eclipticState(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
 		guard builtInEphemerisCoverage.contains(tdb) else { return nil }
-		let state = series.state(at: tdb.daysSinceJ2000 / ELPMPP02.daysPerCentury)
+		let state = series.state(at: tdb.julianCenturiesSinceJ2000)
 		let scale = 1 / Distance.kilometersPerAstronomicalUnit
 		return (state.position * scale, state.velocity * scale)
 	}

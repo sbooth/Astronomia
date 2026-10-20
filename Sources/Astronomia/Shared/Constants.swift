@@ -15,6 +15,12 @@ let secondsPerDay: Double = 86_400
 /// - Important: Leap seconds are deliberately not modeled.
 let integerSecondsPerDay: Int = 86_400
 
+/// Days per Julian year.
+let daysPerJulianYear: Double = 365.25
+
+/// Days per Julian century.
+let daysPerJulianCentury: Double = 36_525
+
 /// The offset from a noon-based day count to the midnight-based count of the same
 /// instant: midnight-based = noon-based + 0.5.
 let noonToMidnightOffset: Double = 0.5

@@ -307,7 +307,7 @@ extension ELPMPP02.Series {
 		let ppwra = ppw * ra + pw * rap
 		let qpwra = qpw * ra + qw * rap
 
-		let sc = ELPMPP02.daysPerCentury
+		let sc = daysPerJulianCentury
 		let velocity = Vector3(
 			(pw2 * xp1 + pwqw * xp2 + pwra * xp3 + ppw2 * x1 + ppwqpw * x2 + ppwra * x3) / sc,
 			(pwqw * xp1 + qw2 * xp2 - qwra * xp3 + ppwqpw * x1 + qpw2 * x2 - qpwra * x3) / sc,
