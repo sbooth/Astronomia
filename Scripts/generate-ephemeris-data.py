@@ -339,7 +339,7 @@ def elpmpp02(args: argparse.Namespace) -> None:
 	lines += ["// Source: ELP/MPP02 (Chapront and Francou 2003), as distributed with ELPMPP02.for"]
 	lines += [f"// SHA-256 {digest}  {name}" for name, digest in digests]
 	lines += [
-		f"// {len(main_terms) + len(perturbation_terms):,} terms, thresholds {args.angle_threshold:g}" and "
+		f"// {len(main_terms) + len(perturbation_terms):,} terms, thresholds {args.angle_threshold:g}\" and "
 		f"{args.distance_threshold:g} km, J{args.start:g} to J{args.end:g}",
 		"",
 		'#include "AstronomiaData.h"',
