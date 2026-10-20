@@ -26,7 +26,7 @@ extension VSOP2013 {
 		let maximumPower: Int
 
 		/// Creates the series of a body from its generated data.
-		init(_ data: astronomia_vsop_series_set) {
+		init(_ data: astronomia_vsop_series_data) {
 			series = UnsafeBufferPointer(start: data.series, count: data.series_count)
 			terms = UnsafeBufferPointer(start: data.terms, count: data.term_count)
 			maximumPower = series.reduce(0) { max($0, Int($1.power)) }

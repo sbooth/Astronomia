@@ -42,28 +42,28 @@ struct astronomia_vsop_term {
 	double c;
 };
 
-/// A set of series, with their terms in the order of the series.
-struct astronomia_vsop_series_set {
+/// The series of one body, with their terms in one array, series by series.
+struct astronomia_vsop_series_data {
 	/// The number of series.
 	size_t series_count;
 	/// The series.
 	const struct astronomia_vsop_series *series;
 	/// The number of terms, the sum of the series' counts.
 	size_t term_count;
-	/// The terms.
+	/// The terms of every series, in the order of the series.
 	const struct astronomia_vsop_term *terms;
 };
 
 // VSOP2013 heliocentric elliptic elements, from J1000.0 to J3000.0
-extern const struct astronomia_vsop_series_set astronomia_vsop2013_mercury;
-extern const struct astronomia_vsop_series_set astronomia_vsop2013_venus;
-extern const struct astronomia_vsop_series_set astronomia_vsop2013_earth_moon_barycenter;
-extern const struct astronomia_vsop_series_set astronomia_vsop2013_mars;
-extern const struct astronomia_vsop_series_set astronomia_vsop2013_jupiter;
-extern const struct astronomia_vsop_series_set astronomia_vsop2013_saturn;
-extern const struct astronomia_vsop_series_set astronomia_vsop2013_uranus;
-extern const struct astronomia_vsop_series_set astronomia_vsop2013_neptune;
-extern const struct astronomia_vsop_series_set astronomia_vsop2013_pluto;
+extern const struct astronomia_vsop_series_data astronomia_vsop2013_mercury;
+extern const struct astronomia_vsop_series_data astronomia_vsop2013_venus;
+extern const struct astronomia_vsop_series_data astronomia_vsop2013_earth_moon_barycenter;
+extern const struct astronomia_vsop_series_data astronomia_vsop2013_mars;
+extern const struct astronomia_vsop_series_data astronomia_vsop2013_jupiter;
+extern const struct astronomia_vsop_series_data astronomia_vsop2013_saturn;
+extern const struct astronomia_vsop_series_data astronomia_vsop2013_uranus;
+extern const struct astronomia_vsop_series_data astronomia_vsop2013_neptune;
+extern const struct astronomia_vsop_series_data astronomia_vsop2013_pluto;
 
 // Series of the lunar theory ELP/MPP02, whose terms have arguments that are sums of integer
 // multiples of fundamental arguments, polynomials in time. The terms keep their multipliers,
@@ -103,7 +103,7 @@ struct astronomia_elp_perturbation_term {
 
 /// The series of the main problem and of the perturbations, with their terms in the order of
 /// the series.
-struct astronomia_elp_series_set {
+struct astronomia_elp_series_data {
 	/// The number of series of the main problem.
 	size_t main_series_count;
 	/// The series of the main problem.
@@ -123,6 +123,6 @@ struct astronomia_elp_series_set {
 };
 
 // ELP/MPP02 geocentric lunar coordinates, from J1000.0 to J3000.0
-extern const struct astronomia_elp_series_set astronomia_elpmpp02;
+extern const struct astronomia_elp_series_data astronomia_elpmpp02;
 
 #endif

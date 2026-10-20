@@ -212,7 +212,7 @@ def vsop2013(args: argparse.Namespace) -> None:
 		lines += [
 			"};",
 			"",
-			f"const struct astronomia_vsop_series_set {symbol} = {{",
+			f"const struct astronomia_vsop_series_data {symbol} = {{",
 			"\tsizeof(series) / sizeof(series[0]), series,",
 			"\tsizeof(terms) / sizeof(terms[0]), terms,",
 			"};",
@@ -377,7 +377,7 @@ def elpmpp02(args: argparse.Namespace) -> None:
 	lines += [
 		"};",
 		"",
-		"const struct astronomia_elp_series_set astronomia_elpmpp02 = {",
+		"const struct astronomia_elp_series_data astronomia_elpmpp02 = {",
 		"\tsizeof(main_series) / sizeof(main_series[0]), main_series,",
 		"\tsizeof(main_terms) / sizeof(main_terms[0]), main_terms,",
 		"\tsizeof(perturbation_series) / sizeof(perturbation_series[0]), perturbation_series,",
