@@ -24,7 +24,7 @@ import Testing
 		// The built-in series, summed as an independent implementation sums them
 		for value in vsop2013CheckValues {
 			let t = Double(value.julianDayNumber - 2_451_545) / daysPerJulianMillennium
-			let elements = try VSOP2013.elements(of: value.body, at: t)
+			let elements = VSOP2013.elements(of: value.body, at: t)
 			let actual = [elements.a, elements.meanLongitude, elements.k, elements.h, elements.q, elements.p]
 			for (a, b) in zip(actual, value.elements) {
 				#expect(abs(a - b) <= 1e-13, "\(value.body) \(value.julianDayNumber)")
