@@ -22,10 +22,14 @@ let package = Package(
 			name: "Astronomia",
 			dependencies: [
 				"AstronomiaData",
+				"CAstronomiaMath",
 			]
 		),
 		.target(
 			name: "AstronomiaData"
+		),
+		.target(
+			name: "CAstronomiaMath"
 		),
 		.testTarget(
 			name: "AstronomiaTests",
