@@ -84,8 +84,8 @@ import Testing
 
 	@Test func extrapolationLimit() throws {
 		let table = try Self.table(60, 70)
-		let earliest = try table.coverage.lowerBound.adding(days: -0.5 * JulianDate.daysPerJulianYear)
-		let latest = try table.coverage.upperBound.adding(days: 0.5 * JulianDate.daysPerJulianYear)
+		let earliest = try table.coverage.lowerBound.adding(days: -0.5 * daysPerJulianYear)
+		let latest = try table.coverage.upperBound.adding(days: 0.5 * daysPerJulianYear)
 		let source = try DeltaTSourceList([
 			table,
 			ConstantDeltaTExtrapolation(before: table, from: earliest),

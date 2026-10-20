@@ -83,8 +83,8 @@ extension EarthRotation {
 	/// Returns Greenwich mean sidereal time from the IAU 2006 model (Capitaine et al. 2003).
 	///
 	/// ```
-	/// GMST = ERA + 0.014506″ + 4612.156534″ t + 1.3915817″ t^2 - 0.00000044″ t^3
-	///            - 0.000029956″ t^4 - 0.0000000368″ t^5
+	/// GMST = ERA + 0.014506" + 4612.156534" t + 1.3915817" t^2 - 0.00000044" t^3
+	///            - 0.000029956" t^4 - 0.0000000368" t^5
 	/// ```
 	///
 	/// where t is TT Julian centuries since J2000.0.
@@ -94,7 +94,7 @@ extension EarthRotation {
 	///   - tt: The same instant as a Julian Date in TT.
 	/// - Returns: Greenwich mean sidereal time, in the right-open interval [0, 2π).
 	static func greenwichMeanSiderealTime(ut1: JulianDate, tt: JulianDate) -> Angle {
-		let t = (differenceAsDouble(tt.julianDayNumber, JulianDate.J2000.julianDayNumber) + tt.fractionFromNoon) / 36_525
+		let t = (differenceAsDouble(tt.julianDayNumber, JulianDate.J2000.julianDayNumber) + tt.fractionFromNoon) / daysPerJulianCentury
 		let arcseconds = 0.014_506 + (4_612.156_534 + (1.391_581_7 + (-0.000_000_44 + (-0.000_029_956 + -0.000_000_036_8 * t) * t) * t) * t) * t
 		return (earthRotationAngle(ut1: ut1) + Angle(arcseconds: arcseconds)).normalized()
 	}

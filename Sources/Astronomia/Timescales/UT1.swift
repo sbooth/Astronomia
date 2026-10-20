@@ -140,7 +140,7 @@ extension UT1 {
 				guard isLatest, let trendYears else { return }
 				// A limit too far to represent leaves the trend unlimited.
 				let end = source.coverage.upperBound
-				let limit = (try? end.adding(days: trendYears * JulianDate.daysPerJulianYear)) ?? .max
+				let limit = (try? end.adding(days: trendYears * daysPerJulianYear)) ?? .max
 				// A valid table gives a finite ΔT throughout, so the trend can always be made.
 				if let trend = try? LinearDeltaTExtrapolation(after: source, through: limit) {
 					sources.append(trend)

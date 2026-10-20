@@ -140,7 +140,7 @@ public struct LinearDeltaTExtrapolation: DeltaTSource {
 		// The average rate from `years` inside the end, or from the far end if nearer. Capping
 		// the span at the source's length keeps a long span from overflowing.
 		let inward = julianYears(from: covered.lowerBound, to: covered.upperBound).map { Swift.min(years, $0) } ?? years
-		let offset = (try? extended.date.adding(days: (atStart ? inward : -inward) * JulianDate.daysPerJulianYear))
+		let offset = (try? extended.date.adding(days: (atStart ? inward : -inward) * daysPerJulianYear))
 			?? (atStart ? covered.upperBound : covered.lowerBound)
 		let inside = offset.clamped(to: covered)
 
@@ -258,5 +258,5 @@ private func boundary(of source: some DeltaTSource, atStart: Bool) throws(Timesc
 /// be represented.
 private func julianYears(from start: JulianDate, to end: JulianDate) -> Double? {
 	guard let interval = try? start.interval(to: end) else { return nil }
-	return interval.inDays / JulianDate.daysPerJulianYear
+	return interval.inDays / daysPerJulianYear
 }

@@ -11,5 +11,5 @@ charset = utf-8
 trim_trailing_whitespace = true
 
 # tab indentation
-[*.swift]
+[*.{swift,h,c,py}]
 indent_style = tab

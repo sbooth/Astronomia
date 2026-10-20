@@ -50,10 +50,6 @@ extension JulianDate {
 	/// JD of MJD zero.
 	static let MJD0_JD: Double = 2_400_000.5
 
-	/// Days per Julian year.
-	static let daysPerJulianYear: Double = 365.25
-	/// Days per Julian century.
-	static let daysPerJulianCentury: Double = 36_525
 	/// Days per tropical year, used for Besselian epochs.
 	static let daysPerTropicalYear: Double = 365.242198781
 }
@@ -182,7 +178,7 @@ extension JulianDate {
 		// J2000.0 + (epoch - 2000) × 365.25
 		try self.init { acc throws(DayAccumulator.Failure) in
 			try acc.add(noonBased: Self.J2000)
-			try acc.add(product: epoch, Self.daysPerJulianYear)
+			try acc.add(product: epoch, daysPerJulianYear)
 			try acc.add(-730_500) // 2000 × 365.25
 		}
 	}
@@ -298,14 +294,14 @@ extension JulianDate {
 	///
 	/// This is the time argument *T* used by many IAU models.
 	public var julianCenturiesSinceJ2000: Double {
-		daysSinceJ2000 / Self.daysPerJulianCentury
+		daysSinceJ2000 / daysPerJulianCentury
 	}
 
 	/// The Julian epoch, e.g. 2000.0 for J2000.0.
 	///
 	/// A Julian epoch counts Julian years of 365.25 days from J2000.0.
 	public var julianEpoch: Double {
-		2000.0 + daysSinceJ2000 / Self.daysPerJulianYear
+		2000.0 + daysSinceJ2000 / daysPerJulianYear
 	}
 
 	/// The Besselian epoch, e.g. 1900.0 for B1900.0.
