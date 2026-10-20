@@ -52,7 +52,7 @@ enum TestEquatorOfDate: EquatorialFrame, DatedReferenceFrame {
 	@Test func mismatchedEpochsThrow() throws {
 		let a = Self.au(1, 2, 3)
 		let b = Self.au(0.5, -1, 2, epoch: Self.later)
-		let mismatch = CoordinateError.epochMismatch(expected: Self.epoch, actual: Self.later)
+		let mismatch = CoordinateError.epochMismatch
 		#expect(throws: mismatch) { try a.adding(b) }
 		#expect(throws: mismatch) { try a.subtracting(b) }
 		#expect(throws: mismatch) { try a.angularSeparation(from: b) }

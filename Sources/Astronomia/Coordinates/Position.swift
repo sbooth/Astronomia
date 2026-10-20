@@ -186,9 +186,9 @@ extension Position where Frame: DatedReferenceFrame {
 	/// - Parameter other: Another position in the same frame, at the same epoch.
 	/// - Returns: The angle, in the closed interval [0, π], or zero if either position is the
 	///   origin.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the epochs differ.
+	/// - Throws: ``CoordinateError/epochMismatch`` if the epochs differ.
 	public func angularSeparation(from other: Position) throws(CoordinateError) -> Angle {
-		try checkEpoch(expected: epoch, actual: other.epoch)
+		try checkSameEpoch(epoch, other.epoch)
 		return separation(from: other)
 	}
 
@@ -197,9 +197,9 @@ extension Position where Frame: DatedReferenceFrame {
 	///
 	/// - Parameter other: The position to add, at the same epoch.
 	/// - Returns: The sum, at the same epoch.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the epochs differ.
+	/// - Throws: ``CoordinateError/epochMismatch`` if the epochs differ.
 	public func adding(_ other: Position) throws(CoordinateError) -> Position {
-		try checkEpoch(expected: epoch, actual: other.epoch)
+		try checkSameEpoch(epoch, other.epoch)
 		return Position(vector + other.vector, frameEpoch: frameEpoch)
 	}
 
@@ -207,9 +207,9 @@ extension Position where Frame: DatedReferenceFrame {
 	///
 	/// - Parameter other: The position to subtract, at the same epoch.
 	/// - Returns: The difference, at the same epoch.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the epochs differ.
+	/// - Throws: ``CoordinateError/epochMismatch`` if the epochs differ.
 	public func subtracting(_ other: Position) throws(CoordinateError) -> Position {
-		try checkEpoch(expected: epoch, actual: other.epoch)
+		try checkSameEpoch(epoch, other.epoch)
 		return Position(vector - other.vector, frameEpoch: frameEpoch)
 	}
 }

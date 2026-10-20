@@ -169,9 +169,9 @@ extension Velocity where Frame: DatedReferenceFrame {
 	///
 	/// - Parameter other: The velocity to add, at the same epoch.
 	/// - Returns: The sum, at the same epoch.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the epochs differ.
+	/// - Throws: ``CoordinateError/epochMismatch`` if the epochs differ.
 	public func adding(_ other: Velocity) throws(CoordinateError) -> Velocity {
-		try checkEpoch(expected: epoch, actual: other.epoch)
+		try checkSameEpoch(epoch, other.epoch)
 		return Velocity(vector + other.vector, frameEpoch: frameEpoch)
 	}
 
@@ -179,9 +179,9 @@ extension Velocity where Frame: DatedReferenceFrame {
 	///
 	/// - Parameter other: The velocity to subtract, at the same epoch.
 	/// - Returns: The difference, at the same epoch.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the epochs differ.
+	/// - Throws: ``CoordinateError/epochMismatch`` if the epochs differ.
 	public func subtracting(_ other: Velocity) throws(CoordinateError) -> Velocity {
-		try checkEpoch(expected: epoch, actual: other.epoch)
+		try checkSameEpoch(epoch, other.epoch)
 		return Velocity(vector - other.vector, frameEpoch: frameEpoch)
 	}
 }
@@ -198,10 +198,9 @@ extension Rotation where From: DatedReferenceFrame {
 	///
 	/// - Parameter velocity: A velocity at the rotation's `From` epoch.
 	/// - Returns: The same velocity in the `To` frame.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the velocity is at
-	///   another epoch.
+	/// - Throws: ``CoordinateError/epochMismatch`` if the velocity is at another epoch.
 	public func apply(to velocity: Velocity<From>) throws(CoordinateError) -> Velocity<To> {
-		try checkEpoch(expected: fromEpoch, actual: velocity.epoch)
+		try checkSameEpoch(fromEpoch, velocity.epoch)
 		return Velocity<To>(apply(to: velocity.vector), frameEpoch: toFrameEpoch)
 	}
 }

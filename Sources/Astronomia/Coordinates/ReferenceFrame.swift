@@ -67,8 +67,8 @@ extension FixedReferenceFrame {
 /// Positions, velocities, state vectors, and spherical positions in a frame of date carry
 /// the frame's epoch, and are created with it. Values at different epochs are in different
 /// frames, so the operations that combine them, or rotate one with a rotation for an epoch,
-/// throw ``CoordinateError/epochMismatch(expected:actual:)`` when the epochs differ. The
-/// epoch is in TT, the time argument of precession and nutation.
+/// throw ``CoordinateError/epochMismatch`` when the epochs differ. The epoch is in TT, the
+/// time argument of precession and nutation.
 ///
 /// A frame of date turns slowly, so a velocity in it is the rotated inertial velocity; the
 /// rate of the frame's own rotation, below one part in 10⁹, is left out.

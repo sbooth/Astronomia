@@ -200,10 +200,9 @@ extension Rotation where From: DatedReferenceFrame {
 	/// - Parameter other: The rotation applied first, to the `From` frame at this rotation's
 	///   `From` epoch.
 	/// - Returns: The composed rotation.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if `other` gives values
-	///   at another epoch.
+	/// - Throws: ``CoordinateError/epochMismatch`` if `other` gives values at another epoch.
 	public func composed<Start: ReferenceFrame>(after other: Rotation<Start, From>) throws(CoordinateError) -> Rotation<Start, To> {
-		try checkEpoch(expected: fromEpoch, actual: other.toEpoch)
+		try checkSameEpoch(fromEpoch, other.toEpoch)
 		return uncheckedComposed(after: other)
 	}
 
@@ -211,10 +210,9 @@ extension Rotation where From: DatedReferenceFrame {
 	///
 	/// - Parameter position: A position at the rotation's `From` epoch.
 	/// - Returns: The same position in the `To` frame.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the position is at
-	///   another epoch.
+	/// - Throws: ``CoordinateError/epochMismatch`` if the position is at another epoch.
 	public func apply(to position: Position<From>) throws(CoordinateError) -> Position<To> {
-		try checkEpoch(expected: fromEpoch, actual: position.epoch)
+		try checkSameEpoch(fromEpoch, position.epoch)
 		return Position<To>(apply(to: position.vector), frameEpoch: toFrameEpoch)
 	}
 }

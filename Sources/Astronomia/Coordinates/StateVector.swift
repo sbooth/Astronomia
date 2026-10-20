@@ -116,9 +116,9 @@ extension StateVector where Frame: DatedReferenceFrame {
 	/// - Parameters:
 	///   - position: The position.
 	///   - velocity: The velocity, at the position's epoch.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the epochs differ.
+	/// - Throws: ``CoordinateError/epochMismatch`` if the epochs differ.
 	public init(position: Position<Frame>, velocity: Velocity<Frame>) throws(CoordinateError) {
-		try checkEpoch(expected: position.epoch, actual: velocity.epoch)
+		try checkSameEpoch(position.epoch, velocity.epoch)
 		self.init(uncheckedPosition: position, velocity: velocity)
 	}
 
@@ -133,7 +133,7 @@ extension StateVector where Frame: DatedReferenceFrame {
 	///
 	/// - Parameter other: The state to add, at the same epoch.
 	/// - Returns: The sum, at the same epoch.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the epochs differ.
+	/// - Throws: ``CoordinateError/epochMismatch`` if the epochs differ.
 	public func adding(_ other: StateVector) throws(CoordinateError) -> StateVector {
 		try StateVector(uncheckedPosition: position.adding(other.position), velocity: velocity.adding(other.velocity))
 	}
@@ -142,7 +142,7 @@ extension StateVector where Frame: DatedReferenceFrame {
 	///
 	/// - Parameter other: The state to subtract, at the same epoch.
 	/// - Returns: The difference, at the same epoch.
-	/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the epochs differ.
+	/// - Throws: ``CoordinateError/epochMismatch`` if the epochs differ.
 	public func subtracting(_ other: StateVector) throws(CoordinateError) -> StateVector {
 		try StateVector(uncheckedPosition: position.subtracting(other.position), velocity: velocity.subtracting(other.velocity))
 	}

@@ -9,19 +9,15 @@
 public enum CoordinateError: Error, Hashable, Sendable {
 	/// Values in a frame of date at different epochs were combined, or a value was rotated by a
 	/// rotation for another epoch of its frame.
-	///
-	/// - Parameters:
-	///   - expected: The epoch the operation required.
-	///   - actual: The epoch of the value it was given.
-	case epochMismatch(expected: Instant<TT>, actual: Instant<TT>)
+	case epochMismatch
 }
 
-/// Throws unless a value's epoch of a frame of date is the one an operation requires.
+/// Throws unless two epochs of a frame of date are the same.
 ///
 /// - Parameters:
-///   - expected: The epoch the operation requires.
-///   - actual: The epoch of the value.
-/// - Throws: ``CoordinateError/epochMismatch(expected:actual:)`` if the epochs differ.
-@inline(__always) func checkEpoch(expected: Instant<TT>, actual: Instant<TT>) throws(CoordinateError) {
-	guard expected == actual else { throw .epochMismatch(expected: expected, actual: actual) }
+///   - lhs: One epoch.
+///   - rhs: The other.
+/// - Throws: ``CoordinateError/epochMismatch`` if the epochs differ.
+@inline(__always) func checkSameEpoch(_ lhs: Instant<TT>, _ rhs: Instant<TT>) throws(CoordinateError) {
+	guard lhs == rhs else { throw .epochMismatch }
 }
