@@ -44,4 +44,7 @@ extension VSOP2013 {
 			return StateVector(state.position - originState.position, state.velocity - originState.velocity)
 		}
 	}
+
+	/// The solution.
+	public static let solution = VSOP2013.Solution()
 }
