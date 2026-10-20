@@ -63,7 +63,7 @@ import Testing
 			let date = try JulianDate(julianDate: value.julianDate)
 			let check = Self.vector(value.position) * (1 / Distance.kilometersPerAstronomicalUnit)
 			for (fit, limit) in [(ELPFit.laserRanging, 55.0), (.de405, 13)] {
-				let state = try #require(fit.state(at: date))
+				let state = try #require(fit.icrsState(at: date))
 				#expect(Self.milliarcseconds(state.position, check) <= limit, "\(fit) \(value.julianDate)")
 			}
 		}
@@ -74,7 +74,7 @@ import Testing
 		for fit in [ELPFit.laserRanging, .de405] {
 			let series = fit.seriesState(at: date.daysSinceJ2000)
 			let ecliptic = try #require(fit.eclipticState(at: date))
-			let icrs = try #require(fit.state(at: date))
+			let icrs = try #require(fit.icrsState(at: date))
 			// The ecliptic state is the series in astronomical units.
 			let au = Distance.kilometersPerAstronomicalUnit
 			#expect((ecliptic.position * au - series.position).length <= 1e-9)
@@ -141,10 +141,10 @@ import Testing
 	@Test func coverage() throws {
 		let start = builtInEphemerisCoverage.lowerBound
 		let end = builtInEphemerisCoverage.upperBound
-		#expect(ELPFit.laserRanging.state(at: start) != nil)
-		#expect(ELPFit.de405.state(at: end) != nil)
-		#expect(try ELPFit.laserRanging.state(at: start.adding(seconds: -1)) == nil)
-		#expect(try ELPFit.de405.state(at: end.adding(seconds: 1)) == nil)
+		#expect(ELPFit.laserRanging.icrsState(at: start) != nil)
+		#expect(ELPFit.de405.icrsState(at: end) != nil)
+		#expect(try ELPFit.laserRanging.icrsState(at: start.adding(seconds: -1)) == nil)
+		#expect(try ELPFit.de405.icrsState(at: end.adding(seconds: 1)) == nil)
 		#expect(start.daysSinceJ2000 == -365_250 && end.daysSinceJ2000 == 365_250)
 	}
 
