@@ -92,7 +92,7 @@ import Testing
 		// With zero eccentricity and inclination the orbit is a circle in the plane.
 		let gm = 2.959_122_083_684_143_826_9e-4
 		for longitude in [0.0, 1, 2.5, 4, 6] {
-			let state = EllipticElements(a: 2, meanLongitude: longitude, k: 0, h: 0, q: 0, p: 0).state(gm: gm)
+			let state = VSOP2013.EllipticElements(a: 2, meanLongitude: longitude, k: 0, h: 0, q: 0, p: 0).state(gm: gm)
 			#expect(Self.difference(state.position, [2 * Math.cos(longitude), 2 * Math.sin(longitude), 0]) <= 1e-15)
 			let speed = (gm / 2).squareRoot()
 			#expect(Self.difference(state.velocity, [-speed * Math.sin(longitude), speed * Math.cos(longitude), 0]) <= 1e-17)
