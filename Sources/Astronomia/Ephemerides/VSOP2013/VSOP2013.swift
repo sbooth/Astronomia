@@ -65,9 +65,6 @@ public enum VSOP2013 {
 			* Rotation<Ecliptic, Ecliptic>.aboutX(.arcseconds(-84_381.411_36))
 	}
 
-	/// Julian days per thousand Julian years, the unit of time of the series.
-	static let daysPerMillennium: Double = 365_250
-
 	/// The gravitational parameter of the Sun, in au³/day², from INPOP10a as given in
 	/// VSOP2013.f.
 	static let sunGravitationalParameter = 2.959_122_083_684_143_826_9e-4
@@ -166,10 +163,10 @@ extension VSOP2013 {
 		case .sun:
 			return (.zero, .zero)
 		case .solarSystemBarycenter:
-			return barycenter(at: tdb.daysSinceJ2000 / daysPerMillennium)
+			return barycenter(at: tdb.daysSinceJ2000 / daysPerJulianMillennium)
 		default:
 			guard let series = body.series else { preconditionFailure("\(body) has no series") }
-			return elements(of: series, at: tdb.daysSinceJ2000 / daysPerMillennium).state(gm: series.gravitationalParameter)
+			return elements(of: series, at: tdb.daysSinceJ2000 / daysPerJulianMillennium).state(gm: series.gravitationalParameter)
 		}
 	}
 
