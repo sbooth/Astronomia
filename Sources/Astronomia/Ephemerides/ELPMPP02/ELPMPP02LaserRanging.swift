@@ -47,11 +47,11 @@ extension ELPMPP02 {
 		public init() {}
 
 		public var coverage: ClosedRange<Instant<TDB>> {
-			fitCoverage
+			builtInEphemerisInstants
 		}
 
 		public func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<Ecliptic> {
-			try fitState(of: body, relativeTo: origin, at: tdb)
+			try Self.fitState(of: body, relativeTo: origin, at: tdb)
 		}
 	}
 }

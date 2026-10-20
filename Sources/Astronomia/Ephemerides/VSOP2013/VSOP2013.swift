@@ -74,8 +74,10 @@ public enum VSOP2013 {
 }
 
 /// The TDB dates of the built-in series of VSOP2013 and ELP/MPP02, J1000.0 to J3000.0.
-let builtInEphemerisCoverage = JulianDate(uncheckedJulianDayNumber: 2_086_295, fractionFromNoon: 0)
-	... JulianDate(uncheckedJulianDayNumber: 2_816_795, fractionFromNoon: 0)
+let builtInEphemerisCoverage = JulianDate(uncheckedJulianDayNumber: 2_086_295, fractionFromNoon: 0) ... JulianDate(uncheckedJulianDayNumber: 2_816_795, fractionFromNoon: 0)
+
+/// The TDB instants of the built-in series, J1000.0 to J3000.0.
+let builtInEphemerisInstants = Instant<TDB>(builtInEphemerisCoverage.lowerBound) ... Instant(builtInEphemerisCoverage.upperBound)
 
 extension VSOP2013 {
 	/// The series and constants of a body with series in the solution.

@@ -76,61 +76,38 @@ extension ELPMPP02 {
 }
 
 extension ELPMPP02.Fit {
-	/// The TDB instants of the built-in series, J1000.0 to J3000.0.
-	var fitCoverage: ClosedRange<Instant<TDB>> {
-		Instant(builtInEphemerisCoverage.lowerBound) ... Instant(builtInEphemerisCoverage.upperBound)
-	}
-
 	/// Returns the state of the Earth or the Moon relative to the other, in the fit's ecliptic.
-	func fitState(of body: ELPMPP02.Body, relativeTo origin: ELPMPP02.Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<Ecliptic> {
-		guard fitCoverage.contains(tdb) else { throw .outsideCoverage }
+	static func fitState(of body: ELPMPP02.Body, relativeTo origin: ELPMPP02.Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<Ecliptic> {
+		guard builtInEphemerisInstants.contains(tdb) else { throw .outsideCoverage }
 		if body == origin {
 			return .zero
 		}
-		guard let moon = ELPMPP02.eclipticState(at: tdb.julianDate, series: Self.series) else {
+		guard let moon = eclipticState(at: tdb.julianDate) else {
 			preconditionFailure("\(tdb.julianDate) is outside the coverage of ELP/MPP02")
 		}
 		let state = StateVector<Ecliptic>(moon.position, moon.velocity)
 		return body == .moon ? state : -state
 	}
-}
 
-extension ELPMPP02 {
-	/// Returns the Moon's geocentric position and velocity from the series, in the frame and
-	/// units of `ELPMPP02.for`.
+	/// Returns the Moon's geocentric position and velocity in the fit's ecliptic.
 	///
-	/// - Parameters:
-	///   - days: TDB in days from J2000.0.
-	///   - series: The series of a fit.
-	/// - Returns: The position, in kilometers, and velocity, in kilometers per day, in the fit's
-	///   inertial mean ecliptic and equinox of J2000.0.
-	static func seriesState(at days: Double, series: Series) -> (position: Vector3, velocity: Vector3) {
-		series.state(at: days / daysPerCentury)
-	}
-
-	/// Returns the Moon's geocentric position and velocity in a fit's ecliptic.
-	///
-	/// - Parameters:
-	///   - tdb: A Julian Date in TDB.
-	///   - series: The series of a fit.
+	/// - Parameter tdb: A Julian Date in TDB.
 	/// - Returns: The position, in astronomical units, and velocity, in astronomical units per
 	///   day, or `nil` if `tdb` is outside the coverage.
-	static func eclipticState(at tdb: JulianDate, series: Series) -> (position: Vector3, velocity: Vector3)? {
+	static func eclipticState(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
 		guard builtInEphemerisCoverage.contains(tdb) else { return nil }
-		let state = seriesState(at: tdb.daysSinceJ2000, series: series)
+		let state = series.state(at: tdb.daysSinceJ2000 / ELPMPP02.daysPerCentury)
 		let scale = 1 / Distance.kilometersPerAstronomicalUnit
 		return (state.position * scale, state.velocity * scale)
 	}
-}
 
-extension ELPMPP02.Fit {
 	/// Returns the Moon's geocentric position and velocity in the ICRS.
 	///
 	/// - Parameter tdb: A Julian Date in TDB.
 	/// - Returns: The position, in astronomical units, and velocity, in astronomical units per
 	///   day, or `nil` if `tdb` is outside the coverage.
 	func icrsState(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
-		guard let ecliptic = ELPMPP02.eclipticState(at: tdb, series: Self.series) else { return nil }
+		guard let ecliptic = Self.eclipticState(at: tdb) else { return nil }
 		let rotation = Ecliptic.rotation(to: ICRS.self)
 		return (rotation.apply(to: ecliptic.position), rotation.apply(to: ecliptic.velocity))
 	}
