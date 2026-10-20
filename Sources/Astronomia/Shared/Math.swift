@@ -20,10 +20,8 @@ enum Math {
 
 	/// Returns the sine and cosine of `x`, in radians.
 	@inline(__always) static func sincos(_ x: Double) -> (sin: Double, cos: Double) {
-		var s: Double = 0
-		var c: Double = 0
-		astronomia_sincos(x, &s, &c)
-		return (s, c)
+		let result = astronomia_sincos(x)
+		return (result.sin, result.cos)
 	}
 
 	/// Returns the arcsine of `x`, in radians in [-π/2, π/2], or NaN if `x` is outside [-1, 1].

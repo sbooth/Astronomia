@@ -36,21 +36,29 @@ static inline double astronomia_tan(double x)
 	return tan(x);
 }
 
-/// Computes the sine and cosine of `x`, in radians.
+/// The sine and cosine of an angle.
+struct astronomia_sincos_result {
+	double sin;
+	double cos;
+};
+
+/// Returns the sine and cosine of `x`, in radians.
 ///
 /// Where the platform provides `sincos` (glibc, musl, Bionic) or `__sincos` (Darwin), the two
 /// share one argument reduction, which is faster than calling `sin` and `cos`; elsewhere it
 /// calls both.
-static inline void astronomia_sincos(double x, double *sinx, double *cosx)
+static inline struct astronomia_sincos_result astronomia_sincos(double x)
 {
+	struct astronomia_sincos_result result;
 #if defined(__APPLE__)
-	__sincos(x, sinx, cosx);
+	__sincos(x, &result.sin, &result.cos);
 #elif defined(__GLIBC__) || defined(__ANDROID__) || defined(__linux__)
-	sincos(x, sinx, cosx);
+	sincos(x, &result.sin, &result.cos);
 #else
-	*sinx = sin(x);
-	*cosx = cos(x);
+	result.sin = sin(x);
+	result.cos = cos(x);
 #endif
+	return result;
 }
 
 /// Returns the arcsine of `x`, in radians in [-π/2, π/2], or NaN if `x` is outside [-1, 1].
