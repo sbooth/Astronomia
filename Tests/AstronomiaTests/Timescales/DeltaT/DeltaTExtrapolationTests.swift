@@ -121,7 +121,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let end = try Self.year(2002)
 		let function = DeltaTFunction(coverage: .min ... end) { tt in
 			// 2 s per Julian year
-			(try? JulianDate.J2000.interval(to: tt)).map { 64 + 2 * $0.inDays / JulianDate.daysPerJulianYear }
+			(try? JulianDate.J2000.interval(to: tt)).map { 64 + 2 * $0.inDays / daysPerJulianYear }
 		}
 		let trend = try LinearDeltaTExtrapolation(after: function, through: Self.year(2003))
 		#expect(abs(trend.rate - 2) <= 1e-9)

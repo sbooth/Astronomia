@@ -25,7 +25,7 @@ enum ELPFit: CaseIterable {
 	///
 	/// - Parameter days: TDB in days from J2000.0.
 	func seriesState(at days: Double) -> (position: Vector3, velocity: Vector3) {
-		series.state(at: days / ELPMPP02.daysPerCentury)
+		series.state(at: days / daysPerJulianCentury)
 	}
 
 	/// Returns the Moon's geocentric state in the fit's ecliptic.

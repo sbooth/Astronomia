@@ -59,15 +59,15 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		let modern = DeltaTTable.modern
 		let end = modern.coverage.upperBound
 		let endDeltaT = try #require(modern.deltaT(at: end))
-		let yearBefore = try end.adding(days: -JulianDate.daysPerJulianYear)
+		let yearBefore = try end.adding(days: -daysPerJulianYear)
 		let rate = try endDeltaT - #require(modern.deltaT(at: yearBefore))
 
 		// A year after the table, ΔT continues the rate over its last year.
-		let later = try end.adding(days: JulianDate.daysPerJulianYear)
+		let later = try end.adding(days: daysPerJulianYear)
 		#expect(try abs(UT1.deltaT(at: later, context: UT1.defaultContext) - (endDeltaT + rate)) <= 1e-9)
 
 		// Past the trend, ΔT is the model's.
-		let pastTrend = try end.adding(days: (UT1.Context.defaultTrendYears + 0.1) * JulianDate.daysPerJulianYear)
+		let pastTrend = try end.adding(days: (UT1.Context.defaultTrendYears + 0.1) * daysPerJulianYear)
 		let model = DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: pastTrend.decimalYear)
 		#expect(try UT1.deltaT(at: pastTrend, context: UT1.defaultContext) == model)
 
@@ -80,7 +80,7 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 	@Test func trendYears() throws {
 		// The default trend, a chosen trend, and none
 		let end = DeltaTTable.modern.coverage.upperBound
-		let afterTrend = try end.adding(days: 1.5 * JulianDate.daysPerJulianYear)
+		let afterTrend = try end.adding(days: 1.5 * daysPerJulianYear)
 		let short = try UT1.Context(trendYears: 1)
 		let model = DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: afterTrend.decimalYear)
 		#expect(try UT1.deltaT(at: afterTrend, context: short) == model)
@@ -101,7 +101,7 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		let mid2017 = try midnight(2017, 6, 1)
 		#expect(try UT1.deltaT(at: mid2017, context: context) == DeltaTTable.modern.deltaT(at: mid2017))
 
-		let later = try DeltaTTable.modern.coverage.upperBound.adding(days: JulianDate.daysPerJulianYear)
+		let later = try DeltaTTable.modern.coverage.upperBound.adding(days: daysPerJulianYear)
 		#expect(try UT1.deltaT(at: later, context: context) == UT1.deltaT(at: later, context: UT1.defaultContext))
 
 		// Without the ΔT table, the Earth orientation data is continued instead.

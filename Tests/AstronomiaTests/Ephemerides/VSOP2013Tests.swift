@@ -23,7 +23,7 @@ import Testing
 	@Test func elementsMatchTheData() throws {
 		// The built-in series, summed as an independent implementation sums them
 		for value in vsop2013CheckValues {
-			let t = Double(value.julianDayNumber - 2_451_545) / VSOP2013.daysPerMillennium
+			let t = Double(value.julianDayNumber - 2_451_545) / daysPerJulianMillennium
 			let elements = try VSOP2013.elements(of: #require(value.body.series), at: t)
 			let actual = [elements.a, elements.meanLongitude, elements.k, elements.h, elements.q, elements.p]
 			for (a, b) in zip(actual, value.elements) {
