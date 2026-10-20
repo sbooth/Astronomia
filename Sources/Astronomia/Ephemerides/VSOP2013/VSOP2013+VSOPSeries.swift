@@ -7,30 +7,34 @@
 
 internal import AstronomiaData
 
-/// Series of the VSOP planetary theories, terms T^α (S sin(φ + ν T) + C cos(φ + ν T)) grouped
-/// by variable and power of time, from the built-in data.
-///
-/// The arguments are linear in time. Theories whose arguments are polynomials in time, such
-/// as the lunar theory ELP/MPP02, need their own form.
-///
-/// The series of each variable are summed term by term in the order of the data, which is the
-/// order of the source files, as the reference implementations sum them.
-struct VSOPSeries: @unchecked Sendable {
-	// The data is immutable, so the pointers into it can be shared.
-	/// The series, each a variable, power of time, and number of terms.
-	let series: UnsafeBufferPointer<astronomia_vsop_series>
-	/// The terms, in the order of the series.
-	let terms: UnsafeBufferPointer<astronomia_vsop_term>
-	/// The largest power of time.
-	let maximumPower: Int
+extension VSOP2013 {
+	/// Series of the VSOP planetary theories, terms T^α (S sin(φ + ν T) + C cos(φ + ν T)) grouped
+	/// by variable and power of time, from the built-in data.
+	///
+	/// The arguments are linear in time. Theories whose arguments are polynomials in time, such
+	/// as the lunar theory ELP/MPP02, need their own form.
+	///
+	/// The series of each variable are summed term by term in the order of the data, which is the
+	/// order of the source files, as the reference implementations sum them.
+	struct VSOPSeries: @unchecked Sendable {
+		// The data is immutable, so the pointers into it can be shared.
+		/// The series, each a variable, power of time, and number of terms.
+		let series: UnsafeBufferPointer<astronomia_vsop_series>
+		/// The terms, in the order of the series.
+		let terms: UnsafeBufferPointer<astronomia_vsop_term>
+		/// The largest power of time.
+		let maximumPower: Int
 
-	/// Creates series from generated data.
-	init(_ data: astronomia_vsop_series_set) {
-		series = UnsafeBufferPointer(start: data.series, count: data.series_count)
-		terms = UnsafeBufferPointer(start: data.terms, count: data.term_count)
-		maximumPower = series.reduce(0) { max($0, Int($1.power)) }
+		/// Creates series from generated data.
+		init(_ data: astronomia_vsop_series_set) {
+			series = UnsafeBufferPointer(start: data.series, count: data.series_count)
+			terms = UnsafeBufferPointer(start: data.terms, count: data.term_count)
+			maximumPower = series.reduce(0) { max($0, Int($1.power)) }
+		}
 	}
+}
 
+extension VSOP2013.VSOPSeries {
 	/// The number of terms.
 	var termCount: Int {
 		terms.count
