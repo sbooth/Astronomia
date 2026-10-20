@@ -5,28 +5,30 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// The elliptic elements of the VSOP planetary theories.
-///
-/// The elements avoid the singularities of the classical elements at zero eccentricity and
-/// inclination. With e the eccentricity, ϖ the longitude of perihelion, i the inclination, and
-/// Ω the longitude of the ascending node: k = e cos ϖ, h = e sin ϖ, q = sin(i/2) cos Ω, and
-/// p = sin(i/2) sin Ω.
-struct EllipticElements: Hashable, Sendable {
-	/// The semimajor axis, in astronomical units.
-	let a: Double
-	/// The mean longitude, in radians.
-	let meanLongitude: Double
-	/// e cos ϖ.
-	let k: Double
-	/// e sin ϖ.
-	let h: Double
-	/// sin(i/2) cos Ω.
-	let q: Double
-	/// sin(i/2) sin Ω.
-	let p: Double
+extension VSOP2013 {
+	/// The elliptic elements of the VSOP planetary theories.
+	///
+	/// The elements avoid the singularities of the classical elements at zero eccentricity and
+	/// inclination. With e the eccentricity, ϖ the longitude of perihelion, i the inclination, and
+	/// Ω the longitude of the ascending node: k = e cos ϖ, h = e sin ϖ, q = sin(i/2) cos Ω, and
+	/// p = sin(i/2) sin Ω.
+	struct EllipticElements: Hashable, Sendable {
+		/// The semimajor axis, in astronomical units.
+		let a: Double
+		/// The mean longitude, in radians.
+		let meanLongitude: Double
+		/// e cos ϖ.
+		let k: Double
+		/// e sin ϖ.
+		let h: Double
+		/// sin(i/2) cos Ω.
+		let q: Double
+		/// sin(i/2) sin Ω.
+		let p: Double
+	}
 }
 
-extension EllipticElements {
+extension VSOP2013.EllipticElements {
 	/// Returns the position and velocity of the elliptic orbit at these elements, in the frame
 	/// of the elements.
 	///
