@@ -8,10 +8,6 @@
 internal import CAstronomiaMath
 
 /// Elementary functions from the platform's C math library.
-///
-/// This is the only file that imports the platform module, so the rest of the library calls
-/// these and needs no conditional imports. A qualified call such as `Math.sin(x)` is also
-/// unambiguous in a type with a member of the same name, such as ``Angle/sin``.
 enum Math {
 	/// Returns the sine of `x`, in radians.
 	@inline(__always) static func sin(_ x: Double) -> Double { astronomia_sin(x) }
