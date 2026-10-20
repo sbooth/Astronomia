@@ -27,9 +27,7 @@ extension VSOP2013 {
 		/// Creates the solution.
 		public init() {}
 
-		public var coverage: ClosedRange<Instant<TDB>> {
-			Instant(builtInEphemerisCoverage.lowerBound) ... Instant(builtInEphemerisCoverage.upperBound)
-		}
+		public var coverage: ClosedRange<Instant<TDB>> { builtInEphemerisInstants }
 
 		public func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<Ecliptic> {
 			guard coverage.contains(tdb) else { throw .outsideCoverage }

@@ -93,9 +93,7 @@ public struct SolarSystemEphemeris: GeocentricEphemeris, Hashable {
 		self.lunarFit = lunarFit
 	}
 
-	public var coverage: ClosedRange<Instant<TDB>> {
-		Instant(builtInEphemerisCoverage.lowerBound) ... Instant(builtInEphemerisCoverage.upperBound)
-	}
+	public var coverage: ClosedRange<Instant<TDB>> { builtInEphemerisInstants }
 
 	public func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<ICRS> {
 		guard coverage.contains(tdb) else { throw .outsideCoverage }

@@ -46,9 +46,7 @@ extension ELPMPP02 {
 		/// Creates the solution. ``ELPMPP02/laserRanging`` is an instance.
 		public init() {}
 
-		public var coverage: ClosedRange<Instant<TDB>> {
-			builtInEphemerisInstants
-		}
+		public var coverage: ClosedRange<Instant<TDB>> { builtInEphemerisInstants }
 
 		public func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<Ecliptic> {
 			try Self.fitState(of: body, relativeTo: origin, at: tdb)
