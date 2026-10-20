@@ -50,8 +50,8 @@ public enum VSOP2013 {
 
 	/// The dynamical ecliptic and equinox of J2000.0 as realized by VSOP2013.
 	///
-	/// The frame is the ICRS rotated by R1(ε) R3(φ), with ε = 23° 26′ 21.41136″ and
-	/// φ = -0.05188″ from the solution's documentation.
+	/// The frame is the ICRS rotated by R1(ε) R3(φ), with ε = 23° 26' 21.41136" and
+	/// φ = -0.05188" from the solution's documentation.
 	///
 	/// - Note: This is not ``EclipticJ2000``, the ecliptic of the IAU 2006 precession, from
 	///   which it differs by a few milliarcseconds.

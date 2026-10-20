@@ -50,7 +50,7 @@ extension FixedReferenceFrame {
 
 /// The International Celestial Reference System.
 ///
-/// The axes are fixed by the positions of extragalactic radio sources, and lie within 0.1″ of
+/// The axes are fixed by the positions of extragalactic radio sources, and lie within 0.1" of
 /// the mean equator and equinox of J2000.0. The ICRS axes are also those of the barycentric
 /// (BCRS) and geocentric (GCRS) celestial reference systems.
 public enum ICRS: EquatorialFrame, FixedReferenceFrame {
@@ -64,7 +64,7 @@ public enum ICRS: EquatorialFrame, FixedReferenceFrame {
 ///
 /// The x axis points to the mean equinox of J2000.0 and the z axis to the north pole of the
 /// mean ecliptic of J2000.0. The frame is the ICRS rotated by the frame bias and the
-/// obliquity of the ecliptic at J2000.0, 84,381.406″.
+/// obliquity of the ecliptic at J2000.0, 84,381.406".
 ///
 /// - Note: The planetary and lunar theories each refer to their own realization of the
 ///   J2000 ecliptic, which differs from this one by milliarcseconds, such as
@@ -72,8 +72,8 @@ public enum ICRS: EquatorialFrame, FixedReferenceFrame {
 public enum EclipticJ2000: EclipticFrame, FixedReferenceFrame {
 	public static let name = "Ecliptic J2000"
 
-	/// The IAU 2006 Fukushima-Williams angles at J2000.0: γ̄ = -0.052928″,
-	/// φ̄ = 84,381.412819″, and ψ̄ = -0.041775″, giving R3(-ψ̄) R1(φ̄) R3(γ̄).
+	/// The IAU 2006 Fukushima-Williams angles at J2000.0: γ̄ = -0.052928",
+	/// φ̄ = 84,381.412819", and ψ̄ = -0.041775", giving R3(-ψ̄) R1(φ̄) R3(γ̄).
 	public static let rotationFromICRS = Rotation<ICRS, EclipticJ2000>.aboutZ(Angle(arcseconds: 0.041_775))
 		* Rotation<ICRS, ICRS>.aboutX(Angle(arcseconds: 84_381.412_819))
 		* Rotation<ICRS, ICRS>.aboutZ(Angle(arcseconds: -0.052_928))

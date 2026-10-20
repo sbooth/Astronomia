@@ -339,7 +339,7 @@ def elpmpp02(args: argparse.Namespace) -> None:
 	lines += ["// Source: ELP/MPP02 (Chapront and Francou 2003), as distributed with ELPMPP02.for"]
 	lines += [f"// SHA-256 {digest}  {name}" for name, digest in digests]
 	lines += [
-		f"// {len(main_terms) + len(perturbation_terms):,} terms, thresholds {args.angle_threshold:g}″ and "
+		f"// {len(main_terms) + len(perturbation_terms):,} terms, thresholds {args.angle_threshold:g}" and "
 		f"{args.distance_threshold:g} km, J{args.start:g} to J{args.end:g}",
 		"",
 		'#include "AstronomiaData.h"',
@@ -352,7 +352,7 @@ def elpmpp02(args: argparse.Namespace) -> None:
 	lines += [
 		"};",
 		"",
-		"// Amplitude, partial derivatives B1 to B5, multipliers of D, F, l, l′",
+		"// Amplitude, partial derivatives B1 to B5, multipliers of D, F, l, l'",
 		"static const struct astronomia_elp_main_term main_terms[] = {",
 	]
 	for multipliers, amplitude, partials in main_terms:
@@ -369,7 +369,7 @@ def elpmpp02(args: argparse.Namespace) -> None:
 	lines += [
 		"};",
 		"",
-		"// S, C, multipliers of D, F, l, l′, Mercury to Neptune, and ζ",
+		"// S, C, multipliers of D, F, l, l', Mercury to Neptune, and ζ",
 		"static const struct astronomia_elp_perturbation_term perturbation_terms[] = {",
 	]
 	for s, c, multipliers in perturbation_terms:

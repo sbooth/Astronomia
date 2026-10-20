@@ -54,10 +54,10 @@ extension ELPMPP02 {
 	/// arcseconds per century to the power of the term.
 	struct Corrections: Sendable {
 		/// W1, W2, and W3, the mean longitudes of the Moon, its perigee, and its node, the mean
-		/// longitude T of the Earth-Moon barycenter, and the longitude ϖ′ of its perihelion, at
+		/// longitude T of the Earth-Moon barycenter, and the longitude ϖ' of its perihelion, at
 		/// J2000.0.
 		let w10, w20, w30, earth0, perihelion0: Double
-		/// The mean motions ν of W1 and n′ of T, and the constants Γ, E, and e′.
+		/// The mean motions ν of W1 and n' of T, and the constants Γ, E, and e'.
 		let w11, gamma, e, earth1, eccentricity: Double
 		/// The mean motions of W2 and W3 and the coefficient of T² in W1.
 		let w21, w31, w12: Double

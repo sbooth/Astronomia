@@ -15,12 +15,12 @@ extension ELPMPP02 {
 	public struct LaserRanging: Ephemeris, Fit {
 		/// The inertial mean ecliptic and equinox of J2000.0 as realized by the fit.
 		///
-		/// The frame is the ICRS rotated by R1(ε) R3(φ), with ε = 23° 26′ 21.41100″ and
-		/// φ = -0.05542″ (Chapront et al. 2002, Table 9).
+		/// The frame is the ICRS rotated by R1(ε) R3(φ), with ε = 23° 26' 21.41100" and
+		/// φ = -0.05542" (Chapront et al. 2002, Table 9).
 		///
 		/// - Note: The angles come from the solution S2001, which precedes ELP/MPP02. Chapront and
 		///   Francou (2003) note that the two fits differ mainly by their origin of longitudes,
-		///   by about 0.036″. This is not ``EclipticJ2000``, the ecliptic of the IAU 2006
+		///   by about 0.036". This is not ``EclipticJ2000``, the ecliptic of the IAU 2006
 		///   precession.
 		public enum Ecliptic: EclipticFrame, FixedReferenceFrame {
 			public static let name = "ELP/MPP02 (LLR) ecliptic J2000"

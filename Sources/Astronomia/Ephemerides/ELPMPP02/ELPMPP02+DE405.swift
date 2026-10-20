@@ -16,8 +16,8 @@ extension ELPMPP02 {
 	public struct DE405: Ephemeris, Fit {
 		/// The inertial mean ecliptic and equinox of J2000.0 as realized by the fit.
 		///
-		/// The frame is the axes of DE405 rotated by R1(ε) R3(φ), with ε = 23° 26′ 21.40960″ and
-		/// φ = -0.05028″ (Chapront et al. 2002, Table 9). The axes of DE405 are within a few
+		/// The frame is the axes of DE405 rotated by R1(ε) R3(φ), with ε = 23° 26' 21.40960" and
+		/// φ = -0.05028" (Chapront et al. 2002, Table 9). The axes of DE405 are within a few
 		/// milliarcseconds of the ICRS, so the frame is taken relative to the ICRS.
 		///
 		/// - Note: This is not ``EclipticJ2000``, the ecliptic of the IAU 2006 precession, from

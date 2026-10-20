@@ -42,7 +42,7 @@ extension ELPMPP02 {
 		let perturbationTerms: UnsafeBufferPointer<astronomia_elp_perturbation_term>
 		/// The Moon's mean longitude W1.
 		let meanLongitude: ELPPolynomial
-		/// The thirteen fundamental arguments: D, F, l, l′, the mean longitudes of Mercury to
+		/// The thirteen fundamental arguments: D, F, l, l', the mean longitudes of Mercury to
 		/// Neptune, and ζ.
 		let arguments: [ELPPolynomial]
 	}
@@ -108,7 +108,7 @@ extension ELPMPP02.Series {
 			ELPPolynomial(c0: c[0], c1: c[1], c2: c[2], c3: c[3], c4: c[4])
 		}
 
-		// The Delaunay arguments D, F, l, l′
+		// The Delaunay arguments D, F, l, l'
 		let d = (0 ..< 5).map { w1[$0] - earth[$0] + ($0 == 0 ? Double.pi : 0) }
 		let f = (0 ..< 5).map { w1[$0] - w3[$0] }
 		let l = (0 ..< 5).map { w1[$0] - w2[$0] }
@@ -135,7 +135,7 @@ extension ELPMPP02.Series {
 			+ planets.map { ELPPolynomial(c0: $0.0, c1: $0.1, c2: 0, c3: 0, c4: 0) }
 			+ [polynomial(zeta)]
 
-		// The corrections to ν, E, Γ, n′, and e′, by which the partial derivatives correct the
+		// The corrections to ν, E, Γ, n', and e', by which the partial derivatives correct the
 		// amplitudes of the main problem
 		let dNu = (0.556_04 + dw11) / rad / w1[1]
 		let dE2 = (0.017_89 + dE) / rad

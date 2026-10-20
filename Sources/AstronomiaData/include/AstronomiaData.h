@@ -80,18 +80,18 @@ struct astronomia_elp_series {
 };
 
 /// A term of the main problem, A sin(Σ iₖ Dₖ) in longitude and latitude and A cos(Σ iₖ Dₖ) in
-/// distance, where D₁ to D₄ are the Delaunay arguments D, F, l, l′.
+/// distance, where D₁ to D₄ are the Delaunay arguments D, F, l, l'.
 struct astronomia_elp_main_term {
 	/// The amplitude A, before the corrections of the fit.
 	double amplitude;
 	/// The partial derivatives B₁ to B₅ of the amplitude, which correct it for the fit.
 	double partials[5];
-	/// The multipliers iₖ of D, F, l, l′.
+	/// The multipliers iₖ of D, F, l, l'.
 	int8_t multipliers[4];
 };
 
 /// A term of the perturbations, T^α (S sin(Σ iₖ Aₖ) + C cos(Σ iₖ Aₖ)), where A₁ to A₁₃ are the
-/// Delaunay arguments D, F, l, l′, the mean longitudes of Mercury to Neptune, and ζ.
+/// Delaunay arguments D, F, l, l', the mean longitudes of Mercury to Neptune, and ζ.
 struct astronomia_elp_perturbation_term {
 	/// The coefficient of the sine, S.
 	double s;

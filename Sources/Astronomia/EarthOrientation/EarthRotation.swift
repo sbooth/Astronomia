@@ -83,8 +83,8 @@ extension EarthRotation {
 	/// Returns Greenwich mean sidereal time from the IAU 2006 model (Capitaine et al. 2003).
 	///
 	/// ```
-	/// GMST = ERA + 0.014506″ + 4612.156534″ t + 1.3915817″ t^2 - 0.00000044″ t^3
-	///            - 0.000029956″ t^4 - 0.0000000368″ t^5
+	/// GMST = ERA + 0.014506" + 4612.156534" t + 1.3915817" t^2 - 0.00000044" t^3
+	///            - 0.000029956" t^4 - 0.0000000368" t^5
 	/// ```
 	///
 	/// where t is TT Julian centuries since J2000.0.
