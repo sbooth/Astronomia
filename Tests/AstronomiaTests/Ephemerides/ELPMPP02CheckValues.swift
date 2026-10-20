@@ -20,6 +20,22 @@ enum ELPFit: CaseIterable {
 		}
 	}
 
+	/// Returns the Moon's geocentric state from the series, in the frame and units of
+	/// `ELPMPP02.for`: kilometers and kilometers per day in the fit's ecliptic.
+	///
+	/// - Parameter days: TDB in days from J2000.0.
+	func seriesState(at days: Double) -> (position: Vector3, velocity: Vector3) {
+		series.state(at: days / ELPMPP02.daysPerCentury)
+	}
+
+	/// Returns the Moon's geocentric state in the fit's ecliptic.
+	func eclipticState(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
+		switch self {
+		case .laserRanging: ELPMPP02.LaserRanging.eclipticState(at: tdb)
+		case .de405: ELPMPP02.DE405.eclipticState(at: tdb)
+		}
+	}
+
 	/// Returns a vector in the fit's ecliptic in the ICRS.
 	func icrs(_ vector: Vector3) -> Vector3 {
 		switch self {

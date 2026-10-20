@@ -32,7 +32,7 @@ import Testing
 		// this one sums multiples of the reduced fundamental arguments, so the two differ by
 		// millimeters ten centuries from J2000.0.
 		for value in elpmpp02Reference {
-			let state = ELPMPP02.seriesState(at: value.days, series: value.fit.series)
+			let state = value.fit.seriesState(at: value.days)
 			#expect(Self.difference(state.position, value.position) <= 1e-5, "\(value.fit) \(value.days)")
 			#expect(Self.difference(state.velocity, value.velocity) <= 2e-6, "\(value.fit) \(value.days)")
 		}
@@ -45,7 +45,7 @@ import Testing
 		for value in elpmpp02CheckValues {
 			let date = try JulianDate(julianDate: value.julianDate)
 			guard builtInEphemerisCoverage.contains(date) else { continue }
-			let state = ELPMPP02.seriesState(at: date.daysSinceJ2000, series: value.fit.series)
+			let state = value.fit.seriesState(at: date.daysSinceJ2000)
 			let check = Self.vector(value.position)
 			#expect(Self.milliarcseconds(state.position, check) <= 0.25, "\(value.fit) \(value.julianDate)")
 			#expect(abs(state.position.length - check.length) <= 0.01, "\(value.fit) \(value.julianDate)")
@@ -72,8 +72,8 @@ import Testing
 	@Test func icrsState() throws {
 		let date = try JulianDate(julianDate: 2_460_000.5)
 		for fit in [ELPFit.laserRanging, .de405] {
-			let series = ELPMPP02.seriesState(at: date.daysSinceJ2000, series: fit.series)
-			let ecliptic = try #require(ELPMPP02.eclipticState(at: date, series: fit.series))
+			let series = fit.seriesState(at: date.daysSinceJ2000)
+			let ecliptic = try #require(fit.eclipticState(at: date))
 			let icrs = try #require(fit.state(at: date))
 			// The ecliptic state is the series in astronomical units.
 			let au = Distance.kilometersPerAstronomicalUnit
@@ -114,10 +114,10 @@ import Testing
 		// steps of 0.02 day, to a few 1e-7 km/day near J2000.0.
 		for fit in [ELPFit.laserRanging, .de405] {
 			for days in [-7305.5, 0.25, 4000.25] {
-				let velocity = ELPMPP02.seriesState(at: days, series: fit.series).velocity
-				let x = Self.derivative({ ELPMPP02.seriesState(at: $0, series: fit.series).position.x }, at: days, step: 0.02)
-				let y = Self.derivative({ ELPMPP02.seriesState(at: $0, series: fit.series).position.y }, at: days, step: 0.02)
-				let z = Self.derivative({ ELPMPP02.seriesState(at: $0, series: fit.series).position.z }, at: days, step: 0.02)
+				let velocity = fit.seriesState(at: days).velocity
+				let x = Self.derivative({ fit.seriesState(at: $0).position.x }, at: days, step: 0.02)
+				let y = Self.derivative({ fit.seriesState(at: $0).position.y }, at: days, step: 0.02)
+				let z = Self.derivative({ fit.seriesState(at: $0).position.z }, at: days, step: 0.02)
 				#expect((velocity - Vector3(x, y, z)).length <= 3e-6, "\(fit) \(days)")
 			}
 		}
@@ -129,10 +129,10 @@ import Testing
 		// dates, where the five-point difference is good to 1e-5 km/day.
 		for fit in [ELPFit.laserRanging, .de405] {
 			for days in [-365_000.0, -100_000.3, -7305.5, 0.25, 250_000, 365_000] {
-				let state = ELPMPP02.seriesState(at: days, series: fit.series)
+				let state = fit.seriesState(at: days)
 				let radial = state.velocity.dot(state.position) / state.position.length
 				#expect(abs(radial) >= 2500, "\(fit) \(days)")
-				let numeric = Self.derivative({ ELPMPP02.seriesState(at: $0, series: fit.series).position.length }, at: days, step: 0.02)
+				let numeric = Self.derivative({ fit.seriesState(at: $0).position.length }, at: days, step: 0.02)
 				#expect(abs(radial - numeric) <= 2e-5, "\(fit) \(days)")
 			}
 		}

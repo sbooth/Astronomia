@@ -80,7 +80,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 	@Test func nativeFrameAndOrigin() throws {
 		let solution = ELPMPP02.de405
 		let moon = try solution.state(of: .moon, at: tdb)
-		let ecliptic = try #require(ELPMPP02.eclipticState(at: tdb.julianDate, series: ELPMPP02.DE405.series))
+		let ecliptic = try #require(ELPMPP02.DE405.eclipticState(at: tdb.julianDate))
 		#expect(moon.position.vector == ecliptic.position && moon.velocity.vector == ecliptic.velocity)
 		#expect(try solution.state(of: .earth, relativeTo: .moon, at: tdb) == -moon)
 		#expect(try solution.state(of: .moon, relativeTo: .moon, at: tdb) == .zero)
@@ -93,7 +93,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 		let laserRanging = ELPMPP02.laserRanging
 		let a: StateVector<ELPMPP02.DE405.Ecliptic> = try de405.state(of: .moon, at: tdb)
 		let b: StateVector<ELPMPP02.LaserRanging.Ecliptic> = try laserRanging.state(of: .moon, at: tdb)
-		let ecliptic = try #require(ELPMPP02.eclipticState(at: tdb.julianDate, series: ELPMPP02.LaserRanging.series))
+		let ecliptic = try #require(ELPMPP02.LaserRanging.eclipticState(at: tdb.julianDate))
 		#expect(b.position.vector == ecliptic.position)
 		// The fits differ by tens of milliarcseconds in the ICRS.
 		let separation = a.position.converted(to: ICRS.self).angularSeparation(from: b.position.converted(to: ICRS.self))
