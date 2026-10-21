@@ -203,10 +203,10 @@ import Testing
 		let date = try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: Double(0.5).nextDown)
 		#expect(date.julianDayNumber == 2_451_545)
 		#expect(date.fractionSinceMidnight == Double(1).nextDown)
-		#expect(date.parts(.dateAndTime).jd2 == Double(1).nextDown)
-		#expect(date.parts(.fromMJD0).jd2 == Double(1).nextDown)
-		let calendarDate = date.calendarDate(.gregorian)
-		#expect(calendarDate.calendarDay == (try CalendarDay(year: 2000, month: 1, day: 1, .gregorian)))
+		#expect(date.parts(using: .dateAndTime).jd2 == Double(1).nextDown)
+		#expect(date.parts(using: .dayAndFractionFromMJD0).jd2 == Double(1).nextDown)
+		let calendarDate = date.calendarDate(in: .gregorian)
+		#expect(calendarDate.calendarDay == (try CalendarDay(year: 2000, month: 1, day: 1, calendar: .gregorian)))
 		#expect(calendarDate.fractionSinceMidnight == Double(1).nextDown)
 	}
 
@@ -236,20 +236,20 @@ import Testing
 
 	@Test func parts() throws {
 		let date = try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25)
-		#expect(date.parts(.julianDate) == (2_451_545.25, 0))
-		#expect(date.parts(.j2000) == (2_451_545, 0.25))
-		#expect(date.parts(.mjd) == (2_400_000.5, 51_544.75))
-		#expect(date.parts(.dateAndTime) == (2_451_544.5, 0.75))
-		#expect(date.parts(.dayAndFraction) == (2_451_545, 0.25))
-		#expect(date.parts(.fromJ2000) == (0, 0.25))
-		#expect(date.parts(.fromMJD0) == (51_544, 0.75))
+		#expect(date.parts(using: .julianDate) == (2_451_545.25, 0))
+		#expect(date.parts(using: .j2000) == (2_451_545, 0.25))
+		#expect(date.parts(using: .mjd) == (2_400_000.5, 51_544.75))
+		#expect(date.parts(using: .dateAndTime) == (2_451_544.5, 0.75))
+		#expect(date.parts(using: .dayAndFraction) == (2_451_545, 0.25))
+		#expect(date.parts(using: .dayAndFractionFromJ2000) == (0, 0.25))
+		#expect(date.parts(using: .dayAndFractionFromMJD0) == (51_544, 0.75))
 
 		let before = try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: -0.25)
-		#expect(before.parts(.julianDate) == (2_451_544.75, 0))
-		#expect(before.parts(.dateAndTime) == (2_451_544.5, 0.25))
-		#expect(before.parts(.dayAndFraction) == (2_451_545, -0.25))
-		#expect(before.parts(.fromJ2000) == (0, -0.25))
-		#expect(before.parts(.fromMJD0) == (51_544, 0.25))
+		#expect(before.parts(using: .julianDate) == (2_451_544.75, 0))
+		#expect(before.parts(using: .dateAndTime) == (2_451_544.5, 0.25))
+		#expect(before.parts(using: .dayAndFraction) == (2_451_545, -0.25))
+		#expect(before.parts(using: .dayAndFractionFromJ2000) == (0, -0.25))
+		#expect(before.parts(using: .dayAndFractionFromMJD0) == (51_544, 0.25))
 	}
 
 	@Test(arguments: [-0.5, -0.375, -0.25, 0, 0.125, 0.25, 0.4375])
@@ -257,12 +257,12 @@ import Testing
 		for julianDayNumber in [-1_000_000, 0, 2_400_001, 2_451_545, 5_000_000] {
 			let date = try JulianDate(julianDayNumber: julianDayNumber, fractionFromNoon: fractionFromNoon)
 			for method in [JulianDate.SplitMethod.julianDate, .j2000, .mjd, .dateAndTime, .dayAndFraction] {
-				let (jd1, jd2) = date.parts(method)
+				let (jd1, jd2) = date.parts(using: method)
 				#expect(try JulianDate(jd1: jd1, jd2: jd2) == date, "\(method) \(date)")
 			}
-			let fromJ2000 = date.parts(.fromJ2000)
+			let fromJ2000 = date.parts(using: .dayAndFractionFromJ2000)
 			#expect(try JulianDate.J2000.adding(days1: fromJ2000.jd1, days2: fromJ2000.jd2) == date)
-			let fromMJD0 = date.parts(.fromMJD0)
+			let fromMJD0 = date.parts(using: .dayAndFractionFromMJD0)
 			#expect(try JulianDate(mjd1: fromMJD0.jd1, mjd2: fromMJD0.jd2) == date)
 		}
 	}

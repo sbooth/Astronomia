@@ -75,10 +75,10 @@ import Testing
 	}
 
 	@Test func equatorialNames() {
-		let spherical = SphericalPosition<ICRS>(rightAscension: Angle(hourAngle: 18), declination: Angle(degrees: -30), distance: Distance(astronomicalUnits: 1))
+		let spherical = SphericalPosition<ICRS>(rightAscension: Angle(hours: 18), declination: Angle(degrees: -30), distance: Distance(astronomicalUnits: 1))
 		#expect(spherical.rightAscension == spherical.longitude)
 		#expect(spherical.declination == spherical.latitude)
-		#expect(abs(spherical.rightAscension.hourAngle - 18) <= 1e-14)
+		#expect(abs(spherical.rightAscension.hours - 18) <= 1e-14)
 	}
 
 	@Test func angularSeparation() {

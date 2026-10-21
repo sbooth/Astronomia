@@ -75,7 +75,7 @@ import Testing
 		let day = try UTCDay(julianDayNumber: civilDay(2016, 12, 31))
 		let utc = try day.julianDate(secondsSinceMidnight: reading)
 		#expect(utc.julianDayNumber == day.julianDayNumber)
-		#expect(try abs(day.secondsSinceMidnight(utc) - reading) <= timescaleTolerance)
+		#expect(try abs(day.secondsSinceMidnight(at: utc) - reading) <= timescaleTolerance)
 	}
 
 	@Test func leapSecondFraction() throws {
@@ -89,7 +89,7 @@ import Testing
 		let day = try UTCDay(julianDayNumber: civilDay(2026, 10, 14))
 		let otherDay = try uniformDate(day.julianDayNumber + 1)
 		#expect(throws: TimescaleConversionError.dateOutOfRange) {
-			try day.secondsSinceMidnight(otherDay)
+			try day.secondsSinceMidnight(at: otherDay)
 		}
 	}
 

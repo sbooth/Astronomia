@@ -12,7 +12,7 @@
 /// or ``normalizedSigned()`` to reduce one.
 ///
 /// An angle can be expressed in degrees, arcminutes, arcseconds, milliarcseconds, or hours of
-/// time measure (``hourAngle``), where 24 hours make a turn. Conversions multiply by a
+/// time measure (``hours``), where 24 hours make a turn. Conversions multiply by a
 /// rounded constant, so a round trip such as `Angle(degrees: 30).degrees` can differ from
 /// the original value in the last bit.
 ///
@@ -77,9 +77,9 @@ extension Angle {
 	/// Right ascension, hour angle, Earth rotation angle, and sidereal time are usually
 	/// expressed in hours.
 	///
-	/// - Parameter hourAngle: The angle in hours.
-	public init(hourAngle: Double) {
-		self.init(radians: hourAngle * Self.radiansPerHour)
+	/// - Parameter hours: The angle in hours.
+	public init(hours: Double) {
+		self.init(radians: hours * Self.radiansPerHour)
 	}
 
 	/// The angle in degrees.
@@ -103,7 +103,7 @@ extension Angle {
 	}
 
 	/// The angle in hours of time measure, where 1 hour is 15°.
-	public var hourAngle: Double {
+	public var hours: Double {
 		radians / Self.radiansPerHour
 	}
 }
@@ -151,11 +151,11 @@ extension Angle {
 
 	/// Returns an angle from hours of time measure, where 1 hour is 15°.
 	///
-	/// Equivalent to ``init(hourAngle:)``, for use where the type is known, as in `.hourAngle(2)`.
+	/// Equivalent to ``init(hours:)``, for use where the type is known, as in `.hours(2)`.
 	///
-	/// - Parameter hourAngle: The angle in hours.
+	/// - Parameter hours: The angle in hours.
 	/// - Returns: The angle.
-	public static func hourAngle(_ hourAngle: Double) -> Angle { Angle(hourAngle: hourAngle) }
+	public static func hours(_ hours: Double) -> Angle { Angle(hours: hours) }
 }
 
 extension Angle {

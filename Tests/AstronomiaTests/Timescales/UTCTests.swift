@@ -248,12 +248,12 @@ let stepDays: [StepDay] = [
 	@Test func strictUTCToTT() throws {
 		let lastKnown = try Instant<UTC>(utcDate(horizon - 1, seconds: 86_399))
 		#expect(throws: Never.self) {
-			try lastKnown.converted(to: TT.self, sourceContext: strictContext)
+			try lastKnown.converted(to: TT.self, sourceContext: rejectContext)
 		}
 
 		let firstUnknown = try Instant<UTC>(utcDate(horizon))
 		#expect(throws: TimescaleConversionError.leapSecondTableExpired) {
-			try firstUnknown.converted(to: TT.self, sourceContext: strictContext)
+			try firstUnknown.converted(to: TT.self, sourceContext: rejectContext)
 		}
 
 		// The default policy assumes no further leap seconds.
@@ -264,13 +264,13 @@ let stepDays: [StepDay] = [
 	@Test func strictTTToUTC() throws {
 		// 00:00:36.5 TAI on the horizon day is 23:59:59.5 UTC the day before.
 		let beforeHorizon = try Instant<TAI>(uniformDate(horizon, seconds: 36.5))
-		let utc = try beforeHorizon.converted(to: UTC.self, targetContext: strictContext)
+		let utc = try beforeHorizon.converted(to: UTC.self, targetContext: rejectContext)
 		#expect(utc.julianDate.julianDayNumber == horizon - 1)
 
 		// 00:00:37.5 TAI is 00:00:00.5 UTC on the horizon day.
 		let afterHorizon = try Instant<TAI>(uniformDate(horizon, seconds: 37.5))
 		#expect(throws: TimescaleConversionError.leapSecondTableExpired) {
-			try afterHorizon.converted(to: UTC.self, targetContext: strictContext)
+			try afterHorizon.converted(to: UTC.self, targetContext: rejectContext)
 		}
 		let extrapolated = try afterHorizon.converted(to: UTC.self)
 		#expect(extrapolated.julianDate.julianDayNumber == horizon)
@@ -293,7 +293,7 @@ let stepDays: [StepDay] = [
 		let tai = try utc.converted(to: TAI.self)
 		#expect(try abs(seconds(from: uniformDate(day), to: tai.julianDate) - 43_237) <= timescaleTolerance)
 		#expect(throws: TimescaleConversionError.leapSecondTableExpired) {
-			try utc.converted(to: TAI.self, sourceContext: strictContext)
+			try utc.converted(to: TAI.self, sourceContext: rejectContext)
 		}
 	}
 
@@ -325,7 +325,7 @@ let stepDays: [StepDay] = [
 
 	@Test func utcToTTUsesContextTable() throws {
 		let table = try tableWithExtraLeapSecond()
-		let context = UTC.Context(leapSecondTable: table, extrapolationPolicy: .strict)
+		let context = UTC.Context(leapSecondTable: table, extrapolationPolicy: .reject)
 		let day = try civilDay(2027, 7, 1)
 		let utc = try Instant<UTC>(utcDate(day, table: table))
 		let tai = try utc.converted(to: TAI.self, sourceContext: context)
@@ -334,7 +334,7 @@ let stepDays: [StepDay] = [
 
 	@Test func ttToUTCUsesContextTable() throws {
 		let table = try tableWithExtraLeapSecond()
-		let context = UTC.Context(leapSecondTable: table, extrapolationPolicy: .strict)
+		let context = UTC.Context(leapSecondTable: table, extrapolationPolicy: .reject)
 		let day = try civilDay(2027, 7, 1)
 		// 00:00:37.5 TAI is 23:59:60.5 UTC on 2027-06-30 with the extra leap second.
 		let tai = try Instant<TAI>(uniformDate(day, seconds: 37.5))

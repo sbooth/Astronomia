@@ -26,7 +26,7 @@ enum JulianAndGregorianArithmetic {
 	///   - isLeap: Whether the month's year is a leap year.
 	/// - Returns: The number of days in the month, from 28 to 31.
 	/// - Throws: ``CalendarError/invalidDate`` if the month is outside the closed interval [1, 12].
-	static func numberOfDaysIn(month M: Int, isLeap: Bool) throws(CalendarError) -> Int {
+	static func numberOfDays(inMonth M: Int, isLeap: Bool) throws(CalendarError) -> Int {
 		switch M {
 		case 4, 6, 9, 11:
 			return 30
@@ -47,7 +47,7 @@ enum JulianAndGregorianArithmetic {
 	///   - isLeap: Whether the date's year is a leap year.
 	/// - Returns: `true` if the month and day form a valid date; otherwise, `false`.
 	static func isValid(month M: Int, day D: Int, isLeap: Bool) -> Bool {
-		guard let daysInMonth = try? numberOfDaysIn(month: M, isLeap: isLeap) else { return false }
+		guard let daysInMonth = try? numberOfDays(inMonth: M, isLeap: isLeap) else { return false }
 		return D >= 1 && D <= daysInMonth
 	}
 
@@ -56,7 +56,7 @@ enum JulianAndGregorianArithmetic {
 	///
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The day of the week from 1 (Sunday) to 7 (Saturday).
-	static func dayOfWeek(_ J: JulianDayNumber) -> Int {
+	static func dayOfWeek(julianDayNumber J: JulianDayNumber) -> Int {
 		1 &+ ((J % 7) &+ 8) % 7
 	}
 

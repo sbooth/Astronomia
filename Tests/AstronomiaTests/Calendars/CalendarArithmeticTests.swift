@@ -20,13 +20,13 @@ import Testing
 		let common = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 		let leap = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 		for M in 1 ... 12 {
-			#expect(try Arithmetic.numberOfDaysIn(month: M, isLeap: false) == common[M - 1])
-			#expect(try Arithmetic.numberOfDaysIn(month: M, isLeap: true) == leap[M - 1])
+			#expect(try Arithmetic.numberOfDays(inMonth: M, isLeap: false) == common[M - 1])
+			#expect(try Arithmetic.numberOfDays(inMonth: M, isLeap: true) == leap[M - 1])
 		}
 		#expect(common.reduce(0, +) == 365)
 		#expect(leap.reduce(0, +) == 366)
 		for M in [Int.min, -1, 0, 13, Int.max] {
-			#expect(throws: CalendarError.invalidDate) { try Arithmetic.numberOfDaysIn(month: M, isLeap: false) }
+			#expect(throws: CalendarError.invalidDate) { try Arithmetic.numberOfDays(inMonth: M, isLeap: false) }
 		}
 	}
 
@@ -46,7 +46,7 @@ import Testing
 	func dayOfYearAndMonthAndDayAreInverses(isLeap: Bool) throws {
 		var N = 0
 		for M in 1 ... 12 {
-			let daysInMonth = try Arithmetic.numberOfDaysIn(month: M, isLeap: isLeap)
+			let daysInMonth = try Arithmetic.numberOfDays(inMonth: M, isLeap: isLeap)
 			for D in 1 ... daysInMonth {
 				N += 1
 				#expect(Arithmetic.dayOfYear(month: M, day: D, isLeap: isLeap) == N)
@@ -59,15 +59,15 @@ import Testing
 
 	@Test func dayOfWeek() {
 		// JDN 0 was a Monday
-		#expect(Arithmetic.dayOfWeek(0) == 2)
+		#expect(Arithmetic.dayOfWeek(julianDayNumber: 0) == 2)
 		for J in -50 ... 50 {
-			let dow = Arithmetic.dayOfWeek(J)
+			let dow = Arithmetic.dayOfWeek(julianDayNumber: J)
 			#expect((1 ... 7).contains(dow))
-			#expect(Arithmetic.dayOfWeek(J + 1) == dow % 7 + 1)
-			#expect(Arithmetic.dayOfWeek(J + 7) == dow)
+			#expect(Arithmetic.dayOfWeek(julianDayNumber: J + 1) == dow % 7 + 1)
+			#expect(Arithmetic.dayOfWeek(julianDayNumber: J + 7) == dow)
 		}
-		#expect((1 ... 7).contains(Arithmetic.dayOfWeek(.min)))
-		#expect((1 ... 7).contains(Arithmetic.dayOfWeek(.max)))
+		#expect((1 ... 7).contains(Arithmetic.dayOfWeek(julianDayNumber: .min)))
+		#expect((1 ... 7).contains(Arithmetic.dayOfWeek(julianDayNumber: .max)))
 	}
 
 	@Test func marchBasedYearAndMonth() throws {
@@ -129,9 +129,9 @@ import Testing
 	}
 
 	@Test func yearAndDayOfYear() throws {
-		let julianDays: (Int) -> Int = JulianCalendar.numberOfDaysInYear
-		let gregorianDays: (Int) -> Int = GregorianCalendar.numberOfDaysInYear
-		let hybridDays: (Int) -> Int = JulianGregorianCalendar.numberOfDaysInYear
+		let julianDays: (Int) -> Int = JulianCalendar.numberOfDays(inYear:)
+		let gregorianDays: (Int) -> Int = GregorianCalendar.numberOfDays(inYear:)
+		let hybridDays: (Int) -> Int = JulianGregorianCalendar.numberOfDays(inYear:)
 
 		#expect(try DecimalYearArithmetic.yearAndDayOfYear(decimalYear: 2000, daysInYear: gregorianDays) == (2000, 1))
 		#expect(try DecimalYearArithmetic.yearAndDayOfYear(decimalYear: 2000.5, daysInYear: gregorianDays) == (2000, 184))

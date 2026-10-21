@@ -271,21 +271,21 @@ extension JulianDate {
 	/// The Julian Date as a single value.
 	///
 	/// - Important: This loses precision; a single `Double` resolves about 40 µs near the
-	///   present. Use ``parts(_:)`` for full precision.
+	///   present. Use ``parts(using:)`` for full precision.
 	public var julianDate: Double {
 		Double(julianDayNumber) + fractionFromNoon
 	}
 
 	/// The Modified Julian Date (MJD) as a single value.
 	///
-	/// Use ``parts(_:)`` with ``SplitMethod/fromMJD0`` for full precision.
+	/// Use ``parts(using:)`` with ``SplitMethod/dayAndFractionFromMJD0`` for full precision.
 	public var modifiedJulianDate: Double {
 		(differenceAsDouble(julianDayNumber, Self.MJD0.julianDayNumber) + noonToMidnightOffset) + fractionFromNoon
 	}
 
 	/// Days from J2000.0 as a single value.
 	///
-	/// Use ``parts(_:)`` with ``SplitMethod/fromJ2000`` for full precision.
+	/// Use ``parts(using:)`` with ``SplitMethod/dayAndFractionFromJ2000`` for full precision.
 	public var daysSinceJ2000: Double {
 		differenceAsDouble(julianDayNumber, Self.J2000.julianDayNumber) + (fractionFromNoon /*- Self.J2000.fraction*/)
 	}
@@ -323,7 +323,7 @@ extension JulianDate {
 	/// Beyond that, `jd1` is rounded to the nearest `Double`, so `jd1 + jd2` only approximates
 	/// this Julian Date.
 	///
-	/// `jd2` can also round. ``SplitMethod/dateAndTime`` and ``SplitMethod/fromMJD0`` round
+	/// `jd2` can also round. ``SplitMethod/dateAndTime`` and ``SplitMethod/dayAndFractionFromMJD0`` round
 	/// the time of day by up to 2^-54 days; it is exact from midnight to 06:00.
 	///
 	/// ``SplitMethod/julianDate``, ``SplitMethod/j2000`` and ``SplitMethod/mjd`` hold a single
@@ -343,19 +343,19 @@ extension JulianDate {
 		case dayAndFraction
 		/// `jd1` is the integral number of days from J2000.0, `jd2` is the fraction of the day
 		/// from noon in the right-open interval [-0.5, 0.5).
-		case fromJ2000
+		case dayAndFractionFromJ2000
 		/// `jd1` is the integral number of days from MJD zero, `jd2` is the fraction of the day
 		/// from midnight in the right-open interval [0, 1).
-		case fromMJD0
+		case dayAndFractionFromMJD0
 	}
 
 	/// Returns the parts of this Julian Date divided using the specified split method.
 	///
 	/// - Parameter method: The way to divide the Julian Date.
 	/// - Returns: Two values whose sum is this Julian Date, subject to the precision limits
-	///   described in ``SplitMethod``. For ``SplitMethod/fromJ2000`` and
-	///   ``SplitMethod/fromMJD0`` the sum is measured from J2000.0 or MJD zero, respectively.
-	public func parts(_ method: SplitMethod) -> (jd1: Double, jd2: Double) {
+	///   described in ``SplitMethod``. For ``SplitMethod/dayAndFractionFromJ2000`` and
+	///   ``SplitMethod/dayAndFractionFromMJD0`` the sum is measured from J2000.0 or MJD zero, respectively.
+	public func parts(using method: SplitMethod) -> (jd1: Double, jd2: Double) {
 		switch method {
 		case .julianDate:
 			return (Double(julianDayNumber) + fractionFromNoon, 0)
@@ -367,9 +367,9 @@ extension JulianDate {
 			return (Double(julianDayNumber) - noonToMidnightOffset, fractionSinceMidnight)
 		case .dayAndFraction:
 			return (Double(julianDayNumber), fractionFromNoon)
-		case .fromJ2000:
+		case .dayAndFractionFromJ2000:
 			return (differenceAsDouble(julianDayNumber, Self.J2000.julianDayNumber), fractionFromNoon)
-		case .fromMJD0:
+		case .dayAndFractionFromMJD0:
 			return (differenceAsDouble(julianDayNumber, Self.MJD0.julianDayNumber), fractionSinceMidnight)
 		}
 	}

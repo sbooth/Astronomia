@@ -83,7 +83,7 @@ import Testing
 		#expect(try entries.last == Self.entry(1984.5, 54.087, uncertainty: 0.001))
 
 		// 1657.5 is noon on July 2, 1657
-		#expect(try entries[1].tt == JulianDate(julianDayNumber: GregorianCalendar.julianDayNumberFrom(year: 1657, month: 7, day: 2)))
+		#expect(try entries[1].tt == JulianDate(julianDayNumber: GregorianCalendar.julianDayNumber(year: 1657, month: 7, day: 2)))
 	}
 }
 

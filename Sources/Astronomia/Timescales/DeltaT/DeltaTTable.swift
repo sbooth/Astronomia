@@ -34,7 +34,7 @@ public struct DeltaTTable: Hashable, Sendable {
 		///
 		/// - Parameters:
 		///   - decimalYear: The calendar-based decimal year, as for
-		///     ``JulianDate/init(decimalYear:_:)``.
+		///     ``JulianDate/init(decimalYear:calendar:)``.
 		///   - deltaT: ΔT = TT - UT1, in seconds.
 		///   - uncertainty: The standard error of `deltaT`, in seconds, if known.
 		/// - Throws: A ``CalendarError`` if `decimalYear` cannot be represented as a Julian Date.

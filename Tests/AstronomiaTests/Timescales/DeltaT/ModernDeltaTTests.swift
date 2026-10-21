@@ -10,7 +10,7 @@ import Testing
 
 /// Returns 0h on a Gregorian date, as a Julian Date.
 private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDate {
-	try JulianDate(julianDayNumber: GregorianCalendar.julianDayNumberFrom(year: year, month: month, day: day), fractionFromNoon: -0.5)
+	try JulianDate(julianDayNumber: GregorianCalendar.julianDayNumber(year: year, month: month, day: day), fractionFromNoon: -0.5)
 }
 
 @Suite struct ModernDeltaTTests {

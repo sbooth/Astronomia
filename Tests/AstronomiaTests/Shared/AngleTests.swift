@@ -17,13 +17,13 @@ private func close(_ a: Double, _ b: Double, _ tolerance: Double = 1e-12) -> Boo
 	@Test func units() {
 		#expect(Angle(degrees: 180).radians == .pi)
 		#expect(Angle(degrees: 90).radians == .pi / 2)
-		#expect(Angle(hourAngle: 12).radians == .pi)
+		#expect(Angle(hours: 12).radians == .pi)
 		#expect(Angle(arcseconds: 648_000).radians == .pi)
 		#expect(close(Angle(arcminutes: 60).degrees, 1))
 		#expect(close(Angle(arcseconds: 3_600).degrees, 1))
 		#expect(close(Angle(milliarcseconds: 1_000).arcseconds, 1))
-		#expect(close(Angle(hourAngle: 1).degrees, 15))
-		#expect(close(Angle(degrees: 15).hourAngle, 1))
+		#expect(close(Angle(hours: 1).degrees, 15))
+		#expect(close(Angle(degrees: 15).hours, 1))
 		#expect(close(Angle(degrees: 1).arcminutes, 60))
 		#expect(close(Angle(degrees: 1).milliarcseconds, 3_600_000, 1e-6))
 		#expect(Angle(radians: .pi).degrees == 180)
@@ -35,7 +35,7 @@ private func close(_ a: Double, _ b: Double, _ tolerance: Double = 1e-12) -> Boo
 		let tolerance = 4 * Swift.max(Swift.abs(degrees), 1) * Double.ulpOfOne
 		#expect(close(Angle(degrees: degrees).degrees, degrees, tolerance))
 		#expect(close(Angle(arcseconds: degrees * 3_600).arcseconds, degrees * 3_600, 3_600 * tolerance))
-		#expect(close(Angle(hourAngle: degrees / 15).hourAngle, degrees / 15, tolerance))
+		#expect(close(Angle(hours: degrees / 15).hours, degrees / 15, tolerance))
 	}
 
 	@Test func normalized() {
@@ -150,19 +150,19 @@ import Foundation
 		#expect(Angle.arcminutes(value).radians.bitPattern == Angle(arcminutes: value).radians.bitPattern)
 		#expect(Angle.arcseconds(value).radians.bitPattern == Angle(arcseconds: value).radians.bitPattern)
 		#expect(Angle.milliarcseconds(value).radians.bitPattern == Angle(milliarcseconds: value).radians.bitPattern)
-		#expect(Angle.hourAngle(value).radians.bitPattern == Angle(hourAngle: value).radians.bitPattern)
+		#expect(Angle.hours(value).radians.bitPattern == Angle(hours: value).radians.bitPattern)
 	}
 
 	@Test func nanPropagates() {
 		#expect(Angle.degrees(.nan).radians.isNaN)
-		#expect(Angle.hourAngle(.nan).radians.isNaN)
+		#expect(Angle.hours(.nan).radians.isNaN)
 	}
 
 	@Test func usableWhereTheTypeIsKnown() {
 		// The leading-dot form works wherever an Angle is expected.
 		let right: Angle = .degrees(90)
 		#expect(right.radians == .pi / 2)
-		#expect(Angle(hourAngle: 12) == .radians(.pi))
+		#expect(Angle(hours: 12) == .radians(.pi))
 		#expect(.degrees(30) + .arcminutes(30) == Angle(degrees: 30) + Angle(arcminutes: 30))
 		#expect(Angle.arcseconds(1) < .arcminutes(1))
 		#expect([Angle.degrees(10), .degrees(-5), .degrees(3)].max() == .degrees(10))
