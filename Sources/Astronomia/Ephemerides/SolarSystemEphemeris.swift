@@ -73,6 +73,13 @@ public struct SolarSystemEphemeris: GeocentricEphemeris, Hashable {
 	public static let defaultOrigin = Body.solarSystemBarycenter
 	public static let earth = Body.earth
 	public static let sun = Body.sun
+	/// The Sun and the barycenters of Jupiter and Saturn, with their gravitational parameters
+	/// from INPOP10a as given in VSOP2013.f and their IAU radii.
+	public static let lightDeflectingBodies = [
+		LightDeflectingBody(uncheckedBody: Body.sun, gravitationalParameter: VSOP2013.sunGravitationalParameter, radius: nominalSolarRadius),
+		LightDeflectingBody(uncheckedBody: Body.jupiterBarycenter, gravitationalParameter: VSOP2013.Body.jupiterBarycenter.gravitationalParameter ?? 0, radius: jupiterEquatorialRadius),
+		LightDeflectingBody(uncheckedBody: Body.saturnBarycenter, gravitationalParameter: VSOP2013.Body.saturnBarycenter.gravitationalParameter ?? 0, radius: saturnEquatorialRadius),
+	]
 	public static let solarSystemBarycenter = Body.solarSystemBarycenter
 
 	/// A fit of the lunar solution ELP/MPP02.

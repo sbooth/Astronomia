@@ -78,4 +78,7 @@ public protocol GeocentricEphemeris: Ephemeris {
 	static var sun: Body { get }
 	/// The barycenter of the solar system.
 	static var solarSystemBarycenter: Body { get }
+	/// The bodies whose gravity deflects light for apparent places, such as the Sun, Jupiter,
+	/// and Saturn.
+	static var lightDeflectingBodies: [LightDeflectingBody<Body>] { get }
 }

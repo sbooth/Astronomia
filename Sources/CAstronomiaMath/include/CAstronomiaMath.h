@@ -85,4 +85,10 @@ static inline double astronomia_atan2(double y, double x)
 	return atan2(y, x);
 }
 
+/// Returns the natural logarithm of `x`, or NaN if `x` is negative.
+static inline double astronomia_log(double x)
+{
+	return log(x);
+}
+
 #endif

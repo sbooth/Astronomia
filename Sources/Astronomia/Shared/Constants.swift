@@ -36,3 +36,20 @@ let arcsecondsPerRadian: Double = 648_000 / .pi
 
 /// Microarcseconds per radian.
 let microarcsecondsPerRadian: Double = 648_000_000_000 / .pi
+
+/// The nominal radius of the Sun, 695,700 km.
+///
+/// The conversion constant of IAU 2015 Resolution B3, the radius of the photosphere.
+let nominalSolarRadius: Distance = .kilometers(695_700)
+
+/// The equatorial radius of Jupiter at the 1 bar level, 71,492 km.
+///
+/// From the report of the IAU Working Group on Cartographic Coordinates and Rotational
+/// Elements, 2015 (Archinal et al. 2018).
+let jupiterEquatorialRadius: Distance = .kilometers(71_492)
+
+/// The equatorial radius of Saturn at the 1 bar level, 60,268 km.
+///
+/// From the report of the IAU Working Group on Cartographic Coordinates and Rotational
+/// Elements, 2015 (Archinal et al. 2018).
+let saturnEquatorialRadius: Distance = .kilometers(60_268)
