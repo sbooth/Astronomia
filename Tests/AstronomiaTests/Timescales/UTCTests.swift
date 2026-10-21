@@ -245,7 +245,7 @@ let stepDays: [StepDay] = [
 		#expect(try UTCDay(julianDayNumber: horizon).offsetSource == .extrapolation)
 	}
 
-	@Test func strictUTCToTT() throws {
+	@Test func rejectUTCToTT() throws {
 		let lastKnown = try Instant<UTC>(utcDate(horizon - 1, seconds: 86_399))
 		#expect(throws: Never.self) {
 			try lastKnown.converted(to: TT.self, sourceContext: rejectContext)
@@ -261,7 +261,7 @@ let stepDays: [StepDay] = [
 		#expect(try abs(seconds(from: uniformDate(horizon), to: tai.julianDate) - 37) <= timescaleTolerance)
 	}
 
-	@Test func strictTTToUTC() throws {
+	@Test func rejectTTToUTC() throws {
 		// 00:00:36.5 TAI on the horizon day is 23:59:59.5 UTC the day before.
 		let beforeHorizon = try Instant<TAI>(uniformDate(horizon, seconds: 36.5))
 		let utc = try beforeHorizon.converted(to: UTC.self, targetContext: rejectContext)
