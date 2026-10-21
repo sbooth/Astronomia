@@ -26,9 +26,9 @@ public struct EarthOrientation: Sendable {
 	public static let model = EarthOrientation()
 
 	/// Observed and predicted Earth orientation parameters, or `nil` for the models alone.
-	public var table: EarthOrientationTable?
+	public let table: EarthOrientationTable?
 	/// The source of UT1 for the Earth's rotation.
-	public var ut1: UT1.Context
+	public let ut1: UT1.Context
 
 	/// Creates a description of the Earth's orientation.
 	///
