@@ -43,6 +43,26 @@ public struct EarthOrientation: Sendable {
 		self.ut1 = ut1 ?? UT1.Context(earthOrientation: table)
 	}
 
+	/// Returns the polar motion at a TT instant, or zero if the table doesn't cover it or has
+	/// none.
+	///
+	/// - Parameter tt: An instant in TT.
+	/// - Returns: x_p and y_p, in radians.
+	func polarMotion(at tt: Instant<TT>) -> (x: Double, y: Double) {
+		guard let motion = table?.polarMotion(at: tt.julianDate) else { return (0, 0) }
+		return (motion.x.radians, motion.y.radians)
+	}
+
+	/// Returns the Earth's rate of rotation at a TT instant: the nominal rate of the Earth
+	/// rotation angle, slowed by the excess length of day where the table has it.
+	///
+	/// - Parameter tt: An instant in TT.
+	/// - Returns: The rate, in radians per day of 86,400 s.
+	func rotationRate(at tt: Instant<TT>) -> Double {
+		let excess = table?.excessLengthOfDay(at: tt.julianDate) ?? 0
+		return twoPi * (1 + EarthRotation.excessTurnsPerDay) * (1 - excess / secondsPerDay)
+	}
+
 	/// Returns the celestial pole offsets at a TT instant, if the table covers it and has them.
 	///
 	/// - Parameter tt: An instant in TT.

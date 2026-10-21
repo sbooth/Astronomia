@@ -15,14 +15,14 @@
 /// Use ``spherical`` for the direction and distance, or ``init(_:)`` to create a position from
 /// them.
 ///
-/// A position in a frame of date, a ``DatedReferenceFrame``, also carries the frame's
-/// ``epoch``. Positions at different epochs are in different frames, so in a frame of date
-/// `adding(_:)`, `subtracting(_:)`, and `angularSeparation(from:)` throw when the epochs
-/// differ, in place of the `+` and `-` of fixed frames.
+/// A position in a frame with an epoch, such as a ``DatedReferenceFrame`` or the ``TIRS``,
+/// also carries the frame's ``epoch``. Positions at different epochs are in different frames,
+/// so in such a frame `adding(_:)`, `subtracting(_:)`, and `angularSeparation(from:)` throw
+/// when the epochs differ, in place of the `+` and `-` of frames without an epoch.
 public struct Position<Frame: ReferenceFrame>: Hashable, Sendable {
 	/// The coordinates in astronomical units.
 	let vector: Vector3
-	/// The epoch of the frame, ``NoEpoch`` for a fixed frame.
+	/// The epoch of the frame, ``NoEpoch`` for a frame without one.
 	let frameEpoch: Frame.Epoch
 
 	/// Creates a position from coordinates in astronomical units at an epoch of the frame.
@@ -95,7 +95,7 @@ extension Position {
 	}
 }
 
-extension Position where Frame: FixedReferenceFrame {
+extension Position where Frame.Epoch == NoEpoch {
 	/// Creates a position from coordinates in astronomical units.
 	init(_ vector: Vector3) {
 		self.init(vector, frameEpoch: NoEpoch())
@@ -125,7 +125,9 @@ extension Position where Frame: FixedReferenceFrame {
 	public func angularSeparation(from other: Position) -> Angle {
 		separation(from: other)
 	}
+}
 
+extension Position where Frame: FixedReferenceFrame {
 	/// Returns the same position in another frame fixed relative to the ICRS.
 	///
 	/// - Parameter frame: The frame to express the position in.
@@ -135,9 +137,10 @@ extension Position where Frame: FixedReferenceFrame {
 	}
 }
 
-/// Positions in a fixed frame form an additive group with the origin as zero. A frame of date
-/// has no zero without an epoch, so its positions don't conform.
-extension Position: AdditiveArithmetic where Frame: FixedReferenceFrame {
+/// Positions in a frame without an epoch, such as a fixed frame or the ITRS, form an additive
+/// group with the origin as zero. A frame with an epoch has no zero without one, so its
+/// positions don't conform.
+extension Position: AdditiveArithmetic where Frame.Epoch == NoEpoch {
 	/// The position at the origin.
 	public static var zero: Position { .origin }
 
@@ -153,8 +156,8 @@ extension Position: AdditiveArithmetic where Frame: FixedReferenceFrame {
 	}
 }
 
-extension Position where Frame: DatedReferenceFrame {
-	/// Creates a position from rectangular coordinates in a frame of date.
+extension Position where Frame.Epoch == Instant<TT> {
+	/// Creates a position from rectangular coordinates in a frame with an epoch.
 	///
 	/// - Parameters:
 	///   - x: The coordinate along the frame's x axis.
@@ -165,7 +168,7 @@ extension Position where Frame: DatedReferenceFrame {
 		self.init(Vector3(x.astronomicalUnits, y.astronomicalUnits, z.astronomicalUnits), frameEpoch: epoch)
 	}
 
-	/// The position at the origin of a frame of date.
+	/// The position at the origin of a frame with an epoch.
 	///
 	/// - Parameter epoch: The epoch of the frame.
 	public static func origin(epoch: Instant<TT>) -> Position {

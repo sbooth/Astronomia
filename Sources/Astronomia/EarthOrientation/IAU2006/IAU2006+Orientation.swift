@@ -139,3 +139,62 @@ extension IAU2006 {
 		return R.aboutZ(Angle(radians: -(e + s))) * R.aboutY(Angle(radians: d)) * R.aboutZ(Angle(radians: e))
 	}
 }
+
+extension IAU2006.Orientation {
+	/// Computes the orientation at an instant.
+	///
+	/// - Parameters:
+	///   - tt: An instant in TT.
+	///   - earthOrientation: Observed Earth orientation, whose pole offsets are applied where its
+	///     table covers `tt`.
+	init(at tt: Instant<TT>, earthOrientation: EarthOrientation) {
+		self.init(at: tt.julianDate.julianCenturiesSinceJ2000, poleOffsets: earthOrientation.poleOffsets(at: tt))
+	}
+}
+
+extension IAU2006 {
+	/// Returns the TIO locator s', which places the terrestrial intermediate origin on the
+	/// CIP's equator: -47 µas per century, the approximation of the IERS Conventions (2010),
+	/// Eq. (5.13).
+	///
+	/// - Parameter t: TT in Julian centuries from J2000.0.
+	/// - Returns: s', in radians.
+	static func tioLocator(at t: Double) -> Double {
+		-47e-6 * t / arcsecondsPerRadian
+	}
+
+	/// Returns the polar motion matrix W, the rotation from the terrestrial intermediate
+	/// reference system to the ITRS, following `eraPom00` of ERFA: R1(-y_p) R2(-x_p) R3(s').
+	///
+	/// - Parameters:
+	///   - x: The x coordinate of the pole, x_p, in radians.
+	///   - y: The y coordinate of the pole, y_p, in radians.
+	///   - sPrime: The TIO locator s', in radians.
+	static func polarMotion(x: Double, y: Double, sPrime: Double) -> Rotation<ICRS, ICRS> {
+		typealias R = Rotation<ICRS, ICRS>
+		return R.aboutX(Angle(radians: -y)) * R.aboutY(Angle(radians: -x)) * R.aboutZ(Angle(radians: sPrime))
+	}
+
+	/// Returns the rotation from the GCRS to the terrestrial intermediate reference system,
+	/// R3(ERA) times the rotation to the CIRS.
+	///
+	/// - Parameters:
+	///   - tt: The instant in TT.
+	///   - ut1: The same instant in UT1.
+	///   - earthOrientation: Observed Earth orientation to apply.
+	static func terrestrialIntermediate(at tt: Instant<TT>, ut1: Instant<UT1>, earthOrientation: EarthOrientation) -> Rotation<ICRS, ICRS> {
+		let intermediate = Orientation(at: tt, earthOrientation: earthOrientation).intermediate
+		return Rotation<ICRS, ICRS>.aboutZ(EarthRotation.earthRotationAngle(ut1: ut1.julianDate)) * intermediate
+	}
+
+	/// Returns the polar motion matrix W at an instant, from the Earth orientation's polar
+	/// motion and the TIO locator.
+	///
+	/// - Parameters:
+	///   - tt: The instant in TT.
+	///   - earthOrientation: Observed Earth orientation to apply.
+	static func polarMotion(at tt: Instant<TT>, earthOrientation: EarthOrientation) -> Rotation<ICRS, ICRS> {
+		let (x, y) = earthOrientation.polarMotion(at: tt)
+		return polarMotion(x: x, y: y, sPrime: tioLocator(at: tt.julianDate.julianCenturiesSinceJ2000))
+	}
+}

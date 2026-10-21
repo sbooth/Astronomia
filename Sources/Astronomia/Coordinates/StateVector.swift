@@ -10,9 +10,9 @@
 ///
 /// A state vector does not record its instant or its origin, which are those of the request
 /// that produced it. Subtracting two state vectors with the same origin and instant gives the
-/// state of one body relative to the other, as for Mars seen from the Earth. In a frame of
-/// date, a ``DatedReferenceFrame``, it carries the frame's ``epoch``, which need not be the
-/// instant of the state.
+/// state of one body relative to the other, as for Mars seen from the Earth. In a frame with an
+/// epoch, such as a ``DatedReferenceFrame`` or the ``TIRS``, it carries the frame's ``epoch``,
+/// which need not be the instant of the state.
 public struct StateVector<Frame: ReferenceFrame>: Hashable, Sendable {
 	/// The position.
 	public let position: Position<Frame>
@@ -63,7 +63,7 @@ extension StateVector {
 	}
 }
 
-extension StateVector where Frame: FixedReferenceFrame {
+extension StateVector where Frame.Epoch == NoEpoch {
 	/// Creates a state vector from a position and a velocity.
 	///
 	/// - Parameters:
@@ -78,7 +78,9 @@ extension StateVector where Frame: FixedReferenceFrame {
 	init(_ position: Vector3, _ velocity: Vector3) {
 		self.init(position: Position(position), velocity: Velocity(velocity))
 	}
+}
 
+extension StateVector where Frame: FixedReferenceFrame {
 	/// Returns the same state in another frame fixed relative to the ICRS.
 	///
 	/// - Parameter frame: The frame to express the state in.
@@ -89,9 +91,9 @@ extension StateVector where Frame: FixedReferenceFrame {
 	}
 }
 
-/// States in a fixed frame form an additive group with the origin at rest as zero. A frame of
-/// date has no zero without an epoch, so its states don't conform.
-extension StateVector: AdditiveArithmetic where Frame: FixedReferenceFrame {
+/// States in a frame without an epoch form an additive group with the origin at rest as zero. A
+/// frame with an epoch has no zero without one, so its states don't conform.
+extension StateVector: AdditiveArithmetic where Frame.Epoch == NoEpoch {
 	/// The position and velocity of a body at rest at the origin; alternatively, the state of
 	/// the origin itself.
 	public static var zero: StateVector {
@@ -110,8 +112,8 @@ extension StateVector: AdditiveArithmetic where Frame: FixedReferenceFrame {
 	}
 }
 
-extension StateVector where Frame: DatedReferenceFrame {
-	/// Creates a state vector from a position and a velocity in a frame of date.
+extension StateVector where Frame.Epoch == Instant<TT> {
+	/// Creates a state vector from a position and a velocity in a frame with an epoch.
 	///
 	/// - Parameters:
 	///   - position: The position.

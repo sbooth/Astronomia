@@ -10,7 +10,7 @@
 /// Longitude is measured in the frame's fundamental plane from the x axis toward the y axis,
 /// and latitude from that plane toward the z axis. In an ``EquatorialFrame`` they are right
 /// ascension and declination, and in an ``EclipticFrame`` ecliptic longitude and latitude. In
-/// a frame of date, a ``DatedReferenceFrame``, it also carries the frame's epoch.
+/// a frame with an epoch, such as a ``DatedReferenceFrame``, it also carries the frame's epoch.
 public struct SphericalPosition<Frame: ReferenceFrame>: Hashable, Sendable {
 	/// The longitude, in the right-open interval [0, 2π).
 	public let longitude: Angle
@@ -19,7 +19,7 @@ public struct SphericalPosition<Frame: ReferenceFrame>: Hashable, Sendable {
 	public let latitude: Angle
 	/// The distance from the origin.
 	public let distance: Distance
-	/// The epoch of the frame, ``NoEpoch`` for a fixed frame.
+	/// The epoch of the frame, ``NoEpoch`` for a frame without one.
 	let frameEpoch: Frame.Epoch
 
 	/// Creates a spherical position at an epoch of the frame, reducing the longitude to
@@ -32,7 +32,7 @@ public struct SphericalPosition<Frame: ReferenceFrame>: Hashable, Sendable {
 	}
 }
 
-extension SphericalPosition where Frame: FixedReferenceFrame {
+extension SphericalPosition where Frame.Epoch == NoEpoch {
 	/// Creates a spherical position.
 	///
 	/// The longitude is reduced to [0, 2π). A latitude outside [-π/2, π/2] is kept as given; it
@@ -47,8 +47,8 @@ extension SphericalPosition where Frame: FixedReferenceFrame {
 	}
 }
 
-extension SphericalPosition where Frame: DatedReferenceFrame {
-	/// Creates a spherical position in a frame of date.
+extension SphericalPosition where Frame.Epoch == Instant<TT> {
+	/// Creates a spherical position in a frame with an epoch.
 	///
 	/// The longitude is reduced to [0, 2π). A latitude outside [-π/2, π/2] is kept as given; it
 	/// still describes a direction, the one reached by continuing over the pole.
@@ -69,7 +69,7 @@ extension SphericalPosition where Frame: DatedReferenceFrame {
 	}
 }
 
-extension SphericalPosition where Frame: EquatorialFrame & FixedReferenceFrame {
+extension SphericalPosition where Frame: EquatorialFrame, Frame.Epoch == NoEpoch {
 	/// Creates a spherical position from right ascension and declination.
 	///
 	/// - Parameters:
@@ -81,8 +81,9 @@ extension SphericalPosition where Frame: EquatorialFrame & FixedReferenceFrame {
 	}
 }
 
-extension SphericalPosition where Frame: EquatorialFrame & DatedReferenceFrame {
-	/// Creates a spherical position from right ascension and declination in a frame of date.
+extension SphericalPosition where Frame: EquatorialFrame, Frame.Epoch == Instant<TT> {
+	/// Creates a spherical position from right ascension and declination in a frame with an
+	/// epoch.
 	///
 	/// - Parameters:
 	///   - rightAscension: The right ascension.

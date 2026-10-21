@@ -9,13 +9,13 @@
 ///
 /// Like ``Position``, a velocity is relative to an origin that the frame does not fix:
 /// subtracting the velocities of two bodies from the same origin gives the velocity of one
-/// relative to the other. In a frame of date, a ``DatedReferenceFrame``, it also carries the
-/// frame's ``epoch``, and `adding(_:)` and `subtracting(_:)` throw when the epochs differ, in
-/// place of the `+` and `-` of fixed frames.
+/// relative to the other. In a frame with an epoch, such as a ``DatedReferenceFrame`` or the
+/// ``TIRS``, it also carries the frame's ``epoch``, and `adding(_:)` and `subtracting(_:)`
+/// throw when the epochs differ, in place of the `+` and `-` of frames without an epoch.
 public struct Velocity<Frame: ReferenceFrame>: Hashable, Sendable {
 	/// The components in astronomical units per day.
 	let vector: Vector3
-	/// The epoch of the frame, ``NoEpoch`` for a fixed frame.
+	/// The epoch of the frame, ``NoEpoch`` for a frame without one.
 	let frameEpoch: Frame.Epoch
 
 	/// Creates a velocity from components in astronomical units per day at an epoch of the
@@ -82,7 +82,7 @@ extension Velocity {
 	}
 }
 
-extension Velocity where Frame: FixedReferenceFrame {
+extension Velocity where Frame.Epoch == NoEpoch {
 	/// Creates a velocity from components in astronomical units per day.
 	init(_ vector: Vector3) {
 		self.init(vector, frameEpoch: NoEpoch())
@@ -102,7 +102,9 @@ extension Velocity where Frame: FixedReferenceFrame {
 	public init(kilometersPerSecond components: SIMD3<Double>) {
 		self.init(Self.astronomicalUnitsPerDay(fromKilometersPerSecond: components))
 	}
+}
 
+extension Velocity where Frame: FixedReferenceFrame {
 	/// Returns the same velocity in another frame fixed relative to the ICRS.
 	///
 	/// - Parameter frame: The frame to express the velocity in.
@@ -112,9 +114,9 @@ extension Velocity where Frame: FixedReferenceFrame {
 	}
 }
 
-/// Velocities in a fixed frame form an additive group with rest as zero. A frame of date has no
-/// zero without an epoch, so its velocities don't conform.
-extension Velocity: AdditiveArithmetic where Frame: FixedReferenceFrame {
+/// Velocities in a frame without an epoch form an additive group with rest as zero. A frame
+/// with an epoch has no zero without one, so its velocities don't conform.
+extension Velocity: AdditiveArithmetic where Frame.Epoch == NoEpoch {
 	/// The velocity of a body at rest relative to the origin.
 	public static var zero: Velocity {
 		Velocity(.zero)
@@ -132,8 +134,9 @@ extension Velocity: AdditiveArithmetic where Frame: FixedReferenceFrame {
 	}
 }
 
-extension Velocity where Frame: DatedReferenceFrame {
-	/// Creates a velocity from components in astronomical units per day in a frame of date.
+extension Velocity where Frame.Epoch == Instant<TT> {
+	/// Creates a velocity from components in astronomical units per day in a frame with an
+	/// epoch.
 	///
 	/// - Parameters:
 	///   - astronomicalUnitsPerDay: The components along the frame's x, y, and z axes.
@@ -142,7 +145,7 @@ extension Velocity where Frame: DatedReferenceFrame {
 		self.init(Vector3(components.x, components.y, components.z), frameEpoch: epoch)
 	}
 
-	/// Creates a velocity from components in kilometers per second in a frame of date.
+	/// Creates a velocity from components in kilometers per second in a frame with an epoch.
 	///
 	/// - Parameters:
 	///   - kilometersPerSecond: The components along the frame's x, y, and z axes.
@@ -151,7 +154,7 @@ extension Velocity where Frame: DatedReferenceFrame {
 		self.init(Self.astronomicalUnitsPerDay(fromKilometersPerSecond: components), frameEpoch: epoch)
 	}
 
-	/// The velocity of a body at rest relative to the origin of a frame of date.
+	/// The velocity of a body at rest relative to the origin of a frame with an epoch.
 	///
 	/// - Parameter epoch: The epoch of the frame.
 	public static func zero(epoch: Instant<TT>) -> Velocity {
@@ -186,14 +189,14 @@ extension Velocity where Frame: DatedReferenceFrame {
 	}
 }
 
-extension Rotation where From: FixedReferenceFrame {
+extension Rotation where From.Epoch == NoEpoch {
 	/// Returns a velocity in the `From` frame expressed in the `To` frame.
 	public static func * (lhs: Rotation, rhs: Velocity<From>) -> Velocity<To> {
 		Velocity<To>(lhs.apply(to: rhs.vector), frameEpoch: lhs.toFrameEpoch)
 	}
 }
 
-extension Rotation where From: DatedReferenceFrame {
+extension Rotation where From.Epoch == Instant<TT> {
 	/// Returns a velocity in the `From` frame of date expressed in the `To` frame.
 	///
 	/// - Parameter velocity: A velocity at the rotation's `From` epoch.

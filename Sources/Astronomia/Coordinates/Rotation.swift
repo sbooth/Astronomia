@@ -21,17 +21,18 @@
 /// SOFA convention: R1(θ), R2(θ), and R3(θ) rotate the axes by θ counterclockwise about the
 /// x, y, and z axes, seen from the positive end of the axis.
 ///
-/// A rotation to or from a frame of date, a ``DatedReferenceFrame``, is for one epoch of that
-/// frame. It gives values at its `To` epoch, and a rotation from a frame of date applies only
-/// to values at its `From` epoch, so it rotates and composes with the throwing
-/// `apply(to:)` and `composed(after:)` in place of `*`. A rotation between two epochs of the
-/// same frame of date, such as precession from one date to another, is a `Rotation<F, F>`.
+/// A rotation to or from a frame with an epoch, such as a ``DatedReferenceFrame``, is for one
+/// epoch of that frame. It gives values at its `To` epoch, and a rotation from a frame with an
+/// epoch applies only to values at its `From` epoch, so it rotates and composes with the
+/// throwing `apply(to:)` and `composed(after:)` in place of `*`. A rotation between two epochs
+/// of the same frame of date, such as precession from one date to another, is a
+/// `Rotation<F, F>`.
 public struct Rotation<From: ReferenceFrame, To: ReferenceFrame>: Hashable, Sendable {
 	/// The rows of the rotation matrix.
 	let storage: (Vector3, Vector3, Vector3)
-	/// The epoch of the `From` frame, ``NoEpoch`` for a fixed frame.
+	/// The epoch of the `From` frame, ``NoEpoch`` for a frame without one.
 	let fromFrameEpoch: From.Epoch
-	/// The epoch of the `To` frame, ``NoEpoch`` for a fixed frame.
+	/// The epoch of the `To` frame, ``NoEpoch`` for a frame without one.
 	let toFrameEpoch: To.Epoch
 
 	/// Creates a rotation from the rows of an orthogonal matrix and the epochs of its frames.
@@ -57,8 +58,9 @@ public struct Rotation<From: ReferenceFrame, To: ReferenceFrame>: Hashable, Send
 	}
 }
 
-extension Rotation where From: FixedReferenceFrame, To: FixedReferenceFrame {
-	/// Creates a rotation between fixed frames from the rows of an orthogonal matrix.
+extension Rotation where From.Epoch == NoEpoch, To.Epoch == NoEpoch {
+	/// Creates a rotation between frames without an epoch from the rows of an orthogonal
+	/// matrix.
 	///
 	/// - Precondition: The matrix is orthogonal with determinant 1.
 	init(uncheckedRows r0: Vector3, _ r1: Vector3, _ r2: Vector3) {
@@ -108,14 +110,14 @@ extension Rotation where From: FixedReferenceFrame, To: FixedReferenceFrame {
 	}
 }
 
-extension Rotation where From: DatedReferenceFrame {
+extension Rotation where From.Epoch == Instant<TT> {
 	/// The epoch of the `From` frame of date, at which values must be to be rotated.
 	public var fromEpoch: Instant<TT> {
 		fromFrameEpoch
 	}
 }
 
-extension Rotation where To: DatedReferenceFrame {
+extension Rotation where To.Epoch == Instant<TT> {
 	/// The epoch of the `To` frame of date, at which rotated values are.
 	public var toEpoch: Instant<TT> {
 		toFrameEpoch
@@ -172,7 +174,7 @@ extension Rotation {
 	}
 }
 
-extension Rotation where From: FixedReferenceFrame {
+extension Rotation where From.Epoch == NoEpoch {
 	/// Returns the rotation that applies `rhs` and then `lhs`.
 	///
 	/// - Parameters:
@@ -194,7 +196,7 @@ extension Rotation where From: FixedReferenceFrame {
 	}
 }
 
-extension Rotation where From: DatedReferenceFrame {
+extension Rotation where From.Epoch == Instant<TT> {
 	/// Returns the rotation that applies another rotation and then this one.
 	///
 	/// - Parameter other: The rotation applied first, to the `From` frame at this rotation's

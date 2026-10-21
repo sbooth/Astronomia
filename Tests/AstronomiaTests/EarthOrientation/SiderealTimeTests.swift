@@ -52,7 +52,7 @@ import Testing
 		// and the equations of the origins and equinoxes change by about 0.7 mas.
 		let offsets = CelestialPoleOffsets(dX: Angle(arcseconds: 0.3e-3), dY: Angle(arcseconds: -0.2e-3))
 		let entries = (2_460_000 ... 2_460_002).map { EarthOrientationTable.Entry(utcDay: $0, ut1MinusUTC: -0.01, celestialPoleOffsets: offsets) }
-		let observed = EarthOrientation(table: try #require(EarthOrientationTable(entries: entries)))
+		let observed = EarthOrientation(table: EarthOrientationTable(entries: entries))
 		let tt = try Instant<TT>(JulianDate(julianDate: 2_460_001))
 		let shift = (EarthRotation.equationOfTheEquinoxes(at: tt, earthOrientation: observed) - EarthRotation.equationOfTheEquinoxes(at: tt)).radians
 		let longitude = (IAU2006.nutation(at: tt, earthOrientation: observed).longitude - IAU2006.nutation(at: tt).longitude).radians
