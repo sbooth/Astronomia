@@ -72,10 +72,30 @@ import Testing
 				}
 			}
 			// The pole moves by the offsets in the CIRS and the true equator alike.
-			let trueEquator = IAU2006.Orientation(at: t, poleOffsets: (dX, dY)).trueEquator
+			let corrected = IAU2006.Orientation(at: t, poleOffsets: (dX, dY))
 			let modelPole = IAU2006.Orientation(at: t, poleOffsets: nil).trueEquator.storage.2
-			#expect(abs(trueEquator.storage.2.x - modelPole.x - dX) * Self.uas <= 0.001)
-			#expect(abs(trueEquator.storage.2.y - modelPole.y - dY) * Self.uas <= 0.001)
+			#expect(abs(corrected.trueEquator.storage.2.x - modelPole.x - dX) * Self.uas <= 0.001)
+			#expect(abs(corrected.trueEquator.storage.2.y - modelPole.y - dY) * Self.uas <= 0.001)
+		}
+	}
+
+	@Test func poleOffsetsMoveTheTrueEquinox() throws {
+		// The corrected nutation gives the corrected pole, and the true equator built from the
+		// CIRS matches bias, precession, and the corrected nutation, origin and all. The
+		// equinox moves along the equator by δΔψ cos ε_A to a few percent, near 0.7 mas for
+		// dX = 0.3 mas.
+		let dX = Angle(arcseconds: 0.3e-3).radians
+		let dY = Angle(arcseconds: -0.2e-3).radians
+		for t in [-10.0, -1, 0, 0.26, 1, 10] {
+			let corrected = IAU2006.Orientation(at: t, poleOffsets: (dX, dY))
+			let model = IAU2006.Orientation(at: t, poleOffsets: nil)
+			let expected = IAU2006.biasPrecessionNutation(angles: corrected.angles, nutation: corrected.nutation)
+			let rows = [expected.rows.0, expected.rows.1, expected.rows.2]
+			#expect(Self.difference(corrected.trueEquator, rows.flatMap { [$0.x, $0.y, $0.z] }) <= 0.001, "\(t)")
+			let shift = corrected.equationOfOrigins - model.equationOfOrigins
+			let longitude = corrected.nutation.longitude - model.nutation.longitude
+			#expect(abs(shift + longitude * Math.cos(corrected.angles.epsilon)) <= 0.05 * abs(shift), "\(t)")
+			#expect((500 ... 800).contains(abs(shift) * Self.uas), "\(t)")
 		}
 	}
 
