@@ -323,8 +323,9 @@ extension JulianDate {
 	/// Beyond that, `jd1` is rounded to the nearest `Double`, so `jd1 + jd2` only approximates
 	/// this Julian Date.
 	///
-	/// `jd2` can also round. ``SplitMethod/dateAndTime`` and ``SplitMethod/dayAndFractionFromMJD0`` round
-	/// the time of day by up to 2^-54 days; it is exact from midnight to 06:00.
+	/// `jd2` can also round. ``SplitMethod/dateAndTime`` and
+	/// ``SplitMethod/dayAndFractionFromMJD0`` round the time of day by up to 2^-54 days; it is
+	/// exact from midnight to 06:00.
 	///
 	/// ``SplitMethod/julianDate``, ``SplitMethod/j2000`` and ``SplitMethod/mjd`` hold a single
 	/// value, limited by the precision of one `Double`.
@@ -354,7 +355,8 @@ extension JulianDate {
 	/// - Parameter method: The way to divide the Julian Date.
 	/// - Returns: Two values whose sum is this Julian Date, subject to the precision limits
 	///   described in ``SplitMethod``. For ``SplitMethod/dayAndFractionFromJ2000`` and
-	///   ``SplitMethod/dayAndFractionFromMJD0`` the sum is measured from J2000.0 or MJD zero, respectively.
+	///   ``SplitMethod/dayAndFractionFromMJD0`` the sum is measured from J2000.0 or MJD zero,
+	///   respectively.
 	public func parts(using method: SplitMethod) -> (jd1: Double, jd2: Double) {
 		switch method {
 		case .julianDate:
