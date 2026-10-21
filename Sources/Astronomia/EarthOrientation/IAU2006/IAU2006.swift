@@ -11,12 +11,20 @@ internal import CAstronomiaData
 /// 2002, with the IAU 2006 adjustments), as given in the IERS Conventions (2010), Chapter 5.
 ///
 /// Precession is expressed by the Fukushima-Williams angles, which include the frame bias, and
-/// nutation by its components in longitude and obliquity. Their time argument t is TT in Julian
-/// centuries from J2000.0.
+/// nutation by its components in longitude and obliquity. Their time argument is TT.
+///
+/// The frames of date, such as ``TrueEquatorOfDate`` and ``CIRS``, and the sidereal times of
+/// ``EarthRotation`` follow this model. The quantities here are for classical calculations
+/// that need them directly:
+///
+/// ```swift
+/// let nutation = IAU2006.nutation(at: tt)
+/// let trueObliquity = IAU2006.meanObliquity(at: tt) + nutation.obliquity
+/// ```
 ///
 /// - Note: Petit, G., Luzum, B. (eds.) (2010). IERS Conventions (2010). IERS Technical Note
 ///   No. 36.
-enum IAU2006 {
+public enum IAU2006 {
 	/// The nutation in longitude Δψ, IAU 2000A_R06, from Table 5.3a.
 	static let nutationInLongitude = SeriesData(astronomia_iau2006_nutation_longitude)
 	/// The nutation in obliquity Δε, IAU 2000A_R06, from Table 5.3b.

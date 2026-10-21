@@ -19,6 +19,10 @@ extension IAU2006 {
 		let intermediate: Rotation<ICRS, ICRS>
 		/// The equation of the origins, in radians.
 		let equationOfOrigins: Double
+		/// The X and Y coordinates of the CIP, in radians, corrected for the pole offsets.
+		let pole: (x: Double, y: Double)
+		/// The CIO locator s, in radians.
+		let s: Double
 
 		/// Computes the orientation at a time.
 		///
@@ -38,15 +42,17 @@ extension IAU2006 {
 			let model = biasPrecessionNutation(angles: angles, nutation: modelNutation)
 			let x = model.storage.2.x
 			let y = model.storage.2.y
-			let s = cioLocator(at: t, arguments: arguments, x: x, y: y)
+			s = cioLocator(at: t, arguments: arguments, x: x, y: y)
 			if let poleOffsets {
 				nutation = correctedNutation(modelNutation, angles: angles, pole: (x, y), poleOffsets: poleOffsets)
 				let corrected = biasPrecessionNutation(angles: angles, nutation: nutation)
 				equationOfOrigins = IAU2006.equationOfOrigins(matrix: corrected, s: s)
-				intermediate = celestialToIntermediate(x: x + poleOffsets.dX, y: y + poleOffsets.dY, s: s)
+				pole = (x + poleOffsets.dX, y + poleOffsets.dY)
+				intermediate = celestialToIntermediate(x: pole.x, y: pole.y, s: s)
 				trueEquator = Rotation<ICRS, ICRS>.aboutZ(Angle(radians: equationOfOrigins)) * intermediate
 			} else {
 				equationOfOrigins = IAU2006.equationOfOrigins(matrix: model, s: s)
+				pole = (x, y)
 				intermediate = celestialToIntermediate(x: x, y: y, s: s)
 				trueEquator = model
 				nutation = modelNutation

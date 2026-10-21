@@ -13,6 +13,9 @@
 /// which the IERS publishes as the celestial pole offsets dX and dY. With a table that
 /// covers the date, the frames apply its offsets; otherwise they follow the model alone.
 ///
+/// The Earth's rotation also needs UT1, from ``ut1``, which by default takes ΔT from the
+/// table, then the built-in ΔT table and model.
+///
 /// ```swift
 /// let observed = EarthOrientation(table: table)
 /// let tod = icrs.converted(to: TrueEquatorOfDate.self, at: tt, earthOrientation: observed)
@@ -24,13 +27,20 @@ public struct EarthOrientation: Sendable {
 
 	/// Observed and predicted Earth orientation parameters, or `nil` for the models alone.
 	public var table: EarthOrientationTable?
+	/// The source of UT1 for the Earth's rotation.
+	public var ut1: UT1.Context
 
-	/// Creates a context.
+	/// Creates a description of the Earth's orientation.
 	///
-	/// - Parameter table: Observed and predicted Earth orientation parameters, or `nil` for
-	///   the models alone.
-	public init(table: EarthOrientationTable? = nil) {
+	/// - Parameters:
+	///   - table: Observed and predicted Earth orientation parameters, or `nil` for the models
+	///     alone.
+	///   - ut1: The source of UT1, or `nil` for a context that takes ΔT from `table`, then the
+	///     built-in ΔT table and model, as
+	///     ``UT1/Context/init(earthOrientation:deltaTTable:model:)`` does.
+	public init(table: EarthOrientationTable? = nil, ut1: UT1.Context? = nil) {
 		self.table = table
+		self.ut1 = ut1 ?? UT1.Context(earthOrientation: table)
 	}
 
 	/// Returns the celestial pole offsets at a TT instant, if the table covers it and has them.

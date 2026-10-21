@@ -35,7 +35,7 @@ public enum TrueEquatorOfDate: EquatorialFrame, DatedReferenceFrame {
 	public static let name = "True equator of date"
 
 	public static func rotationFromICRS(at epoch: Instant<TT>, earthOrientation: EarthOrientation) -> Rotation<ICRS, TrueEquatorOfDate> {
-		let orientation = IAU2006.Orientation(at: epoch.julianDate.julianCenturiesSinceJ2000, poleOffsets: earthOrientation.poleOffsets(at: epoch))
+		let orientation = IAU2006.Orientation(at: epoch, earthOrientation: earthOrientation)
 		return orientation.trueEquator.relabeled(fromFrameEpoch: NoEpoch(), toFrameEpoch: epoch)
 	}
 }
@@ -55,7 +55,7 @@ public enum CIRS: EquatorialFrame, DatedReferenceFrame {
 	public static let name = "CIRS"
 
 	public static func rotationFromICRS(at epoch: Instant<TT>, earthOrientation: EarthOrientation) -> Rotation<ICRS, CIRS> {
-		let orientation = IAU2006.Orientation(at: epoch.julianDate.julianCenturiesSinceJ2000, poleOffsets: earthOrientation.poleOffsets(at: epoch))
+		let orientation = IAU2006.Orientation(at: epoch, earthOrientation: earthOrientation)
 		return orientation.intermediate.relabeled(fromFrameEpoch: NoEpoch(), toFrameEpoch: epoch)
 	}
 }
@@ -85,7 +85,7 @@ public enum TrueEclipticOfDate: EclipticFrame, DatedReferenceFrame {
 	public static let name = "True ecliptic of date"
 
 	public static func rotationFromICRS(at epoch: Instant<TT>, earthOrientation: EarthOrientation) -> Rotation<ICRS, TrueEclipticOfDate> {
-		let orientation = IAU2006.Orientation(at: epoch.julianDate.julianCenturiesSinceJ2000, poleOffsets: earthOrientation.poleOffsets(at: epoch))
+		let orientation = IAU2006.Orientation(at: epoch, earthOrientation: earthOrientation)
 		return orientation.trueEcliptic.relabeled(fromFrameEpoch: NoEpoch(), toFrameEpoch: epoch)
 	}
 }
