@@ -37,10 +37,10 @@ public struct EarthOrientation: Sendable {
 	///     alone.
 	///   - ut1: The source of UT1, or `nil` for a context that takes ΔT from `table`, then the
 	///     built-in ΔT table and model, as
-	///     ``UT1/Context/init(earthOrientation:deltaTTable:model:)`` does.
+	///     ``UT1/Context/init(earthOrientationTable:deltaTTable:model:)`` does.
 	public init(table: EarthOrientationTable? = nil, ut1: UT1.Context? = nil) {
 		self.table = table
-		self.ut1 = ut1 ?? UT1.Context(earthOrientation: table)
+		self.ut1 = ut1 ?? UT1.Context(earthOrientationTable: table)
 	}
 
 	/// Returns the polar motion at a TT instant, or zero if the table doesn't cover it or has

@@ -258,7 +258,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		// meet it, rather than the model itself.
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		let model = DeltaTModel.espenakMeeus2006
-		let context = UT1.Context.continuous(earthOrientation: table, deltaTTable: nil, model: model)
+		let context = UT1.Context.continuous(earthOrientationTable: table, deltaTTable: nil, model: model)
 		let start = table.coverage.lowerBound
 		let startDeltaT = try #require(table.deltaT(at: start))
 		// The model is about 1.4 s from the first observation, so following it unadjusted
@@ -280,7 +280,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let end = table.coverage.upperBound
 		let endDeltaT = try #require(table.deltaT(at: end))
 		// Without the ΔT table, which covers these dates
-		let context = UT1.Context.continuous(earthOrientation: table, deltaTTable: nil, model: .espenakMeeus2006)
+		let context = UT1.Context.continuous(earthOrientationTable: table, deltaTTable: nil, model: .espenakMeeus2006)
 
 		// A day after the last observation, ΔT is close to it, not the model's value
 		let nextDay = try table.coverage.upperBound.adding(days: 1)

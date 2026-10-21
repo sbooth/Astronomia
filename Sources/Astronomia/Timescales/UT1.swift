@@ -24,7 +24,7 @@
 /// 6.5 s at 1657.0, and by about 12 s where the trend ends and the model begins. Where ΔT
 /// steps up, UT1 instants within the step have no exact TT, and where it steps down they have two,
 /// so ``toTT(_:context:)`` and ``fromTT(_:context:)`` are not exact inverses within a step's
-/// width of a handover. Use ``Context/continuous(earthOrientation:deltaTTable:model:)`` to
+/// width of a handover. Use ``Context/continuous(earthOrientationTable:deltaTTable:model:)`` to
 /// join the sources continuously instead. In either context, the default model itself steps
 /// by about 44 s at -720, where its spline hands over to its long-term parabola as published.
 public enum UT1: Timescale {
@@ -79,7 +79,7 @@ extension UT1 {
 		/// Creates a UT1 context that takes ΔT from the first of Earth orientation data, a ΔT
 		/// table, and a model that covers the date.
 		///
-		/// Whichever of `earthOrientation` and `deltaTTable` ends later is continued along its
+		/// Whichever of `earthOrientationTable` and `deltaTTable` ends later is continued along its
 		/// trend over the last year for ``defaultTrendYears`` Julian years. Every other value
 		/// comes unchanged from one source, so ΔT can be discontinuous where one source hands
 		/// over to the next, including where the trend ends.
@@ -88,30 +88,31 @@ extension UT1 {
 		/// pass a ``DeltaTSourceList`` to ``init(deltaT:)``.
 		///
 		/// - Parameters:
-		///   - earthOrientation: Observed and predicted Earth orientation.
-		///   - deltaTTable: Tabulated ΔT, used outside `earthOrientation`.
+		///   - earthOrientationTable: Observed and predicted Earth orientation.
+		///   - deltaTTable: Tabulated ΔT, used outside `earthOrientationTable`.
 		///   - model: The model used outside the data, or `nil` to require data.
 		public init(
-			earthOrientation: EarthOrientationTable? = nil,
+			earthOrientationTable: EarthOrientationTable? = nil,
 			deltaTTable: DeltaTTable? = .builtIn,
 			model: DeltaTModel? = .stephensonMorrisonHohenkerk2016
 		) {
-			self.init(uncheckedEarthOrientation: earthOrientation, deltaTTable: deltaTTable, model: model, trendYears: Self.defaultTrendYears)
+			self.init(uncheckedEarthOrientationTable: earthOrientationTable, deltaTTable: deltaTTable, model: model, trendYears: Self.defaultTrendYears)
 		}
 
-		/// Creates a UT1 context like ``init(earthOrientation:deltaTTable:model:)``, continuing
-		/// the most recent observations along their trend for `trendYears` Julian years.
+		/// Creates a UT1 context like ``init(earthOrientationTable:deltaTTable:model:)``,
+		/// continuing the most recent observations along their trend for `trendYears` Julian
+		/// years.
 		///
 		/// - Parameters:
-		///   - earthOrientation: Observed and predicted Earth orientation.
-		///   - deltaTTable: Tabulated ΔT, used outside `earthOrientation`.
+		///   - earthOrientationTable: Observed and predicted Earth orientation.
+		///   - deltaTTable: Tabulated ΔT, used outside `earthOrientationTable`.
 		///   - model: The model used outside the data, or `nil` to require data.
 		///   - trendYears: The number of Julian years to continue the most recent
 		///     observations, or `nil` to use only published values.
 		/// - Throws: ``TimescaleConversionError/invalidExtrapolationLimit`` if `trendYears` is
 		///   not finite and nonnegative.
 		public init(
-			earthOrientation: EarthOrientationTable? = nil,
+			earthOrientationTable: EarthOrientationTable? = nil,
 			deltaTTable: DeltaTTable? = .builtIn,
 			model: DeltaTModel? = .stephensonMorrisonHohenkerk2016,
 			trendYears: Double?
@@ -119,20 +120,20 @@ extension UT1 {
 			if let trendYears {
 				guard trendYears.isFinite, trendYears >= 0 else { throw .invalidExtrapolationLimit }
 			}
-			self.init(uncheckedEarthOrientation: earthOrientation, deltaTTable: deltaTTable, model: model, trendYears: trendYears)
+			self.init(uncheckedEarthOrientationTable: earthOrientationTable, deltaTTable: deltaTTable, model: model, trendYears: trendYears)
 		}
 
 		/// Creates a UT1 context with a trend length already known to be valid.
 		///
 		/// - Precondition: `trendYears` satisfies the requirements of
-		///   ``init(earthOrientation:deltaTTable:model:trendYears:)``.
+		///   ``init(earthOrientationTable:deltaTTable:model:trendYears:)``.
 		init(
-			uncheckedEarthOrientation earthOrientation: EarthOrientationTable?,
+			uncheckedEarthOrientationTable earthOrientationTable: EarthOrientationTable?,
 			deltaTTable: DeltaTTable?,
 			model: DeltaTModel?,
 			trendYears: Double?
 		) {
-			let latest = Self.latestObservations(earthOrientation, deltaTTable)
+			let latest = Self.latestObservations(earthOrientationTable, deltaTTable)
 			var sources: [any DeltaTSource] = []
 			/// Appends `source`, followed by its trend if it has the most recent observations.
 			func append(_ source: some DeltaTSource, isLatest: Bool) {
@@ -147,7 +148,7 @@ extension UT1 {
 				}
 			}
 
-			if let earthOrientation { append(earthOrientation, isLatest: latest == .earthOrientation) }
+			if let earthOrientationTable { append(earthOrientationTable, isLatest: latest == .earthOrientationTable) }
 			if let deltaTTable { append(deltaTTable, isLatest: latest == .deltaTTable) }
 			if let model { sources.append(model) }
 			self.init(deltaT: DeltaTSourceList(sources))
@@ -156,26 +157,26 @@ extension UT1 {
 		/// Returns a UT1 context that takes ΔT from Earth orientation data and a ΔT table, with
 		/// a model offset to join them continuously.
 		///
-		/// ΔT comes from `earthOrientation`, then `deltaTTable`, within their ranges. Before the
-		/// start of whichever starts earlier, and after the end of whichever ends later, ΔT
-		/// follows `model` offset to join the data continuously. ΔT can still step where
-		/// `earthOrientation` hands over to `deltaTTable`, by milliseconds between the
-		/// observations.
+		/// ΔT comes from `earthOrientationTable`, then `deltaTTable`, within their ranges.
+		/// Before the start of whichever starts earlier, and after the end of whichever ends
+		/// later, ΔT follows `model` offset to join the data continuously. ΔT can still step
+		/// where `earthOrientationTable` hands over to `deltaTTable`, by milliseconds between
+		/// the observations.
 		///
 		/// The joined values are not published values: before 1657.0, for example, ΔT is the
 		/// model's plus about 6.5 s.
 		///
 		/// - Parameters:
-		///   - earthOrientation: Observed and predicted Earth orientation.
+		///   - earthOrientationTable: Observed and predicted Earth orientation.
 		///   - deltaTTable: Tabulated ΔT.
 		///   - model: The model used outside the data, or `nil` to require data.
 		public static func continuous(
-			earthOrientation: EarthOrientationTable? = nil,
+			earthOrientationTable: EarthOrientationTable? = nil,
 			deltaTTable: DeltaTTable? = .builtIn,
 			model: DeltaTModel? = .stephensonMorrisonHohenkerk2016
 		) -> Context {
-			let earliest = Self.earliestObservations(earthOrientation, deltaTTable)
-			let latest = Self.latestObservations(earthOrientation, deltaTTable)
+			let earliest = Self.earliestObservations(earthOrientationTable, deltaTTable)
+			let latest = Self.latestObservations(earthOrientationTable, deltaTTable)
 			var sources: [any DeltaTSource] = []
 			/// Appends `source`, followed by `model` joined before its start if it starts earliest
 			/// and after its end if it ends latest.
@@ -192,7 +193,7 @@ extension UT1 {
 				}
 			}
 
-			if let earthOrientation { append(earthOrientation, .earthOrientation) }
+			if let earthOrientationTable { append(earthOrientationTable, .earthOrientationTable) }
 			if let deltaTTable { append(deltaTTable, .deltaTTable) }
 			if let model {
 				sources.append(model)
@@ -202,18 +203,18 @@ extension UT1 {
 
 		/// A source of observations.
 		private enum Observations {
-			case earthOrientation
+			case earthOrientationTable
 			case deltaTTable
 		}
 
 		/// Returns which of the sources starts earlier, preferring Earth orientation data on a
 		/// tie.
-		private static func earliestObservations(_ earthOrientation: EarthOrientationTable?, _ deltaTTable: DeltaTTable?) -> Observations? {
-			switch (earthOrientation, deltaTTable) {
-			case let (earthOrientation?, deltaTTable?):
-				earthOrientation.coverage.lowerBound <= deltaTTable.coverage.lowerBound ? .earthOrientation : .deltaTTable
+		private static func earliestObservations(_ earthOrientationTable: EarthOrientationTable?, _ deltaTTable: DeltaTTable?) -> Observations? {
+			switch (earthOrientationTable, deltaTTable) {
+			case let (earthOrientationTable?, deltaTTable?):
+				earthOrientationTable.coverage.lowerBound <= deltaTTable.coverage.lowerBound ? .earthOrientationTable : .deltaTTable
 			case (_?, nil):
-				.earthOrientation
+				.earthOrientationTable
 			case (nil, _?):
 				.deltaTTable
 			case (nil, nil):
@@ -222,12 +223,12 @@ extension UT1 {
 		}
 
 		/// Returns which of the sources ends later, preferring Earth orientation data on a tie.
-		private static func latestObservations(_ earthOrientation: EarthOrientationTable?, _ deltaTTable: DeltaTTable?) -> Observations? {
-			switch (earthOrientation, deltaTTable) {
-			case let (earthOrientation?, deltaTTable?):
-				earthOrientation.coverage.upperBound >= deltaTTable.coverage.upperBound ? .earthOrientation : .deltaTTable
+		private static func latestObservations(_ earthOrientationTable: EarthOrientationTable?, _ deltaTTable: DeltaTTable?) -> Observations? {
+			switch (earthOrientationTable, deltaTTable) {
+			case let (earthOrientationTable?, deltaTTable?):
+				earthOrientationTable.coverage.upperBound >= deltaTTable.coverage.upperBound ? .earthOrientationTable : .deltaTTable
 			case (_?, nil):
-				.earthOrientation
+				.earthOrientationTable
 			case (nil, _?):
 				.deltaTTable
 			case (nil, nil):

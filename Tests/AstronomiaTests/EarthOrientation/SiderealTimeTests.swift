@@ -106,7 +106,7 @@ import Testing
 		let table = try #require(EarthOrientationTable(entries: entries))
 		let tt = try Instant<TT>(JulianDate(julianDate: 2_460_001))
 		let fromTable = try UT1.fromTT(tt.julianDate, context: EarthOrientation(table: table).ut1)
-		let expected = try UT1.fromTT(tt.julianDate, context: UT1.Context(earthOrientation: table))
+		let expected = try UT1.fromTT(tt.julianDate, context: UT1.Context(earthOrientationTable: table))
 		#expect(fromTable == expected)
 		#expect(try UT1.fromTT(tt.julianDate, context: EarthOrientation.model.ut1) != fromTable)
 	}

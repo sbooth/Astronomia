@@ -109,7 +109,7 @@ import Testing
 
 	@Test func extrapolationFollowingModel() throws {
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
-		let context = UT1.Context.continuous(earthOrientation: table, deltaTTable: nil, model: .espenakMeeus2006)
+		let context = UT1.Context.continuous(earthOrientationTable: table, deltaTTable: nil, model: .espenakMeeus2006)
 		let end = table.coverage.upperBound
 		for tt in try [end, end.adding(seconds: 1), end.adding(days: 365)] {
 			try Self.expectUT1RoundTrip(tt, context)

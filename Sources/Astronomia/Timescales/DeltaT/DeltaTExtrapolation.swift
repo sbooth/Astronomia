@@ -12,10 +12,10 @@
 ///
 /// ```swift
 /// // The last observation, held for 30 days
-/// let end = earthOrientation.coverage.upperBound
+/// let end = table.coverage.upperBound
 /// let limit = try end.adding(days: 30)
-/// let held = try ConstantDeltaTExtrapolation(after: earthOrientation, through: limit)
-/// let context = UT1.Context(deltaT: DeltaTSourceList([earthOrientation, held]))
+/// let held = try ConstantDeltaTExtrapolation(after: table, through: limit)
+/// let context = UT1.Context(deltaT: DeltaTSourceList([table, held]))
 /// ```
 public struct ConstantDeltaTExtrapolation: DeltaTSource {
 	/// ΔT, in seconds.
@@ -71,10 +71,10 @@ public struct ConstantDeltaTExtrapolation: DeltaTSource {
 ///
 /// ```swift
 /// // The observations, continued along their trend over the last year for two years
-/// let end = earthOrientation.coverage.upperBound
+/// let end = table.coverage.upperBound
 /// let limit = try end.adding(days: 2 * 365.25)
-/// let trend = try LinearDeltaTExtrapolation(after: earthOrientation, years: 1, through: limit)
-/// let context = UT1.Context(deltaT: DeltaTSourceList([earthOrientation, trend]))
+/// let trend = try LinearDeltaTExtrapolation(after: table, years: 1, through: limit)
+/// let context = UT1.Context(deltaT: DeltaTSourceList([table, trend]))
 /// ```
 public struct LinearDeltaTExtrapolation: DeltaTSource {
 	/// The rate of change of ΔT, in seconds per Julian year.
@@ -172,8 +172,8 @@ public struct LinearDeltaTExtrapolation: DeltaTSource {
 /// ```swift
 /// // Observations, continued into the future along the model's trend
 /// let model = DeltaTModel.espenakMeeus2006
-/// let future = try JoinedDeltaTSource(model, after: earthOrientation)
-/// let context = UT1.Context(deltaT: DeltaTSourceList([earthOrientation, future, model]))
+/// let future = try JoinedDeltaTSource(model, after: table)
+/// let context = UT1.Context(deltaT: DeltaTSourceList([table, future, model]))
 /// ```
 ///
 /// The joined values are not published values: before 1657.0, for example, the default model
