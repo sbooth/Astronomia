@@ -10,7 +10,7 @@ import Testing
 
 @Suite struct IAU2006Tests {
 	/// Microarcseconds per radian.
-	static let uas = IAU2006.microarcsecondsPerRadian
+	static let uas = microarcsecondsPerRadian
 
 	/// The values of the model at a reference date.
 	struct Model {
@@ -117,7 +117,7 @@ import Testing
 		// At J2000.0 the arguments are the constant terms of the IERS Conventions (2003),
 		// Eqs. (5.43) and (5.44).
 		let arguments = IAU2006.FundamentalArguments(at: 0).values
-		let rad = IAU2006.arcsecondsPerRadian
+		let rad = arcsecondsPerRadian
 		#expect(arguments.0 == 485_868.249_036 / rad)
 		#expect(arguments.4 == 450_160.398_036 / rad)
 		#expect(arguments.5 == 4.402_608_842 && arguments.12 == 5.311_886_287)
