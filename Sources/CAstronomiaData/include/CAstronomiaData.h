@@ -125,4 +125,56 @@ struct astronomia_elp_series_data {
 // ELP/MPP02 geocentric lunar coordinates, from J1000.0 to J3000.0
 extern const struct astronomia_elp_series_data astronomia_elpmpp02;
 
+// Series of the IAU 2006 precession and IAU 2000A_R06 nutation, from the tables of the IERS
+// Conventions (2010), Chapter 5. The terms have arguments that are sums of integer multiples
+// of fourteen fundamental arguments, polynomials in time: the Delaunay arguments l, l', F, D,
+// and Ω, the mean longitudes of Mercury to Neptune, and the general precession in longitude
+// p_A. Coefficients are in microarcseconds, and t is TT in Julian centuries from J2000.0.
+
+/// A series: the terms with the same power of time j.
+struct astronomia_iau_series {
+	/// The power of time j.
+	int32_t power;
+	/// The number of terms.
+	int32_t count;
+};
+
+/// A term t^j (S sin(Σ iₖ Aₖ) + C cos(Σ iₖ Aₖ)), where A₁ to A₁₄ are the fundamental
+/// arguments.
+struct astronomia_iau_term {
+	/// The coefficient of the sine, S, in microarcseconds.
+	double s;
+	/// The coefficient of the cosine, C, in microarcseconds.
+	double c;
+	/// The multipliers iₖ of l, l', F, D, Ω, Mercury to Neptune, and p_A.
+	int8_t multipliers[14];
+};
+
+/// The polynomial part and series of one table, with the series' terms in one array, series by
+/// series, and the truncation they were generated with.
+struct astronomia_iau_series_data {
+	/// The coefficients of t⁰ to t⁵ of the polynomial part, in microarcseconds.
+	double polynomial[6];
+	/// The number of series.
+	size_t series_count;
+	/// The series.
+	const struct astronomia_iau_series *series;
+	/// The number of terms, the sum of the series' counts.
+	size_t term_count;
+	/// The terms of every series, in the order of the series.
+	const struct astronomia_iau_term *terms;
+	/// The threshold below which terms were left out, in microarcseconds, at the largest |t|
+	/// of the span.
+	double threshold;
+	/// The first Julian epoch of the span.
+	double start_epoch;
+	/// The last Julian epoch of the span.
+	double end_epoch;
+};
+
+// IAU 2006/2000A_R06 series
+extern const struct astronomia_iau_series_data astronomia_iau2006_nutation_longitude;
+extern const struct astronomia_iau_series_data astronomia_iau2006_nutation_obliquity;
+extern const struct astronomia_iau_series_data astronomia_iau2006_s_plus_half_xy;
+
 #endif
