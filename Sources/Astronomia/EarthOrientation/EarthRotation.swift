@@ -37,11 +37,12 @@ public enum EarthRotation {
 	///
 	/// - Parameters:
 	///   - ut1: An instant in UT1.
-	///   - context: The source of ΔT used to find TT.
+	///   - earthOrientation: The source of ΔT used to find TT, in its ``EarthOrientation/ut1``.
+	///     GMST does not use the celestial pole offsets.
 	/// - Returns: Greenwich mean sidereal time, in the right-open interval [0, 2π).
 	/// - Throws: A ``TimescaleConversionError`` if TT cannot be found.
-	public static func greenwichMeanSiderealTime(at ut1: Instant<UT1>, context: UT1.Context = UT1.defaultContext) throws(TimescaleConversionError) -> Angle {
-		let tt = try UT1.toTT(ut1.julianDate, context: context)
+	public static func greenwichMeanSiderealTime(at ut1: Instant<UT1>, earthOrientation: EarthOrientation = .model) throws(TimescaleConversionError) -> Angle {
+		let tt = try UT1.toTT(ut1.julianDate, context: earthOrientation.ut1)
 		return greenwichMeanSiderealTime(ut1: ut1.julianDate, tt: tt)
 	}
 
@@ -50,12 +51,31 @@ public enum EarthRotation {
 	///
 	/// - Parameters:
 	///   - tt: An instant in TT.
-	///   - ut1Context: The source of ΔT used to find UT1.
+	///   - earthOrientation: The source of ΔT used to find UT1, in its
+	///     ``EarthOrientation/ut1``. GMST does not use the celestial pole offsets.
 	/// - Returns: Greenwich mean sidereal time, in the right-open interval [0, 2π).
 	/// - Throws: A ``TimescaleConversionError`` if UT1 cannot be found.
-	public static func greenwichMeanSiderealTime(at tt: Instant<TT>, ut1Context: UT1.Context = UT1.defaultContext) throws(TimescaleConversionError) -> Angle {
-		let ut1 = try UT1.fromTT(tt.julianDate, context: ut1Context)
+	public static func greenwichMeanSiderealTime(at tt: Instant<TT>, earthOrientation: EarthOrientation = .model) throws(TimescaleConversionError) -> Angle {
+		let ut1 = try UT1.fromTT(tt.julianDate, context: earthOrientation.ut1)
 		return greenwichMeanSiderealTime(ut1: ut1, tt: tt.julianDate)
+	}
+
+	/// Returns Greenwich mean sidereal time at an instant in any timescale, from the IAU 2006
+	/// model.
+	///
+	/// TT and UT1 are each converted from `instant`, so an instant already in either keeps its
+	/// value.
+	///
+	/// - Parameters:
+	///   - instant: An instant, which is converted to TT and UT1.
+	///   - context: Observational data for converting `instant`.
+	///   - earthOrientation: The source of ΔT used to find UT1.
+	/// - Returns: Greenwich mean sidereal time, in the right-open interval [0, 2π).
+	/// - Throws: A ``TimescaleConversionError`` if TT or UT1 cannot be found.
+	public static func greenwichMeanSiderealTime<Scale: Timescale>(at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model) throws(TimescaleConversionError) -> Angle {
+		let tt = try instant.converted(to: TT.self, sourceContext: context)
+		let ut1 = try instant.converted(to: UT1.self, sourceContext: context, targetContext: earthOrientation.ut1)
+		return greenwichMeanSiderealTime(ut1: ut1.julianDate, tt: tt.julianDate)
 	}
 }
 
