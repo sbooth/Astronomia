@@ -27,3 +27,12 @@ let daysPerJulianMillennium: Double = 365_250
 /// The offset from a noon-based day count to the midnight-based count of the same
 /// instant: midnight-based = noon-based + 0.5.
 let noonToMidnightOffset: Double = 0.5
+
+/// 2π.
+let twoPi: Double = 2 * .pi
+
+/// Arcseconds per radian.
+let arcsecondsPerRadian: Double = 648_000 / .pi
+
+/// Microarcseconds per radian.
+let microarcsecondsPerRadian: Double = 648_000_000_000 / .pi

@@ -47,7 +47,6 @@ extension VSOP2013.EllipticElements {
 		let e = (k * k + h * h).squareRoot()
 		let e2 = e * e
 		let e3 = e2 * e
-		let twoPi = 2 * Double.pi
 		let l = meanLongitude.truncatingRemainder(dividingBy: twoPi)
 		let m = l - Math.atan2(h, k)
 
