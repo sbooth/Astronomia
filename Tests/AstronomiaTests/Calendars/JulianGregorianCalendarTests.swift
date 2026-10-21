@@ -267,7 +267,7 @@ import Testing
 		#expect(try JulianGregorianCalendar.normalizedDate(year: 1582, month: 11, day: -20) == (1582, 10, 1))
 	}
 
-	@Test func isJulianAndisProlepticJulian() throws {
+	@Test func isJulianAndIsProlepticJulian() throws {
 		#expect(JulianGregorianCalendar.isJulian(julianDayNumber: 2_299_160))
 		#expect(!JulianGregorianCalendar.isJulian(julianDayNumber:2_299_161))
 		#expect(JulianGregorianCalendar.isJulian(julianDayNumber:try JulianGregorianCalendar.julianDayNumber(year: 1582, month: 10, day: 4)))
