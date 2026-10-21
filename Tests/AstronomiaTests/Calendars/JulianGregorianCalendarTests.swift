@@ -88,17 +88,17 @@ import Testing
 		#expect(JulianGregorianCalendar.date(julianDayNumber: GregorianCalendar.papalReform - 1) == (1582, 10, 4))
 		#expect(try JulianGregorianCalendar.julianDayNumber(year: 1582, month: 10, day: 4) == GregorianCalendar.papalReform - 1)
 
-		#expect(JulianGregorianCalendar.numberOfDays(inYear:1582) == 355)
+		#expect(JulianGregorianCalendar.numberOfDays(inYear: 1582) == 355)
 		let jan1 = try JulianGregorianCalendar.julianDayNumber(year: 1582, month: 1, day: 1)
 		let dec31 = try JulianGregorianCalendar.julianDayNumber(year: 1582, month: 12, day: 31)
-		#expect(JulianGregorianCalendar.numberOfDays(inYear:1582) == (dec31 - jan1 + 1))
+		#expect(JulianGregorianCalendar.numberOfDays(inYear: 1582) == (dec31 - jan1 + 1))
 
 		var sum = 0
 		for m in 1...12 {
 			sum += try JulianGregorianCalendar.numberOfDays(inMonth: m, year: 1582)
 		}
 
-		#expect(JulianGregorianCalendar.numberOfDays(inYear:1582) == sum)
+		#expect(JulianGregorianCalendar.numberOfDays(inYear: 1582) == sum)
 		#expect(sum == (dec31 - jan1 + 1))
 		#expect(sum == JulianGregorianCalendar.numberOfDaysInChangeoverYear)
 		#expect(JulianGregorianCalendar.numberOfDaysInChangeoverYear == 355)
@@ -145,7 +145,7 @@ import Testing
 	
 	@Test func decimalYear() throws {
 		for Y in [1500, 1581, 1582, 1583, 1600, 1700] {
-			for N in 1...JulianGregorianCalendar.numberOfDays(inYear:Y) {
+			for N in 1...JulianGregorianCalendar.numberOfDays(inYear: Y) {
 				let date = try JulianGregorianCalendar.date(year: Y, dayOfYear: N)
 				let y = try JulianGregorianCalendar.decimalYear(year: date.year, month: date.month, day: date.day)
 				#expect(try JulianGregorianCalendar.date(decimalYear: y) == date)
@@ -269,11 +269,11 @@ import Testing
 
 	@Test func isJulianAndIsProlepticJulian() throws {
 		#expect(JulianGregorianCalendar.isJulian(julianDayNumber: 2_299_160))
-		#expect(!JulianGregorianCalendar.isJulian(julianDayNumber:2_299_161))
-		#expect(JulianGregorianCalendar.isJulian(julianDayNumber:try JulianGregorianCalendar.julianDayNumber(year: 1582, month: 10, day: 4)))
-		#expect(!JulianGregorianCalendar.isJulian(julianDayNumber:try JulianGregorianCalendar.julianDayNumber(year: 1582, month: 10, day: 15)))
-		#expect(JulianGregorianCalendar.isJulian(julianDayNumber:.min))
-		#expect(!JulianGregorianCalendar.isJulian(julianDayNumber:.max))
+		#expect(!JulianGregorianCalendar.isJulian(julianDayNumber: 2_299_161))
+		#expect(JulianGregorianCalendar.isJulian(julianDayNumber: try JulianGregorianCalendar.julianDayNumber(year: 1582, month: 10, day: 4)))
+		#expect(!JulianGregorianCalendar.isJulian(julianDayNumber: try JulianGregorianCalendar.julianDayNumber(year: 1582, month: 10, day: 15)))
+		#expect(JulianGregorianCalendar.isJulian(julianDayNumber: .min))
+		#expect(!JulianGregorianCalendar.isJulian(julianDayNumber: .max))
 
 		#expect(JulianGregorianCalendar.isProlepticJulian(julianDayNumber: 1_704_986))
 		#expect(!JulianGregorianCalendar.isProlepticJulian(julianDayNumber: 1_704_987))
@@ -345,13 +345,13 @@ import Testing
 	}
 
 	@Test func yearLengths() {
-		#expect(JulianGregorianCalendar.numberOfDays(inYear:1500) == 366)
-		#expect(JulianGregorianCalendar.numberOfDays(inYear:1581) == 365)
-		#expect(JulianGregorianCalendar.numberOfDays(inYear:1582) == 355)
-		#expect(JulianGregorianCalendar.numberOfDays(inYear:1583) == 365)
-		#expect(JulianGregorianCalendar.numberOfDays(inYear:1600) == 366)
-		#expect(JulianGregorianCalendar.numberOfDays(inYear:1700) == 365)
-		#expect(JulianGregorianCalendar.numberOfDays(inYear:-100) == 366)
+		#expect(JulianGregorianCalendar.numberOfDays(inYear: 1500) == 366)
+		#expect(JulianGregorianCalendar.numberOfDays(inYear: 1581) == 365)
+		#expect(JulianGregorianCalendar.numberOfDays(inYear: 1582) == 355)
+		#expect(JulianGregorianCalendar.numberOfDays(inYear: 1583) == 365)
+		#expect(JulianGregorianCalendar.numberOfDays(inYear: 1600) == 366)
+		#expect(JulianGregorianCalendar.numberOfDays(inYear: 1700) == 365)
+		#expect(JulianGregorianCalendar.numberOfDays(inYear: -100) == 366)
 	}
 
 	@Test func decimalYearFromJulianDayNumber() throws {

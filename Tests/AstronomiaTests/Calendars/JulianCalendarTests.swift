@@ -70,11 +70,11 @@ import Testing
 	}
 
 	@Test func yearLength() {
-		#expect(JulianCalendar.numberOfDays(inYear:1) == 365)
-		#expect(JulianCalendar.numberOfDays(inYear:4) == 366)
-		#expect(JulianCalendar.numberOfDays(inYear:100) == 366)
-		#expect(JulianCalendar.numberOfDays(inYear:750) == 365)
-		#expect(JulianCalendar.numberOfDays(inYear:900) == 366)
+		#expect(JulianCalendar.numberOfDays(inYear: 1) == 365)
+		#expect(JulianCalendar.numberOfDays(inYear: 4) == 366)
+		#expect(JulianCalendar.numberOfDays(inYear: 100) == 366)
+		#expect(JulianCalendar.numberOfDays(inYear: 750) == 365)
+		#expect(JulianCalendar.numberOfDays(inYear: 900) == 366)
 	}
 
 	@Test func dayOfYear() throws {
@@ -209,7 +209,7 @@ import Testing
 
 	@Test func decimalYear() throws {
 		for Y in [-45, -44, 1984, 1985] {
-			for N in 1...JulianCalendar.numberOfDays(inYear:Y) {
+			for N in 1...JulianCalendar.numberOfDays(inYear: Y) {
 				let date = try JulianCalendar.date(year: Y, dayOfYear: N)
 				let y = try JulianCalendar.decimalYear(year: date.year, month: date.month, day: date.day)
 				#expect(try JulianCalendar.date(decimalYear: y) == date)

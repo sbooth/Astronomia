@@ -45,9 +45,9 @@ private func staticIsLeapYear(_ calendar: CalendarIdentifier, _ Y: Int) -> Bool 
 
 private func staticNumberOfDaysInYear(_ calendar: CalendarIdentifier, _ Y: Int) -> Int {
 	switch calendar {
-	case .julian: JulianCalendar.numberOfDays(inYear:Y)
-	case .gregorian: GregorianCalendar.numberOfDays(inYear:Y)
-	case .julianGregorian: JulianGregorianCalendar.numberOfDays(inYear:Y)
+	case .julian: JulianCalendar.numberOfDays(inYear: Y)
+	case .gregorian: GregorianCalendar.numberOfDays(inYear: Y)
+	case .julianGregorian: JulianGregorianCalendar.numberOfDays(inYear: Y)
 	}
 }
 
@@ -109,14 +109,14 @@ private func staticNumberOfDaysIn(_ calendar: CalendarIdentifier, month M: Int, 
 	func yearAndMonthLengthsMatchStaticCalendar(_ calendar: CalendarIdentifier) throws {
 		for Y in [-4713, -101, -100, -5, -4, -1, 0, 1, 4, 100, 1500, 1581, 1582, 1583, 1600, 1700, 1900, 2000, 2024, 2100] {
 			#expect(calendar.isLeapYear(Y) == staticIsLeapYear(calendar, Y), "Y = \(Y)")
-			#expect(calendar.numberOfDays(inYear:Y) == staticNumberOfDaysInYear(calendar, Y), "Y = \(Y)")
+			#expect(calendar.numberOfDays(inYear: Y) == staticNumberOfDaysInYear(calendar, Y), "Y = \(Y)")
 			var sum = 0
 			for M in 1 ... 12 {
 				let days = try calendar.numberOfDays(inMonth: M, year: Y)
 				#expect(try days == staticNumberOfDaysIn(calendar, month: M, year: Y), "Y = \(Y), M = \(M)")
 				sum += days
 			}
-			#expect(sum == calendar.numberOfDays(inYear:Y), "Y = \(Y)")
+			#expect(sum == calendar.numberOfDays(inYear: Y), "Y = \(Y)")
 		}
 	}
 

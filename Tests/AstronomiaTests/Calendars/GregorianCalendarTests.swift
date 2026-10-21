@@ -62,11 +62,11 @@ import Testing
 	}
 
 	@Test func yearLength() throws {
-		#expect(GregorianCalendar.numberOfDays(inYear:4) == 366)
-		#expect(GregorianCalendar.numberOfDays(inYear:1581) == 365)
-		#expect(GregorianCalendar.numberOfDays(inYear:1582) == 365)
-		#expect(GregorianCalendar.numberOfDays(inYear:1583) == 365)
-		#expect(GregorianCalendar.numberOfDays(inYear:1600) == 366)
+		#expect(GregorianCalendar.numberOfDays(inYear: 4) == 366)
+		#expect(GregorianCalendar.numberOfDays(inYear: 1581) == 365)
+		#expect(GregorianCalendar.numberOfDays(inYear: 1582) == 365)
+		#expect(GregorianCalendar.numberOfDays(inYear: 1583) == 365)
+		#expect(GregorianCalendar.numberOfDays(inYear: 1600) == 366)
 
 		var sum = 0
 		for m in 1 ... 12 {
@@ -76,7 +76,7 @@ import Testing
 		let jan1 = try GregorianCalendar.julianDayNumber(year: 1961, month: 1, day: 1)
 		let dec31 = try GregorianCalendar.julianDayNumber(year: 1961, month: 12, day: 31)
 
-		#expect(GregorianCalendar.numberOfDays(inYear:1961) == sum)
+		#expect(GregorianCalendar.numberOfDays(inYear: 1961) == sum)
 		#expect(sum == (dec31 - jan1 + 1))
 	}
 
@@ -89,7 +89,7 @@ import Testing
 
 	@Test func decimalYear() throws {
 		for Y in [-401, -400, -100, 1900, 2000, 2023, 2024] {
-			for N in 1...GregorianCalendar.numberOfDays(inYear:Y) {
+			for N in 1...GregorianCalendar.numberOfDays(inYear: Y) {
 				let date = try GregorianCalendar.date(year: Y, dayOfYear: N)
 				let y = try GregorianCalendar.decimalYear(year: date.year, month: date.month, day: date.day)
 				#expect(try GregorianCalendar.date(decimalYear: y) == date)
