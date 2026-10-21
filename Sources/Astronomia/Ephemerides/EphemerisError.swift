@@ -7,6 +7,8 @@
 
 /// An error from an ``Ephemeris``.
 public enum EphemerisError: Error, Hashable, Sendable {
+	/// The ephemeris gave a position or velocity that is NaN, infinite, or too large to observe.
+	case invalidState
 	/// The instant is outside the ephemeris's coverage.
 	case outsideCoverage
 	/// Converting the instant to TDB failed.

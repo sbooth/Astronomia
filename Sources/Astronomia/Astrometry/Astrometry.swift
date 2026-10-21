@@ -61,6 +61,11 @@ enum Astrometry {
 		}
 	}
 
+	/// Returns the number of days from one TDB instant to another.
+	static func days(from start: Instant<TDB>, to end: Instant<TDB>) -> Double {
+		differenceAsDouble(end.julianDate.julianDayNumber, start.julianDate.julianDayNumber) + (end.julianDate.fractionFromNoon - start.julianDate.fractionFromNoon)
+	}
+
 	/// Finds where the target was when the light seen by the observer left it.
 	///
 	/// The light time τ solves τ = |r_T(t - τ) - r_O(t)| / c + Δt_S, where Δt_S is the Shapiro
@@ -138,10 +143,10 @@ enum Astrometry {
 	/// - Parameters:
 	///   - direction: The unit vector from the observer to the source.
 	///   - geometry: The observation.
-	///   - body: The target.
+	///   - body: The target, or `nil` for a source outside the ephemeris.
 	///   - positions: The positions of the ephemeris.
 	/// - Returns: The deflected unit vector.
-	static func deflected<E: GeocentricEphemeris>(_ direction: Vector3, geometry: Geometry, of body: E.Body, positions: Positions<E>) throws(EphemerisError) -> Vector3 {
+	static func deflected<E: GeocentricEphemeris>(_ direction: Vector3, geometry: Geometry, of body: E.Body?, positions: Positions<E>) throws(EphemerisError) -> Vector3 {
 		let c = speedOfLightAstronomicalUnitsPerDay
 		var deflectors: [(position: Vector3, gravitationalParameter: Double, radius: Double)] = []
 		for deflector in E.lightDeflectingBodies where deflector.body != body {

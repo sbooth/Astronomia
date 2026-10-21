@@ -39,10 +39,18 @@ extension Observer {
 	///   - ``EphemerisError/outsideCoverage`` if the ephemeris doesn't cover the instant, or the
 	///     earlier instant at which the light left the body.
 	///   - ``EphemerisError/timescaleConversion(_:)`` if `instant` can't be converted.
+	///   - ``EphemerisError/invalidState`` if the ephemeris gives a position or velocity that is
+	///     NaN, infinite, or too large for the light time to be represented.
 	public func astrometricPlace<E: GeocentricEphemeris, Scale: Timescale>(of body: E.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, ephemeris: E) throws(EphemerisError) -> AstrometricPlace<ICRS> {
 		let (tt, geometry, _) = try observe(body, at: instant, context: context, ephemeris: ephemeris)
 		let position = Position<ICRS>(geometry.target - geometry.observer.position)
-		return AstrometricPlace(position: position, lightTime: Self.interval(geometry.lightTime), instant: tt)
+		let lightTime: DayInterval
+		do throws(DayIntervalError) {
+			lightTime = try DayInterval(days: geometry.lightTime)
+		} catch {
+			throw .invalidState
+		}
+		return AstrometricPlace(position: position, lightTime: lightTime, instant: tt)
 	}
 
 	/// Returns the place where a body appears: corrected for light time, the gravitational
@@ -59,17 +67,25 @@ extension Observer {
 	///   - ``EphemerisError/outsideCoverage`` if the ephemeris doesn't cover the instant, or the
 	///     earlier instant at which the light left the body.
 	///   - ``EphemerisError/timescaleConversion(_:)`` if `instant` can't be converted.
+	///   - ``EphemerisError/invalidState`` if the ephemeris gives a position or velocity that is
+	///     NaN, infinite, or too large for the light time to be represented.
 	public func apparentPlace<E: GeocentricEphemeris, Scale: Timescale>(of body: E.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, ephemeris: E) throws(EphemerisError) -> ApparentPlace<ICRS> {
 		let (tt, geometry, positions) = try observe(body, at: instant, context: context, ephemeris: ephemeris)
 		let relative = geometry.target - geometry.observer.position
 		let distance = relative.length
 		guard distance > 0 else {
-			return ApparentPlace(position: .origin, lightTime: Self.interval(0), instant: tt)
+			return ApparentPlace(position: .origin, lightTime: .zero, instant: tt)
 		}
 		let deflected = try Astrometry.deflected(relative / distance, geometry: geometry, of: body, positions: positions)
 		let sunGravitationalParameter = E.lightDeflectingBodies.first { $0.body == E.sun }?.gravitationalParameter ?? 0
 		let apparent = Astrometry.aberrated(deflected, velocity: geometry.observer.velocity, sunDistance: (geometry.observer.position - positions.sun.position).length, sunGravitationalParameter: sunGravitationalParameter)
-		return ApparentPlace(position: Position(apparent * distance), lightTime: Self.interval(geometry.lightTime), instant: tt)
+		let lightTime: DayInterval
+		do throws(DayIntervalError) {
+			lightTime = try DayInterval(days: geometry.lightTime)
+		} catch {
+			throw .invalidState
+		}
+		return ApparentPlace(position: Position(apparent * distance), lightTime: lightTime, instant: tt)
 	}
 
 	/// Returns the place of a body of the built-in ephemeris corrected for light time.
@@ -123,10 +139,5 @@ extension Observer {
 		} catch {
 			throw .timescaleConversion(error)
 		}
-	}
-
-	/// Returns a light time in days as an interval.
-	static func interval(_ days: Double) -> DayInterval {
-		DayInterval(uncheckedDays: 0, fractionalDay: days)
 	}
 }
