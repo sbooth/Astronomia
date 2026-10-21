@@ -11,6 +11,11 @@ import Testing
 /// A frame of date for the tests, standing in for the equator of date.
 enum TestEquatorOfDate: EquatorialFrame, DatedReferenceFrame {
 	static let name = "Test equator of date"
+
+	/// The ICRS axes at every epoch.
+	static func rotationFromICRS(at epoch: Instant<TT>, earthOrientation: EarthOrientation) -> Rotation<ICRS, TestEquatorOfDate> {
+		Rotation<ICRS, ICRS>.identity.relabeled(fromFrameEpoch: NoEpoch(), toFrameEpoch: epoch)
+	}
 }
 
 @Suite struct DatedFrameTests {
