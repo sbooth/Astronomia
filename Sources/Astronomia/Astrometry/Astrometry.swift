@@ -11,9 +11,6 @@
 ///
 /// Positions here are barycentric, in astronomical units in ICRS axes, at TDB.
 enum Astrometry {
-	/// The speed of light, in astronomical units per day.
-	static let speedOfLight = 299_792.458 * secondsPerDay / Distance.kilometersPerAstronomicalUnit
-
 	/// The barycentric positions of the bodies of an observation, from states relative to the
 	/// Sun and the Sun's barycentric state at the instant of observation.
 	///
@@ -83,7 +80,7 @@ enum Astrometry {
 		for _ in 0 ..< 10 {
 			let separation = (target - observer.position).length
 			let delay = shapiroDelay(observerDistance: (observer.position - sun).length, targetDistance: (target - sun).length, separation: separation, gravitationalParameter: sunGravitationalParameter)
-			let next = separation / speedOfLight + delay
+			let next = separation / speedOfLightAstronomicalUnitsPerDay + delay
 			let converged = abs(next - lightTime) < 1e-14
 			lightTime = next
 			target = try positions.state(of: body, daysEarlier: lightTime).position
@@ -106,7 +103,7 @@ enum Astrometry {
 	static func shapiroDelay(observerDistance: Double, targetDistance: Double, separation: Double, gravitationalParameter: Double) -> Double {
 		let denominator = observerDistance + targetDistance - separation
 		guard gravitationalParameter > 0, denominator > 0, separation > 0 else { return 0 }
-		let c = speedOfLight
+		let c = speedOfLightAstronomicalUnitsPerDay
 		return 2 * gravitationalParameter / (c * c * c) * Math.log((observerDistance + targetDistance + separation) / denominator)
 	}
 
@@ -125,7 +122,7 @@ enum Astrometry {
 	///   - limit: The least value of q · (q + e).
 	/// - Returns: The deflected direction, not normalized.
 	static func deflected(_ p: Vector3, q: Vector3, e: Vector3, distance: Double, gravitationalParameter: Double, limit: Double) -> Vector3 {
-		let c = speedOfLight
+		let c = speedOfLightAstronomicalUnitsPerDay
 		let w = 2 * gravitationalParameter / (c * c) / distance / max(q.dot(q + e), limit)
 		return p + p.cross(e.cross(q)) * w
 	}
@@ -145,7 +142,7 @@ enum Astrometry {
 	///   - positions: The positions of the ephemeris.
 	/// - Returns: The deflected unit vector.
 	static func deflected<E: GeocentricEphemeris>(_ direction: Vector3, geometry: Geometry, of body: E.Body, positions: Positions<E>) throws(EphemerisError) -> Vector3 {
-		let c = speedOfLight
+		let c = speedOfLightAstronomicalUnitsPerDay
 		var deflectors: [(position: Vector3, gravitationalParameter: Double, radius: Double)] = []
 		for deflector in E.lightDeflectingBodies where deflector.body != body {
 			let state = try positions.state(of: deflector.body)
@@ -189,7 +186,7 @@ enum Astrometry {
 	///   - sunGravitationalParameter: The Sun's GM, in au³/day².
 	/// - Returns: The apparent unit vector.
 	static func aberrated(_ direction: Vector3, velocity: Vector3, sunDistance: Double, sunGravitationalParameter: Double) -> Vector3 {
-		let c = speedOfLight
+		let c = speedOfLightAstronomicalUnitsPerDay
 		let v = velocity / c
 		let bm1 = (1 - v.dot(v)).squareRoot()
 		let pdv = direction.dot(v)

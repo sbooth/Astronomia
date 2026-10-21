@@ -29,7 +29,7 @@ public struct Velocity<Frame: ReferenceFrame>: Hashable, Sendable {
 extension Velocity {
 	/// Returns components in kilometers per second in astronomical units per day.
 	static func astronomicalUnitsPerDay(fromKilometersPerSecond components: SIMD3<Double>) -> Vector3 {
-		let scale = secondsPerDay / Distance.kilometersPerAstronomicalUnit
+		let scale = secondsPerDay / kilometersPerAstronomicalUnit
 		return Vector3(components.x * scale, components.y * scale, components.z * scale)
 	}
 
@@ -40,7 +40,7 @@ extension Velocity {
 
 	/// The components along the frame's x, y, and z axes, in kilometers per second.
 	public var kilometersPerSecond: SIMD3<Double> {
-		astronomicalUnitsPerDay * (Distance.kilometersPerAstronomicalUnit / secondsPerDay)
+		astronomicalUnitsPerDay * (kilometersPerAstronomicalUnit / secondsPerDay)
 	}
 
 	/// Returns the displacement at this velocity over a number of days.

@@ -28,6 +28,19 @@ let daysPerJulianMillennium: Double = 365_250
 /// instant: midnight-based = noon-based + 0.5.
 let noonToMidnightOffset: Double = 0.5
 
+/// Meters per astronomical unit  (IAU 2012 Resolution B2).
+let metersPerAstronomicalUnit: Double = 149_597_870_700
+
+/// Kilometers per astronomical unit, 149,597,870.7.
+let kilometersPerAstronomicalUnit: Double = 149_597_870.7
+
+
+/// The speed of light in vacuum, 299,792.458 km/s.
+let speedOfLight: Double = 299_792.458
+
+/// The speed of light in vacuum, in astronomical units per day.
+let speedOfLightAstronomicalUnitsPerDay: Double = speedOfLight * secondsPerDay / kilometersPerAstronomicalUnit
+
 /// 2π.
 let twoPi: Double = 2 * .pi
 

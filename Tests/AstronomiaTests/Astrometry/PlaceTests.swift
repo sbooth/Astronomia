@@ -39,7 +39,7 @@ import Testing
 		// approach d, r_E + r_M - R is about (d² / 2)(1 / r_E + 1 / r_M), and the delay about
 		// 110 µs, half the radar round trip.
 		let gm = Self.sunGravitationalParameter
-		let c = Astrometry.speedOfLight
+		let c = speedOfLightAstronomicalUnitsPerDay
 		let rE = 1.0
 		let rM = 0.39
 		let d = Distance.kilometers(695_700).astronomicalUnits
@@ -76,7 +76,7 @@ import Testing
 			let referenceCorrections = Self.unit(Self.vector(value.apparent)) - Self.unit(referenceAstrometric)
 			#expect((corrections - referenceCorrections).length * Self.uas <= 1.5 + 1e-4 * direction * Self.uas, "\(value.body) \(value.julianDate)")
 			// The light time is the distance over c plus the Shapiro delay.
-			let distance = (astrometric.position.vector.length - referenceAstrometric.length) / Astrometry.speedOfLight
+			let distance = (astrometric.position.vector.length - referenceAstrometric.length) / speedOfLightAstronomicalUnitsPerDay
 			#expect(abs(astrometric.lightTime.inDays - value.lightTime - distance) * secondsPerDay <= 2e-4, "\(value.body) \(value.julianDate)")
 			#expect(apparent.lightTime == astrometric.lightTime && apparent.instant == astrometric.instant)
 			#expect(abs(apparent.position.vector.length - astrometric.position.vector.length) <= 1e-15 * astrometric.position.vector.length)
@@ -93,7 +93,7 @@ import Testing
 		let sun = positions.sun.position
 		let separation = (target - earth.position).length
 		let delay = Astrometry.shapiroDelay(observerDistance: (earth.position - sun).length, targetDistance: (target - sun).length, separation: separation, gravitationalParameter: Self.sunGravitationalParameter)
-		#expect(abs(geometry.lightTime - separation / Astrometry.speedOfLight - delay) * secondsPerDay <= 1e-9)
+		#expect(abs(geometry.lightTime - separation / speedOfLightAstronomicalUnitsPerDay - delay) * secondsPerDay <= 1e-9)
 		#expect(delay > 0)
 	}
 

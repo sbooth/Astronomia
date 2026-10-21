@@ -13,7 +13,7 @@ import Testing
 	/// UT1 = TT - 69.184 s, as in the ERFA reference values
 	static let ut1Context = UT1.Context(deltaT: DeltaTFunction.constant(69.184))
 	/// The Earth's equatorial radius, in astronomical units
-	static let earthRadius = 6_378.137 / Distance.kilometersPerAstronomicalUnit
+	static let earthRadius = 6_378.137 / kilometersPerAstronomicalUnit
 
 	/// A table with constant polar motion of 0.12" and 0.34" from 2023-02-23 to 2025-10-23 UTC,
 	/// and UT1 from a constant ΔT.

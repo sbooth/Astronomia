@@ -29,33 +29,28 @@ public struct Distance: Hashable, Sendable {
 }
 
 extension Distance {
-	/// Meters per astronomical unit, exact (IAU 2012 Resolution B2).
-	static let metersPerAstronomicalUnit: Double = 149_597_870_700
-	/// Kilometers per astronomical unit, 149,597,870.7, rounded to a `Double`.
-	static let kilometersPerAstronomicalUnit: Double = 149_597_870.7
-
 	/// Creates a distance from kilometers.
 	///
 	/// - Parameter kilometers: The distance in kilometers.
 	public init(kilometers: Double) {
-		self.init(astronomicalUnits: kilometers / Self.kilometersPerAstronomicalUnit)
+		self.init(astronomicalUnits: kilometers / kilometersPerAstronomicalUnit)
 	}
 
 	/// Creates a distance from meters.
 	///
 	/// - Parameter meters: The distance in meters.
 	public init(meters: Double) {
-		self.init(astronomicalUnits: meters / Self.metersPerAstronomicalUnit)
+		self.init(astronomicalUnits: meters / metersPerAstronomicalUnit)
 	}
 
 	/// The distance in kilometers.
 	public var kilometers: Double {
-		astronomicalUnits * Self.kilometersPerAstronomicalUnit
+		astronomicalUnits * kilometersPerAstronomicalUnit
 	}
 
 	/// The distance in meters.
 	public var meters: Double {
-		astronomicalUnits * Self.metersPerAstronomicalUnit
+		astronomicalUnits * metersPerAstronomicalUnit
 	}
 
 	/// The absolute value of the distance.
