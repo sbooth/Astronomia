@@ -48,7 +48,7 @@ public struct Star: Hashable, Sendable {
 	public let properMotionInDeclination: Angle
 	/// The parallax, or `nil` if it is unknown or the source is too distant to have one.
 	public let parallax: Angle?
-	/// The radial velocity, positive away from the Sun.
+	/// The radial velocity, positive away from the solar system barycenter.
 	public let radialVelocity: Speed
 	/// The epoch of the catalog values.
 	public let epoch: Instant<TDB>
@@ -63,12 +63,15 @@ public struct Star: Hashable, Sendable {
 	///   - properMotionInDeclination: The proper motion in declination per Julian year.
 	///   - parallax: The parallax, or `nil` if it is unknown or the source is too distant to
 	///     have one.
-	///   - radialVelocity: The radial velocity, positive away from the Sun.
+	///   - radialVelocity: The radial velocity, positive away from the solar system
+	///     barycenter.
 	///   - epoch: The epoch of the catalog values.
 	/// - Throws:
 	///   - ``StarError/nonFiniteValue`` if any value is NaN or infinite.
 	///   - ``StarError/invalidDeclination`` if the declination is outside [-90°, 90°].
-	///   - ``StarError/negativeParallax`` if the parallax is negative.
+	///   - ``StarError/invalidParallax`` if the parallax is negative, or greater than 10″,
+	///     which would put the source within about 20,600 au of the Sun. The nearest star's is
+	///     0.77″.
 	///   - ``StarError/excessiveRadialVelocity`` if the radial velocity is half the speed of
 	///     light or more.
 	public init(
@@ -83,7 +86,7 @@ public struct Star: Hashable, Sendable {
 		let values = [rightAscension.radians, declination.radians, properMotionInRightAscension.radians, properMotionInDeclination.radians, parallax?.radians ?? 0, radialVelocity.astronomicalUnitsPerDay]
 		guard values.allSatisfy(\.isFinite) else { throw .nonFiniteValue }
 		guard abs(declination.radians) <= .pi / 2 else { throw .invalidDeclination }
-		if let parallax, parallax.radians < 0 { throw .negativeParallax }
+		if let parallax, parallax.radians < 0 || parallax.radians > Self.maximumParallax.radians { throw .invalidParallax }
 		guard abs(radialVelocity.astronomicalUnitsPerDay) < Self.maximumSpeed else { throw .excessiveRadialVelocity }
 		self.init(uncheckedRightAscension: rightAscension, declination: declination, properMotionInRightAscension: properMotionInRightAscension, properMotionInDeclination: properMotionInDeclination, parallax: parallax, radialVelocity: radialVelocity, epoch: epoch)
 	}
@@ -108,6 +111,12 @@ public struct Star: Hashable, Sendable {
 		self.radialVelocity = radialVelocity
 		self.epoch = epoch
 	}
+
+	/// The greatest parallax, of a source about 20,600 au from the Sun.
+	///
+	/// A source nearer than that is within the solar system, where the observer's own distance
+	/// from the barycenter matters, and isn't a star.
+	static let maximumParallax = Angle(arcseconds: 10)
 
 	/// The greatest radial speed, half the speed of light, in au/day, as in `eraStarpv` of
 	/// ERFA.

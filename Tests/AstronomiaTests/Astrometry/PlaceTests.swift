@@ -150,6 +150,26 @@ import Testing
 		}
 	}
 
+	@Test func lightTimeEvaluatesTheTargetTwice() throws {
+		let tdb = try Instant<TDB>(JulianDate(julianDate: 2_461_334.5))
+		for (body, expected) in [(SolarSystemEphemeris.Body.moon, 2), (.mercury, 2), (.sun, 2), (.plutoBarycenter, 2), (.earth, 1)] {
+			let ephemeris = AlteredEphemeris(altered: .solarSystemBarycenter)
+			let positions = try Astrometry.Positions(ephemeris: ephemeris, at: tdb)
+			let earth = try positions.state(of: .earth)
+			let before = ephemeris.evaluations.counts[body] ?? 0
+			let geometry = try Astrometry.geometry(of: body, observer: earth, positions: positions)
+			#expect(ephemeris.evaluations.counts[body, default: 0] - before == expected, "\(body)")
+			// The solution agrees with the target evaluated at its light time.
+			let evaluated = try positions.state(of: body, daysEarlier: geometry.lightTime).position
+			let direction = geometry.target - earth.position
+			let reference = evaluated - earth.position
+			if reference.length > 0 {
+				#expect(Self.unit(direction).cross(Self.unit(reference)).length * Self.uas <= 0.05, "\(body)")
+				#expect(abs(direction.length - reference.length) * kilometersPerAstronomicalUnit <= 1e-4, "\(body)")
+			}
+		}
+	}
+
 	/// Returns Mercury's direction from the Earth, its deflected direction, and the Sun's
 	/// direction at an instant.
 	static func mercuryNearTheSun(at julianDate: Double) throws -> (direction: Vector3, deflected: Vector3, sun: Vector3) {

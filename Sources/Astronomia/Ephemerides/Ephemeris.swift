@@ -80,5 +80,8 @@ public protocol GeocentricEphemeris: Ephemeris {
 	static var solarSystemBarycenter: Body { get }
 	/// The bodies whose gravity deflects light for apparent places, such as the Sun, Jupiter,
 	/// and Saturn.
+	///
+	/// The Sun's entry also gives the gravitational parameter for the Shapiro delay in light
+	/// times and for the Sun's potential in aberration. Without it, both are left out.
 	static var lightDeflectingBodies: [LightDeflectingBody<Body>] { get }
 }

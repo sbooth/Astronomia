@@ -81,34 +81,68 @@ enum Astrometry {
 		differenceAsDouble(end.julianDate.julianDayNumber, start.julianDate.julianDayNumber) + (end.julianDate.fractionFromNoon - start.julianDate.fractionFromNoon)
 	}
 
+	/// The longest span, in days, over which ``geometry(of:observer:positions:)`` carries the
+	/// target along its velocity instead of evaluating the ephemeris again.
+	///
+	/// Over 1e-5 day, under a second, a target's acceleration moves it from its tangent by
+	/// about 2 cm at most, for Mercury's 3e-3 au/day² about the Sun.
+	static let maximumExtrapolation = 1e-5
+
 	/// Finds where the target was when the light seen by the observer left it.
 	///
 	/// The light time τ solves τ = |r_T(t - τ) - r_O(t)| / c + Δt_S, where Δt_S is the Shapiro
-	/// delay in the Sun's field, by iteration from τ = 0 to 1e-14 day. The Sun as the target has
-	/// no Shapiro delay, which diverges at its center.
+	/// delay in the Sun's field. The Sun as the target has no Shapiro delay, which diverges at
+	/// its center.
+	///
+	/// The target is evaluated at the instant of observation, which gives a first light time,
+	/// and again that light time earlier. From there the solution iterates to 1e-14 day with
+	/// the target carried along its velocity, and the ephemeris is evaluated again only if the
+	/// solution moves more than ``maximumExtrapolation`` from where it was evaluated. A light
+	/// time changes by about the target's radial speed over c, so for the bodies of the solar
+	/// system two evaluations suffice.
 	///
 	/// - Parameters:
 	///   - body: The target.
 	///   - observer: The observer's barycentric position and velocity at the instant of
 	///     observation.
 	///   - positions: The positions of the ephemeris.
+	/// - Throws: ``EphemerisError/invalidState`` if the light time doesn't converge, for a
+	///   target moving at nearly the speed of light, or an ``EphemerisError`` from the
+	///   ephemeris.
 	static func geometry<E: GeocentricEphemeris>(of body: E.Body, observer: (position: Vector3, velocity: Vector3), positions: Positions<E>) throws(EphemerisError) -> Geometry {
 		let sun = positions.sun.position
 		let sunGravitationalParameter = body == E.sun ? 0 : E.lightDeflectingBodies.first { $0.body == E.sun }?.gravitationalParameter ?? 0
-		var lightTime = 0.0
-		var target = try positions.state(of: body).position
-		for _ in 0 ..< 10 {
+		/// Returns the light time from a place of the target.
+		func lightTime(from target: Vector3) -> Double {
 			let separation = (target - observer.position).length
 			let delay = shapiroDelay(observerDistance: (observer.position - sun).length, targetDistance: (target - sun).length, separation: separation, gravitationalParameter: sunGravitationalParameter)
-			let next = separation / speedOfLightAstronomicalUnitsPerDay + delay
-			let converged = abs(next - lightTime) < 1e-14
-			lightTime = next
-			target = try positions.state(of: body, daysEarlier: lightTime).position
-			if converged {
-				break
-			}
+			return separation / speedOfLightAstronomicalUnitsPerDay + delay
 		}
-		return Geometry(observer: observer, target: target, lightTime: lightTime)
+
+		// The target's state, evaluated this many days before the instant of observation
+		var evaluatedAt = 0.0
+		var state = try positions.state(of: body)
+		var solution = 0.0
+		for _ in 0 ..< 5 {
+			var converged = false
+			for _ in 0 ..< 10 {
+				let next = lightTime(from: state.position - state.velocity * (solution - evaluatedAt))
+				converged = abs(next - solution) < 1e-14
+				solution = next
+				if converged {
+					break
+				}
+			}
+			guard converged else {
+				throw .invalidState
+			}
+			if abs(solution - evaluatedAt) <= maximumExtrapolation {
+				return Geometry(observer: observer, target: state.position - state.velocity * (solution - evaluatedAt), lightTime: solution)
+			}
+			state = try positions.state(of: body, daysEarlier: solution)
+			evaluatedAt = solution
+		}
+		throw .invalidState
 	}
 
 	/// Returns the Shapiro delay of light in a body's field, (2GM/c³) ln((r_O + r_T + R) /

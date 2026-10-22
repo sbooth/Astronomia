@@ -49,7 +49,9 @@ import Testing
 		#expect(throws: StarError.nonFiniteValue) { try Star(rightAscension: .zero, declination: .zero, parallax: .degrees(.nan), epoch: epoch) }
 		#expect(throws: StarError.nonFiniteValue) { try Star(rightAscension: .zero, declination: .zero, radialVelocity: .kilometersPerSecond(-.infinity), epoch: epoch) }
 		#expect(throws: StarError.invalidDeclination) { try Star(rightAscension: .zero, declination: .degrees(90.000_001), epoch: epoch) }
-		#expect(throws: StarError.negativeParallax) { try Star(rightAscension: .zero, declination: .zero, parallax: .milliarcseconds(-0.1), epoch: epoch) }
+		#expect(throws: StarError.invalidParallax) { try Star(rightAscension: .zero, declination: .zero, parallax: .milliarcseconds(-0.1), epoch: epoch) }
+		#expect(throws: StarError.invalidParallax) { try Star(rightAscension: .zero, declination: .zero, parallax: .arcseconds(10.000_001), epoch: epoch) }
+		#expect(try Star(rightAscension: .zero, declination: .zero, parallax: .arcseconds(10), epoch: epoch).parallax == .arcseconds(10))
 		#expect(throws: StarError.excessiveRadialVelocity) { try Star(rightAscension: .zero, declination: .zero, radialVelocity: .kilometersPerSecond(-speedOfLight / 2), epoch: epoch) }
 		#expect(try Star(rightAscension: .zero, declination: .zero, parallax: .zero, radialVelocity: .kilometersPerSecond(speedOfLight * 0.49), epoch: epoch).parallax == .zero)
 	}

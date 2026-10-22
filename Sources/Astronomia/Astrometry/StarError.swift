@@ -11,8 +11,9 @@ public enum StarError: Error, Hashable, Sendable {
 	case nonFiniteValue
 	/// The declination is outside the closed interval [-90°, 90°].
 	case invalidDeclination
-	/// The parallax is negative.
-	case negativeParallax
+	/// The parallax is negative, or greater than 10″, which would put the source within about
+	/// 20,600 au of the Sun.
+	case invalidParallax
 	/// The radial velocity is half the speed of light or more.
 	case excessiveRadialVelocity
 }

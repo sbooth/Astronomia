@@ -138,7 +138,7 @@ extension Velocity where Frame.Epoch == Instant<TT> {
 	/// epoch.
 	///
 	/// - Parameters:
-	///   - astronomicalUnitsPerDay: The components along the frame's x, y, and z axes.
+	///   - components: The components along the frame's x, y, and z axes.
 	///   - epoch: The epoch of the frame.
 	public init(astronomicalUnitsPerDay components: SIMD3<Double>, epoch: Instant<TT>) {
 		self.init(Vector3(components.x, components.y, components.z), frameEpoch: epoch)
@@ -147,7 +147,7 @@ extension Velocity where Frame.Epoch == Instant<TT> {
 	/// Creates a velocity from components in kilometers per second in a frame with an epoch.
 	///
 	/// - Parameters:
-	///   - kilometersPerSecond: The components along the frame's x, y, and z axes.
+	///   - components: The components along the frame's x, y, and z axes.
 	///   - epoch: The epoch of the frame.
 	public init(kilometersPerSecond components: SIMD3<Double>, epoch: Instant<TT>) {
 		self.init(Self.astronomicalUnitsPerDay(fromKilometersPerSecond: components), frameEpoch: epoch)

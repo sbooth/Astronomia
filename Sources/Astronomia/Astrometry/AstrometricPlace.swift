@@ -5,13 +5,15 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// The place of a body corrected for light time only, as astrometric catalogs give places.
+/// The place of a body or a star corrected for light time, but not for deflection or
+/// aberration, as astrometric catalogs give places.
 ///
-/// The position is the body's place, relative to the observer, when the light now seen left
-/// it: its direction and its distance at that time. It is in the axes of the ICRS, or of another
-/// fixed frame, and has neither gravitational deflection nor aberration, so it can be compared
-/// with the places of stars in a catalog. For where the body appears in the sky, use an
-/// ``ApparentPlace``.
+/// The position is the target's place, relative to the observer, when the light now seen left
+/// it: its direction and its distance at that time. For a ``Star`` that includes its space
+/// motion and parallax, and its distance and light time are those of its parallax, or of 1 Gpc
+/// without one. The place is in the axes of the ICRS, or of another fixed frame, and has
+/// neither gravitational deflection nor aberration, so it can be compared with the places of
+/// stars in a catalog. For where the target appears in the sky, use an ``ApparentPlace``.
 public struct AstrometricPlace<Frame: FixedReferenceFrame>: Hashable, Sendable {
 	/// The position relative to the observer.
 	public let position: Position<Frame>

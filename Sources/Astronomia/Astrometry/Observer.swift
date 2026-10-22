@@ -40,8 +40,8 @@ extension Observer {
 	///     earlier instant at which the light left the body.
 	///   - ``EphemerisError/timescaleConversion(_:)`` if `instant` can't be converted.
 	///   - ``EphemerisError/invalidState`` if the ephemeris gives a position or velocity that is
-	///     NaN or infinite, a speed of light or more, or a position too far for the light time
-	///     to be represented.
+	///     NaN or infinite, a speed of light or more, a position too far for the light time to
+	///     be represented, or a motion so fast that the light time doesn't converge.
 	public func astrometricPlace<E: GeocentricEphemeris, Scale: Timescale>(of body: E.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, ephemeris: E) throws(EphemerisError) -> AstrometricPlace<ICRS> {
 		let (tt, geometry, _) = try observe(body, at: instant, context: context, ephemeris: ephemeris)
 		let position = Position<ICRS>(geometry.target - geometry.observer.position)
@@ -69,8 +69,8 @@ extension Observer {
 	///     earlier instant at which the light left the body.
 	///   - ``EphemerisError/timescaleConversion(_:)`` if `instant` can't be converted.
 	///   - ``EphemerisError/invalidState`` if the ephemeris gives a position or velocity that is
-	///     NaN or infinite, a speed of light or more, or a position too far for the light time
-	///     to be represented.
+	///     NaN or infinite, a speed of light or more, a position too far for the light time to
+	///     be represented, or a motion so fast that the light time doesn't converge.
 	public func apparentPlace<E: GeocentricEphemeris, Scale: Timescale>(of body: E.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, ephemeris: E) throws(EphemerisError) -> ApparentPlace<ICRS> {
 		let (tt, geometry, positions) = try observe(body, at: instant, context: context, ephemeris: ephemeris)
 		let relative = geometry.target - geometry.observer.position
@@ -101,7 +101,7 @@ extension Observer {
 	///   - instant: The instant of observation.
 	///   - context: Observational data for converting `instant` to TT and TDB.
 	/// - Returns: The astrometric place, in ICRS axes.
-	/// - Throws: An ``EphemerisError``, as ``astrometricPlace(of:at:context:ephemeris:)`` does.
+	/// - Throws: An ``EphemerisError``, as the method taking an ephemeris does.
 	public func astrometricPlace<Scale: Timescale>(of body: SolarSystemEphemeris.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext) throws(EphemerisError) -> AstrometricPlace<ICRS> {
 		try astrometricPlace(of: body, at: instant, context: context, ephemeris: SolarSystemEphemeris())
 	}
@@ -113,7 +113,7 @@ extension Observer {
 	///   - instant: The instant of observation.
 	///   - context: Observational data for converting `instant` to TT and TDB.
 	/// - Returns: The apparent place, in ICRS axes.
-	/// - Throws: An ``EphemerisError``, as ``apparentPlace(of:at:context:ephemeris:)`` does.
+	/// - Throws: An ``EphemerisError``, as the method taking an ephemeris does.
 	public func apparentPlace<Scale: Timescale>(of body: SolarSystemEphemeris.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext) throws(EphemerisError) -> ApparentPlace<ICRS> {
 		try apparentPlace(of: body, at: instant, context: context, ephemeris: SolarSystemEphemeris())
 	}

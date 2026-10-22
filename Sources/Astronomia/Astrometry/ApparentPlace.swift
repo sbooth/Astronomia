@@ -5,10 +5,12 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// The place where a body appears to the observer: corrected for light time, the
+/// The place where a body or a star appears to the observer: corrected for light time, the
 /// gravitational deflection of light, and aberration.
 ///
-/// The position is the apparent direction with the body's distance when the light left it.
+/// The position is the apparent direction with the target's distance when the light left it.
+/// For a ``Star`` the light time is its distance over c, years or more, and nominal for a star
+/// without a parallax.
 /// It begins in the axes of the ICRS, as the geocentric place in the GCRS, and converts to a
 /// frame of date at its own instant: to ``TrueEquatorOfDate`` for the classical apparent right
 /// ascension and declination, or to ``CIRS`` for the intermediate place.
