@@ -208,29 +208,29 @@ import Testing
 		#expect(throws: AtmosphericConditionsError.invalidWavelength) { try AtmosphericConditions(pressure: p, temperature: t, relativeHumidity: 0.5, wavelength: .meters(1.01)) }
 	}
 
-	@Test func vapourPressure() throws {
-		// The vapour-pressure model diverges as the pressure approaches the saturation vapour
+	@Test func vaporPressure() throws {
+		// The vapor-pressure model diverges as the pressure approaches the saturation vapor
 		// pressure, here at 6.13 hPa for 10 °C and 50% humidity, which once gave A ≈ -2.2e9.
 		let t = Temperature.degreesCelsius(10)
-		#expect(throws: AtmosphericConditionsError.invalidVapourPressure) { try AtmosphericConditions(pressure: .hectopascals(6.133_747_705_627_971), temperature: t, relativeHumidity: 0.5) }
-		let saturation = AtmosphericConditions.saturationVapourPressure(pressure: 12.3, temperature: 10)
+		#expect(throws: AtmosphericConditionsError.invalidVaporPressure) { try AtmosphericConditions(pressure: .hectopascals(6.133_747_705_627_971), temperature: t, relativeHumidity: 0.5) }
+		let saturation = AtmosphericConditions.saturationVaporPressure(pressure: 12.3, temperature: 10)
 		#expect(saturation > 12 && saturation < 12.5)
-		#expect(throws: AtmosphericConditionsError.invalidVapourPressure) { try AtmosphericConditions(pressure: .hectopascals(saturation * 0.999), temperature: t, relativeHumidity: 1e-9) }
-		// Just above it, the vapour pressure is at most the pressure and the refraction is small.
+		#expect(throws: AtmosphericConditionsError.invalidVaporPressure) { try AtmosphericConditions(pressure: .hectopascals(saturation * 0.999), temperature: t, relativeHumidity: 1e-9) }
+		// Just above it, the vapor pressure is at most the pressure and the refraction is small.
 		for humidity in [1e-9, 0.5, 1] {
-			let pressure = AtmosphericConditions.saturationVapourPressure(pressure: 12.3, temperature: 10) * 1.000_001
+			let pressure = AtmosphericConditions.saturationVaporPressure(pressure: 12.3, temperature: 10) * 1.000_001
 			let conditions = try AtmosphericConditions(pressure: .hectopascals(pressure), temperature: t, relativeHumidity: humidity)
 			let (a, b) = conditions.refractionConstants
 			#expect(a > 0 && a < 1e-5 && abs(b) < 1e-8, "\(humidity)")
 		}
-		// Dry air and a vacuum have no vapour, at any pressure.
+		// Dry air and a vacuum have no vapor, at any pressure.
 		_ = try AtmosphericConditions(pressure: .hectopascals(1), temperature: .degreesCelsius(30), relativeHumidity: 0)
 		#expect(try AtmosphericConditions(pressure: .pascals(0), temperature: t, relativeHumidity: 1).refractionConstants == (0, 0))
 		// Humid air too high for its pressure
-		#expect(throws: AtmosphericConditionsError.invalidVapourPressure) { try AtmosphericConditions(height: .kilometers(60), temperature: .degreesCelsius(20), relativeHumidity: 0.5) }
+		#expect(throws: AtmosphericConditionsError.invalidVaporPressure) { try AtmosphericConditions(height: .kilometers(60), temperature: .degreesCelsius(20), relativeHumidity: 0.5) }
 		_ = try AtmosphericConditions(height: .kilometers(60), temperature: .degreesCelsius(20), relativeHumidity: 0)
 		// In the model, water boils at 1013.25 hPa at about 98.5 °C.
-		#expect(throws: AtmosphericConditionsError.invalidVapourPressure) { try AtmosphericConditions(pressure: .standardAtmosphere, temperature: .degreesCelsius(99), relativeHumidity: 1) }
+		#expect(throws: AtmosphericConditionsError.invalidVaporPressure) { try AtmosphericConditions(pressure: .standardAtmosphere, temperature: .degreesCelsius(99), relativeHumidity: 1) }
 		_ = try AtmosphericConditions(pressure: .standardAtmosphere, temperature: .degreesCelsius(98), relativeHumidity: 1)
 	}
 
