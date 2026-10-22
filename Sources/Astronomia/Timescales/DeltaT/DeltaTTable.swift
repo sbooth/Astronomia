@@ -125,7 +125,7 @@ public struct DeltaTTable: Hashable, Sendable {
 extension DeltaTTable: DeltaTSource {
 	/// Returns ΔT = TT - UT1, in seconds, at the specified TT, interpolated linearly between
 	/// entries, or `nil` if `tt` is outside ``coverage``.
-	public func deltaT(at tt: JulianDate) -> Double? {
+	public func deltaT(atTT tt: JulianDate) -> Double? {
 		deltaTAndUncertainty(at: tt)?.seconds
 	}
 

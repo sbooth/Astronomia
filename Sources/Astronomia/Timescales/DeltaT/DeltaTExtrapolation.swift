@@ -59,7 +59,7 @@ public struct ConstantDeltaTExtrapolation: DeltaTSource {
 		coverage = end.date ... limit
 	}
 
-	public func deltaT(at tt: JulianDate) -> Double? {
+	public func deltaT(atTT tt: JulianDate) -> Double? {
 		coverage.contains(tt) ? seconds : nil
 	}
 }
@@ -148,7 +148,7 @@ public struct LinearDeltaTExtrapolation: DeltaTSource {
 			// A source covering a single date has no rate, so ΔT stays at its value.
 			rate = 0
 		} else {
-			guard let insideDeltaT = source.deltaT(at: inside) else { throw .deltaTUnavailable }
+			guard let insideDeltaT = source.deltaT(atTT: inside) else { throw .deltaTUnavailable }
 			guard insideDeltaT.isFinite else { throw .nonFiniteValue }
 			guard let baseline = julianYears(from: inside, to: extended.date) else { throw .dateOutOfRange }
 			rate = (extended.deltaT - insideDeltaT) / baseline
@@ -158,7 +158,7 @@ public struct LinearDeltaTExtrapolation: DeltaTSource {
 		coverage = atStart ? limit ... extended.date : extended.date ... limit
 	}
 
-	public func deltaT(at tt: JulianDate) -> Double? {
+	public func deltaT(atTT tt: JulianDate) -> Double? {
 		guard coverage.contains(tt), let years = julianYears(from: end, to: tt) else { return nil }
 		return endDeltaT + rate * years
 	}
@@ -220,8 +220,8 @@ public struct JoinedDeltaTSource: DeltaTSource {
 	init(_ other: some DeltaTSource, _ source: some DeltaTSource, atStart: Bool) throws(TimescaleConversionError) {
 		let date = atStart ? source.coverage.lowerBound : source.coverage.upperBound
 		guard other.coverage.contains(date),
-			  let sourceDeltaT = source.deltaT(at: date),
-			  let otherDeltaT = other.deltaT(at: date)
+			  let sourceDeltaT = source.deltaT(atTT: date),
+			  let otherDeltaT = other.deltaT(atTT: date)
 		else { throw .deltaTUnavailable }
 		guard sourceDeltaT.isFinite, otherDeltaT.isFinite else { throw .nonFiniteValue }
 
@@ -232,12 +232,12 @@ public struct JoinedDeltaTSource: DeltaTSource {
 		joinDeltaT = sourceDeltaT
 	}
 
-	public func deltaT(at tt: JulianDate) -> Double? {
+	public func deltaT(atTT tt: JulianDate) -> Double? {
 		guard coverage.contains(tt) else { return nil }
 		// The other source's ΔT plus the offset can round away from the source's at the join, so
 		// the source's is returned there to meet it exactly.
 		guard tt != joinDate else { return joinDeltaT }
-		guard let otherDeltaT = other.deltaT(at: tt) else { return nil }
+		guard let otherDeltaT = other.deltaT(atTT: tt) else { return nil }
 		return otherDeltaT + offset
 	}
 }
@@ -249,7 +249,7 @@ public struct JoinedDeltaTSource: DeltaTSource {
 ///   - ``TimescaleConversionError/nonFiniteValue`` if that ΔT is NaN or infinite.
 private func boundary(of source: some DeltaTSource, atStart: Bool) throws(TimescaleConversionError) -> (date: JulianDate, deltaT: Double) {
 	let date = atStart ? source.coverage.lowerBound : source.coverage.upperBound
-	guard let deltaT = source.deltaT(at: date) else { throw .deltaTUnavailable }
+	guard let deltaT = source.deltaT(atTT: date) else { throw .deltaTUnavailable }
 	guard deltaT.isFinite else { throw .nonFiniteValue }
 	return (date, deltaT)
 }

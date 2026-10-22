@@ -14,7 +14,7 @@ public protocol DeltaTSource: Sendable {
 	///
 	/// - Parameter tt: A Julian Date in TT.
 	/// - Returns: ΔT, in seconds, or `nil` if the source does not cover `tt`.
-	func deltaT(at tt: JulianDate) -> Double?
+	func deltaT(atTT tt: JulianDate) -> Double?
 
 	/// Returns ΔT = TT - UT1, in seconds, at the TT date whose UT1 is the specified date.
 	///
@@ -77,14 +77,14 @@ extension DeltaTSource {
 			guard bound != .min, bound != .max else { continue }
 			// ΔT at an end only bounds the UT1 dates covered, so without a usable value there the
 			// coverage on that side is unknown.
-			guard let endDeltaT = deltaT(at: bound), endDeltaT.isFinite else { return nil }
+			guard let endDeltaT = deltaT(atTT: bound), endDeltaT.isFinite else { return nil }
 			let offset = secondsToUT1(of: bound, deltaT: endDeltaT, from: ut1)
 			if isLower ? (offset > 0) : (offset < 0) { return nil }
 		}
 
 		var tt = ut1.clamped(to: range)
 		for _ in 0 ..< 8 {
-			guard let next = deltaT(at: tt) else { return nil }
+			guard let next = deltaT(atTT: tt) else { return nil }
 			// A non-finite or unrepresentable step is left for the caller to report.
 			guard next.isFinite, let estimate = try? ut1.adding(seconds: next) else { return next }
 			let nextTT = estimate.clamped(to: range)
@@ -113,7 +113,7 @@ extension DeltaTSource {
 
 		/// Returns `tt` as a point, or `nil` if ΔT there is unavailable or non-finite.
 		func point(_ tt: JulianDate) -> Point? {
-			guard let value = deltaT(at: tt), value.isFinite else { return nil }
+			guard let value = deltaT(atTT: tt), value.isFinite else { return nil }
 			return (tt, secondsToUT1(of: tt, deltaT: value, from: ut1), value)
 		}
 
@@ -195,9 +195,9 @@ public struct DeltaTSourceList: DeltaTSource {
 		self.sources = sources
 	}
 
-	public func deltaT(at tt: JulianDate) -> Double? {
+	public func deltaT(atTT tt: JulianDate) -> Double? {
 		for source in sources {
-			if let deltaT = source.deltaT(at: tt) {
+			if let deltaT = source.deltaT(atTT: tt) {
 				return deltaT
 			}
 		}
@@ -251,7 +251,7 @@ public struct DeltaTFunction: DeltaTSource {
 		DeltaTFunction { _ in seconds }
 	}
 
-	public func deltaT(at tt: JulianDate) -> Double? {
+	public func deltaT(atTT tt: JulianDate) -> Double? {
 		guard coverage.contains(tt) else { return nil }
 		return function(tt)
 	}

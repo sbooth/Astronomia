@@ -121,7 +121,7 @@ import Testing
 		struct Custom: DeltaTSource {
 			let table: DeltaTTable
 			var coverage: ClosedRange<JulianDate> { table.coverage }
-			func deltaT(at tt: JulianDate) -> Double? { table.deltaT(at: tt) }
+			func deltaT(atTT tt: JulianDate) -> Double? { table.deltaT(atTT: tt) }
 		}
 
 		let table = try Self.table(64, 64)
@@ -129,11 +129,11 @@ import Testing
 		#expect(Custom(table: table).deltaT(atUT1: ut1) == 64)
 
 		// A function with stated coverage iterates within it.
-		let covered = DeltaTFunction(coverage: table.coverage) { table.deltaT(at: $0) }
+		let covered = DeltaTFunction(coverage: table.coverage) { table.deltaT(atTT: $0) }
 		#expect(covered.deltaT(atUT1: ut1) == 64)
 
 		// Without stated coverage, the iteration starts before the table and finds no ΔT.
-		let uncovered = DeltaTFunction { table.deltaT(at: $0) }
+		let uncovered = DeltaTFunction { table.deltaT(atTT: $0) }
 		#expect(uncovered.deltaT(atUT1: ut1) == nil)
 	}
 
@@ -143,13 +143,13 @@ import Testing
 		let model = DeltaTModel.espenakMeeus2006
 		let after = try JoinedDeltaTSource(model, after: table)
 		let end = table.coverage.upperBound
-		let joinDeltaT = try #require(after.deltaT(at: end))
+		let joinDeltaT = try #require(after.deltaT(atTT: end))
 		let ut1 = try end.adding(seconds: -joinDeltaT)
 		#expect(try abs(#require(after.deltaT(atUT1: ut1)) - 65) <= 1e-9)
 		// A year later ΔT has changed as the model's does, by well under a second
 		#expect(try abs(#require(after.deltaT(atUT1: ut1.adding(days: 365))) - 65) <= 1)
 		// At the join, ΔT is the table's exactly, so the two meet without a gap
-		#expect(after.deltaT(at: end) == table.deltaT(at: end))
+		#expect(after.deltaT(atTT: end) == table.deltaT(atTT: end))
 		// Before the join, the join gives no ΔT
 		#expect(try after.deltaT(atUT1: ut1.adding(seconds: -1)) == nil)
 	}
@@ -177,7 +177,7 @@ import Testing
 			for fraction in [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1] {
 				// Adding the whole span can round past the end, so keep the date within coverage.
 				let tt = try coverage.lowerBound.adding(seconds: fraction * span).clamped(to: coverage)
-				let deltaT = try #require(source.deltaT(at: tt))
+				let deltaT = try #require(source.deltaT(atTT: tt))
 				let ut1 = try tt.adding(seconds: -deltaT)
 				let exact = try #require(source.deltaT(atUT1: ut1))
 				let iterated = try #require(source.iteratedDeltaT(atUT1: ut1, within: coverage))
