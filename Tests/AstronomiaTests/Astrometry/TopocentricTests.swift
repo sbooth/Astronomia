@@ -53,9 +53,14 @@ import Testing
 		#expect(Observer.geocenter.position == nil)
 		let greenwich = try Self.site(0)
 		#expect(try Observer.site(latitude: .degrees(51.4769), longitude: .degrees(-0.0005), height: .meters(46)) == greenwich)
-		// A site from its ITRS position is the same site.
+		// A site from its ITRS position is at the same place, with its geodetic coordinates
+		// recovered to rounding.
 		let position = try #require(greenwich.position)
-		#expect(try Observer.site(position) == greenwich)
+		let recovered = try Observer.site(position)
+		#expect(recovered.position == position)
+		guard case let .site(_, latitude, longitude) = recovered.location else { Issue.record(); return }
+		#expect(abs(latitude - Angle(degrees: 51.4769).radians) <= 1e-15)
+		#expect(abs(longitude - Angle(degrees: -0.0005).radians) <= 1e-15)
 		// The ellipsoids differ by about 0.1 mm.
 		let grs80 = try #require(try Observer.site(latitude: .degrees(51.4769), longitude: .degrees(-0.0005), height: .meters(46), ellipsoid: .grs80).position)
 		let difference = (grs80.vector - position.vector).length * metersPerAstronomicalUnit
@@ -162,7 +167,7 @@ import Testing
 		let other = EarthOrientation(ut1: UT1.Context(deltaT: DeltaTFunction.constant(70.2)))
 		// A geocentric observer doesn't depend on it.
 		#expect(try Observer.geocenter.observation(at: tt, earthOrientation: other).apparentPlace(of: .mars) == Observer.geocenter.observation(at: tt).apparentPlace(of: .mars))
-		// A second of UT1 turns a site by 15″ about the pole, which moves the Moon's place.
+		// A second of UT1 turns a site by 15" about the pole, which moves the Moon's place.
 		let site = try Self.site(0)
 		let a = try site.observation(at: tt, earthOrientation: Self.earthOrientation)
 		let b = try site.observation(at: tt, earthOrientation: other)

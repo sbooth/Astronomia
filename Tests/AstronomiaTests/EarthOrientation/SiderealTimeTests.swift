@@ -34,7 +34,7 @@ import Testing
 		let gmst = try EarthRotation.greenwichMeanSiderealTime(at: tt)
 		let equation = EarthRotation.equationOfTheEquinoxes(at: tt)
 		#expect(abs((gast - gmst).normalizedSigned().radians - equation.radians) * Self.uas <= 0.01)
-		// Near 2026 it is about a second of time at most: Δψ cos ε_A, with |Δψ| below 20″.
+		// Near 2026 it is about a second of time at most: Δψ cos ε_A, with |Δψ| below 20".
 		#expect(abs(equation.arcseconds) <= 18)
 	}
 

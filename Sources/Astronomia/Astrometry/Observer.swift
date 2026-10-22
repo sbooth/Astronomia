@@ -20,7 +20,7 @@
 /// ```
 ///
 /// A place seen from a site differs from the geocentric place by the diurnal parallax, up to
-/// about 1° for the Moon, and by the diurnal aberration, up to 0.32″, from the site's motion as
+/// about 1° for the Moon, and by the diurnal aberration, up to 0.32", from the site's motion as
 /// the Earth turns. Light grazing the Earth is also deflected by its gravity, by up to 0.57 mas.
 ///
 /// Each place evaluates the ephemeris for the observer and the light-deflecting bodies at the
@@ -36,8 +36,9 @@ public struct Observer: Hashable, Sendable {
 	enum Location: Hashable, Sendable {
 		/// The center of the Earth.
 		case geocenter
-		/// A site fixed to the Earth, at a position in the ITRS, in au.
-		case site(Vector3)
+		/// A site fixed to the Earth, at a position in the ITRS, in au, with the geodetic
+		/// latitude and longitude, in radians, whose ellipsoid normal gives its horizon.
+		case site(Vector3, latitude: Double, longitude: Double)
 	}
 
 	/// Where the observer is.
@@ -74,7 +75,7 @@ public struct Observer: Hashable, Sendable {
 			throw .invalidHeight
 		}
 		let position = ellipsoid.geocentric(latitude: latitude.radians, longitude: longitude.radians, height: height.astronomicalUnits)
-		return Observer(location: .site(position))
+		return Observer(location: .site(position, latitude: latitude.radians, longitude: longitude.radians))
 	}
 
 	/// Returns an observer at a site given by its position in the ITRS.
@@ -90,10 +91,11 @@ public struct Observer: Hashable, Sendable {
 		guard vector.x.isFinite, vector.y.isFinite, vector.z.isFinite else {
 			throw .nonFiniteValue
 		}
-		guard abs(Ellipsoid.wgs84.geodetic(vector).height) <= maximumHeight.astronomicalUnits else {
+		let geodetic = Ellipsoid.wgs84.geodetic(vector)
+		guard abs(geodetic.height) <= maximumHeight.astronomicalUnits else {
 			throw .invalidHeight
 		}
-		return Observer(location: .site(vector))
+		return Observer(location: .site(vector, latitude: geodetic.latitude, longitude: geodetic.longitude))
 	}
 
 	/// The position of the site in the ITRS, or `nil` for an observer at the center of the
@@ -101,7 +103,7 @@ public struct Observer: Hashable, Sendable {
 	public var position: Position<ITRS>? {
 		switch location {
 		case .geocenter: nil
-		case let .site(position): Position(position)
+		case let .site(position, _, _): Position(position)
 		}
 	}
 }

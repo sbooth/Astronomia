@@ -21,6 +21,9 @@
 /// let mars = try sky.apparentPlace(of: .mars)
 /// ```
 ///
+/// From a site, ``observedPlace(of:conditions:)`` turns an apparent place to the site's
+/// horizon, as azimuth and altitude, and hour angle and declination, with refraction.
+///
 /// The states of the observer, the Sun, and the light-deflecting bodies are checked when the
 /// observation is created. A place of a star then fails only if the star's own motion makes
 /// it unobservable as a star at the instant.
@@ -40,6 +43,8 @@ public struct Observation<E: GeocentricEphemeris>: Sendable {
 	let positions: Astrometry.Positions<E>
 	/// The observer's barycentric position and velocity.
 	let observerVectors: (position: Vector3, velocity: Vector3)
+	/// The site's horizon, or `nil` for an observer at the center of the Earth.
+	let horizon: Horizon?
 	/// The light-deflecting bodies at the instant of observation.
 	let deflectors: [Astrometry.Deflector<E.Body>]
 	/// The Sun's gravitational parameter, or 0 if the ephemeris doesn't list the Sun as a
@@ -73,10 +78,12 @@ public struct Observation<E: GeocentricEphemeris>: Sendable {
 		let positions = try Astrometry.Positions(ephemeris: ephemeris, at: tdb)
 		let earth = try positions.state(of: E.earth)
 		let state: (position: Vector3, velocity: Vector3)
+		let horizon: Horizon?
 		switch observer.location {
 		case .geocenter:
 			state = earth
-		case let .site(site):
+			horizon = nil
+		case let .site(site, latitude, longitude):
 			let ut1: Instant<UT1>
 			do throws(TimescaleConversionError) {
 				ut1 = try instant.converted(to: UT1.self, sourceContext: context, targetContext: earthOrientation.ut1)
@@ -84,7 +91,10 @@ public struct Observation<E: GeocentricEphemeris>: Sendable {
 				throw .timescaleConversion(error)
 			}
 			// The site's geocentric position and velocity, with the Earth's rotation
-			let geocentric = StateVector<ITRS>(site, Vector3(0, 0, 0)).converted(to: ICRS.self, at: tt, ut1: ut1, earthOrientation: earthOrientation)
+			let toITRS = ICRS.rotation(to: ITRS.self, at: tt, ut1: ut1, earthOrientation: earthOrientation)
+			let spin = ITRS.angularVelocity(at: tt, earthOrientation: earthOrientation)
+			let geocentric = toITRS.inverse.uncheckedApply(to: StateVector<ITRS>(site, Vector3(0, 0, 0)), fromFrameTurningAt: spin)
+			horizon = Horizon(toITRS: toITRS, latitude: latitude, longitude: longitude)
 			state = try Astrometry.Positions<E>.validated(earth.position + geocentric.position.vector, earth.velocity + geocentric.velocity.vector)
 		}
 		guard state.position.length <= Self.maximumObserverDistance else {
@@ -114,6 +124,7 @@ public struct Observation<E: GeocentricEphemeris>: Sendable {
 		self.positions = positions
 		self.observerVectors = state
 		self.observerState = StateVector(state.position, state.velocity)
+		self.horizon = horizon
 		self.deflectors = deflectors
 		self.sunGravitationalParameter = E.lightDeflectingBodies.first { $0.body == E.sun }?.gravitationalParameter ?? 0
 	}
@@ -193,6 +204,72 @@ extension Observation {
 		let distance = relative.length
 		let apparent = apparentDirection(relative / distance, geometry: geometry, excluding: nil)
 		return ApparentPlace(position: Position(apparent * distance), lightTime: try Self.interval(lightTimeOfStar: geometry.lightTime), instant: instant)
+	}
+}
+
+extension Observation {
+	/// Returns the place of a body where it appears, in a frame of date at the instant of
+	/// observation.
+	///
+	/// The place is the apparent place in ICRS axes converted with the observation's
+	/// ``earthOrientation``: in ``TrueEquatorOfDate`` it gives the classical apparent right
+	/// ascension and declination, and in ``CIRS`` the intermediate ones. Each call computes the
+	/// frame's rotation, about 70 µs; for many places, compute the rotation once with
+	/// ``FixedReferenceFrame/rotation(to:at:earthOrientation:)`` and apply it to each place's
+	/// position with `*`.
+	///
+	/// - Parameters:
+	///   - body: The body.
+	///   - frame: The frame of date.
+	/// - Returns: The apparent place in `frame`, whose epoch is the instant of observation.
+	/// - Throws: An ``EphemerisError``, as the apparent place of a body does.
+	public func apparentPlace<Frame: DatedReferenceFrame>(of body: E.Body, in frame: Frame.Type) throws(EphemerisError) -> ApparentPlace<Frame> {
+		try apparentPlace(of: body).converted(to: frame, earthOrientation: earthOrientation)
+	}
+
+	/// Returns the place of a star where it appears, in a frame of date at the instant of
+	/// observation.
+	///
+	/// The place is the apparent place in ICRS axes converted with the observation's
+	/// ``earthOrientation``, as for a body.
+	///
+	/// - Parameters:
+	///   - star: The star.
+	///   - frame: The frame of date.
+	/// - Returns: The apparent place in `frame`, whose epoch is the instant of observation.
+	/// - Throws: A ``StarError``, as the apparent place of a star does.
+	public func apparentPlace<Frame: DatedReferenceFrame>(of star: Star, in frame: Frame.Type) throws(StarError) -> ApparentPlace<Frame> {
+		try apparentPlace(of: star).converted(to: frame, earthOrientation: earthOrientation)
+	}
+
+	/// Returns where an apparent place is seen in the sky of the observer's site: its azimuth
+	/// and altitude, and its hour angle and declination, refracted by the atmosphere if it is
+	/// given.
+	///
+	/// ```swift
+	/// let sky = try site.observation(at: instant)
+	/// let moon = try sky.observedPlace(of: sky.apparentPlace(of: .moon), conditions: conditions)
+	/// ```
+	///
+	/// - Parameters:
+	///   - place: An apparent place from this observation.
+	///   - conditions: The atmosphere at the site, or `nil` for no refraction.
+	/// - Returns: The observed place.
+	/// - Throws:
+	///   - ``ObserverError/noHorizon`` if the observer is at the center of the Earth.
+	///   - ``ObserverError/placeMismatch`` if `place` can't be from this observation: it is at
+	///     another instant, or it is at the origin, as only a geocentric place of the Earth
+	///     is.
+	public func observedPlace(of place: ApparentPlace<ICRS>, conditions: AtmosphericConditions? = nil) throws(ObserverError) -> ObservedPlace {
+		guard let horizon else {
+			throw .noHorizon
+		}
+		let vector = place.position.vector
+		let distance = vector.length
+		guard place.instant == instant, distance > 0 else {
+			throw .placeMismatch
+		}
+		return horizon.observedPlace(of: vector / distance, refraction: conditions?.refractionConstants, distance: Distance(astronomicalUnits: distance), instant: instant)
 	}
 }
 

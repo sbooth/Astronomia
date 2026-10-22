@@ -34,6 +34,8 @@ let metersPerAstronomicalUnit: Double = 149_597_870_700
 /// Kilometers per astronomical unit, 149,597,870.7.
 let kilometersPerAstronomicalUnit: Double = 149_597_870.7
 
+/// Micrometers per astronomical unit.
+let micrometersPerAstronomicalUnit: Double = 149_597_870_700e6
 
 /// The speed of light in vacuum, 299,792.458 km/s.
 let speedOfLight: Double = 299_792.458

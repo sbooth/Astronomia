@@ -39,4 +39,7 @@ enum Math {
 
 	/// Returns the natural logarithm of `x`, or NaN if `x` is negative.
 	@inline(__always) static func log(_ x: Double) -> Double { astronomia_log(x) }
+
+	/// Returns `x` raised to the power `y`.
+	@inline(__always) static func pow(_ x: Double, _ y: Double) -> Double { astronomia_pow(x, y) }
 }

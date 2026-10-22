@@ -23,7 +23,7 @@ extension Star {
 	///   - ``StarError/excessiveTimeSpan`` if `epoch` is more than 10 million Julian years from
 	///     the star's epoch.
 	///   - ``StarError/withinSolarSystem`` if at `epoch` the star is within about 20,600 au of
-	///     the barycenter, where its parallax would be more than 10″.
+	///     the barycenter, where its parallax would be more than 10".
 	///   - ``StarError/excessiveRadialVelocity`` if the radial velocity seen at `epoch` is half
 	///     the speed of light or more, as only a star moving at nearly that speed can reach.
 	public func propagated(to epoch: Instant<TDB>) throws(StarError) -> Star {
