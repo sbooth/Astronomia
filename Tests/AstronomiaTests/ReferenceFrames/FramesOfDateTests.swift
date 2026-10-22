@@ -118,7 +118,7 @@ import Testing
 	}
 
 	@Test func meanEclipticAtJ2000IsTheEclipticOfJ2000() {
-		let rotation = MeanEclipticOfDate.rotationFromICRS(at: Instant<TT>(.J2000))
+		let rotation = MeanEclipticOfDate.rotationFromICRS(at: Instant<TT>(.j2000))
 		let rows = [EclipticJ2000.rotationFromICRS.rows.0, EclipticJ2000.rotationFromICRS.rows.1, EclipticJ2000.rotationFromICRS.rows.2]
 		#expect(Self.difference(rotation, rows.flatMap { [$0.x, $0.y, $0.z] }) <= 1e-4)
 	}

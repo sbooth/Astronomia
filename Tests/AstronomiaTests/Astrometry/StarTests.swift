@@ -41,7 +41,7 @@ import Testing
 	}
 
 	@Test func validation() throws {
-		let epoch = Instant<TDB>(.J2000)
+		let epoch = Instant<TDB>(.j2000)
 		let star = try Star(rightAscension: .degrees(10), declination: .degrees(-90), epoch: epoch)
 		#expect(star.parallax == nil && star.radialVelocity == .zero && star.properMotionInDeclination == .zero)
 		#expect(throws: StarError.nonFiniteValue) { try Star(rightAscension: .degrees(.nan), declination: .zero, epoch: epoch) }

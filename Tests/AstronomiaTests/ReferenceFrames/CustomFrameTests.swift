@@ -32,7 +32,7 @@ enum OffsetEquatorOfDate: EquatorialFrame, DatedReferenceFrame {
 }
 
 @Suite struct CustomFrameTests {
-	static let tt = Instant<TT>(JulianDate.J2000)
+	static let tt = Instant<TT>(JulianDate.j2000)
 	static let later = Instant<TT>(try! JulianDate(julianDayNumber: 2_461_335))
 	static let icrs = Position<ICRS>(x: .astronomicalUnits(0.3), y: .astronomicalUnits(-0.8), z: .astronomicalUnits(0.5))
 

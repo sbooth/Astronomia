@@ -9,7 +9,7 @@ import Testing
 @testable import Astronomia
 
 @Suite struct DatedFrameTests {
-	static let epoch = Instant<TT>(.J2000)
+	static let epoch = Instant<TT>(.j2000)
 	static let later = Instant<TT>(JulianDate(uncheckedJulianDayNumber: 2_488_070, fractionFromNoon: 0))
 
 	static func au(_ x: Double, _ y: Double, _ z: Double, epoch: Instant<TT> = Self.epoch) -> Position<TestEquatorOfDate> {
