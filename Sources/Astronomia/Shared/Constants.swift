@@ -53,6 +53,9 @@ let arcsecondsPerRadian: Double = 648_000 / .pi
 /// Microarcseconds per radian.
 let microarcsecondsPerRadian: Double = 648_000_000_000 / .pi
 
+/// The equatorial radius of the Earth, 6,378.137 km, of the WGS84 and GRS80 ellipsoids.
+let earthEquatorialRadius: Distance = .meters(6_378_137)
+
 /// The nominal radius of the Sun, 695,700 km.
 ///
 /// The conversion constant of IAU 2015 Resolution B3, the radius of the photosphere.

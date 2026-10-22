@@ -73,12 +73,14 @@ public struct SolarSystemEphemeris: GeocentricEphemeris, Hashable {
 	public static let defaultOrigin = Body.solarSystemBarycenter
 	public static let earth = Body.earth
 	public static let sun = Body.sun
-	/// The Sun and the barycenters of Jupiter and Saturn, with their gravitational parameters
-	/// from INPOP10a as given in VSOP2013.f and their IAU radii.
+	/// The Sun, the barycenters of Jupiter and Saturn, and the Earth, with their gravitational
+	/// parameters from INPOP10a as given in VSOP2013.f and their IAU radii, or for the Earth the
+	/// WGS84 equatorial radius. The Earth deflects light only for an observer on its surface.
 	public static let lightDeflectingBodies = [
 		LightDeflectingBody(uncheckedBody: Body.sun, gravitationalParameter: VSOP2013.sunGravitationalParameter, radius: nominalSolarRadius),
 		LightDeflectingBody(uncheckedBody: Body.jupiterBarycenter, gravitationalParameter: VSOP2013.Body.jupiterBarycenter.gravitationalParameter ?? 0, radius: jupiterEquatorialRadius),
 		LightDeflectingBody(uncheckedBody: Body.saturnBarycenter, gravitationalParameter: VSOP2013.Body.saturnBarycenter.gravitationalParameter ?? 0, radius: saturnEquatorialRadius),
+		LightDeflectingBody(uncheckedBody: Body.earth, gravitationalParameter: (VSOP2013.Body.earthMoonBarycenter.gravitationalParameter ?? 0) * earthMoonMassRatio / (1 + earthMoonMassRatio), radius: earthEquatorialRadius),
 	]
 	public static let solarSystemBarycenter = Body.solarSystemBarycenter
 
