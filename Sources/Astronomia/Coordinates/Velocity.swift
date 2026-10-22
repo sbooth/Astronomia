@@ -90,15 +90,14 @@ extension Velocity where Frame.Epoch == NoEpoch {
 
 	/// Creates a velocity from components in astronomical units per day.
 	///
-	/// - Parameter astronomicalUnitsPerDay: The components along the frame's x, y, and z
-	///   axes.
+	/// - Parameter components: The components along the frame's x, y, and z axes.
 	public init(astronomicalUnitsPerDay components: SIMD3<Double>) {
 		self.init(Vector3(components.x, components.y, components.z))
 	}
 
 	/// Creates a velocity from components in kilometers per second.
 	///
-	/// - Parameter kilometersPerSecond: The components along the frame's x, y, and z axes.
+	/// - Parameter components: The components along the frame's x, y, and z axes.
 	public init(kilometersPerSecond components: SIMD3<Double>) {
 		self.init(Self.astronomicalUnitsPerDay(fromKilometersPerSecond: components))
 	}
