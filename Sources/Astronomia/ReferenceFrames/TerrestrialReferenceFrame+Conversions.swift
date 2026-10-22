@@ -57,7 +57,11 @@ extension Instant {
 
 extension Rotation {
 	/// Returns a state rotated to the `To` frame, which turns with angular velocity `spin`
-	/// relative to the `From` frame, whatever the state's epoch: v' = R v - ω × r'.
+	/// relative to the `From` frame, without checking the state's epoch: v' = R v - ω × r'.
+	///
+	/// - Precondition: The state is at the rotation's `From` epoch, or the `From` frame has no
+	///   epoch, and `spin` is finite: the `To` frame's angular velocity relative to the `From`
+	///   frame, in the `To` frame's axes, in radians per day.
 	func uncheckedApply(to state: StateVector<From>, toFrameTurningAt spin: SIMD3<Double>) -> StateVector<To> {
 		assert(state.position.frameEpoch == fromFrameEpoch, "Position is not at the rotation's From epoch")
 		assert(spin.x.isFinite && spin.y.isFinite && spin.z.isFinite, "Spin must be finite")
@@ -67,9 +71,15 @@ extension Rotation {
 	}
 
 	/// Returns a state rotated to the `To` frame from the `From` frame, which turns with angular
-	/// velocity `spin`, in its axes, relative to the `To` frame, whatever the state's epoch:
+	/// velocity `spin` relative to the `To` frame, without checking the state's epoch:
 	/// v' = R (v + ω × r).
+	///
+	/// - Precondition: The state is at the rotation's `From` epoch, or the `From` frame has no
+	///   epoch, and `spin` is finite: the `From` frame's angular velocity relative to the `To`
+	///   frame, in the `From` frame's axes, in radians per day.
 	func uncheckedApply(to state: StateVector<From>, fromFrameTurningAt spin: SIMD3<Double>) -> StateVector<To> {
+		assert(state.position.frameEpoch == fromFrameEpoch, "Position is not at the rotation's From epoch")
+		assert(spin.x.isFinite && spin.y.isFinite && spin.z.isFinite, "Spin must be finite")
 		let inertial = state.velocity.vector + Vector3(spin.x, spin.y, spin.z).cross(state.position.vector)
 		let position = Position<To>(apply(to: state.position.vector), frameEpoch: toFrameEpoch)
 		return StateVector(uncheckedPosition: position, velocity: Velocity(apply(to: inertial), frameEpoch: toFrameEpoch))

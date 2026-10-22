@@ -10,19 +10,28 @@
 // rotation once, as with `ICRS.rotation(to:at:earthOrientation:)`, and apply it with `*`.
 
 extension Rotation {
-	/// Returns a position rotated to the `To` frame, whatever its epoch.
+	/// Returns a position rotated to the `To` frame, without checking its epoch.
+	///
+	/// - Precondition: The position is at the rotation's `From` epoch, as when the rotation is
+	///   made at the position's own epoch, or the `From` frame has no epoch.
 	func uncheckedApply(to position: Position<From>) -> Position<To> {
 		assert(position.frameEpoch == fromFrameEpoch, "Position is not at the rotation's From epoch")
 		return Position<To>(apply(to: position.vector), frameEpoch: toFrameEpoch)
 	}
 
-	/// Returns a velocity rotated to the `To` frame, whatever its epoch.
+	/// Returns a velocity rotated to the `To` frame, without checking its epoch.
+	///
+	/// - Precondition: The velocity is at the rotation's `From` epoch, or the `From` frame has
+	///   no epoch.
 	func uncheckedApply(to velocity: Velocity<From>) -> Velocity<To> {
 		assert(velocity.frameEpoch == fromFrameEpoch, "Velocity is not at the rotation's From epoch")
 		return Velocity<To>(apply(to: velocity.vector), frameEpoch: toFrameEpoch)
 	}
 
-	/// Returns a state rotated to the `To` frame, whatever its epoch.
+	/// Returns a state rotated to the `To` frame, without checking its epoch.
+	///
+	/// - Precondition: The state is at the rotation's `From` epoch, or the `From` frame has no
+	///   epoch.
 	func uncheckedApply(to state: StateVector<From>) -> StateVector<To> {
 		assert(state.position.frameEpoch == fromFrameEpoch, "State vector's position is not at the rotation's From epoch")
 		return StateVector<To>(uncheckedPosition: uncheckedApply(to: state.position), velocity: uncheckedApply(to: state.velocity))
