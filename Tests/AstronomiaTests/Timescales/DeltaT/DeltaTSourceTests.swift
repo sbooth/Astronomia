@@ -41,7 +41,7 @@ import Testing
 		for decimalYear in [1600.0, 1900.25, 1980, 2026] {
 			let tt = try JulianDate(decimalYear: decimalYear)
 			let expected = DeltaTTable.builtIn.deltaT(atTT: tt) ?? model.deltaT(decimalYear: tt.decimalYear)
-			#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == expected)
+			#expect(try UT1.deltaT(atTT: tt, context: UT1.defaultContext) == expected)
 		}
 	}
 
@@ -50,7 +50,7 @@ import Testing
 		for decimalYear in [1600.0, 1900.25, 1980, 2026] {
 			let tt = try JulianDate(decimalYear: decimalYear)
 			let expected = DeltaTTable.builtIn.deltaT(atTT: tt) ?? historicJoinedModel(tt.decimalYear)
-			#expect(try UT1.deltaT(at: tt, context: .continuous()) == expected)
+			#expect(try UT1.deltaT(atTT: tt, context: .continuous()) == expected)
 		}
 	}
 
@@ -58,8 +58,8 @@ import Testing
 		// Prefer the model over the table, for consistency with work based on the model
 		let modelFirst = UT1.Context(deltaT: DeltaTSourceList([DeltaTModel.espenakMeeus2006, DeltaTTable.historic]))
 		let tt = try JulianDate(decimalYear: 1900.25)
-		#expect(try UT1.deltaT(at: tt, context: modelFirst) == DeltaTModel.espenakMeeus2006.deltaT(decimalYear: tt.decimalYear))
-		#expect(try UT1.deltaT(at: tt, context: modelFirst) != DeltaTTable.historic.deltaT(atTT: tt))
+		#expect(try UT1.deltaT(atTT: tt, context: modelFirst) == DeltaTModel.espenakMeeus2006.deltaT(decimalYear: tt.decimalYear))
+		#expect(try UT1.deltaT(atTT: tt, context: modelFirst) != DeltaTTable.historic.deltaT(atTT: tt))
 	}
 
 	@Test func constant() throws {
@@ -74,10 +74,10 @@ import Testing
 	@Test func errors() throws {
 		let tt = try JulianDate(decimalYear: 2026)
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
-			try UT1.deltaT(at: tt, context: UT1.Context(deltaT: DeltaTSourceList([])))
+			try UT1.deltaT(atTT: tt, context: UT1.Context(deltaT: DeltaTSourceList([])))
 		}
 		#expect(throws: TimescaleConversionError.nonFiniteValue) {
-			try UT1.deltaT(at: tt, context: UT1.Context(deltaT: DeltaTFunction.constant(.nan)))
+			try UT1.deltaT(atTT: tt, context: UT1.Context(deltaT: DeltaTFunction.constant(.nan)))
 		}
 		#expect(throws: TimescaleConversionError.nonFiniteValue) {
 			try UT1.fromTT(tt, context: UT1.Context(deltaT: DeltaTFunction.constant(.infinity)))
