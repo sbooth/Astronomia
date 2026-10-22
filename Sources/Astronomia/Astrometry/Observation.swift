@@ -1,0 +1,221 @@
+//
+// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
+// SPDX-License-Identifier: MIT
+//
+// Part of https://github.com/sbooth/Astronomia
+//
+
+/// An observer at an instant, from which the places of any number of bodies and stars are
+/// found.
+///
+/// Creating an observation evaluates the ephemeris for the observer, the Sun's barycentric
+/// state, and the light-deflecting bodies, which is most of the cost of a place: about 17 ms
+/// with the built-in ephemeris. A place of a star then takes well under a microsecond, and a
+/// place of a body evaluates only the body itself, twice.
+///
+/// ```swift
+/// let sky = try Observer.geocenter.observation(at: instant)
+/// let places = try catalog.map { try sky.apparentPlace(of: $0) }
+/// let mars = try sky.apparentPlace(of: .mars)
+/// ```
+///
+/// The states of the observer, the Sun, and the light-deflecting bodies are checked when the
+/// observation is created. A place of a star then fails only if the star's own motion makes
+/// it unobservable as a star at the instant.
+public struct Observation<E: GeocentricEphemeris>: Sendable {
+	/// The observer.
+	public let observer: Observer
+	/// The instant of observation, which is also the epoch of a frame of date.
+	public let instant: Instant<TT>
+	/// The observer's position and velocity relative to the solar system barycenter at the
+	/// instant of observation.
+	public let observerState: StateVector<ICRS>
+
+	/// The positions of the ephemeris.
+	let positions: Astrometry.Positions<E>
+	/// The observer's barycentric position and velocity.
+	let observerVectors: (position: Vector3, velocity: Vector3)
+	/// The light-deflecting bodies at the instant of observation.
+	let deflectors: [Astrometry.Deflector<E.Body>]
+	/// The Sun's gravitational parameter, or 0 if the ephemeris doesn't list the Sun as a
+	/// light-deflecting body.
+	let sunGravitationalParameter: Double
+
+	/// The greatest distance of an observer from the solar system barycenter, 10,000 au.
+	///
+	/// A ``Star`` is observed only while it is at least 20,600 au from the barycenter, so an
+	/// observer within this distance is always well away from one.
+	static var maximumObserverDistance: Double { 10_000 }
+
+	/// Creates an observation, evaluating the ephemeris.
+	///
+	/// - Throws:
+	///   - ``EphemerisError/outsideCoverage`` if the ephemeris doesn't cover the instant.
+	///   - ``EphemerisError/timescaleConversion(_:)`` if `instant` can't be converted.
+	///   - ``EphemerisError/invalidState`` if a state is NaN or infinite or as fast as light,
+	///     the observer is more than 10,000 au from the barycenter, or the observer is within a
+	///     light-deflecting body.
+	init<Scale: Timescale>(observer: Observer, instant: Instant<Scale>, context: Scale.Context, ephemeris: E) throws(EphemerisError) {
+		let tdb: Instant<TDB>
+		do throws(TimescaleConversionError) {
+			self.instant = try instant.converted(to: TT.self, sourceContext: context)
+			tdb = try instant.converted(to: TDB.self, sourceContext: context)
+		} catch {
+			throw .timescaleConversion(error)
+		}
+		let positions = try Astrometry.Positions(ephemeris: ephemeris, at: tdb)
+		let state: (position: Vector3, velocity: Vector3)
+		let ownBody: E.Body
+		switch observer.location {
+		case .geocenter:
+			state = try positions.state(of: E.earth)
+			ownBody = E.earth
+		}
+		guard state.position.length <= Self.maximumObserverDistance else {
+			throw .invalidState
+		}
+
+		// The observer's own body deflects nothing.
+		var deflectors: [Astrometry.Deflector<E.Body>] = []
+		for body in E.lightDeflectingBodies where body.body != ownBody {
+			let deflector = try positions.state(of: body.body)
+			guard (state.position - deflector.position).length > body.radius.astronomicalUnits else {
+				throw .invalidState
+			}
+			deflectors.append(Astrometry.Deflector(body: body.body, state: deflector, gravitationalParameter: body.gravitationalParameter, radius: body.radius.astronomicalUnits))
+		}
+
+		self.observer = observer
+		self.positions = positions
+		self.observerVectors = state
+		self.observerState = StateVector(state.position, state.velocity)
+		self.deflectors = deflectors
+		self.sunGravitationalParameter = E.lightDeflectingBodies.first { $0.body == E.sun }?.gravitationalParameter ?? 0
+	}
+}
+
+extension Observation {
+	/// Returns the place of a body corrected for light time.
+	///
+	/// - Parameter body: The body.
+	/// - Returns: The astrometric place, in ICRS axes. For the observer's own body it is at the
+	///   origin.
+	/// - Throws:
+	///   - ``EphemerisError/outsideCoverage`` if the ephemeris doesn't cover the earlier
+	///     instant at which the light left the body.
+	///   - ``EphemerisError/invalidState`` if the ephemeris gives a state of the body that is
+	///     NaN or infinite or as fast as light, a position too far for the light time to be
+	///     represented, or a motion so fast that the light time doesn't converge.
+	public func astrometricPlace(of body: E.Body) throws(EphemerisError) -> AstrometricPlace<ICRS> {
+		let geometry = try Astrometry.geometry(of: body, observer: observerVectors, positions: positions)
+		let position = Position<ICRS>(geometry.target - geometry.observer.position)
+		return AstrometricPlace(position: position, lightTime: try Self.interval(geometry.lightTime), instant: instant)
+	}
+
+	/// Returns the place where a body appears: corrected for light time, the gravitational
+	/// deflection of light by the ephemeris's light-deflecting bodies, and aberration.
+	///
+	/// - Parameter body: The body.
+	/// - Returns: The apparent place, in ICRS axes. For the observer's own body it is at the
+	///   origin.
+	/// - Throws: An ``EphemerisError``, as the astrometric place of a body does.
+	public func apparentPlace(of body: E.Body) throws(EphemerisError) -> ApparentPlace<ICRS> {
+		let geometry = try Astrometry.geometry(of: body, observer: observerVectors, positions: positions)
+		let relative = geometry.target - geometry.observer.position
+		let distance = relative.length
+		guard distance > 0 else {
+			return ApparentPlace(position: .origin, lightTime: .zero, instant: instant)
+		}
+		let apparent = apparentDirection(relative / distance, geometry: geometry, excluding: body)
+		// Finite states can still meet in a degenerate geometry, such as a target at a
+		// deflector's center.
+		guard apparent.x.isFinite, apparent.y.isFinite, apparent.z.isFinite else {
+			throw .invalidState
+		}
+		return ApparentPlace(position: Position(apparent * distance), lightTime: try Self.interval(geometry.lightTime), instant: instant)
+	}
+
+	/// Returns the place of a star corrected for its space motion and parallax.
+	///
+	/// The star is where it was when the light reaching the observer left it, which includes
+	/// its motion over the light's extra travel across the solar system. The light time is the
+	/// star's distance over the speed of light, which for a star without a parallax is that of
+	/// its nominal distance of 1 Gpc (see ``Star``).
+	///
+	/// - Parameter star: The star.
+	/// - Returns: The astrometric place, in ICRS axes.
+	/// - Throws:
+	///   - ``StarError/excessiveTimeSpan`` if the instant is more than 10 million Julian years
+	///     from the star's epoch.
+	///   - ``StarError/withinSolarSystem`` if at the instant the star's motion puts it within
+	///     about 20,600 au of the barycenter.
+	public func astrometricPlace(of star: Star) throws(StarError) -> AstrometricPlace<ICRS> {
+		let geometry = try geometry(of: star)
+		let position = Position<ICRS>(geometry.target - geometry.observer.position)
+		return AstrometricPlace(position: position, lightTime: try Self.interval(lightTimeOfStar: geometry.lightTime), instant: instant)
+	}
+
+	/// Returns the place where a star appears: corrected for its space motion and parallax,
+	/// the gravitational deflection of light by the ephemeris's light-deflecting bodies, and
+	/// aberration.
+	///
+	/// - Parameter star: The star.
+	/// - Returns: The apparent place, in ICRS axes.
+	/// - Throws: A ``StarError``, as the astrometric place of a star does.
+	public func apparentPlace(of star: Star) throws(StarError) -> ApparentPlace<ICRS> {
+		let geometry = try geometry(of: star)
+		let relative = geometry.target - geometry.observer.position
+		let distance = relative.length
+		let apparent = apparentDirection(relative / distance, geometry: geometry, excluding: nil)
+		return ApparentPlace(position: Position(apparent * distance), lightTime: try Self.interval(lightTimeOfStar: geometry.lightTime), instant: instant)
+	}
+}
+
+extension Observation {
+	/// Returns the geometry of the observation of a star.
+	///
+	/// - Throws: A ``StarError``, as the astrometric place of a star does.
+	func geometry(of star: Star) throws(StarError) -> Astrometry.Geometry {
+		let (relative, lightTime) = try star.observed(daysSinceEpoch: Astrometry.days(from: star.epoch, to: positions.tdb), from: observerVectors.position)
+		return Astrometry.Geometry(observer: observerVectors, target: observerVectors.position + relative, lightTime: lightTime)
+	}
+
+	/// Returns a direction deflected by the light-deflecting bodies and corrected for
+	/// aberration.
+	///
+	/// - Parameters:
+	///   - direction: The unit vector from the observer to the source.
+	///   - geometry: The observation.
+	///   - body: The target, or `nil` for a source outside the ephemeris.
+	/// - Returns: The apparent unit vector.
+	func apparentDirection(_ direction: Vector3, geometry: Astrometry.Geometry, excluding body: E.Body?) -> Vector3 {
+		let deflected = Astrometry.deflected(direction, geometry: geometry, deflectors: deflectors, excluding: body)
+		let sunDistance = (observerVectors.position - positions.sun.position).length
+		return Astrometry.aberrated(deflected, velocity: observerVectors.velocity, sunDistance: sunDistance, sunGravitationalParameter: sunGravitationalParameter)
+	}
+
+	/// Returns the light time of a body as an interval.
+	///
+	/// - Throws: ``EphemerisError/invalidState`` if the light time can't be represented.
+	static func interval(_ days: Double) throws(EphemerisError) -> DayInterval {
+		do throws(DayIntervalError) {
+			return try DayInterval(days: days)
+		} catch {
+			throw .invalidState
+		}
+	}
+
+	/// Returns the light time of a star as an interval.
+	///
+	/// The time span limit keeps a star within 1 Gpc plus 10 million light years, so its light
+	/// time is finite and far below the limits of an interval.
+	///
+	/// - Throws: ``StarError/excessiveTimeSpan`` if the light time can't be represented.
+	static func interval(lightTimeOfStar days: Double) throws(StarError) -> DayInterval {
+		do throws(DayIntervalError) {
+			return try DayInterval(days: days)
+		} catch {
+			throw .excessiveTimeSpan
+		}
+	}
+}

@@ -12,17 +12,20 @@
 extension Rotation {
 	/// Returns a position rotated to the `To` frame, whatever its epoch.
 	func uncheckedApply(to position: Position<From>) -> Position<To> {
-		Position<To>(apply(to: position.vector), frameEpoch: toFrameEpoch)
+		assert(position.frameEpoch == fromFrameEpoch, "Position is not at the rotation's From epoch")
+		return Position<To>(apply(to: position.vector), frameEpoch: toFrameEpoch)
 	}
 
 	/// Returns a velocity rotated to the `To` frame, whatever its epoch.
 	func uncheckedApply(to velocity: Velocity<From>) -> Velocity<To> {
-		Velocity<To>(apply(to: velocity.vector), frameEpoch: toFrameEpoch)
+		assert(velocity.frameEpoch == fromFrameEpoch, "Velocity is not at the rotation's From epoch")
+		return Velocity<To>(apply(to: velocity.vector), frameEpoch: toFrameEpoch)
 	}
 
 	/// Returns a state rotated to the `To` frame, whatever its epoch.
 	func uncheckedApply(to state: StateVector<From>) -> StateVector<To> {
-		StateVector<To>(uncheckedPosition: uncheckedApply(to: state.position), velocity: uncheckedApply(to: state.velocity))
+		assert(state.position.frameEpoch == fromFrameEpoch, "State vector's position is not at the rotation's From epoch")
+		return StateVector<To>(uncheckedPosition: uncheckedApply(to: state.position), velocity: uncheckedApply(to: state.velocity))
 	}
 }
 

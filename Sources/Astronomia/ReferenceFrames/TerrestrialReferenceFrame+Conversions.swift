@@ -59,6 +59,8 @@ extension Rotation {
 	/// Returns a state rotated to the `To` frame, which turns with angular velocity `spin`
 	/// relative to the `From` frame, whatever the state's epoch: v' = R v - ω × r'.
 	func uncheckedApply(to state: StateVector<From>, toFrameTurningAt spin: SIMD3<Double>) -> StateVector<To> {
+		assert(state.position.frameEpoch == fromFrameEpoch, "Position is not at the rotation's From epoch")
+		assert(spin.x.isFinite && spin.y.isFinite && spin.z.isFinite, "Spin must be finite")
 		let position = apply(to: state.position.vector)
 		let velocity = apply(to: state.velocity.vector) - Vector3(spin.x, spin.y, spin.z).cross(position)
 		return StateVector(uncheckedPosition: Position(position, frameEpoch: toFrameEpoch), velocity: Velocity(velocity, frameEpoch: toFrameEpoch))

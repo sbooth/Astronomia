@@ -59,7 +59,7 @@ import Testing
 	@Test func motionMatchesERFA() throws {
 		for row in erfaStarMotion {
 			let star = try Self.star(row.star)
-			let moved = star.propagated(to: Instant(try JulianDate(julianEpoch: row.julianEpoch)))
+			let moved = try star.propagated(to: Instant(try JulianDate(julianEpoch: row.julianEpoch)))
 			let direction = Self.direction(rightAscension: moved.rightAscension.radians, declination: moved.declination.radians)
 			#expect(Self.separation(direction, Self.direction(rightAscension: row.rightAscension, declination: row.declination)) <= 0.001)
 			#expect(moved.rightAscension.radians >= 0 && moved.rightAscension.radians < twoPi)
@@ -78,12 +78,12 @@ import Testing
 	@Test func propagationAtTheEpochAndBack() throws {
 		for index in fixtureStars.indices {
 			let star = try Self.star(index)
-			let same = star.propagated(to: star.epoch)
+			let same = try star.propagated(to: star.epoch)
 			#expect(Self.separation(Self.direction(rightAscension: same.rightAscension.radians, declination: same.declination.radians), Self.direction(rightAscension: star.rightAscension.radians, declination: star.declination.radians)) <= 0.001)
 			#expect(abs(same.properMotionInRightAscension.radians - star.properMotionInRightAscension.radians) * Self.uas <= 1e-6)
 			#expect(abs(same.properMotionInDeclination.radians - star.properMotionInDeclination.radians) * Self.uas <= 1e-6)
 			#expect(abs(same.radialVelocity.kilometersPerSecond - star.radialVelocity.kilometersPerSecond) <= 1e-10)
-			let back = star.propagated(to: Instant(try JulianDate(julianEpoch: 2100))).propagated(to: star.epoch)
+			let back = try star.propagated(to: Instant(try JulianDate(julianEpoch: 2100))).propagated(to: star.epoch)
 			#expect(Self.separation(Self.direction(rightAscension: back.rightAscension.radians, declination: back.declination.radians), Self.direction(rightAscension: star.rightAscension.radians, declination: star.declination.radians)) <= 0.001)
 			#expect(back.epoch == star.epoch)
 		}
@@ -93,8 +93,9 @@ import Testing
 		for row in erfaStarPlaces {
 			let star = try Self.star(row.star)
 			let tdb = Instant<TDB>(try JulianDate(julianDate: row.julianDate))
-			let astrometric = try Observer.geocenter.astrometricPlace(of: star, at: tdb)
-			let apparent = try Observer.geocenter.apparentPlace(of: star, at: tdb)
+			let observation = try Observer.geocenter.observation(at: tdb)
+			let astrometric = try observation.astrometricPlace(of: star)
+			let apparent = try observation.apparentPlace(of: star)
 			#expect(Self.separation(astrometric.position.vector, Self.vector(row.astrometric)) <= 0.02)
 			#expect(Self.separation(apparent.position.vector, Self.vector(row.apparent)) <= 0.3)
 			#expect(apparent.lightTime == astrometric.lightTime && apparent.instant == astrometric.instant)
@@ -106,8 +107,9 @@ import Testing
 		for row in skyfieldStarPlaces {
 			let star = try Self.star(row.star, withoutRadialVelocity: true)
 			let tdb = Instant<TDB>(try JulianDate(julianDate: row.julianDate))
-			let astrometric = try Observer.geocenter.astrometricPlace(of: star, at: tdb)
-			let apparent = try Observer.geocenter.apparentPlace(of: star, at: tdb)
+			let observation = try Observer.geocenter.observation(at: tdb)
+			let astrometric = try observation.astrometricPlace(of: star)
+			let apparent = try observation.apparentPlace(of: star)
 			let reference = Self.vector(row.astrometric)
 			#expect(Self.separation(astrometric.position.vector, reference) <= 0.2)
 			#expect(abs(astrometric.position.vector.length / reference.length - 1) <= 1e-6)
@@ -127,11 +129,11 @@ import Testing
 		#expect(quasar.effectiveParallax == Star.minimumParallax)
 		// Its place is at the nominal distance of 1 Gpc.
 		let tdb = Instant<TDB>(try JulianDate(julianDate: 2_461_334.5))
-		let place = try Observer.geocenter.astrometricPlace(of: moving, at: tdb)
+		let place = try Observer.geocenter.observation(at: tdb).astrometricPlace(of: moving)
 		let gigaparsec = 1e9 * arcsecondsPerRadian
 		#expect(abs(place.position.vector.length / gigaparsec - 1) <= 1e-12)
 		#expect(abs(place.lightTime.inDays * speedOfLightAstronomicalUnitsPerDay / gigaparsec - 1) <= 1e-12)
-		#expect(moving.propagated(to: tdb).parallax == nil)
+		#expect(try moving.propagated(to: tdb).parallax == nil)
 	}
 
 	@Test func deflectionNearTheSun() throws {
@@ -141,13 +143,60 @@ import Testing
 		let sun = try Observer.geocenter.astrometricPlace(of: .sun, at: tdb).position.spherical
 		for (offset, expected) in [(0.3, 1.751 * 0.2666 / 0.3), (1.0, 1.751 * 0.2666 / 1.0), (0.1, 0)] {
 			let star = try Star(rightAscension: sun.rightAscension, declination: Angle(radians: sun.declination.radians + offset * .pi / 180), epoch: tdb)
-			let ephemeris = SolarSystemEphemeris()
-			let (_, geometry, positions) = try Observer.geocenter.observe(star, at: tdb, context: TDB.defaultContext, ephemeris: ephemeris)
+			let observation = try Observer.geocenter.observation(at: tdb)
+			let geometry = try observation.geometry(of: star)
 			let direction = geometry.target - geometry.observer.position
 			let undeflected = direction / direction.length
-			let deflected = try Astrometry.deflected(undeflected, geometry: geometry, of: nil, positions: positions)
+			let deflected = Astrometry.deflected(undeflected, geometry: geometry, deflectors: observation.deflectors, excluding: nil)
 			let deflection = Self.separation(undeflected, deflected) / 1e6
 			#expect(abs(deflection - expected) <= max(0.01 * expected, 2e-6))
 		}
+	}
+
+	@Test func excessiveTimeSpan() throws {
+		let sirius = try Self.star(2)
+		#expect(throws: StarError.excessiveTimeSpan) { try sirius.propagated(to: Instant(try JulianDate(julianEpoch: 1991.25 + 10_000_001))) }
+		#expect(throws: StarError.excessiveTimeSpan) { try sirius.propagated(to: Instant(try JulianDate(julianEpoch: 1991.25 - 10_000_001))) }
+		_ = try sirius.propagated(to: Instant(try JulianDate(julianEpoch: 1991.25 + 9_999_999)))
+		// A place more than 10 million years after the catalog epoch
+		let ancient = try Star(rightAscension: .degrees(10), declination: .degrees(20), parallax: .milliarcseconds(1), epoch: Instant(try JulianDate(julianEpoch: 2026 - 10_000_001)))
+		let observation = try Observer.geocenter.observation(at: Instant<TDB>(try JulianDate(julianEpoch: 2026)))
+		#expect(throws: StarError.excessiveTimeSpan) { try observation.apparentPlace(of: ancient) }
+		#expect(throws: StarError.excessiveTimeSpan) { try observation.astrometricPlace(of: ancient) }
+	}
+
+	@Test func starsWithinTheSolarSystem() throws {
+		// A star 1 pc away heading straight for the Sun at 0.3c passes through in about 10 years.
+		let star = try Star(rightAscension: .degrees(10), declination: .degrees(20), parallax: .arcseconds(1), radialVelocity: .kilometersPerSecond(-0.3 * speedOfLight), epoch: Instant(.j2000))
+		var inside: [Double] = []
+		for days in stride(from: 0.0, through: 8_000, by: 10) {
+			let instant = Instant<TDB>(try JulianDate.j2000.adding(days: days))
+			do throws(StarError) {
+				_ = try star.propagated(to: instant)
+			} catch {
+				#expect(error == .withinSolarSystem)
+				inside.append(days)
+			}
+		}
+		// Inside 20,600 au on either side of the Sun. The observed -0.3c is an inertial 0.257c,
+		// whose place moves at 0.345c approaching and 0.204c receding: 345 days in, 584 out.
+		let first = try #require(inside.first)
+		let last = try #require(inside.last)
+		#expect(last - first == Double(inside.count - 1) * 10)
+		#expect(abs(last - first - 929) <= 20, "\(last - first) days")
+		let observation = try Observer.geocenter.observation(at: Instant<TDB>(try JulianDate.j2000.adding(days: (first + last) / 2)))
+		#expect(throws: StarError.withinSolarSystem) { try observation.apparentPlace(of: star) }
+		#expect(throws: StarError.withinSolarSystem) { try observation.astrometricPlace(of: star) }
+		// Before and after, it is a star.
+		_ = try Observer.geocenter.observation(at: Instant<TDB>(try JulianDate.j2000.adding(days: first - 100))).apparentPlace(of: star)
+		_ = try Observer.geocenter.observation(at: Instant<TDB>(try JulianDate.j2000.adding(days: last + 100))).apparentPlace(of: star)
+	}
+
+	@Test func excessiveRadialVelocityAfterPropagation() throws {
+		// Receding at an observed 0.49c, a star moves at nearly c, and before it passed the Sun
+		// its approach would have been seen at far more than c/2.
+		let star = try Star(rightAscension: .degrees(10), declination: .degrees(20), parallax: .arcseconds(1), radialVelocity: .kilometersPerSecond(0.49 * speedOfLight), epoch: Instant(.j2000))
+		#expect(throws: StarError.excessiveRadialVelocity) { try star.propagated(to: Instant(try JulianDate(julianEpoch: 1990))) }
+		#expect(try star.propagated(to: Instant(try JulianDate(julianEpoch: 2010))).radialVelocity.kilometersPerSecond > 0)
 	}
 }

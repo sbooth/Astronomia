@@ -19,14 +19,22 @@ extension Star {
 	///
 	/// - Parameter epoch: The new epoch.
 	/// - Returns: The star at `epoch`.
-	public func propagated(to epoch: Instant<TDB>) -> Star {
+	/// - Throws:
+	///   - ``StarError/excessiveTimeSpan`` if `epoch` is more than 10 million Julian years from
+	///     the star's epoch.
+	///   - ``StarError/withinSolarSystem`` if at `epoch` the star is within about 20,600 au of
+	///     the barycenter, where its parallax would be more than 10″.
+	///   - ``StarError/excessiveRadialVelocity`` if the radial velocity seen at `epoch` is half
+	///     the speed of light or more, as only a star moving at nearly that speed can reach.
+	public func propagated(to epoch: Instant<TDB>) throws(StarError) -> Star {
 		let c = speedOfLightAstronomicalUnitsPerDay
 		let motion = spaceMotion()
-		let position = Self.observed(motion, daysSinceEpoch: Astrometry.days(from: self.epoch, to: epoch), from: Vector3(0, 0, 0)).relative
+		let position = try barycentricPlace(motion, daysSinceEpoch: Astrometry.days(from: self.epoch, to: epoch))
 		let velocity = motion.velocity
 
 		// The inertial velocity to the observed one, as in `eraPvstar`
 		let distance = position.length
+		guard 1 / distance <= Self.maximumParallax.radians else { throw .withinSolarSystem }
 		let u = position / distance
 		let radial = u.dot(velocity)
 		let transverse = velocity - u * radial
@@ -37,6 +45,7 @@ extension Star {
 		let del = -w / ((1 - w).squareRoot() + 1)
 		let observedTransverse = transverse / d
 		let observedRadial = c * (betaR - del) / d
+		guard abs(observedRadial) < Self.maximumSpeed else { throw .excessiveRadialVelocity }
 
 		let rightAscension = Math.atan2(position.y, position.x)
 		let declination = Math.atan2(position.z, (position.x * position.x + position.y * position.y).squareRoot())
@@ -126,6 +135,29 @@ extension Star {
 		return (u * distance, transverse * d + u * (c * (d * betaSR + del)))
 	}
 
+	/// Returns where the star was when the light reaching the barycenter at an instant left it,
+	/// relative to the barycenter, checking that the star is a star at that instant.
+	///
+	/// - Parameters:
+	///   - motion: The star's space motion, from ``spaceMotion()``.
+	///   - days: The instant, in TDB days after the epoch.
+	/// - Returns: The position relative to the barycenter, in au.
+	/// - Throws:
+	///   - ``StarError/excessiveTimeSpan`` if the instant is more than 10 million Julian years
+	///     from the epoch.
+	///   - ``StarError/withinSolarSystem`` if the star is within about 20,600 au of the
+	///     barycenter.
+	func barycentricPlace(_ motion: (position: Vector3, velocity: Vector3), daysSinceEpoch days: Double) throws(StarError) -> Vector3 {
+		guard abs(days) <= Self.maximumTimeSpan else {
+			throw .excessiveTimeSpan
+		}
+		let barycentric = Self.observed(motion, daysSinceEpoch: days, from: Vector3(0, 0, 0)).relative
+		guard barycentric.length * Self.maximumParallax.radians >= 1 else {
+			throw .withinSolarSystem
+		}
+		return barycentric
+	}
+
 	/// Returns where the star was when the light reaching an observer at an instant left it,
 	/// relative to the observer, and the light time.
 	///
@@ -136,14 +168,18 @@ extension Star {
 	///
 	/// - Parameters:
 	///   - days: The instant, in TDB days after the epoch.
-	///   - observer: The barycentric position of the observer, in au.
+	///   - observer: The barycentric position of the observer, in au, within 10,000 au of the
+	///     barycenter. With the star at least 20,600 au from it, and moving under c/2 over the
+	///     few thousand au that the light times differ by, the star is at least 5,000 au from
+	///     the observer.
 	/// - Returns: The position relative to the observer, in au, and the light time, in days.
-	func observed(daysSinceEpoch days: Double, from observer: Vector3) -> (relative: Vector3, lightTime: Double) {
+	/// - Throws: A ``StarError``, as ``barycentricPlace(_:daysSinceEpoch:)`` does.
+	func observed(daysSinceEpoch days: Double, from observer: Vector3) throws(StarError) -> (relative: Vector3, lightTime: Double) {
 		let motion = spaceMotion()
+		let barycentric = try barycentricPlace(motion, daysSinceEpoch: days)
 		if hasDistance {
 			return Self.observed(motion, daysSinceEpoch: days, from: observer)
 		}
-		let barycentric = Self.observed(motion, daysSinceEpoch: days, from: Vector3(0, 0, 0)).relative
 		// The light reaches the observer earlier than the barycenter by the Rømer delay.
 		let romerDelay = barycentric.dot(observer) / barycentric.length / speedOfLightAstronomicalUnitsPerDay
 		let delayed = Self.observed(motion, daysSinceEpoch: days + romerDelay, from: Vector3(0, 0, 0)).relative

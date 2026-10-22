@@ -132,13 +132,14 @@ import Testing
 	@Test func lightDeflectingBodiesAreValidated() throws {
 		let body = try LightDeflectingBody(body: 1, gravitationalParameter: 2.8e-4, radius: .kilometers(1_000))
 		#expect(body.gravitationalParameter == 2.8e-4 && body.radius == .kilometers(1_000))
-		#expect(try LightDeflectingBody(body: 1, gravitationalParameter: 0, radius: .zero).radius == .zero)
+		#expect(try LightDeflectingBody(body: 1, gravitationalParameter: 0, radius: .meters(1)).gravitationalParameter == 0)
 		for gravitationalParameter in [-1e-10, .nan, .infinity, -.infinity] {
 			#expect(throws: LightDeflectingBodyError.invalidGravitationalParameter) {
-				try LightDeflectingBody(body: 1, gravitationalParameter: gravitationalParameter, radius: .zero)
+				try LightDeflectingBody(body: 1, gravitationalParameter: gravitationalParameter, radius: .meters(1))
 			}
 		}
-		for radius in [-1e-10, .nan, .infinity, -.infinity] {
+		// A body without a radius would deflect light passing through its center infinitely.
+		for radius in [0, -0.0, -1e-10, .nan, .infinity, -.infinity] {
 			#expect(throws: LightDeflectingBodyError.invalidRadius) {
 				try LightDeflectingBody(body: 1, gravitationalParameter: 0, radius: .astronomicalUnits(radius))
 			}
@@ -174,12 +175,12 @@ import Testing
 	/// direction at an instant.
 	static func mercuryNearTheSun(at julianDate: Double) throws -> (direction: Vector3, deflected: Vector3, sun: Vector3) {
 		let tdb = try Instant<TDB>(JulianDate(julianDate: julianDate))
-		let positions = try Astrometry.Positions(ephemeris: SolarSystemEphemeris(), at: tdb)
-		let earth = try positions.state(of: .earth)
-		let geometry = try Astrometry.geometry(of: .mercury, observer: earth, positions: positions)
+		let observation = try Observer.geocenter.observation(at: tdb)
+		let earth = observation.observerVectors
+		let geometry = try Astrometry.geometry(of: .mercury, observer: earth, positions: observation.positions)
 		let direction = Self.unit(geometry.target - earth.position)
-		let deflected = try Astrometry.deflected(direction, geometry: geometry, of: SolarSystemEphemeris.Body.mercury, positions: positions)
-		return (direction, deflected, Self.unit(positions.sun.position - earth.position))
+		let deflected = Astrometry.deflected(direction, geometry: geometry, deflectors: observation.deflectors, excluding: .mercury)
+		return (direction, deflected, Self.unit(observation.positions.sun.position - earth.position))
 	}
 
 	@Test func deflectionNearTheSun() throws {

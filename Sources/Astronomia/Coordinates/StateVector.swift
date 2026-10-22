@@ -21,6 +21,7 @@ public struct StateVector<Frame: ReferenceFrame>: Hashable, Sendable {
 
 	/// Creates a state vector from a position and a velocity at the same epoch of the frame.
 	init(uncheckedPosition position: Position<Frame>, velocity: Velocity<Frame>) {
+		assert(position.frameEpoch == velocity.frameEpoch, "Position and velocity must be at same epoch")
 		self.position = position
 		self.velocity = velocity
 	}

@@ -23,7 +23,7 @@
 /// 	parallax: .milliarcseconds(548.31),
 /// 	radialVelocity: .kilometersPerSecond(-110.51),
 /// 	epoch: Instant(JulianDate(julianEpoch: 1991.25)))
-/// let place = try Observer.geocenter.apparentPlace(of: barnard, at: instant)
+/// let place = try Observer.geocenter.observation(at: instant).apparentPlace(of: barnard)
 /// ```
 ///
 /// A star without a parallax, as a quasar, is observed without parallax, at a nominal distance
@@ -33,6 +33,11 @@
 /// distance where its transverse speed is that, or at 1 Gpc if that is closer. Its place is
 /// then the direction from the barycenter when the light passes the observer, shifted by the
 /// catalog's parallax, if any, as `eraPmpx` of ERFA does.
+///
+/// A star is moved in a straight line for at most 10 million Julian years from its epoch,
+/// and is a star only while it is at least about 20,600 au from the solar system barycenter,
+/// the distance of the greatest parallax. ``propagated(to:)`` and the places of an
+/// ``Observation`` throw a ``StarError`` beyond either limit.
 ///
 /// - Note: Gaia's epochs are in TCB, which differs from TDB by about 20 s in 2016. The
 ///   difference moves a star by under 1 µas and can be ignored.
@@ -85,7 +90,7 @@ public struct Star: Hashable, Sendable {
 	) throws(StarError) {
 		let values = [rightAscension.radians, declination.radians, properMotionInRightAscension.radians, properMotionInDeclination.radians, parallax?.radians ?? 0, radialVelocity.astronomicalUnitsPerDay]
 		guard values.allSatisfy(\.isFinite) else { throw .nonFiniteValue }
-		guard abs(declination.radians) <= .pi / 2 else { throw .invalidDeclination }
+		guard abs(declination.radians) <= halfPi else { throw .invalidDeclination }
 		if let parallax, parallax.radians < 0 || parallax.radians > Self.maximumParallax.radians { throw .invalidParallax }
 		guard abs(radialVelocity.astronomicalUnitsPerDay) < Self.maximumSpeed else { throw .excessiveRadialVelocity }
 		self.init(uncheckedRightAscension: rightAscension, declination: declination, properMotionInRightAscension: properMotionInRightAscension, properMotionInDeclination: properMotionInDeclination, parallax: parallax, radialVelocity: radialVelocity, epoch: epoch)
@@ -103,6 +108,10 @@ public struct Star: Hashable, Sendable {
 		radialVelocity: Speed,
 		epoch: Instant<TDB>
 	) {
+		assert([rightAscension.radians, declination.radians, properMotionInRightAscension.radians, properMotionInDeclination.radians, parallax?.radians ?? 0, radialVelocity.astronomicalUnitsPerDay].allSatisfy(\.isFinite), "Non-finite value")
+		assert(abs(declination.radians) <= halfPi, "Invalid declination")
+		assert((parallax?.radians ?? 0) >= 0 && (parallax?.radians ?? 0) <= Self.maximumParallax.radians, "Invalid parallax")
+		assert(abs(radialVelocity.astronomicalUnitsPerDay) < Self.maximumSpeed, "Excessive radial velocity")
 		self.rightAscension = rightAscension
 		self.declination = declination
 		self.properMotionInRightAscension = properMotionInRightAscension
@@ -111,6 +120,14 @@ public struct Star: Hashable, Sendable {
 		self.radialVelocity = radialVelocity
 		self.epoch = epoch
 	}
+
+	/// The greatest span, in days, over which a star is moved from its epoch: 10 million
+	/// Julian years.
+	///
+	/// Over longer spans a star's orbit in the galaxy departs far from a straight line. The
+	/// limit also bounds the light time: a star moving at under the speed of light can be no
+	/// farther than 1 Gpc plus 10 million light years.
+	static let maximumTimeSpan = 10_000_000 * daysPerJulianYear
 
 	/// The greatest parallax, of a source about 20,600 au from the Sun.
 	///

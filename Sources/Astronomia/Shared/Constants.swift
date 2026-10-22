@@ -44,6 +44,9 @@ let speedOfLightAstronomicalUnitsPerDay: Double = speedOfLight * secondsPerDay /
 /// 2π.
 let twoPi: Double = 2 * .pi
 
+/// π/2.
+let halfPi: Double = .pi / 2
+
 /// Arcseconds per radian.
 let arcsecondsPerRadian: Double = 648_000 / .pi
 

@@ -39,6 +39,13 @@ public struct Rotation<From: ReferenceFrame, To: ReferenceFrame>: Hashable, Send
 	///
 	/// - Precondition: The matrix is orthogonal with determinant 1.
 	init(uncheckedRows r0: Vector3, _ r1: Vector3, _ r2: Vector3, fromFrameEpoch: From.Epoch, toFrameEpoch: To.Epoch) {
+		assert({
+			let tolerance = 1e-9
+			return
+				abs(r0.dot(r0) - 1) < tolerance && abs(r1.dot(r1) - 1) < tolerance && abs(r2.dot(r2) - 1) < tolerance &&
+				abs(r0.dot(r1)) < tolerance && abs(r0.dot(r2)) < tolerance && abs(r1.dot(r2)) < tolerance &&
+				abs(r0.cross(r1).dot(r2) - 1) < tolerance
+		}(), "Rows are not a rotation")
 		storage = (r0, r1, r2)
 		self.fromFrameEpoch = fromFrameEpoch
 		self.toFrameEpoch = toFrameEpoch

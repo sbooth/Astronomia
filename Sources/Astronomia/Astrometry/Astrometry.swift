@@ -181,6 +181,18 @@ enum Astrometry {
 		return p + p.cross(e.cross(q)) * w
 	}
 
+	/// A light-deflecting body at the instant of observation.
+	struct Deflector<Body: Hashable & Sendable>: Sendable {
+		/// The body.
+		let body: Body
+		/// The body's barycentric position and velocity at the instant of observation.
+		let state: (position: Vector3, velocity: Vector3)
+		/// The body's gravitational parameter, in au³/day².
+		let gravitationalParameter: Double
+		/// The body's radius, in au.
+		let radius: Double
+	}
+
 	/// Returns a direction deflected by the gravity of the light-deflecting bodies.
 	///
 	/// Each body is placed where it was when the light passed it, backtracked along its
@@ -192,26 +204,25 @@ enum Astrometry {
 	/// - Parameters:
 	///   - direction: The unit vector from the observer to the source.
 	///   - geometry: The observation.
+	///   - deflectors: The light-deflecting bodies at the instant of observation.
 	///   - body: The target, or `nil` for a source outside the ephemeris.
-	///   - positions: The positions of the ephemeris.
 	/// - Returns: The deflected unit vector.
-	static func deflected<E: GeocentricEphemeris>(_ direction: Vector3, geometry: Geometry, of body: E.Body?, positions: Positions<E>) throws(EphemerisError) -> Vector3 {
+	static func deflected<Body>(_ direction: Vector3, geometry: Geometry, deflectors: [Deflector<Body>], excluding body: Body?) -> Vector3 {
 		let c = speedOfLightAstronomicalUnitsPerDay
-		var deflectors: [(position: Vector3, gravitationalParameter: Double, radius: Double)] = []
-		for deflector in E.lightDeflectingBodies where deflector.body != body {
-			let state = try positions.state(of: deflector.body)
+		var backtracked: [(position: Vector3, gravitationalParameter: Double, radius: Double)] = []
+		for deflector in deflectors where deflector.body != body {
 			// The time since the light passed the body, between the target's and the observer's
-			let toObserver = geometry.observer.position - state.position
+			let toObserver = geometry.observer.position - deflector.state.position
 			let elapsed = min(max(direction.dot(toObserver) / c, -geometry.lightTime), 0)
-			deflectors.append((state.position + state.velocity * elapsed, deflector.gravitationalParameter, deflector.radius.astronomicalUnits))
+			backtracked.append((deflector.state.position + deflector.state.velocity * elapsed, deflector.gravitationalParameter, deflector.radius))
 		}
-		deflectors.sort { ($0.position - geometry.observer.position).length > ($1.position - geometry.observer.position).length }
+		backtracked.sort { ($0.position - geometry.observer.position).length > ($1.position - geometry.observer.position).length }
 		var p = direction
-		for deflector in deflectors {
+		for deflector in backtracked {
+			guard closestApproach(of: deflector.position, from: geometry.observer.position, to: geometry.target) > deflector.radius else { continue }
 			let toObserver = geometry.observer.position - deflector.position
 			let distance = toObserver.length
 			let toTarget = geometry.target - deflector.position
-			guard closestApproach(of: deflector.position, from: geometry.observer.position, to: geometry.target) > deflector.radius else { continue }
 			let q = toTarget / toTarget.length
 			let e = toObserver / distance
 			p = deflected(p, q: q, e: e, distance: distance, gravitationalParameter: deflector.gravitationalParameter, limit: 0)
@@ -245,8 +256,8 @@ enum Astrometry {
 		let bm1 = (1 - v.dot(v)).squareRoot()
 		let pdv = direction.dot(v)
 		let w1 = 1 + pdv / (1 + bm1)
-		// The Sun's Schwarzschild radius over the distance
-		let w2 = 2 * sunGravitationalParameter / (c * c) / sunDistance
+		// The Sun's Schwarzschild radius over the distance, if the Sun has a mass
+		let w2 = sunGravitationalParameter > 0 ? 2 * sunGravitationalParameter / (c * c) / sunDistance : 0
 		let p = direction * bm1 + v * w1 + (v - direction * pdv) * w2
 		return p / p.length
 	}

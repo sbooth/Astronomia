@@ -64,14 +64,14 @@ final class EvaluationCounter: @unchecked Sendable {
 		let observer = Observer.geocenter
 		#expect(throws: EphemerisError.invalidState, sourceLocation: sourceLocation) { try observer.apparentPlace(of: .mars, at: tdb, ephemeris: ephemeris) }
 		#expect(throws: EphemerisError.invalidState, sourceLocation: sourceLocation) { try observer.astrometricPlace(of: .mars, at: tdb, ephemeris: ephemeris) }
-		#expect(throws: EphemerisError.invalidState, sourceLocation: sourceLocation) { try observer.apparentPlace(of: star, at: tdb, ephemeris: ephemeris) }
-		#expect(throws: EphemerisError.invalidState, sourceLocation: sourceLocation) { try observer.astrometricPlace(of: star, at: tdb, ephemeris: ephemeris) }
+		// The observation for a star's places
+		#expect(throws: EphemerisError.invalidState, sourceLocation: sourceLocation) { try observer.observation(at: tdb, ephemeris: ephemeris) }
 	}
 
 	@Test func unalteredEphemerisMatchesTheBuiltIn() throws {
 		let ephemeris = AlteredEphemeris()
 		#expect(try Observer.geocenter.apparentPlace(of: .mars, at: Self.tdb, ephemeris: ephemeris) == Observer.geocenter.apparentPlace(of: .mars, at: Self.tdb))
-		#expect(try Observer.geocenter.apparentPlace(of: Self.star, at: Self.tdb, ephemeris: ephemeris) == Observer.geocenter.apparentPlace(of: Self.star, at: Self.tdb))
+		#expect(try Observer.geocenter.observation(at: Self.tdb, ephemeris: ephemeris).apparentPlace(of: Self.star) == Observer.geocenter.observation(at: Self.tdb).apparentPlace(of: Self.star))
 	}
 
 	@Test func nanEarthVelocity() {
@@ -93,14 +93,10 @@ final class EvaluationCounter: @unchecked Sendable {
 	}
 
 	@Test func earthAtTheSun() {
-		// Finite states, but the Sun's potential at the observer is infinite.
-		Self.expectApparentInvalidState(AlteredEphemeris(position: SIMD3(0, 0, 0)))
-	}
-
-	/// Expects the apparent places of a body and a star to throw ``EphemerisError/invalidState``.
-	static func expectApparentInvalidState(_ ephemeris: AlteredEphemeris, sourceLocation: SourceLocation = #_sourceLocation) {
-		#expect(throws: EphemerisError.invalidState, sourceLocation: sourceLocation) { try Observer.geocenter.apparentPlace(of: .mars, at: tdb, ephemeris: ephemeris) }
-		#expect(throws: EphemerisError.invalidState, sourceLocation: sourceLocation) { try Observer.geocenter.apparentPlace(of: star, at: tdb, ephemeris: ephemeris) }
+		// Finite states, but the observer is inside the Sun, where its potential in aberration
+		// is infinite at the center.
+		Self.expectInvalidState(AlteredEphemeris(position: SIMD3(0, 0, 0)))
+		#expect(throws: EphemerisError.invalidState) { try Observer.geocenter.observation(at: Self.tdb, ephemeris: AlteredEphemeris(position: SIMD3(0, 0, 0))) }
 	}
 
 	@Test func targetNearTheSpeedOfLight() throws {
@@ -110,7 +106,7 @@ final class EvaluationCounter: @unchecked Sendable {
 		#expect(throws: EphemerisError.invalidState) { try Observer.geocenter.astrometricPlace(of: .mars, at: Self.tdb, ephemeris: ephemeris) }
 		// Other targets don't use Mars's state.
 		_ = try Observer.geocenter.apparentPlace(of: .venus, at: Self.tdb, ephemeris: ephemeris)
-		_ = try Observer.geocenter.apparentPlace(of: Self.star, at: Self.tdb, ephemeris: ephemeris)
+		_ = try Observer.geocenter.observation(at: Self.tdb, ephemeris: ephemeris).apparentPlace(of: Self.star)
 	}
 
 	@Test func validStatesPass() throws {

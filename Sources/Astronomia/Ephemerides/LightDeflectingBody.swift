@@ -27,13 +27,13 @@ public struct LightDeflectingBody<Body: Hashable & Sendable>: Hashable, Sendable
 	/// - Throws:
 	///   - ``LightDeflectingBodyError/invalidGravitationalParameter`` if the gravitational
 	///     parameter is negative, NaN, or infinite.
-	///   - ``LightDeflectingBodyError/invalidRadius`` if the radius is negative, NaN, or
+	///   - ``LightDeflectingBodyError/invalidRadius`` if the radius is zero, negative, NaN, or
 	///     infinite.
 	public init(body: Body, gravitationalParameter: Double, radius: Distance) throws(LightDeflectingBodyError) {
 		guard gravitationalParameter.isFinite, gravitationalParameter >= 0 else {
 			throw .invalidGravitationalParameter
 		}
-		guard radius.astronomicalUnits.isFinite, radius.astronomicalUnits >= 0 else {
+		guard radius.astronomicalUnits.isFinite, radius.astronomicalUnits > 0 else {
 			throw .invalidRadius
 		}
 		self.init(uncheckedBody: body, gravitationalParameter: gravitationalParameter, radius: radius)
@@ -45,8 +45,12 @@ public struct LightDeflectingBody<Body: Hashable & Sendable>: Hashable, Sendable
 	///   - body: The body.
 	///   - gravitationalParameter: The gravitational parameter GM of the body, in au³/day²,
 	///     finite and not negative.
-	///   - radius: The radius of the body, finite and not negative.
+	///   - radius: The radius of the body, finite and positive.
 	init(uncheckedBody body: Body, gravitationalParameter: Double, radius: Distance) {
+		assert(gravitationalParameter.isFinite, "Gravitational parameter must be finite")
+		assert(gravitationalParameter >= 0, "Gravitational parameter must be non-negative")
+		assert(radius.astronomicalUnits.isFinite, "Radius parameter must be finite")
+		assert(radius.astronomicalUnits > 0, "Radius parameter must be greater than zero")
 		self.body = body
 		self.gravitationalParameter = gravitationalParameter
 		self.radius = radius
