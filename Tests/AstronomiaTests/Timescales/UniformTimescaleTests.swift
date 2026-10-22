@@ -24,9 +24,9 @@ private func isUniform(_ scale: any Timescale.Type) -> Bool {
 	}
 
 	@Test func arithmetic() throws {
-		let start = Instant<TT>(.J2000)
+		let start = Instant<TT>(.j2000)
 		let later = try start.adding(seconds: 90_000)
-		let expected = try JulianDate.J2000.adding(days: 1).adding(seconds: 3_600)
+		let expected = try JulianDate.j2000.adding(days: 1).adding(seconds: 3_600)
 		#expect(try abs(seconds(from: expected, to: later.julianDate)) <= timescaleTolerance)
 		#expect(try abs(start.interval(to: later).inSeconds - 90_000) <= timescaleTolerance)
 		#expect(try abs(later.interval(to: start).inSeconds + 90_000) <= timescaleTolerance)
@@ -65,7 +65,7 @@ private func isUniform(_ scale: any Timescale.Type) -> Bool {
 
 	@Test func intervalsDependOnTimescale() throws {
 		// One TT day near J2000.0, measured in TDB and TCB
-		let start = Instant<TT>(.J2000)
+		let start = Instant<TT>(.j2000)
 		let end = try start.adding(DayInterval(days: 1))
 		let tdb = try start.converted(to: TDB.self).interval(to: end.converted(to: TDB.self)).inSeconds
 		let tcb = try start.converted(to: TCB.self).interval(to: end.converted(to: TCB.self)).inSeconds

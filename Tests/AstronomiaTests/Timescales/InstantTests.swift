@@ -36,17 +36,17 @@ import Testing
 	}
 
 	@Test func comparable() throws {
-		let earlier = Instant<TT>(.J2000)
-		let later = try Instant<TT>(JulianDate.J2000.adding(seconds: 1))
+		let earlier = Instant<TT>(.j2000)
+		let later = try Instant<TT>(JulianDate.j2000.adding(seconds: 1))
 		#expect(earlier < later)
 		#expect(!(later < earlier))
-		#expect(earlier == Instant<TT>(.J2000))
+		#expect(earlier == Instant<TT>(.j2000))
 	}
 
 	@Test func description() {
-		#expect(Instant<TT>(.J2000).description == "\(JulianDate.J2000) TT")
-		#expect(Instant<UTC>(.J2000).description.hasSuffix(" UTC"))
-		#expect(Instant<GPS>(.J2000).description.hasSuffix(" GPS"))
+		#expect(Instant<TT>(.j2000).description == "\(JulianDate.j2000) TT")
+		#expect(Instant<UTC>(.j2000).description.hasSuffix(" UTC"))
+		#expect(Instant<GPS>(.j2000).description.hasSuffix(" GPS"))
 	}
 }
 
