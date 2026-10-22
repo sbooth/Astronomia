@@ -62,7 +62,7 @@ import Testing
 		// The spline follows the observed ΔT closely in recent decades.
 		for year in stride(from: 1975.0, through: 2018, by: 1) {
 			let tt = try JulianDate(decimalYear: year)
-			let observed = try #require(DeltaTTable.modern.deltaT(at: tt))
+			let observed = try #require(DeltaTTable.modern.deltaT(atTT: tt))
 			#expect(abs(model.deltaT(decimalYear: year) - observed) <= 0.5, "\(year)")
 		}
 	}

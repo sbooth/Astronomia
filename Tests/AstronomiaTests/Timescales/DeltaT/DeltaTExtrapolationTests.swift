@@ -33,23 +33,23 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 	/// Returns ΔT from `source` at a decimal year, and the Julian Date of that decimal year.
 	static func deltaT(_ source: some DeltaTSource, _ decimalYear: Double) throws -> (deltaT: Double?, tt: JulianDate) {
 		let tt = try JulianDate(decimalYear: decimalYear)
-		return (source.deltaT(at: tt), tt)
+		return (source.deltaT(atTT: tt), tt)
 	}
 
 	@Test func coverage() throws {
 		let table = try Self.table()
 		#expect(try table.coverage == JulianDate(decimalYear: 2000) ... JulianDate(decimalYear: 2002))
-		#expect(table.deltaT(at: table.coverage.lowerBound) == 60)
-		#expect(table.deltaT(at: table.coverage.upperBound) == 63)
+		#expect(table.deltaT(atTT: table.coverage.lowerBound) == 60)
+		#expect(table.deltaT(atTT: table.coverage.upperBound) == 63)
 
 		let historic = DeltaTTable.historic
 		#expect(try historic.coverage == JulianDate(decimalYear: 1657) ... JulianDate(decimalYear: 1984.5))
-		#expect(historic.deltaT(at: historic.coverage.lowerBound) == 44)
-		#expect(historic.deltaT(at: historic.coverage.upperBound) == 54.087)
+		#expect(historic.deltaT(atTT: historic.coverage.lowerBound) == 44)
+		#expect(historic.deltaT(atTT: historic.coverage.upperBound) == 54.087)
 
 		let table2 = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
-		#expect(table2.deltaT(at: table2.coverage.lowerBound) != nil)
-		#expect(table2.deltaT(at: table2.coverage.upperBound) != nil)
+		#expect(table2.deltaT(atTT: table2.coverage.lowerBound) != nil)
+		#expect(table2.deltaT(atTT: table2.coverage.upperBound) != nil)
 	}
 
 	/// Returns the Julian Date of a decimal year.
@@ -153,7 +153,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let before = try JoinedDeltaTSource(other, before: table)
 		let end = try JulianDate(decimalYear: 2002)
 		let (later, laterTT) = try Self.deltaT(after, 2005)
-		let expected = try #require(other.deltaT(at: laterTT)) - #require(other.deltaT(at: end)) + 63
+		let expected = try #require(other.deltaT(atTT: laterTT)) - #require(other.deltaT(atTT: end)) + 63
 		#expect(try abs(#require(later) - expected) <= 1e-9)
 		#expect(try abs(#require(later) - 66) <= 0.01)
 
@@ -217,8 +217,8 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let end = table.coverage.upperBound
 		let source = try ConstantDeltaTExtrapolation(after: table, through: end)
 		#expect(source.coverage == end ... end)
-		#expect(source.deltaT(at: end) == 63)
-		#expect(try source.deltaT(at: end.adding(seconds: 1)) == nil)
+		#expect(source.deltaT(atTT: end) == 63)
+		#expect(try source.deltaT(atTT: end.adding(seconds: 1)) == nil)
 	}
 
 	@Test func limit() throws {
@@ -260,7 +260,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let model = DeltaTModel.espenakMeeus2006
 		let context = UT1.Context.continuous(earthOrientationTable: table, deltaTTable: nil, model: model)
 		let start = table.coverage.lowerBound
-		let startDeltaT = try #require(table.deltaT(at: start))
+		let startDeltaT = try #require(table.deltaT(atTT: start))
 		// The model is about 1.4 s from the first observation, so following it unadjusted
 		// would jump there.
 		#expect(abs(model.deltaT(decimalYear: start.decimalYear) - startDeltaT) > 1)
@@ -278,7 +278,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 	@Test func observationsContinueAlongModel() throws {
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		let end = table.coverage.upperBound
-		let endDeltaT = try #require(table.deltaT(at: end))
+		let endDeltaT = try #require(table.deltaT(atTT: end))
 		// Without the ΔT table, which covers these dates
 		let context = UT1.Context.continuous(earthOrientationTable: table, deltaTTable: nil, model: .espenakMeeus2006)
 

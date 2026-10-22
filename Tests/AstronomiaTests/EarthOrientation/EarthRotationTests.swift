@@ -49,7 +49,7 @@ import Testing
 		// At 2000-01-01T12:00:00 UT1, GMST is about 18.697375 hours.
 		let earthOrientation = EarthOrientation(ut1: UT1.Context(deltaT: DeltaTFunction.constant(64.184)))
 		let gmst = try EarthRotation.greenwichMeanSiderealTime(at: Instant<UT1>(.J2000), earthOrientation: earthOrientation)
-		#expect(abs(gmst.hourAngle - 18.697_374_828_702_76) <= 1e-10)
+		#expect(abs(gmst.hours - 18.697_374_828_702_76) <= 1e-10)
 	}
 
 	@Test func instantsAgree() throws {

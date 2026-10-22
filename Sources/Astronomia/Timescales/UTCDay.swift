@@ -126,7 +126,7 @@ extension UTCDay {
 	///
 	/// - Throws: ``TimescaleConversionError/dateOutOfRange`` if `julianDate` is not on this UTC
 	///   day.
-	public func secondsSinceMidnight(_ julianDate: JulianDate) throws(TimescaleConversionError) -> Double {
+	public func secondsSinceMidnight(at julianDate: JulianDate) throws(TimescaleConversionError) -> Double {
 		guard julianDate.julianDayNumber == julianDayNumber else { throw .dateOutOfRange }
 		return julianDate.fractionSinceMidnight * clockSeconds
 	}
@@ -138,7 +138,7 @@ extension UTCDay {
 	/// - Parameter seconds: The clock reading as seconds since midnight.
 	/// - Throws: ``TimescaleConversionError/invalidTimeOfDay`` if the reading does not occur on
 	///   this UTC day.
-	public func toTAI(secondsSinceMidnight seconds: Double) throws(TimescaleConversionError) -> JulianDate {
+	public func taiJulianDate(secondsSinceMidnight seconds: Double) throws(TimescaleConversionError) -> JulianDate {
 		guard seconds.isFinite else { throw .nonFiniteValue }
 		let fraction = try fractionSinceMidnight(secondsSinceMidnight: seconds)
 		return try tai(fractionSinceMidnight: fraction)
@@ -202,7 +202,7 @@ extension UTCDay: CustomStringConvertible {
 		}
 
 		// UTC began in 1961, so its days are always Gregorian.
-		let date = CalendarDay(julianDayNumber: julianDayNumber, .gregorian)
+		let date = CalendarDay(julianDayNumber: julianDayNumber, calendar: .gregorian)
 		var parts = ["\(date.year)-\(date.month)-\(date.day) UTC", "TAI - UTC = \(toNanoseconds(offsetAtStart)) s"]
 		let drift = toNanoseconds(offsetChange - offsetStep)
 		if drift != 0 {

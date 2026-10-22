@@ -250,7 +250,7 @@ extension UT1 {
 	///     does not cover `tt`.
 	///   - ``TimescaleConversionError/nonFiniteValue`` if the source returns NaN or infinity.
 	public static func deltaT(at tt: JulianDate, context: Context) throws(TimescaleConversionError) -> Double {
-		guard let deltaT = context.deltaT.deltaT(at: tt) else { throw .deltaTUnavailable }
+		guard let deltaT = context.deltaT.deltaT(atTT: tt) else { throw .deltaTUnavailable }
 		guard deltaT.isFinite else { throw .nonFiniteValue }
 		return deltaT
 	}

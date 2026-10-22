@@ -11,7 +11,7 @@ import Testing
 @Suite struct UTCTAIMinusUTCTests {
 	/// Returns the UTC Julian Date for a clock reading on a Gregorian calendar date.
 	static func utc(_ year: Int, _ month: Int, _ day: Int, seconds: Double = 0) throws -> JulianDate {
-		let j = try GregorianCalendar.julianDayNumberFrom(year: year, month: month, day: day)
+		let j = try GregorianCalendar.julianDayNumber(year: year, month: month, day: day)
 		return try UTCDay(julianDayNumber: j).julianDate(secondsSinceMidnight: seconds)
 	}
 
@@ -46,9 +46,9 @@ import Testing
 	])
 	func agreesWithConversion(year: Int, month: Int, day: Int, seconds: Double) throws {
 		// TAI = UTC clock reading + (TAI - UTC), with the reading counted from UTC midnight.
-		let j = try GregorianCalendar.julianDayNumberFrom(year: year, month: month, day: day)
+		let j = try GregorianCalendar.julianDayNumber(year: year, month: month, day: day)
 		let utcDay = try UTCDay(julianDayNumber: j)
-		let tai = try utcDay.toTAI(secondsSinceMidnight: seconds)
+		let tai = try utcDay.taiJulianDate(secondsSinceMidnight: seconds)
 		let taiMinusClock = try utcDay.start.interval(to: tai).inSeconds - seconds
 		let value = try UTC.taiMinusUTC(at: utcDay.julianDate(secondsSinceMidnight: seconds))
 		#expect(abs(value - taiMinusClock) <= 1e-8)
@@ -56,13 +56,13 @@ import Testing
 
 	@Test func errors() throws {
 		#expect(throws: TimescaleConversionError.unsupported) {
-			try UTC.taiMinusUTC(at: JulianDate(julianDayNumber: GregorianCalendar.julianDayNumberFrom(year: 1960, month: 12, day: 31)))
+			try UTC.taiMinusUTC(at: JulianDate(julianDayNumber: GregorianCalendar.julianDayNumber(year: 1960, month: 12, day: 31)))
 		}
 
 		let pastHorizon = try Self.utc(2027, 6, 30)
-		let strict = UTC.Context(leapSecondTable: .builtIn, extrapolationPolicy: .strict)
+		let reject = UTC.Context(leapSecondTable: .builtIn, extrapolationPolicy: .reject)
 		#expect(throws: TimescaleConversionError.leapSecondTableExpired) {
-			try UTC.taiMinusUTC(at: pastHorizon, context: strict)
+			try UTC.taiMinusUTC(at: pastHorizon, context: reject)
 		}
 		#expect(try UTC.taiMinusUTC(at: pastHorizon) == 37)
 	}

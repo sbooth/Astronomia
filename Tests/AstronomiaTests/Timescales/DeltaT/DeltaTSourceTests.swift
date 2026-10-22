@@ -13,12 +13,12 @@ import Testing
 		let inTable = try JulianDate(decimalYear: 1900.25)
 		let outsideTable = try JulianDate(decimalYear: 2026)
 
-		#expect(DeltaTTable.historic.deltaT(at: inTable) == DeltaTTable.historic.deltaTAndUncertainty(at: inTable)?.seconds)
-		#expect(DeltaTTable.historic.deltaT(at: outsideTable) == nil)
+		#expect(DeltaTTable.historic.deltaT(atTT: inTable) == DeltaTTable.historic.deltaTAndUncertainty(at: inTable)?.seconds)
+		#expect(DeltaTTable.historic.deltaT(atTT: outsideTable) == nil)
 
 		// A model covers every date
-		#expect(DeltaTModel.espenakMeeus2006.deltaT(at: inTable) == DeltaTModel.espenakMeeus2006.deltaT(decimalYear: inTable.decimalYear))
-		#expect(DeltaTModel.espenakMeeus2006.deltaT(at: outsideTable) != nil)
+		#expect(DeltaTModel.espenakMeeus2006.deltaT(atTT: inTable) == DeltaTModel.espenakMeeus2006.deltaT(decimalYear: inTable.decimalYear))
+		#expect(DeltaTModel.espenakMeeus2006.deltaT(atTT: outsideTable) != nil)
 	}
 
 	@Test func sourceListUsesFirstSourceThatCovers() throws {
@@ -30,9 +30,9 @@ import Testing
 		])
 		let before = try JulianDate(decimalYear: 1999)
 		let after = try JulianDate(decimalYear: 2001)
-		#expect(list.deltaT(at: before) == 1)
-		#expect(list.deltaT(at: after) == 2)
-		#expect(DeltaTSourceList([]).deltaT(at: cutoff) == nil)
+		#expect(list.deltaT(atTT: before) == 1)
+		#expect(list.deltaT(atTT: after) == 2)
+		#expect(DeltaTSourceList([]).deltaT(atTT: cutoff) == nil)
 	}
 
 	@Test func defaultContextOrder() throws {
@@ -40,7 +40,7 @@ import Testing
 		let model = DeltaTModel.stephensonMorrisonHohenkerk2016
 		for decimalYear in [1600.0, 1900.25, 1980, 2026] {
 			let tt = try JulianDate(decimalYear: decimalYear)
-			let expected = DeltaTTable.builtIn.deltaT(at: tt) ?? model.deltaT(decimalYear: tt.decimalYear)
+			let expected = DeltaTTable.builtIn.deltaT(atTT: tt) ?? model.deltaT(decimalYear: tt.decimalYear)
 			#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == expected)
 		}
 	}
@@ -49,7 +49,7 @@ import Testing
 		// The built-in table, then the model joined to it
 		for decimalYear in [1600.0, 1900.25, 1980, 2026] {
 			let tt = try JulianDate(decimalYear: decimalYear)
-			let expected = DeltaTTable.builtIn.deltaT(at: tt) ?? historicJoinedModel(tt.decimalYear)
+			let expected = DeltaTTable.builtIn.deltaT(atTT: tt) ?? historicJoinedModel(tt.decimalYear)
 			#expect(try UT1.deltaT(at: tt, context: .continuous()) == expected)
 		}
 	}
@@ -59,7 +59,7 @@ import Testing
 		let modelFirst = UT1.Context(deltaT: DeltaTSourceList([DeltaTModel.espenakMeeus2006, DeltaTTable.historic]))
 		let tt = try JulianDate(decimalYear: 1900.25)
 		#expect(try UT1.deltaT(at: tt, context: modelFirst) == DeltaTModel.espenakMeeus2006.deltaT(decimalYear: tt.decimalYear))
-		#expect(try UT1.deltaT(at: tt, context: modelFirst) != DeltaTTable.historic.deltaT(at: tt))
+		#expect(try UT1.deltaT(at: tt, context: modelFirst) != DeltaTTable.historic.deltaT(atTT: tt))
 	}
 
 	@Test func constant() throws {

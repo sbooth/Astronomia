@@ -10,7 +10,7 @@ import Testing
 
 /// Returns 0h on a Gregorian date, as a Julian Date.
 private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDate {
-	try JulianDate(julianDayNumber: GregorianCalendar.julianDayNumberFrom(year: year, month: month, day: day), fractionFromNoon: -0.5)
+	try JulianDate(julianDayNumber: GregorianCalendar.julianDayNumber(year: year, month: month, day: day), fractionFromNoon: -0.5)
 }
 
 @Suite struct ModernDeltaTTests {
@@ -49,8 +49,8 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		// Both are observations from 1973 to 1984.5, so they agree to milliseconds.
 		for year in stride(from: 1974.0, through: 1984.0, by: 1) {
 			let tt = try JulianDate(decimalYear: year)
-			let modern = try #require(DeltaTTable.modern.deltaT(at: tt))
-			let historic = try #require(DeltaTTable.historic.deltaT(at: tt))
+			let modern = try #require(DeltaTTable.modern.deltaT(atTT: tt))
+			let historic = try #require(DeltaTTable.historic.deltaT(atTT: tt))
 			#expect(abs(modern - historic) <= 0.01, "\(year)")
 		}
 	}
@@ -58,9 +58,9 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 	@Test func defaultContinuesTrend() throws {
 		let modern = DeltaTTable.modern
 		let end = modern.coverage.upperBound
-		let endDeltaT = try #require(modern.deltaT(at: end))
+		let endDeltaT = try #require(modern.deltaT(atTT: end))
 		let yearBefore = try end.adding(days: -daysPerJulianYear)
-		let rate = try endDeltaT - #require(modern.deltaT(at: yearBefore))
+		let rate = try endDeltaT - #require(modern.deltaT(atTT: yearBefore))
 
 		// A year after the table, ΔT continues the rate over its last year.
 		let later = try end.adding(days: daysPerJulianYear)
@@ -99,7 +99,7 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		let context = UT1.Context(earthOrientationTable: table)
 		let mid2017 = try midnight(2017, 6, 1)
-		#expect(try UT1.deltaT(at: mid2017, context: context) == DeltaTTable.modern.deltaT(at: mid2017))
+		#expect(try UT1.deltaT(at: mid2017, context: context) == DeltaTTable.modern.deltaT(atTT: mid2017))
 
 		let later = try DeltaTTable.modern.coverage.upperBound.adding(days: daysPerJulianYear)
 		#expect(try UT1.deltaT(at: later, context: context) == UT1.deltaT(at: later, context: UT1.defaultContext))
@@ -107,7 +107,7 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		// Without the ΔT table, the Earth orientation data is continued instead.
 		let observationsOnly = UT1.Context(earthOrientationTable: table, deltaTTable: nil)
 		let afterObservations = try table.coverage.upperBound.adding(days: 30)
-		let endDeltaT = try #require(table.deltaT(at: table.coverage.upperBound))
+		let endDeltaT = try #require(table.deltaT(atTT: table.coverage.upperBound))
 		#expect(try abs(UT1.deltaT(at: afterObservations, context: observationsOnly) - endDeltaT) <= 0.1)
 	}
 }

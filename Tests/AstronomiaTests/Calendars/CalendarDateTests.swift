@@ -12,30 +12,30 @@ import Testing
 	// MARK: - Creation
 
 	@Test func initFromComponents() throws {
-		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, .gregorian)
+		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, calendar: .gregorian)
 		#expect(date.year == 2000)
 		#expect(date.month == 1)
 		#expect(date.day == 1)
 		#expect(date.fractionSinceMidnight == 0.25)
 		#expect(date.calendar == .gregorian)
 		#expect(date.julianDayNumber == 2_451_545)
-		#expect(date.calendarDay == (try CalendarDay(year: 2000, month: 1, day: 1, .gregorian)))
+		#expect(date.calendarDay == (try CalendarDay(year: 2000, month: 1, day: 1, calendar: .gregorian)))
 
-		let midnight = try CalendarDate(year: 1582, month: 10, day: 15, .julianGregorian)
+		let midnight = try CalendarDate(year: 1582, month: 10, day: 15, calendar: .julianGregorian)
 		#expect(midnight.fractionSinceMidnight == 0)
 		#expect(midnight.julianDayNumber == 2_299_161)
 	}
 
 	@Test func initFromCalendarDay() throws {
-		let day = try CalendarDay(year: 1999, month: 12, day: 19, .julian)
+		let day = try CalendarDay(year: 1999, month: 12, day: 19, calendar: .julian)
 		let date = try CalendarDate(calendarDay: day, fractionSinceMidnight: 0.75)
 		#expect(date.calendarDay == day)
 		#expect(date.fractionSinceMidnight == 0.75)
-		#expect(date == (try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.75, .julian)))
+		#expect(date == (try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.75, calendar: .julian)))
 	}
 
 	@Test func fractionSinceMidnightValidation() throws {
-		let day = try CalendarDay(year: 2000, month: 1, day: 1, .gregorian)
+		let day = try CalendarDay(year: 2000, month: 1, day: 1, calendar: .gregorian)
 		#expect(try CalendarDate(calendarDay: day, fractionSinceMidnight: 0).fractionSinceMidnight == 0)
 		#expect(try CalendarDate(calendarDay: day, fractionSinceMidnight: Double(1).nextDown).fractionSinceMidnight == Double(1).nextDown)
 		#expect(try CalendarDate(calendarDay: day, fractionSinceMidnight: .leastNonzeroMagnitude).fractionSinceMidnight == .leastNonzeroMagnitude)
@@ -50,7 +50,7 @@ import Testing
 	}
 
 	@Test func negativeZeroFractionIsStoredAsPositiveZero() throws {
-		let day = try CalendarDay(year: 2000, month: 1, day: 1, .gregorian)
+		let day = try CalendarDay(year: 2000, month: 1, day: 1, calendar: .gregorian)
 		let date = try CalendarDate(calendarDay: day, fractionSinceMidnight: -0.0)
 		#expect(date.fractionSinceMidnight == 0)
 		#expect(date.fractionSinceMidnight.sign == .plus)
@@ -59,27 +59,27 @@ import Testing
 	}
 
 	@Test func initFromInvalidComponentsThrows() {
-		#expect(throws: CalendarError.invalidDate) { try CalendarDate(year: 2001, month: 2, day: 29, .gregorian) }
-		#expect(throws: CalendarError.invalidDate) { try CalendarDate(year: 1582, month: 10, day: 10, .julianGregorian) }
-		#expect(throws: CalendarError.invalidDate) { try CalendarDate(year: 2000, month: 13, day: 1, fractionSinceMidnight: 0.5, .julian) }
+		#expect(throws: CalendarError.invalidDate) { try CalendarDate(year: 2001, month: 2, day: 29, calendar: .gregorian) }
+		#expect(throws: CalendarError.invalidDate) { try CalendarDate(year: 1582, month: 10, day: 10, calendar: .julianGregorian) }
+		#expect(throws: CalendarError.invalidDate) { try CalendarDate(year: 2000, month: 13, day: 1, fractionSinceMidnight: 0.5, calendar: .julian) }
 		// The date is validated before the fraction since midnight
-		#expect(throws: CalendarError.invalidDate) { try CalendarDate(year: 2001, month: 2, day: 29, fractionSinceMidnight: 2, .gregorian) }
-		#expect(throws: CalendarError.invalidDayFraction) { try CalendarDate(year: 2000, month: 2, day: 29, fractionSinceMidnight: 2, .gregorian) }
-		#expect(throws: CalendarError.nonFiniteValue) { try CalendarDate(year: 2000, month: 2, day: 29, fractionSinceMidnight: .nan, .gregorian) }
-		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDate(year: .max, month: 1, day: 1, .julian) }
+		#expect(throws: CalendarError.invalidDate) { try CalendarDate(year: 2001, month: 2, day: 29, fractionSinceMidnight: 2, calendar: .gregorian) }
+		#expect(throws: CalendarError.invalidDayFraction) { try CalendarDate(year: 2000, month: 2, day: 29, fractionSinceMidnight: 2, calendar: .gregorian) }
+		#expect(throws: CalendarError.nonFiniteValue) { try CalendarDate(year: 2000, month: 2, day: 29, fractionSinceMidnight: .nan, calendar: .gregorian) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDate(year: .max, month: 1, day: 1, calendar: .julian) }
 	}
 
 	// MARK: - Arithmetic
 
 	@Test func addingWholeAndFractionalDays() throws {
-		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.75, .gregorian)
+		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.75, calendar: .gregorian)
 		#expect(try date.adding(days: 0) == date)
-		#expect(try date.adding(days: 1) == CalendarDate(year: 2000, month: 1, day: 2, fractionSinceMidnight: 0.75, .gregorian))
-		#expect(try date.adding(days: -1) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.75, .gregorian))
-		#expect(try date.adding(days: 1, fractionalDay: 0.5) == CalendarDate(year: 2000, month: 1, day: 3, fractionSinceMidnight: 0.25, .gregorian))
-		#expect(try date.adding(days: -1, fractionalDay: 0.5) == CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, .gregorian))
-		#expect(try date.adding(days: 0, fractionalDay: 0.25) == CalendarDate(year: 2000, month: 1, day: 2, .gregorian))
-		#expect(try date.adding(days: 60) == CalendarDate(year: 2000, month: 3, day: 1, fractionSinceMidnight: 0.75, .gregorian))
+		#expect(try date.adding(days: 1) == CalendarDate(year: 2000, month: 1, day: 2, fractionSinceMidnight: 0.75, calendar: .gregorian))
+		#expect(try date.adding(days: -1) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.75, calendar: .gregorian))
+		#expect(try date.adding(days: 1, fractionalDay: 0.5) == CalendarDate(year: 2000, month: 1, day: 3, fractionSinceMidnight: 0.25, calendar: .gregorian))
+		#expect(try date.adding(days: -1, fractionalDay: 0.5) == CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, calendar: .gregorian))
+		#expect(try date.adding(days: 0, fractionalDay: 0.25) == CalendarDate(year: 2000, month: 1, day: 2, calendar: .gregorian))
+		#expect(try date.adding(days: 60) == CalendarDate(year: 2000, month: 3, day: 1, fractionSinceMidnight: 0.75, calendar: .gregorian))
 
 		#expect(throws: CalendarError.invalidDayFraction) { try date.adding(days: 1, fractionalDay: 1) }
 		#expect(throws: CalendarError.invalidDayFraction) { try date.adding(days: 1, fractionalDay: -0.5) }
@@ -88,16 +88,16 @@ import Testing
 	}
 
 	@Test func addingDoubleDays() throws {
-		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.75, .gregorian)
+		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.75, calendar: .gregorian)
 		#expect(try date.adding(days: 0.0) == date)
-		#expect(try date.adding(days: 0.25) == CalendarDate(year: 2000, month: 1, day: 2, .gregorian))
-		#expect(try date.adding(days: 1.5) == CalendarDate(year: 2000, month: 1, day: 3, fractionSinceMidnight: 0.25, .gregorian))
-		#expect(try date.adding(days: -0.5) == CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, .gregorian))
-		#expect(try date.adding(days: -0.75) == CalendarDate(year: 2000, month: 1, day: 1, .gregorian))
-		#expect(try date.adding(days: -1.0) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.75, .gregorian))
+		#expect(try date.adding(days: 0.25) == CalendarDate(year: 2000, month: 1, day: 2, calendar: .gregorian))
+		#expect(try date.adding(days: 1.5) == CalendarDate(year: 2000, month: 1, day: 3, fractionSinceMidnight: 0.25, calendar: .gregorian))
+		#expect(try date.adding(days: -0.5) == CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, calendar: .gregorian))
+		#expect(try date.adding(days: -0.75) == CalendarDate(year: 2000, month: 1, day: 1, calendar: .gregorian))
+		#expect(try date.adding(days: -1.0) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.75, calendar: .gregorian))
 
-		let midnight = try CalendarDate(year: 2000, month: 1, day: 1, .gregorian)
-		#expect(try midnight.adding(days: -0.25) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.75, .gregorian))
+		let midnight = try CalendarDate(year: 2000, month: 1, day: 1, calendar: .gregorian)
+		#expect(try midnight.adding(days: -0.25) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.75, calendar: .gregorian))
 
 		#expect(throws: CalendarError.nonFiniteValue) { try date.adding(days: .nan) }
 		#expect(throws: CalendarError.nonFiniteValue) { try date.adding(days: .infinity) }
@@ -106,47 +106,47 @@ import Testing
 	}
 
 	@Test func addingDaysPreservesCalendar() throws {
-		let julian = try CalendarDate(year: 1900, month: 2, day: 28, fractionSinceMidnight: 0.5, .julian)
+		let julian = try CalendarDate(year: 1900, month: 2, day: 28, fractionSinceMidnight: 0.5, calendar: .julian)
 		let next = try julian.adding(days: 1)
 		#expect(next.calendar == .julian)
-		#expect(next == (try CalendarDate(year: 1900, month: 2, day: 29, fractionSinceMidnight: 0.5, .julian)))
+		#expect(next == (try CalendarDate(year: 1900, month: 2, day: 29, fractionSinceMidnight: 0.5, calendar: .julian)))
 
-		let changeover = try CalendarDate(year: 1582, month: 10, day: 4, fractionSinceMidnight: 0.5, .julianGregorian)
-		#expect(try changeover.adding(days: 1) == CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.5, .julianGregorian))
-		#expect(try changeover.adding(days: 0.5) == CalendarDate(year: 1582, month: 10, day: 15, .julianGregorian))
+		let changeover = try CalendarDate(year: 1582, month: 10, day: 4, fractionSinceMidnight: 0.5, calendar: .julianGregorian)
+		#expect(try changeover.adding(days: 1) == CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.5, calendar: .julianGregorian))
+		#expect(try changeover.adding(days: 0.5) == CalendarDate(year: 1582, month: 10, day: 15, calendar: .julianGregorian))
 	}
 
 	@Test func addingDaysOverflowThrows() throws {
-		let last = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .max, .gregorian), uncheckedFractionSinceMidnight: 0.5)
+		let last = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .max, calendar: .gregorian), uncheckedFractionSinceMidnight: 0.5)
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try last.adding(days: 1) }
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try last.adding(days: 0, fractionalDay: 0.5) }
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try last.adding(days: 0.5) }
 		#expect(try last.adding(days: 0.25).julianDayNumber == .max)
 
-		let first = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .min, .julian), uncheckedFractionSinceMidnight: 0)
+		let first = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .min, calendar: .julian), uncheckedFractionSinceMidnight: 0)
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try first.adding(days: -1) }
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try first.adding(days: -0.25) }
 	}
 
 	@Test func subtractingWholeAndFractionalDays() throws {
-		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.75, .gregorian)
+		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.75, calendar: .gregorian)
 		#expect(try date.subtracting(days: 0) == date)
 		#expect(try date.subtracting(days: 0, fractionalDay: -0.0) == date)
-		#expect(try date.subtracting(days: 1) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.75, .gregorian))
-		#expect(try date.subtracting(days: -1) == CalendarDate(year: 2000, month: 1, day: 2, fractionSinceMidnight: 0.75, .gregorian))
-		#expect(try date.subtracting(days: 1, fractionalDay: 0.5) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.25, .gregorian))
-		#expect(try date.subtracting(days: -1, fractionalDay: 0.5) == CalendarDate(year: 2000, month: 1, day: 2, fractionSinceMidnight: 0.25, .gregorian))
-		#expect(try date.subtracting(days: 0, fractionalDay: 0.75) == CalendarDate(year: 2000, month: 1, day: 1, .gregorian))
+		#expect(try date.subtracting(days: 1) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.75, calendar: .gregorian))
+		#expect(try date.subtracting(days: -1) == CalendarDate(year: 2000, month: 1, day: 2, fractionSinceMidnight: 0.75, calendar: .gregorian))
+		#expect(try date.subtracting(days: 1, fractionalDay: 0.5) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.25, calendar: .gregorian))
+		#expect(try date.subtracting(days: -1, fractionalDay: 0.5) == CalendarDate(year: 2000, month: 1, day: 2, fractionSinceMidnight: 0.25, calendar: .gregorian))
+		#expect(try date.subtracting(days: 0, fractionalDay: 0.75) == CalendarDate(year: 2000, month: 1, day: 1, calendar: .gregorian))
 		// A fraction larger than the time of day borrows from the previous day
-		#expect(try date.subtracting(days: 0, fractionalDay: 0.875) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.875, .gregorian))
-		#expect(try date.subtracting(days: 365) == CalendarDate(year: 1999, month: 1, day: 1, fractionSinceMidnight: 0.75, .gregorian))
+		#expect(try date.subtracting(days: 0, fractionalDay: 0.875) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.875, calendar: .gregorian))
+		#expect(try date.subtracting(days: 365) == CalendarDate(year: 1999, month: 1, day: 1, fractionSinceMidnight: 0.75, calendar: .gregorian))
 
 		// Month ends and leap days
-		let march2000 = try CalendarDate(year: 2000, month: 3, day: 1, fractionSinceMidnight: 0.75, .gregorian)
-		#expect(try march2000.subtracting(days: 1) == CalendarDate(year: 2000, month: 2, day: 29, fractionSinceMidnight: 0.75, .gregorian))
+		let march2000 = try CalendarDate(year: 2000, month: 3, day: 1, fractionSinceMidnight: 0.75, calendar: .gregorian)
+		#expect(try march2000.subtracting(days: 1) == CalendarDate(year: 2000, month: 2, day: 29, fractionSinceMidnight: 0.75, calendar: .gregorian))
 		#expect(try march2000.subtracting(days: 60) == date)
-		let march2100 = try CalendarDate(year: 2100, month: 3, day: 1, .gregorian)
-		#expect(try march2100.subtracting(days: 0, fractionalDay: 0.5) == CalendarDate(year: 2100, month: 2, day: 28, fractionSinceMidnight: 0.5, .gregorian))
+		let march2100 = try CalendarDate(year: 2100, month: 3, day: 1, calendar: .gregorian)
+		#expect(try march2100.subtracting(days: 0, fractionalDay: 0.5) == CalendarDate(year: 2100, month: 2, day: 28, fractionSinceMidnight: 0.5, calendar: .gregorian))
 
 		#expect(throws: CalendarError.invalidDayFraction) { try date.subtracting(days: 1, fractionalDay: 1) }
 		#expect(throws: CalendarError.invalidDayFraction) { try date.subtracting(days: 1, fractionalDay: -0.5) }
@@ -158,7 +158,7 @@ import Testing
 
 	@Test(arguments: CalendarIdentifier.allCases)
 	func subtractingIsInverseOfAdding(_ calendar: CalendarIdentifier) throws {
-		let date = try CalendarDate(year: 1582, month: 10, day: 1, fractionSinceMidnight: 0.625, calendar)
+		let date = try CalendarDate(year: 1582, month: 10, day: 1, fractionSinceMidnight: 0.625, calendar: calendar)
 		for days in [0, 1, 3, 10, 14, 365, -1, -14, -100_000] {
 			for fractionalDay in [0, 0.125, 0.375, 0.5, 0.875] {
 				let added = try date.adding(days: days, fractionalDay: fractionalDay)
@@ -171,82 +171,82 @@ import Testing
 	}
 
 	@Test func subtractingDaysPreservesCalendar() throws {
-		let julian = try CalendarDate(year: 1900, month: 3, day: 1, fractionSinceMidnight: 0.5, .julian)
+		let julian = try CalendarDate(year: 1900, month: 3, day: 1, fractionSinceMidnight: 0.5, calendar: .julian)
 		let previous = try julian.subtracting(days: 1)
 		#expect(previous.calendar == .julian)
-		#expect(previous == (try CalendarDate(year: 1900, month: 2, day: 29, fractionSinceMidnight: 0.5, .julian)))
+		#expect(previous == (try CalendarDate(year: 1900, month: 2, day: 29, fractionSinceMidnight: 0.5, calendar: .julian)))
 
-		let changeover = try CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.5, .julianGregorian)
-		#expect(try changeover.subtracting(days: 1) == CalendarDate(year: 1582, month: 10, day: 4, fractionSinceMidnight: 0.5, .julianGregorian))
-		#expect(try changeover.subtracting(days: 0, fractionalDay: 0.75) == CalendarDate(year: 1582, month: 10, day: 4, fractionSinceMidnight: 0.75, .julianGregorian))
+		let changeover = try CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.5, calendar: .julianGregorian)
+		#expect(try changeover.subtracting(days: 1) == CalendarDate(year: 1582, month: 10, day: 4, fractionSinceMidnight: 0.5, calendar: .julianGregorian))
+		#expect(try changeover.subtracting(days: 0, fractionalDay: 0.75) == CalendarDate(year: 1582, month: 10, day: 4, fractionSinceMidnight: 0.75, calendar: .julianGregorian))
 	}
 
 	@Test func subtractingDaysOverflowThrows() throws {
-		let first = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .min, .julian), uncheckedFractionSinceMidnight: 0)
+		let first = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .min, calendar: .julian), uncheckedFractionSinceMidnight: 0)
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try first.subtracting(days: 1) }
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try first.subtracting(days: 0, fractionalDay: 0.25) }
 		#expect(try first.subtracting(days: 0) == first)
 
-		let last = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .max, .gregorian), uncheckedFractionSinceMidnight: 0.5)
+		let last = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .max, calendar: .gregorian), uncheckedFractionSinceMidnight: 0.5)
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try last.subtracting(days: -1) }
 		#expect(try last.subtracting(days: 0, fractionalDay: 0.25).julianDayNumber == .max)
 		#expect(try last.subtracting(days: .max).julianDayNumber == 0)
 
 		// Subtracting Int.min must not overflow when negating the day count
-		let dayBeforeEpoch = CalendarDate(calendarDay: CalendarDay(julianDayNumber: -1, .gregorian), uncheckedFractionSinceMidnight: 0.5)
+		let dayBeforeEpoch = CalendarDate(calendarDay: CalendarDay(julianDayNumber: -1, calendar: .gregorian), uncheckedFractionSinceMidnight: 0.5)
 		let farFuture = try dayBeforeEpoch.subtracting(days: .min)
 		#expect(farFuture.julianDayNumber == .max)
 		#expect(farFuture.fractionSinceMidnight == 0.5)
-		let epoch = CalendarDate(calendarDay: CalendarDay(julianDayNumber: 0, .gregorian), uncheckedFractionSinceMidnight: 0)
+		let epoch = CalendarDate(calendarDay: CalendarDay(julianDayNumber: 0, calendar: .gregorian), uncheckedFractionSinceMidnight: 0)
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try epoch.subtracting(days: .min) }
 	}
 
 	@Test func normalized() throws {
-		let day = try CalendarDay(year: 2000, month: 1, day: 1, .gregorian)
+		let day = try CalendarDay(year: 2000, month: 1, day: 1, calendar: .gregorian)
 		#expect(try CalendarDate.normalized(calendarDay: day, fractionSinceMidnight: 0.5) == CalendarDate(calendarDay: day, fractionSinceMidnight: 0.5))
-		#expect(try CalendarDate.normalized(calendarDay: day, fractionSinceMidnight: 2.25) == CalendarDate(year: 2000, month: 1, day: 3, fractionSinceMidnight: 0.25, .gregorian))
-		#expect(try CalendarDate.normalized(calendarDay: day, fractionSinceMidnight: 1) == CalendarDate(year: 2000, month: 1, day: 2, .gregorian))
-		#expect(try CalendarDate.normalized(calendarDay: day, fractionSinceMidnight: -0.25) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.75, .gregorian))
-		#expect(try CalendarDate.normalized(calendarDay: day, fractionSinceMidnight: -1) == CalendarDate(year: 1999, month: 12, day: 31, .gregorian))
+		#expect(try CalendarDate.normalized(calendarDay: day, fractionSinceMidnight: 2.25) == CalendarDate(year: 2000, month: 1, day: 3, fractionSinceMidnight: 0.25, calendar: .gregorian))
+		#expect(try CalendarDate.normalized(calendarDay: day, fractionSinceMidnight: 1) == CalendarDate(year: 2000, month: 1, day: 2, calendar: .gregorian))
+		#expect(try CalendarDate.normalized(calendarDay: day, fractionSinceMidnight: -0.25) == CalendarDate(year: 1999, month: 12, day: 31, fractionSinceMidnight: 0.75, calendar: .gregorian))
+		#expect(try CalendarDate.normalized(calendarDay: day, fractionSinceMidnight: -1) == CalendarDate(year: 1999, month: 12, day: 31, calendar: .gregorian))
 
-		#expect(try CalendarDate.normalized(year: 2000, month: 13, day: 1, fractionSinceMidnight: 1.5, .gregorian) == CalendarDate(year: 2001, month: 1, day: 2, fractionSinceMidnight: 0.5, .gregorian))
-		#expect(try CalendarDate.normalized(year: 1900, month: 2, day: 29, fractionSinceMidnight: 0, .gregorian) == CalendarDate(year: 1900, month: 3, day: 1, .gregorian))
-		#expect(try CalendarDate.normalized(year: 1900, month: 2, day: 29, fractionSinceMidnight: 0, .julian) == CalendarDate(year: 1900, month: 2, day: 29, .julian))
-		#expect(try CalendarDate.normalized(year: 1582, month: 10, day: 4, fractionSinceMidnight: 1.25, .julianGregorian) == CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.25, .julianGregorian))
+		#expect(try CalendarDate.normalized(year: 2000, month: 13, day: 1, fractionSinceMidnight: 1.5, calendar: .gregorian) == CalendarDate(year: 2001, month: 1, day: 2, fractionSinceMidnight: 0.5, calendar: .gregorian))
+		#expect(try CalendarDate.normalized(year: 1900, month: 2, day: 29, fractionSinceMidnight: 0, calendar: .gregorian) == CalendarDate(year: 1900, month: 3, day: 1, calendar: .gregorian))
+		#expect(try CalendarDate.normalized(year: 1900, month: 2, day: 29, fractionSinceMidnight: 0, calendar: .julian) == CalendarDate(year: 1900, month: 2, day: 29, calendar: .julian))
+		#expect(try CalendarDate.normalized(year: 1582, month: 10, day: 4, fractionSinceMidnight: 1.25, calendar: .julianGregorian) == CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.25, calendar: .julianGregorian))
 
 		#expect(throws: CalendarError.nonFiniteValue) { try CalendarDate.normalized(calendarDay: day, fractionSinceMidnight: .nan) }
-		#expect(throws: CalendarError.nonFiniteValue) { try CalendarDate.normalized(year: 2000, month: 1, day: 1, fractionSinceMidnight: .infinity, .julian) }
-		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDate.normalized(year: .max, month: 1, day: 1, fractionSinceMidnight: 0, .gregorian) }
+		#expect(throws: CalendarError.nonFiniteValue) { try CalendarDate.normalized(year: 2000, month: 1, day: 1, fractionSinceMidnight: .infinity, calendar: .julian) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDate.normalized(year: .max, month: 1, day: 1, fractionSinceMidnight: 0, calendar: .gregorian) }
 	}
 
 	// MARK: - Decimal Years
 
 	@Test func decimalYear() throws {
-		#expect(try CalendarDate(year: 1985, month: 1, day: 1, .gregorian).decimalYear == 1985)
-		#expect(try CalendarDate(year: 1985, month: 1, day: 1, fractionSinceMidnight: 0.5, .gregorian).decimalYear == 1985 + 0.5 / 365)
-		#expect(try CalendarDate(year: 1985, month: 7, day: 2, fractionSinceMidnight: 0.5, .gregorian).decimalYear == 1985.5)
-		#expect(try CalendarDate(year: 2024, month: 10, day: 1, fractionSinceMidnight: 0.5, .gregorian).decimalYear == 2024.75)
-		#expect(try CalendarDate(year: 1582, month: 6, day: 27, fractionSinceMidnight: 0.5, .julianGregorian).decimalYear == 1582.5)
+		#expect(try CalendarDate(year: 1985, month: 1, day: 1, calendar: .gregorian).decimalYear == 1985)
+		#expect(try CalendarDate(year: 1985, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian).decimalYear == 1985 + 0.5 / 365)
+		#expect(try CalendarDate(year: 1985, month: 7, day: 2, fractionSinceMidnight: 0.5, calendar: .gregorian).decimalYear == 1985.5)
+		#expect(try CalendarDate(year: 2024, month: 10, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian).decimalYear == 2024.75)
+		#expect(try CalendarDate(year: 1582, month: 6, day: 27, fractionSinceMidnight: 0.5, calendar: .julianGregorian).decimalYear == 1582.5)
 
 		// Agrees with the calendar day at midnight
-		let day = try CalendarDay(year: 1582, month: 10, day: 15, .julianGregorian)
+		let day = try CalendarDay(year: 1582, month: 10, day: 15, calendar: .julianGregorian)
 		#expect(try CalendarDate(calendarDay: day, fractionSinceMidnight: 0).decimalYear == day.decimalYear)
 	}
 
 	@Test func initFromDecimalYear() throws {
-		#expect(try CalendarDate(decimalYear: 1985, .gregorian) == CalendarDate(year: 1985, month: 1, day: 1, .gregorian))
-		#expect(try CalendarDate(decimalYear: 1985.25, .gregorian) == CalendarDate(year: 1985, month: 4, day: 2, fractionSinceMidnight: 0.25, .gregorian))
-		#expect(try CalendarDate(decimalYear: 1985.5, .gregorian) == CalendarDate(year: 1985, month: 7, day: 2, fractionSinceMidnight: 0.5, .gregorian))
-		#expect(try CalendarDate(decimalYear: 2000.5, .gregorian) == CalendarDate(year: 2000, month: 7, day: 2, .gregorian))
-		#expect(try CalendarDate(decimalYear: 2024.75, .gregorian) == CalendarDate(year: 2024, month: 10, day: 1, fractionSinceMidnight: 0.5, .gregorian))
-		#expect(try CalendarDate(decimalYear: -0.5, .julian) == CalendarDate(year: -1, month: 7, day: 2, fractionSinceMidnight: 0.5, .julian))
-		#expect(try CalendarDate(decimalYear: 1582.5, .julianGregorian) == CalendarDate(year: 1582, month: 6, day: 27, fractionSinceMidnight: 0.5, .julianGregorian))
-		#expect(try CalendarDate(decimalYear: 1582 + 277.0 / 355, .julianGregorian) == CalendarDate(year: 1582, month: 10, day: 15, .julianGregorian))
+		#expect(try CalendarDate(decimalYear: 1985, calendar: .gregorian) == CalendarDate(year: 1985, month: 1, day: 1, calendar: .gregorian))
+		#expect(try CalendarDate(decimalYear: 1985.25, calendar: .gregorian) == CalendarDate(year: 1985, month: 4, day: 2, fractionSinceMidnight: 0.25, calendar: .gregorian))
+		#expect(try CalendarDate(decimalYear: 1985.5, calendar: .gregorian) == CalendarDate(year: 1985, month: 7, day: 2, fractionSinceMidnight: 0.5, calendar: .gregorian))
+		#expect(try CalendarDate(decimalYear: 2000.5, calendar: .gregorian) == CalendarDate(year: 2000, month: 7, day: 2, calendar: .gregorian))
+		#expect(try CalendarDate(decimalYear: 2024.75, calendar: .gregorian) == CalendarDate(year: 2024, month: 10, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian))
+		#expect(try CalendarDate(decimalYear: -0.5, calendar: .julian) == CalendarDate(year: -1, month: 7, day: 2, fractionSinceMidnight: 0.5, calendar: .julian))
+		#expect(try CalendarDate(decimalYear: 1582.5, calendar: .julianGregorian) == CalendarDate(year: 1582, month: 6, day: 27, fractionSinceMidnight: 0.5, calendar: .julianGregorian))
+		#expect(try CalendarDate(decimalYear: 1582 + 277.0 / 355, calendar: .julianGregorian) == CalendarDate(year: 1582, month: 10, day: 15, calendar: .julianGregorian))
 
-		#expect(throws: CalendarError.nonFiniteValue) { try CalendarDate(decimalYear: .nan, .gregorian) }
-		#expect(throws: CalendarError.nonFiniteValue) { try CalendarDate(decimalYear: -.infinity, .julian) }
-		#expect(throws: CalendarError.invalidDecimalYear) { try CalendarDate(decimalYear: 1e300, .julianGregorian) }
-		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDate(decimalYear: 1e18, .gregorian) }
+		#expect(throws: CalendarError.nonFiniteValue) { try CalendarDate(decimalYear: .nan, calendar: .gregorian) }
+		#expect(throws: CalendarError.nonFiniteValue) { try CalendarDate(decimalYear: -.infinity, calendar: .julian) }
+		#expect(throws: CalendarError.invalidDecimalYear) { try CalendarDate(decimalYear: 1e300, calendar: .julianGregorian) }
+		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try CalendarDate(decimalYear: 1e18, calendar: .gregorian) }
 	}
 
 	@Test(arguments: CalendarIdentifier.allCases)
@@ -254,8 +254,8 @@ import Testing
 		let fractions = [0, 0.125, 0.25, 0.5, 0.75, 0.999]
 		for J in stride(from: 2_298_000, through: 2_301_000, by: 7) {
 			for f in fractions {
-				let date = CalendarDate(calendarDay: CalendarDay(julianDayNumber: J, calendar), uncheckedFractionSinceMidnight: f)
-				let roundTripped = try CalendarDate(decimalYear: date.decimalYear, calendar)
+				let date = CalendarDate(calendarDay: CalendarDay(julianDayNumber: J, calendar: calendar), uncheckedFractionSinceMidnight: f)
+				let roundTripped = try CalendarDate(decimalYear: date.decimalYear, calendar: calendar)
 				#expect(roundTripped.calendarDay == date.calendarDay, "J = \(J), f = \(f)")
 				#expect(abs(roundTripped.fractionSinceMidnight - f) < 1e-9, "J = \(J), f = \(f)")
 			}
@@ -264,7 +264,7 @@ import Testing
 
 	@Test func decimalYearIsMonotonic() throws {
 		var previous = -Double.infinity
-		var date = try CalendarDate(year: 1581, month: 12, day: 31, .julianGregorian)
+		var date = try CalendarDate(year: 1581, month: 12, day: 31, calendar: .julianGregorian)
 		for _ in 0 ..< 1_000 {
 			let decimalYear = date.decimalYear
 			#expect(decimalYear > previous, "\(date)")
@@ -276,30 +276,30 @@ import Testing
 	// MARK: - Conversion and Comparison
 
 	@Test func convertedTo() throws {
-		let gregorian = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, .gregorian)
-		let julian = gregorian.convertedTo(.julian)
-		#expect(julian == (try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, .julian)))
-		#expect(julian.convertedTo(.gregorian) == gregorian)
-		#expect(gregorian.convertedTo(.gregorian) == gregorian)
+		let gregorian = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian)
+		let julian = gregorian.converted(to: .julian)
+		#expect(julian == (try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian)))
+		#expect(julian.converted(to: .gregorian) == gregorian)
+		#expect(gregorian.converted(to: .gregorian) == gregorian)
 		#expect(julian.julianDayNumber == gregorian.julianDayNumber)
 		#expect(julian.fractionSinceMidnight == gregorian.fractionSinceMidnight)
 	}
 
-	@Test func isSameInstantAs() throws {
-		let gregorian = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, .gregorian)
-		let julian = try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, .julian)
-		#expect(gregorian.isSameInstantAs(julian))
-		#expect(julian.isSameInstantAs(gregorian))
+	@Test func isSameInstant() throws {
+		let gregorian = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian)
+		let julian = try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian)
+		#expect(gregorian.isSameInstant(as: julian))
+		#expect(julian.isSameInstant(as: gregorian))
 		#expect(gregorian != julian)
-		#expect(try !gregorian.isSameInstantAs(CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.25, .julian)))
-		#expect(try !gregorian.isSameInstantAs(CalendarDate(year: 1999, month: 12, day: 20, fractionSinceMidnight: 0.5, .julian)))
+		#expect(try !gregorian.isSameInstant(as: CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.25, calendar: .julian)))
+		#expect(try !gregorian.isSameInstant(as: CalendarDate(year: 1999, month: 12, day: 20, fractionSinceMidnight: 0.5, calendar: .julian)))
 	}
 
 	@Test func equalityAndHashing() throws {
-		let a = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, .gregorian)
-		let b = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, .gregorian)
-		let c = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, .gregorian)
-		let d = a.convertedTo(.julianGregorian)
+		let a = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian)
+		let b = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian)
+		let c = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, calendar: .gregorian)
+		let d = a.converted(to: .julianGregorian)
 		#expect(a == b)
 		#expect(a.hashValue == b.hashValue)
 		#expect(a != c)
@@ -308,12 +308,12 @@ import Testing
 	}
 
 	@Test func comparison() throws {
-		let a = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, .gregorian)
-		let b = try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, .julian)
-		let c = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, .gregorian)
-		let d = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, .julianGregorian)
-		let e = try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.75, .julian)
-		let f = try CalendarDate(year: 2000, month: 1, day: 2, .gregorian)
+		let a = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, calendar: .gregorian)
+		let b = try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian)
+		let c = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian)
+		let d = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .julianGregorian)
+		let e = try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.75, calendar: .julian)
+		let f = try CalendarDate(year: 2000, month: 1, day: 2, calendar: .gregorian)
 
 		// Earlier time of day on the same day, regardless of calendar
 		#expect(a < b)
@@ -332,47 +332,47 @@ import Testing
 	// MARK: - Day Intervals
 
 	@Test func intervalTo() throws {
-		let start = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, .gregorian)
-		let end = try CalendarDate(year: 2000, month: 1, day: 3, fractionSinceMidnight: 0.75, .gregorian)
+		let start = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, calendar: .gregorian)
+		let end = try CalendarDate(year: 2000, month: 1, day: 3, fractionSinceMidnight: 0.75, calendar: .gregorian)
 		#expect(try start.interval(to: end).inDays == 2.5)
 		#expect(try end.interval(to: start).inDays == -2.5)
 		#expect(try start.interval(to: end) == DayInterval(days: 2, fractionalDay: 0.5))
 		#expect(try start.interval(to: start) == .zero)
 
 		// Independent of calendar
-		#expect(try start.interval(to: start.convertedTo(.julian)) == .zero)
-		#expect(try start.interval(to: end.convertedTo(.julian)).inDays == 2.5)
+		#expect(try start.interval(to: start.converted(to: .julian)) == .zero)
+		#expect(try start.interval(to: end.converted(to: .julian)).inDays == 2.5)
 
 		// Across the changeover
-		let october4 = try CalendarDate(year: 1582, month: 10, day: 4, fractionSinceMidnight: 0.5, .julianGregorian)
-		let october15 = try CalendarDate(year: 1582, month: 10, day: 15, .julianGregorian)
+		let october4 = try CalendarDate(year: 1582, month: 10, day: 4, fractionSinceMidnight: 0.5, calendar: .julianGregorian)
+		let october15 = try CalendarDate(year: 1582, month: 10, day: 15, calendar: .julianGregorian)
 		#expect(try october4.interval(to: october15).inDays == 0.5)
 	}
 
 	@Test func intervalOverflowThrows() {
-		let first = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .min, .julian), uncheckedFractionSinceMidnight: 0)
-		let last = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .max, .gregorian), uncheckedFractionSinceMidnight: 0)
+		let first = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .min, calendar: .julian), uncheckedFractionSinceMidnight: 0)
+		let last = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .max, calendar: .gregorian), uncheckedFractionSinceMidnight: 0)
 		#expect(throws: DayIntervalError.dayCountNotRepresentable) { try first.interval(to: last) }
 		#expect(throws: DayIntervalError.dayCountNotRepresentable) { try last.interval(to: first) }
 	}
 
 	@Test func addingAndSubtractingInterval() throws {
-		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, .julian)
+		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, calendar: .julian)
 		let interval = try DayInterval(days: 2, fractionalDay: 0.5)
 		let later = try date.adding(interval)
-		#expect(later == (try CalendarDate(year: 2000, month: 1, day: 3, fractionSinceMidnight: 0.75, .julian)))
+		#expect(later == (try CalendarDate(year: 2000, month: 1, day: 3, fractionSinceMidnight: 0.75, calendar: .julian)))
 		#expect(later.calendar == .julian)
 		#expect(try later.subtracting(interval) == date)
-		#expect(try date.subtracting(interval) == CalendarDate(year: 1999, month: 12, day: 29, fractionSinceMidnight: 0.75, .julian))
+		#expect(try date.subtracting(interval) == CalendarDate(year: 1999, month: 12, day: 29, fractionSinceMidnight: 0.75, calendar: .julian))
 		#expect(try date.adding(.zero) == date)
 		#expect(try date.subtracting(.zero) == date)
 
-		let changeover = try CalendarDate(year: 1582, month: 10, day: 4, fractionSinceMidnight: 0.75, .julianGregorian)
-		#expect(try changeover.adding(DayInterval(days: 0.5)) == CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.25, .julianGregorian))
+		let changeover = try CalendarDate(year: 1582, month: 10, day: 4, fractionSinceMidnight: 0.75, calendar: .julianGregorian)
+		#expect(try changeover.adding(DayInterval(days: 0.5)) == CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.25, calendar: .julianGregorian))
 	}
 
 	@Test func intervalRoundTrip() throws {
-		let start = try CalendarDate(year: 1600, month: 2, day: 29, fractionSinceMidnight: 0.125, .gregorian)
+		let start = try CalendarDate(year: 1600, month: 2, day: 29, fractionSinceMidnight: 0.125, calendar: .gregorian)
 		for (days, fraction) in [(0, 0.0), (1, 0.5), (365, 0.75), (-1, 0.875), (-146_097, 0.25), (1_000_000, 0.0625)] {
 			let end = try start.adding(days: days, fractionalDay: fraction)
 			let interval = try start.interval(to: end)
@@ -382,8 +382,8 @@ import Testing
 	}
 
 	@Test func addingIntervalOverflowThrows() throws {
-		let last = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .max, .gregorian), uncheckedFractionSinceMidnight: 0)
-		let first = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .min, .gregorian), uncheckedFractionSinceMidnight: 0)
+		let last = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .max, calendar: .gregorian), uncheckedFractionSinceMidnight: 0)
+		let first = CalendarDate(calendarDay: CalendarDay(julianDayNumber: .min, calendar: .gregorian), uncheckedFractionSinceMidnight: 0)
 		let oneDay = try DayInterval(days: 1)
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try last.adding(oneDay) }
 		#expect(throws: CalendarError.julianDayNumberNotRepresentable) { try first.subtracting(oneDay) }
@@ -392,11 +392,11 @@ import Testing
 	// MARK: - Descriptions
 
 	@Test func descriptions() throws {
-		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, .gregorian)
+		let date = try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian)
 		#expect(date.description == "2000-1-1 +0.5 (Gregorian)")
 		#expect(date.debugDescription == "CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: Gregorian)")
-		#expect(try CalendarDate(year: -44, month: 3, day: 15, .julian).description == "-44-3-15 +0.0 (Julian)")
-		#expect(try CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.25, .julianGregorian).description == "1582-10-15 +0.25 (Julian-Gregorian)")
+		#expect(try CalendarDate(year: -44, month: 3, day: 15, calendar: .julian).description == "-44-3-15 +0.0 (Julian)")
+		#expect(try CalendarDate(year: 1582, month: 10, day: 15, fractionSinceMidnight: 0.25, calendar: .julianGregorian).description == "1582-10-15 +0.25 (Julian-Gregorian)")
 	}
 }
 
@@ -419,7 +419,7 @@ private struct RawCalendarDate: Encodable {
 	@Test(arguments: CalendarIdentifier.allCases)
 	func codableRoundTrip(_ calendar: CalendarIdentifier) throws {
 		for (J, f) in [(-1_931_076, 0.0), (0, 0.5), (2_299_160, 0.75), (2_299_161, 0.1), (2_451_545, Double(1).nextDown)] {
-			let date = CalendarDate(calendarDay: CalendarDay(julianDayNumber: J, calendar), uncheckedFractionSinceMidnight: f)
+			let date = CalendarDate(calendarDay: CalendarDay(julianDayNumber: J, calendar: calendar), uncheckedFractionSinceMidnight: f)
 			let data = try JSONEncoder().encode(date)
 			#expect(try JSONDecoder().decode(CalendarDate.self, from: data) == date)
 		}

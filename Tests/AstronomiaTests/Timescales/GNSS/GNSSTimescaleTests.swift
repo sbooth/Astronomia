@@ -10,7 +10,7 @@ import Testing
 
 /// Returns the Julian day number of a Gregorian calendar date.
 private func jdn(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDayNumber {
-	try GregorianCalendar.julianDayNumberFrom(year: year, month: month, day: day)
+	try GregorianCalendar.julianDayNumber(year: year, month: month, day: day)
 }
 
 /// Returns the Julian Date for seconds since midnight on a 86,400 s day.
@@ -119,7 +119,7 @@ private enum MinimumOffsetTimescale: FixedTAIOffsetTimescale {
 	/// Returns the GLONASS day number and clock reading for a UTC clock reading.
 	static func fromUTC(_ julianDate: JulianDate) throws -> (JulianDayNumber, Double) {
 		let glonass = try Instant<UTC>(julianDate).converted(to: GLONASS.self).julianDate
-		let seconds = try GLONASS.secondsSinceMidnight(glonass)
+		let seconds = try GLONASS.secondsSinceMidnight(at: glonass)
 		return (glonass.julianDayNumber, seconds)
 	}
 
@@ -176,9 +176,9 @@ private enum MinimumOffsetTimescale: FixedTAIOffsetTimescale {
 
 	@Test func errors() throws {
 		let pastHorizon = try Self.glonass(2027, 7, 1, seconds: 43_200)
-		let strict = UTC.Context(leapSecondTable: .builtIn, extrapolationPolicy: .strict)
+		let reject = UTC.Context(leapSecondTable: .builtIn, extrapolationPolicy: .reject)
 		#expect(throws: TimescaleConversionError.leapSecondTableExpired) {
-			try GLONASS.toTT(pastHorizon, context: strict)
+			try GLONASS.toTT(pastHorizon, context: reject)
 		}
 		_ = try GLONASS.toTT(pastHorizon, context: GLONASS.defaultContext)
 
