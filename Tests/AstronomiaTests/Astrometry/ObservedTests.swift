@@ -202,6 +202,58 @@ import Testing
 		#expect(throws: AtmosphericConditionsError.invalidWavelength) { try AtmosphericConditions(pressure: p, temperature: t, relativeHumidity: 0.5, wavelength: .meters(1.01)) }
 	}
 
+	@Test func standardAtmosphere() throws {
+		let standard = AtmosphericConditions.standard
+		#expect(standard == (try AtmosphericConditions(pressure: .hectopascals(1013.25), temperature: .degreesCelsius(15), relativeHumidity: 0)))
+		#expect(standard.wavelength == .micrometers(0.55))
+		let (a, b) = standard.refractionConstants
+		#expect(abs((a + b) * arcsecondsPerRadian - 57.18) < 0.01)
+	}
+
+	@Test func pressureFromHeight() throws {
+		// 1013.25 hPa × exp(-h / (29.3 m/K × T))
+		let t = Temperature.degreesCelsius(0)
+		let maunaKea = try AtmosphericConditions(height: .meters(4205), temperature: t, relativeHumidity: 0.2, wavelength: .micrometers(0.8))
+		#expect(abs(maunaKea.pressure.hectopascals - 599.149) < 1e-3)
+		#expect(maunaKea.temperature == t)
+		#expect(maunaKea.relativeHumidity == 0.2)
+		#expect(maunaKea.wavelength == .micrometers(0.8))
+		let seaLevel = try AtmosphericConditions(height: .zero, temperature: .degreesCelsius(15), relativeHumidity: 0)
+		#expect(seaLevel == .standard)
+		// The Dead Sea, below sea level
+		#expect(try AtmosphericConditions(height: .meters(-430), temperature: .degreesCelsius(30), relativeHumidity: 0.3).pressure.hectopascals > 1013.25)
+		// High above any site the pressure is nearly zero.
+		#expect(try AtmosphericConditions(height: .kilometers(100), temperature: t, relativeHumidity: 0).pressure.hectopascals < 0.01)
+		#expect(throws: AtmosphericConditionsError.invalidPressure) { try AtmosphericConditions(height: .kilometers(-100), temperature: t, relativeHumidity: 0) }
+		#expect(throws: AtmosphericConditionsError.nonFiniteValue) { try AtmosphericConditions(height: .meters(.nan), temperature: t, relativeHumidity: 0) }
+		#expect(throws: AtmosphericConditionsError.nonFiniteValue) { try AtmosphericConditions(height: .zero, temperature: .kelvins(.infinity), relativeHumidity: 0) }
+		#expect(throws: AtmosphericConditionsError.invalidTemperature) { try AtmosphericConditions(height: .zero, temperature: .degreesCelsius(-151), relativeHumidity: 0) }
+		#expect(throws: AtmosphericConditionsError.invalidRelativeHumidity) { try AtmosphericConditions(height: .zero, temperature: t, relativeHumidity: 2) }
+		#expect(throws: AtmosphericConditionsError.invalidWavelength) { try AtmosphericConditions(height: .zero, temperature: t, relativeHumidity: 0, wavelength: .zero) }
+	}
+
+	@Test func standardAtmosphereAtHeight() throws {
+		#expect(try AtmosphericConditions.standard(height: .zero) == .standard)
+		// ISO 2533 tabulates 89,875 Pa and 8.5 °C at 1 km, and 22,632 Pa and -56.5 °C at 11 km.
+		let oneKilometer = try AtmosphericConditions.standard(height: .kilometers(1))
+		#expect(abs(oneKilometer.pressure.pascals - 89_875) < 1)
+		#expect(abs(oneKilometer.temperature.degreesCelsius - 8.5) < 1e-12)
+		let tropopause = try AtmosphericConditions.standard(height: .kilometers(11))
+		#expect(abs(tropopause.pressure.pascals - 22_632) < 1)
+		#expect(abs(tropopause.temperature.degreesCelsius + 56.5) < 1e-12)
+		let below = try AtmosphericConditions.standard(height: .kilometers(-2), relativeHumidity: 0.5, wavelength: .micrometers(2))
+		#expect(abs(below.pressure.pascals - 127_774) < 1)
+		#expect(below.relativeHumidity == 0.5)
+		#expect(below.wavelength == .micrometers(2))
+		#expect(throws: AtmosphericConditionsError.invalidHeight) { try AtmosphericConditions.standard(height: .meters(11_000.001)) }
+		#expect(throws: AtmosphericConditionsError.invalidHeight) { try AtmosphericConditions.standard(height: .meters(-2_000.001)) }
+		#expect(throws: AtmosphericConditionsError.nonFiniteValue) { try AtmosphericConditions.standard(height: .meters(.nan)) }
+		#expect(throws: AtmosphericConditionsError.invalidRelativeHumidity) { try AtmosphericConditions.standard(height: .zero, relativeHumidity: -1) }
+		#expect(throws: AtmosphericConditionsError.invalidWavelength) { try AtmosphericConditions.standard(height: .zero, wavelength: .zero) }
+		// Dry air by default
+		#expect(try AtmosphericConditions.standard(height: .kilometers(1)).relativeHumidity == 0)
+	}
+
 	@Test func units() {
 		#expect(Pressure.hectopascals(1013.25) == .standardAtmosphere)
 		#expect(Pressure.standardAtmosphere.hectopascals == 1013.25)

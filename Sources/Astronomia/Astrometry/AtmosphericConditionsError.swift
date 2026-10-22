@@ -17,4 +17,7 @@ public enum AtmosphericConditionsError: Error, Hashable, Sendable {
 	case invalidRelativeHumidity
 	/// The wavelength is shorter than 0.1 µm or longer than 1 m.
 	case invalidWavelength
+	/// The height is below -2 km or above 11 km, outside the troposphere of the International
+	/// Standard Atmosphere.
+	case invalidHeight
 }
