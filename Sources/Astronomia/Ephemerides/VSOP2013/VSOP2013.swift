@@ -159,7 +159,6 @@ extension VSOP2013 {
 			preconditionFailure("\(body) has no series")
 		}
 		let sums = seriesData.evaluate(at: t, variables: 6)
-		let twoPi = 2 * Double.pi
 		var meanLongitude = (sums[1] + meanMotion * t).truncatingRemainder(dividingBy: twoPi)
 		if meanLongitude < 0 {
 			meanLongitude += twoPi

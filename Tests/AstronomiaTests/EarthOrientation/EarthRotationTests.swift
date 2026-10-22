@@ -47,8 +47,8 @@ import Testing
 
 	@Test func classicGMSTAtJ2000() throws {
 		// At 2000-01-01T12:00:00 UT1, GMST is about 18.697375 hours.
-		let context = UT1.Context(deltaT: DeltaTFunction.constant(64.184))
-		let gmst = try EarthRotation.greenwichMeanSiderealTime(at: Instant<UT1>(.j2000), context: context)
+		let earthOrientation = EarthOrientation(ut1: UT1.Context(deltaT: DeltaTFunction.constant(64.184)))
+		let gmst = try EarthRotation.greenwichMeanSiderealTime(at: Instant<UT1>(.j2000), earthOrientation: earthOrientation)
 		#expect(abs(gmst.hours - 18.697_374_828_702_76) <= 1e-10)
 	}
 
@@ -57,9 +57,14 @@ import Testing
 		let context = UT1.Context(deltaT: DeltaTFunction.constant(69.2))
 		let tt = try Instant<TT>(JulianDate(julianDayNumber: 2_460_600, fractionFromNoon: 0.25))
 		let ut1 = try tt.converted(to: UT1.self, targetContext: context)
-		let fromTT = try EarthRotation.greenwichMeanSiderealTime(at: tt, ut1Context: context)
-		let fromUT1 = try EarthRotation.greenwichMeanSiderealTime(at: ut1, context: context)
+		let earthOrientation = EarthOrientation(ut1: context)
+		let fromTT = try EarthRotation.greenwichMeanSiderealTime(at: tt, earthOrientation: earthOrientation)
+		let fromUT1 = try EarthRotation.greenwichMeanSiderealTime(at: ut1, earthOrientation: earthOrientation)
 		#expect(abs((fromTT - fromUT1).normalizedSigned().radians) <= 1e-12)
+		// In any timescale, and from a UT1 instant with a UT1 context as its timescale context
+		let fromTDB = try EarthRotation.greenwichMeanSiderealTime(at: tt.converted(to: TDB.self), earthOrientation: earthOrientation)
+		#expect(abs((fromTDB - fromTT).normalizedSigned().radians) <= 1e-12)
+		#expect(try EarthRotation.greenwichMeanSiderealTime(at: ut1, context: context) == fromUT1)
 
 		// GMST leads the ERA by the accumulated precession in right ascension, about 0.32° in late
 		// 2024.
@@ -78,12 +83,12 @@ import Testing
 	}
 
 	@Test func errors() throws {
-		let context = UT1.Context(deltaT: DeltaTSourceList([]))
+		let earthOrientation = EarthOrientation(ut1: UT1.Context(deltaT: DeltaTSourceList([])))
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
-			try EarthRotation.greenwichMeanSiderealTime(at: Instant<TT>(.j2000), ut1Context: context)
+			try EarthRotation.greenwichMeanSiderealTime(at: Instant<TT>(.j2000), earthOrientation: earthOrientation)
 		}
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
-			try EarthRotation.greenwichMeanSiderealTime(at: Instant<UT1>(.j2000), context: context)
+			try EarthRotation.greenwichMeanSiderealTime(at: Instant<UT1>(.j2000), earthOrientation: earthOrientation)
 		}
 	}
 }

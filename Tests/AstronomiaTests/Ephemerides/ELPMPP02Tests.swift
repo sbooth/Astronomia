@@ -61,7 +61,7 @@ import Testing
 		// origin of longitudes.
 		for value in de421Moon {
 			let date = try JulianDate(julianDate: value.julianDate)
-			let check = Self.vector(value.position) * (1 / Distance.kilometersPerAstronomicalUnit)
+			let check = Self.vector(value.position) * (1 / kilometersPerAstronomicalUnit)
 			for (fit, limit) in [(ELPFit.laserRanging, 55.0), (.de405, 13)] {
 				let state = try #require(fit.icrsState(at: date))
 				#expect(Self.milliarcseconds(state.position, check) <= limit, "\(fit) \(value.julianDate)")
@@ -76,7 +76,7 @@ import Testing
 			let ecliptic = try #require(fit.eclipticState(at: date))
 			let icrs = try #require(fit.icrsState(at: date))
 			// The ecliptic state is the series in astronomical units.
-			let au = Distance.kilometersPerAstronomicalUnit
+			let au = kilometersPerAstronomicalUnit
 			#expect((ecliptic.position * au - series.position).length <= 1e-9)
 			#expect((ecliptic.velocity * au - series.velocity).length <= 1e-9)
 			#expect(icrs.position == fit.icrs(ecliptic.position))

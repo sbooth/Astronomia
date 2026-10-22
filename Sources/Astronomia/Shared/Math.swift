@@ -36,4 +36,7 @@ enum Math {
 	/// Returns the angle of the point (`x`, `y`) from the positive x axis, in radians in
 	/// [-π, π].
 	@inline(__always) static func atan2(_ y: Double, _ x: Double) -> Double { astronomia_atan2(y, x) }
+
+	/// Returns the natural logarithm of `x`, or NaN if `x` is negative.
+	@inline(__always) static func log(_ x: Double) -> Double { astronomia_log(x) }
 }

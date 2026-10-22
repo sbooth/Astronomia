@@ -97,7 +97,7 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		// The Earth orientation data ends in 2017, before the built-in table, so the table's
 		// values are used after it, and only the table is continued.
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
-		let context = UT1.Context(earthOrientation: table)
+		let context = UT1.Context(earthOrientationTable: table)
 		let mid2017 = try midnight(2017, 6, 1)
 		#expect(try UT1.deltaT(atTT: mid2017, context: context) == DeltaTTable.modern.deltaT(atTT: mid2017))
 
@@ -105,7 +105,7 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		#expect(try UT1.deltaT(atTT: later, context: context) == UT1.deltaT(atTT: later, context: UT1.defaultContext))
 
 		// Without the ΔT table, the Earth orientation data is continued instead.
-		let observationsOnly = UT1.Context(earthOrientation: table, deltaTTable: nil)
+		let observationsOnly = UT1.Context(earthOrientationTable: table, deltaTTable: nil)
 		let afterObservations = try table.coverage.upperBound.adding(days: 30)
 		let endDeltaT = try #require(table.deltaT(atTT: table.coverage.upperBound))
 		#expect(try abs(UT1.deltaT(atTT: afterObservations, context: observationsOnly) - endDeltaT) <= 0.1)

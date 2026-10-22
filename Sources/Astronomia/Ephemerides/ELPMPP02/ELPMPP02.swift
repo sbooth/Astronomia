@@ -94,7 +94,7 @@ extension ELPMPP02.Fit {
 	static func eclipticState(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
 		guard builtInEphemerisCoverage.contains(tdb) else { return nil }
 		let state = fittedSeries.state(at: tdb.julianCenturiesSinceJ2000)
-		let scale = 1 / Distance.kilometersPerAstronomicalUnit
+		let scale = 1 / kilometersPerAstronomicalUnit
 		return (state.position * scale, state.velocity * scale)
 	}
 

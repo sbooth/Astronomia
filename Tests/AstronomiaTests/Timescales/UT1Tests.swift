@@ -11,7 +11,7 @@ import Testing
 /// A UT1 context with observations around the end of 2016 and no model.
 func observedContext() throws -> UT1.Context {
 	let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
-	return UT1.Context(earthOrientation: table, model: nil)
+	return UT1.Context(earthOrientationTable: table, model: nil)
 }
 
 @Suite struct DeltaTModelTests {
@@ -96,12 +96,12 @@ func observedContext() throws -> UT1.Context {
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		let tt = try uniformDate(civilDay(2000, 1, 1))
 
-		let withTables = UT1.Context(earthOrientation: table)
+		let withTables = UT1.Context(earthOrientationTable: table)
 		#expect(try abs(UT1.deltaT(atTT: tt, context: withTables) - 63.8285) <= timescaleTolerance)
-		let continuous = UT1.Context.continuous(earthOrientation: table)
+		let continuous = UT1.Context.continuous(earthOrientationTable: table)
 		#expect(try abs(UT1.deltaT(atTT: tt, context: continuous) - 63.8285) <= timescaleTolerance)
 
-		let observationsOnly = UT1.Context(earthOrientation: table, deltaTTable: nil, model: nil)
+		let observationsOnly = UT1.Context(earthOrientationTable: table, deltaTTable: nil, model: nil)
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.fromTT(tt, context: observationsOnly)
 		}

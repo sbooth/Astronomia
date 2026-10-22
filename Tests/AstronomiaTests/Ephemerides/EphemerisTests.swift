@@ -202,7 +202,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 			301: (.moon, 15), 499: (.mars, 3.5), 5: (.jupiterBarycenter, 35), 6: (.saturnBarycenter, 1),
 			7: (.uranusBarycenter, 400), 8: (.neptuneBarycenter, 200), 9: (.plutoBarycenter, 3000),
 		]
-		let au = Distance.kilometersPerAstronomicalUnit
+		let au = kilometersPerAstronomicalUnit
 		for jd in Set(de421States.map(\.julianDate)) {
 			let tdb = try Instant<TDB>(JulianDate(julianDate: jd))
 			let rows = de421States.filter { $0.julianDate == jd }

@@ -49,9 +49,6 @@ extension ELPMPP02 {
 }
 
 extension ELPMPP02.FittedSeries {
-	/// Arcseconds per radian.
-	private static let arcsecondsPerRadian = 648_000 / Double.pi
-
 	/// Returns sexagesimal degrees in radians.
 	private static func radians(_ degrees: Double, _ minutes: Double, _ seconds: Double) -> Double {
 		(degrees + minutes / 60 + seconds / 3600) * (Double.pi / 180)
@@ -64,7 +61,7 @@ extension ELPMPP02.FittedSeries {
 	/// - Parameter corrections: The fit's corrections to the nominal constants.
 	init(corrections: ELPMPP02.Corrections) {
 		let data = astronomia_elpmpp02
-		let rad = Self.arcsecondsPerRadian
+		let rad = arcsecondsPerRadian
 		let (dw10, dw20, dw30, dEarth0, dPerihelion) = (corrections.w10, corrections.w20, corrections.w30, corrections.earth0, corrections.perihelion0)
 		let (dw11, dGamma, dE, dEarth1, dEp) = (corrections.w11, corrections.gamma, corrections.e, corrections.earth1, corrections.eccentricity)
 		let (dw21, dw31, dw12) = (corrections.w21, corrections.w31, corrections.w12)
@@ -176,7 +173,6 @@ extension ELPMPP02.FittedSeries {
 	///   inertial mean ecliptic and equinox of J2000.0.
 	func state(at t: Double) -> (position: Vector3, velocity: Vector3) {
 		// The fundamental arguments, reduced to (-π, π], and their rates
-		let twoPi = 2 * Double.pi
 		var x = [Double](repeating: 0, count: 13)
 		var xp = [Double](repeating: 0, count: 13)
 		for (k, argument) in arguments.enumerated() {
