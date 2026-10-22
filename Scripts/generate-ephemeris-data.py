@@ -22,7 +22,8 @@ Commands:
       the term's power of time, is at least the body's threshold; for the semimajor axis the
       amplitude is relative to the axis. T is TDB in thousands of Julian years from J2000.0.
       The default span, J1000.0 to J3000.0, and thresholds keep the geocentric error from
-      truncation near 0.5 mas, or below the solution's own error.
+      truncation near 0.5 mas, or below the solution's own error. The coarser precision
+      levels have fixed thresholds, multiples of the default ones.
 
       Each term is written as its phase at J2000.0 and frequency, the sums of its integer
       multipliers times the mean longitudes and mean motions of VSOP2013.f, in the same order
@@ -40,7 +41,8 @@ Commands:
       arcseconds, for longitude and latitude, and a distance, in kilometers, for distance.
       T is TDB in Julian centuries from J2000.0. The default span, J1000.0 to J3000.0, and
       thresholds keep the error from truncation near 0.2 mas in direction and 10 m in
-      distance.
+      distance. The coarser precision levels have fixed thresholds, multiples of the default
+      ones.
 
       Each term is written as in the files, with its integer multipliers of the fundamental
       arguments, because the arguments depend on the fit of the solution, to lunar laser
@@ -58,7 +60,22 @@ Commands:
       longitudes of Mercury to Neptune, and p_A. Terms are kept when their amplitude, times
       the largest |t| of the span to the power j, is at least the threshold, where t is TT in
       Julian centuries from J2000.0. The default threshold, 0, keeps every term of the tables,
-      whose own cutoff is 0.1 microarcsecond. The threshold and span are written with the data.
+      whose own cutoff is 0.1 microarcsecond. The coarser precision levels have fixed
+      thresholds.
+
+Precision levels:
+
+  Each series is written with its terms in order of decreasing amplitude, scaled as for the
+  threshold, and with the number of leading terms kept at each of five precision levels, the
+  first every term written. A coarser level's terms are a subset of a finer one's, so the
+  levels need no more data than the finest; the evaluator sums a series' leading terms. The
+  span, the thresholds of each level, and the counts are written with the data.
+
+  The first level is the data as generated, whose thresholds the options set. The four
+  coarser levels have fixed thresholds, calibrated so that each stays within the bound its
+  name promises: 10 mas, 0.1", 1", and 10". Finer thresholds for the first level make it
+  more accurate without changing the others, and a threshold looser than the second level's
+  is an error, because the levels would no longer nest.
 
 Examples:
 
@@ -111,6 +128,19 @@ BODIES = ["Mercury", "Venus", "EarthMoonBarycenter", "Mars", "Jupiter", "Saturn"
 # Pluto's is looser, matching the error of its solution.
 THRESHOLDS = [3.2e-11, 3.2e-12, 3.2e-12, 3.2e-12, 1e-11, 1e-11, 3.2e-11, 1e-11, 1e-10]
 VARIABLES = "a λ k h q p".split()
+# The number of precision levels, and the thresholds of the four coarser levels: for VSOP2013
+# and ELP/MPP02, multiples of their default thresholds, and for the IAU 2006 series, in
+# microarcseconds. They were chosen by measurement over J1000.0 to J3000.0 so that the error in
+# the geocentric direction of the Moon and the planets other than Pluto, plus the error in the
+# nutation, is within each level's bound: 10 mas, 0.1", 1", and 10". The largest errors found
+# were 5.9 mas, 84 mas, 0.83", and 6.7".
+LEVELS = 5
+VSOP_LEVEL_FACTORS = [4, 80, 1500, 30000]
+ELP_LEVEL_FACTORS = [3, 60, 1500, 30000]
+IAU_LEVEL_THRESHOLDS = [50, 1500, 40000, 800000]
+# The default thresholds of ELP/MPP02, in arcseconds and kilometers
+ELP_ANGLE_THRESHOLD = 1e-5
+ELP_DISTANCE_THRESHOLD = 1e-4
 NUMBER = re.compile(r"\s*(-?\d+\.\d+)\s*([+-]\d+)\s*$")
 
 
@@ -162,6 +192,24 @@ def read_series(path: str, body: int) -> list[tuple[int, int, list[tuple[list[in
 	return series
 
 
+def level_thresholds(threshold: float, coarser: list[float], name: str) -> list[float]:
+	"""Returns the thresholds of every level: the data's, then the coarser levels' fixed ones."""
+	if len(coarser) != LEVELS - 1 or coarser != sorted(coarser):
+		raise DataError(f"expected {LEVELS - 1} increasing thresholds for the coarser levels")
+	if threshold > coarser[0]:
+		raise DataError(f"the threshold of {name}, {threshold:g}, is looser than the second precision level's, {coarser[0]:g}")
+	return [threshold] + coarser
+
+
+def level_counts(amplitudes: list[float], thresholds: list[float]) -> list[int]:
+	"""Returns the number of leading amplitudes, in decreasing order, at least each threshold."""
+	return [sum(1 for amplitude in amplitudes if amplitude >= threshold) for threshold in thresholds]
+
+
+def c_counts(counts: list[int]) -> str:
+	return "{" + ", ".join(f"{count:6}" for count in counts) + "}"
+
+
 def phase_and_frequency(multipliers: list[int]) -> tuple[float, float]:
 	"""Sums as VSOP2013.f does, one argument at a time from the first."""
 	phase = 0.0
@@ -177,6 +225,7 @@ def vsop2013(args: argparse.Namespace) -> None:
 	thresholds = args.thresholds or THRESHOLDS
 	if len(thresholds) != 9:
 		raise DataError("expected nine thresholds, one per body")
+	factors = args.level_factors or VSOP_LEVEL_FACTORS
 	os.makedirs(args.output, exist_ok=True)
 	summary = []
 	for body, name in enumerate(BODIES):
@@ -184,6 +233,7 @@ def vsop2013(args: argparse.Namespace) -> None:
 		with open(path, "rb") as file:
 			digest = hashlib.sha256(file.read()).hexdigest()
 		series = read_series(path, body)
+		levels = level_thresholds(thresholds[body], [THRESHOLDS[body] * factor for factor in factors], name)
 
 		semimajor_axis = next(terms[0][2] for variable, power, terms in series if variable == 1 and power == 0)
 		kept_series = []
@@ -195,10 +245,12 @@ def vsop2013(args: argparse.Namespace) -> None:
 				terms = terms[1:]
 			total += len(terms)
 			scale = span ** power / (semimajor_axis if variable == 1 else 1)
-			kept = [term for term in terms if (term[1] ** 2 + term[2] ** 2) ** 0.5 * scale >= thresholds[body]]
+			scaled = sorted((((term[1] ** 2 + term[2] ** 2) ** 0.5 * scale, term) for term in terms), key=lambda pair: -pair[0])
+			kept = [(amplitude, term) for amplitude, term in scaled if amplitude >= thresholds[body]]
 			if kept:
-				kept_series.append((variable, power, len(kept)))
-				kept_terms += kept
+				counts = level_counts([amplitude for amplitude, _ in kept], levels)
+				kept_series.append((variable, power, counts))
+				kept_terms += [term for _, term in kept]
 
 		symbol = "astronomia_vsop2013_" + re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
 		lines = list(SPDX_HEADER)
@@ -208,14 +260,16 @@ def vsop2013(args: argparse.Namespace) -> None:
 			f"// SHA-256: {digest}",
 			f"// {name}: {len(kept_terms):,} of {total:,} terms, threshold {thresholds[body]:g}, "
 			f"J{args.start:g} to J{args.end:g}",
+			"// Terms at each precision level: " + ", ".join(f"{sum(counts[level] for _, _, counts in kept_series):,}" for level in range(LEVELS)),
 			"",
 			'#include "CAstronomiaData.h"',
 			"",
-			"// Variable (1 to 6 for a, λ, k, h, q, p), power of time, and number of terms",
+			"// Variable (1 to 6 for a, λ, k, h, q, p), power of time, and number of terms at each",
+			"// precision level",
 			"static const struct astronomia_vsop_series series[] = {",
 		]
-		for variable, power, count in kept_series:
-			lines.append(f"\t{{{variable}, {power:2}, {count:6}}}, // {VARIABLES[variable - 1]} T^{power}")
+		for variable, power, counts in kept_series:
+			lines.append(f"\t{{{variable}, {power:2}, {c_counts(counts)}}}, // {VARIABLES[variable - 1]} T^{power}")
 		lines += [
 			"};",
 			"",
@@ -231,6 +285,8 @@ def vsop2013(args: argparse.Namespace) -> None:
 			f"const struct astronomia_vsop_series_data {symbol} = {{",
 			"\tsizeof(series) / sizeof(series[0]), series,",
 			"\tsizeof(terms) / sizeof(terms[0]), terms,",
+			f"\t{float(args.start).hex()}, {float(args.end).hex()},",
+			"\t{" + ", ".join(float(threshold).hex() for threshold in levels) + "},",
 			"};",
 			"",
 		]
@@ -318,6 +374,9 @@ def c_int8_list(values: list[int]) -> str:
 def elpmpp02(args: argparse.Namespace) -> None:
 	span = max(abs(args.start - 2000), abs(args.end - 2000)) / 100
 	thresholds = [args.angle_threshold, args.angle_threshold, args.distance_threshold]
+	factors = args.level_factors or ELP_LEVEL_FACTORS
+	angle_levels = level_thresholds(args.angle_threshold, [ELP_ANGLE_THRESHOLD * factor for factor in factors], "longitude and latitude")
+	distance_levels = level_thresholds(args.distance_threshold, [ELP_DISTANCE_THRESHOLD * factor for factor in factors], "distance")
 	os.makedirs(args.output, exist_ok=True)
 
 	digests = []
@@ -333,21 +392,23 @@ def elpmpp02(args: argparse.Namespace) -> None:
 			with open(path, "rb") as file:
 				digests.append((os.path.basename(path), hashlib.sha256(file.read()).hexdigest()))
 		path = os.path.join(args.directory, f"ELP_MAIN.S{variable}")
+		levels = distance_levels if variable == 3 else angle_levels
 		terms = read_elp_main(path, variable)
-		kept = [term for term in terms if abs(term[1]) >= threshold]
-		main_series.append((variable, 0, len(kept)))
+		kept = sorted((term for term in terms if abs(term[1]) >= threshold), key=lambda term: -abs(term[1]))
+		main_series.append((variable, 0, level_counts([abs(term[1]) for term in kept], levels)))
 		main_terms += kept
 		total = len(terms)
 		count = len(kept)
 
 		path = os.path.join(args.directory, f"ELP_PERT.S{variable}")
 		for power, terms in read_elp_perturbations(path, variable):
-			kept = [term for term in terms if (term[0] ** 2 + term[1] ** 2) ** 0.5 * span ** power >= threshold]
+			scaled = sorted((((term[0] ** 2 + term[1] ** 2) ** 0.5 * span ** power, term) for term in terms), key=lambda pair: -pair[0])
+			kept = [(amplitude, term) for amplitude, term in scaled if amplitude >= threshold]
 			total += len(terms)
 			count += len(kept)
 			if kept:
-				perturbation_series.append((variable, power, len(kept)))
-				perturbation_terms += kept
+				perturbation_series.append((variable, power, level_counts([amplitude for amplitude, _ in kept], levels)))
+				perturbation_terms += [term for _, term in kept]
 		summary.append(f"{ELP_VARIABLES[variable - 1].capitalize()}: {count:,} of {total:,} terms")
 
 	lines = list(SPDX_HEADER)
@@ -357,14 +418,16 @@ def elpmpp02(args: argparse.Namespace) -> None:
 	lines += [
 		f"// {len(main_terms) + len(perturbation_terms):,} terms, thresholds {args.angle_threshold:g}\" and "
 		f"{args.distance_threshold:g} km, J{args.start:g} to J{args.end:g}",
+		"// Terms at each precision level: " + ", ".join(f"{sum(counts[level] for _, _, counts in main_series + perturbation_series):,}" for level in range(LEVELS)),
 		"",
 		'#include "CAstronomiaData.h"',
 		"",
-		"// Variable (1 to 3 for longitude, latitude, distance), power of time, and number of terms",
+		"// Variable (1 to 3 for longitude, latitude, distance), power of time, and number of terms at",
+		"// each precision level",
 		"static const struct astronomia_elp_series main_series[] = {",
 	]
-	for variable, power, count in main_series:
-		lines.append(f"\t{{{variable}, {power}, {count:6}}}, // {ELP_VARIABLES[variable - 1]}")
+	for variable, power, counts in main_series:
+		lines.append(f"\t{{{variable}, {power}, {c_counts(counts)}}}, // {ELP_VARIABLES[variable - 1]}")
 	lines += [
 		"};",
 		"",
@@ -377,11 +440,12 @@ def elpmpp02(args: argparse.Namespace) -> None:
 	lines += [
 		"};",
 		"",
-		"// Variable (1 to 3 for longitude, latitude, distance), power of time, and number of terms",
+		"// Variable (1 to 3 for longitude, latitude, distance), power of time, and number of terms at",
+		"// each precision level",
 		"static const struct astronomia_elp_series perturbation_series[] = {",
 	]
-	for variable, power, count in perturbation_series:
-		lines.append(f"\t{{{variable}, {power}, {count:6}}}, // {ELP_VARIABLES[variable - 1]} T^{power}")
+	for variable, power, counts in perturbation_series:
+		lines.append(f"\t{{{variable}, {power}, {c_counts(counts)}}}, // {ELP_VARIABLES[variable - 1]} T^{power}")
 	lines += [
 		"};",
 		"",
@@ -398,6 +462,9 @@ def elpmpp02(args: argparse.Namespace) -> None:
 		"\tsizeof(main_terms) / sizeof(main_terms[0]), main_terms,",
 		"\tsizeof(perturbation_series) / sizeof(perturbation_series[0]), perturbation_series,",
 		"\tsizeof(perturbation_terms) / sizeof(perturbation_terms[0]), perturbation_terms,",
+		f"\t{float(args.start).hex()}, {float(args.end).hex()},",
+		"\t{" + ", ".join(float(threshold).hex() for threshold in angle_levels) + "},",
+		"\t{" + ", ".join(float(threshold).hex() for threshold in distance_levels) + "},",
 		"};",
 		"",
 	]
@@ -479,6 +546,7 @@ def read_iau_table(path: str) -> list[tuple[int, list[tuple[float, float, list[i
 
 def iau2006(args: argparse.Namespace) -> None:
 	span = max(abs(args.start - 2000), abs(args.end - 2000)) / 100
+	levels = level_thresholds(args.threshold, args.level_thresholds or IAU_LEVEL_THRESHOLDS, "the IAU 2006 series")
 	os.makedirs(args.output, exist_ok=True)
 	lines = list(SPDX_HEADER)
 	lines += [
@@ -495,6 +563,7 @@ def iau2006(args: argparse.Namespace) -> None:
 		tables.append((file_name, symbol, description, polynomial, read_iau_table(path)))
 	lines += [
 		f"// Threshold {args.threshold:g} microarcsecond, J{args.start:g} to J{args.end:g}",
+		"// Thresholds of the precision levels: " + ", ".join(f"{threshold:g}" for threshold in levels) + " microarcseconds",
 		"",
 		'#include "CAstronomiaData.h"',
 		"",
@@ -506,17 +575,19 @@ def iau2006(args: argparse.Namespace) -> None:
 		total = 0
 		for power, terms in series:
 			total += len(terms)
-			kept = [term for term in terms if (term[0] ** 2 + term[1] ** 2) ** 0.5 * span ** power >= args.threshold]
+			scaled = sorted((((term[0] ** 2 + term[1] ** 2) ** 0.5 * span ** power, term) for term in terms), key=lambda pair: -pair[0])
+			kept = [(amplitude, term) for amplitude, term in scaled if amplitude >= args.threshold]
 			if kept:
-				kept_series.append((power, len(kept)))
-				kept_terms += kept
+				kept_series.append((power, level_counts([amplitude for amplitude, _ in kept], levels)))
+				kept_terms += [term for _, term in kept]
 		lines += [
-			f"// {description}, from {file_name}: {len(kept_terms):,} of {total:,} terms",
+			f"// {description}, from {file_name}: {len(kept_terms):,} of {total:,} terms; at each precision level, "
+			+ ", ".join(f"{sum(counts[level] for _, counts in kept_series):,}" for level in range(LEVELS)),
 			"",
-			"// Power of time and number of terms",
+			"// Power of time and number of terms at each precision level",
 			f"static const struct astronomia_iau_series {symbol}_series[] = {{",
 		]
-		lines += [f"\t{{{power}, {count:4}}}," for power, count in kept_series]
+		lines += [f"\t{{{power}, {c_counts(counts)}}}," for power, counts in kept_series]
 		lines += [
 			"};",
 			"",
@@ -531,7 +602,8 @@ def iau2006(args: argparse.Namespace) -> None:
 			"\t{" + ", ".join(value.hex() for value in polynomial) + "},",
 			f"\tsizeof({symbol}_series) / sizeof({symbol}_series[0]), {symbol}_series,",
 			f"\tsizeof({symbol}_terms) / sizeof({symbol}_terms[0]), {symbol}_terms,",
-			f"\t{float(args.threshold).hex()}, {float(args.start).hex()}, {float(args.end).hex()},",
+			"\t{" + ", ".join(float(threshold).hex() for threshold in levels) + "},",
+			f"\t{float(args.start).hex()}, {float(args.end).hex()},",
 			"};",
 			"",
 		]
@@ -550,14 +622,16 @@ def main() -> None:
 	command.add_argument("--start", type=float, default=1000, help="the first Julian epoch covered (default: 1000)")
 	command.add_argument("--end", type=float, default=3000, help="the last Julian epoch covered (default: 3000)")
 	command.add_argument("--thresholds", type=float, nargs=9, metavar="T", help="the nine thresholds, Mercury to Pluto")
+	command.add_argument("--level-factors", type=float, nargs=LEVELS - 1, metavar="F", help="the factors of the default thresholds for the four coarser precision levels, to recalibrate them (default: 4 80 1500 30000)")
 	command.set_defaults(generate=vsop2013)
 	command = commands.add_parser("elpmpp02", help="the ELP/MPP02 lunar solution", description=elpmpp02.__doc__)
 	command.add_argument("directory", help="the directory holding ELP_MAIN.S1 to ELP_PERT.S3")
 	command.add_argument("--output", required=True, help="the directory to write the C file to")
 	command.add_argument("--start", type=float, default=1000, help="the first Julian epoch covered (default: 1000)")
 	command.add_argument("--end", type=float, default=3000, help="the last Julian epoch covered (default: 3000)")
-	command.add_argument("--angle-threshold", type=float, default=1e-5, metavar="ARCSECONDS", help="the threshold for longitude and latitude (default: 1e-5)")
-	command.add_argument("--distance-threshold", type=float, default=1e-4, metavar="KILOMETERS", help="the threshold for distance (default: 1e-4)")
+	command.add_argument("--angle-threshold", type=float, default=ELP_ANGLE_THRESHOLD, metavar="ARCSECONDS", help=f"the threshold for longitude and latitude (default: {ELP_ANGLE_THRESHOLD:g})")
+	command.add_argument("--distance-threshold", type=float, default=ELP_DISTANCE_THRESHOLD, metavar="KILOMETERS", help=f"the threshold for distance (default: {ELP_DISTANCE_THRESHOLD:g})")
+	command.add_argument("--level-factors", type=float, nargs=LEVELS - 1, metavar="F", help="the factors of the default thresholds for the four coarser precision levels, to recalibrate them (default: 3 60 1500 30000)")
 	command.set_defaults(generate=elpmpp02)
 	command = commands.add_parser("iau2006", help="the IAU 2006/2000A precession-nutation series", description=iau2006.__doc__)
 	command.add_argument("directory", help="the directory holding tab5.3a.txt, tab5.3b.txt, and tab5.2d.txt")
@@ -565,6 +639,7 @@ def main() -> None:
 	command.add_argument("--start", type=float, default=1000, help="the first Julian epoch covered (default: 1000)")
 	command.add_argument("--end", type=float, default=3000, help="the last Julian epoch covered (default: 3000)")
 	command.add_argument("--threshold", type=float, default=0, metavar="MICROARCSECONDS", help="the threshold for terms (default: 0, every term)")
+	command.add_argument("--level-thresholds", type=float, nargs=LEVELS - 1, metavar="MICROARCSECONDS", help="the thresholds of the four coarser precision levels, to recalibrate them (default: 50 1500 40000 800000)")
 	command.set_defaults(generate=iau2006)
 	args = parser.parse_args()
 	try:

@@ -15,6 +15,14 @@
 //
 // The data is C arrays because the C compiler turns them into read-only data in seconds,
 // where the same values as Swift array literals take minutes to compile.
+//
+// Each series has its terms in order of decreasing amplitude, scaled by the largest power of
+// time of the span, and gives the number of leading terms kept at each of the five precision
+// levels, the first every term. A coarser level keeps the terms whose scaled amplitude is at
+// least its threshold, so its terms are the first of a finer level's.
+
+/// The number of precision levels.
+#define ASTRONOMIA_PRECISION_LEVELS 5
 
 // Series of the VSOP planetary theories, whose terms have arguments linear in time:
 // T^α (S sin(φ + ν T) + C cos(φ + ν T)). VSOP87's terms, T^α A cos(B + C T), take the same
@@ -26,8 +34,8 @@ struct astronomia_vsop_series {
 	int32_t variable;
 	/// The power of time α.
 	int32_t power;
-	/// The number of terms.
-	int32_t count;
+	/// The number of leading terms at each precision level, the first every term.
+	int32_t counts[ASTRONOMIA_PRECISION_LEVELS];
 };
 
 /// A term T^α (S sin(φ + ν T) + C cos(φ + ν T)).
@@ -52,6 +60,12 @@ struct astronomia_vsop_series_data {
 	size_t term_count;
 	/// The terms of every series, in the order of the series.
 	const struct astronomia_vsop_term *terms;
+	/// The first Julian epoch of the span the series are truncated for.
+	double start_epoch;
+	/// The last Julian epoch of the span.
+	double end_epoch;
+	/// The threshold of each precision level.
+	double thresholds[ASTRONOMIA_PRECISION_LEVELS];
 };
 
 // VSOP2013 heliocentric elliptic elements, from J1000.0 to J3000.0
@@ -75,8 +89,8 @@ struct astronomia_elp_series {
 	int32_t variable;
 	/// The power of time α.
 	int32_t power;
-	/// The number of terms.
-	int32_t count;
+	/// The number of leading terms at each precision level, the first every term.
+	int32_t counts[ASTRONOMIA_PRECISION_LEVELS];
 };
 
 /// A term of the main problem, A sin(Σ iₖ Dₖ) in longitude and latitude and A cos(Σ iₖ Dₖ) in
@@ -120,6 +134,14 @@ struct astronomia_elp_series_data {
 	size_t perturbation_term_count;
 	/// The terms of the perturbations.
 	const struct astronomia_elp_perturbation_term *perturbation_terms;
+	/// The first Julian epoch of the span the series are truncated for.
+	double start_epoch;
+	/// The last Julian epoch of the span.
+	double end_epoch;
+	/// The threshold for longitude and latitude at each precision level, in arcseconds.
+	double angle_thresholds[ASTRONOMIA_PRECISION_LEVELS];
+	/// The threshold for distance at each precision level, in kilometers.
+	double distance_thresholds[ASTRONOMIA_PRECISION_LEVELS];
 };
 
 // ELP/MPP02 geocentric lunar coordinates, from J1000.0 to J3000.0
@@ -135,8 +157,8 @@ extern const struct astronomia_elp_series_data astronomia_elpmpp02;
 struct astronomia_iau_series {
 	/// The power of time j.
 	int32_t power;
-	/// The number of terms.
-	int32_t count;
+	/// The number of leading terms at each precision level, the first every term.
+	int32_t counts[ASTRONOMIA_PRECISION_LEVELS];
 };
 
 /// A term t^j (S sin(Σ iₖ Aₖ) + C cos(Σ iₖ Aₖ)), where A₁ to A₁₄ are the fundamental
@@ -151,7 +173,7 @@ struct astronomia_iau_term {
 };
 
 /// The polynomial part and series of one table, with the series' terms in one array, series by
-/// series, and the truncation they were generated with.
+/// series, and the truncations they were generated with.
 struct astronomia_iau_series_data {
 	/// The coefficients of t⁰ to t⁵ of the polynomial part, in microarcseconds.
 	double polynomial[6];
@@ -163,9 +185,9 @@ struct astronomia_iau_series_data {
 	size_t term_count;
 	/// The terms of every series, in the order of the series.
 	const struct astronomia_iau_term *terms;
-	/// The threshold below which terms were left out, in microarcseconds, at the largest |t|
-	/// of the span.
-	double threshold;
+	/// The threshold of each precision level, below which terms are left out, in
+	/// microarcseconds, at the largest |t| of the span.
+	double thresholds[ASTRONOMIA_PRECISION_LEVELS];
 	/// The first Julian epoch of the span.
 	double start_epoch;
 	/// The last Julian epoch of the span.

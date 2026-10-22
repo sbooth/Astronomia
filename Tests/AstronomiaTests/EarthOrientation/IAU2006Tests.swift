@@ -127,17 +127,17 @@ import Testing
 	@Test func builtInTables() {
 		// The tables as published, with every term kept
 		let longitude = IAU2006.nutationInLongitude
-		#expect(longitude.termCount == 1_358 && longitude.series.map(\.count) == [1_320, 38])
+		#expect(longitude.termCount == 1_358 && longitude.series.map(\.counts.0) == [1_320, 38])
 		#expect(longitude.terms[0].s == -17_206_424.18 && longitude.terms[0].c == 3_338.60)
 		#expect(longitude.polynomial == [0, 0, 0, 0, 0, 0])
 		let obliquity = IAU2006.nutationInObliquity
-		#expect(obliquity.termCount == 1_056 && obliquity.series.map(\.count) == [1_037, 19])
+		#expect(obliquity.termCount == 1_056 && obliquity.series.map(\.counts.0) == [1_037, 19])
 		#expect(obliquity.terms[0].s == 1_537.70 && obliquity.terms[0].c == 9_205_233.10)
 		let s = IAU2006.sPlusHalfXY
-		#expect(s.termCount == 66 && s.series.map(\.count) == [33, 3, 25, 4, 1])
+		#expect(s.termCount == 66 && s.series.map(\.counts.0) == [33, 3, 25, 4, 1])
 		#expect(s.polynomial == [94.0, 3_808.65, -122.68, -72_574.11, 27.98, 15.62])
 		for table in [longitude, obliquity, s] {
-			#expect(table.threshold == 0 && table.span == 1_000 ... 3_000)
+			#expect(table.thresholds.0 == 0 && table.span == 1_000 ... 3_000)
 		}
 	}
 }

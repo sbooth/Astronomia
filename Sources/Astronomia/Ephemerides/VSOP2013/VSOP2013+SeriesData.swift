@@ -14,22 +14,29 @@ extension VSOP2013 {
 	/// The arguments are linear in time. Theories whose arguments are polynomials in time, such
 	/// as the lunar theory ELP/MPP02, need their own form.
 	///
-	/// The series of each variable are summed term by term in the order of the data, which is the
-	/// order of the source files, as the reference implementations sum them.
+	/// Each series has its terms in order of decreasing amplitude, and the number of leading
+	/// terms at each precision level. The series of each variable are summed term by term in
+	/// that order.
 	struct SeriesData: @unchecked Sendable {
 		// The data is immutable, so the pointers into it can be shared.
-		/// The series, each a variable, power of time, and number of terms.
+		/// The series, each a variable, power of time, and number of terms at each level.
 		let series: UnsafeBufferPointer<astronomia_vsop_series>
 		/// The terms, in the order of the series.
 		let terms: UnsafeBufferPointer<astronomia_vsop_term>
 		/// The largest power of time.
 		let maximumPower: Int
+		/// The Julian epochs of the span the series are truncated for.
+		let span: ClosedRange<Double>
+		/// The threshold of each precision level.
+		let thresholds: (Double, Double, Double, Double, Double)
 
 		/// Creates the series of a body from its generated data.
 		init(_ data: astronomia_vsop_series_data) {
 			series = UnsafeBufferPointer(start: data.series, count: data.series_count)
 			terms = UnsafeBufferPointer(start: data.terms, count: data.term_count)
 			maximumPower = series.reduce(0) { max($0, Int($1.power)) }
+			span = data.start_epoch ... data.end_epoch
+			thresholds = data.thresholds
 		}
 	}
 }
@@ -45,8 +52,10 @@ extension VSOP2013.SeriesData {
 	/// - Parameters:
 	///   - t: The time, in the unit of the series' frequencies.
 	///   - variables: The number of variables, numbered from 1 in the data.
+	///   - precision: The precision level, whose leading terms of each series are summed.
 	/// - Returns: The sums, indexed from 0.
-	func evaluate(at t: Double, variables: Int) -> [Double] {
+	func evaluate(at t: Double, variables: Int, precision: Precision) -> [Double] {
+		let level = precision.level
 		var powers = [Double](repeating: 1, count: maximumPower + 1)
 		if maximumPower > 0 {
 			powers[1] = t
@@ -56,18 +65,18 @@ extension VSOP2013.SeriesData {
 		}
 
 		var sums = [Double](repeating: 0, count: variables)
-		var index = 0
+		var start = 0
 		for header in series {
 			let variable = Int(header.variable) - 1
 			let power = powers[Int(header.power)]
 			var sum = sums[variable]
-			for _ in 0 ..< Int(header.count) {
+			for index in start ..< start + Int(levelValue(header.counts, level)) {
 				let term = terms[index]
 				let (s, c) = Math.sincos(term.phase + term.frequency * t)
 				sum = sum + power * (term.s * s + term.c * c)
-				index += 1
 			}
 			sums[variable] = sum
+			start += Int(header.counts.0)
 		}
 		return sums
 	}

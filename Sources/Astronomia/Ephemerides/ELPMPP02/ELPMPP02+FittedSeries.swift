@@ -149,7 +149,7 @@ extension ELPMPP02.FittedSeries {
 		amplitudes.reserveCapacity(mainTerms.count)
 		var index = 0
 		for series in mainSeries {
-			for _ in 0 ..< Int(series.count) {
+			for _ in 0 ..< Int(series.counts.0) {
 				let term = mainTerms[index]
 				let b = term.partials
 				let tgv = b.0 + dtasm * b.4
@@ -168,10 +168,16 @@ extension ELPMPP02.FittedSeries {
 extension ELPMPP02.FittedSeries {
 	/// Returns the Moon's position and velocity, following `EVALUATE` of `ELPMPP02.for`.
 	///
-	/// - Parameter t: TDB in Julian centuries from J2000.0.
+	/// Each series has its terms in order of decreasing amplitude, and the leading terms of
+	/// the precision level are summed.
+	///
+	/// - Parameters:
+	///   - t: TDB in Julian centuries from J2000.0.
+	///   - precision: The precision level.
 	/// - Returns: The position, in kilometers, and velocity, in kilometers per day, in the fit's
 	///   inertial mean ecliptic and equinox of J2000.0.
-	func state(at t: Double) -> (position: Vector3, velocity: Vector3) {
+	func state(at t: Double, precision: Precision = .full) -> (position: Vector3, velocity: Vector3) {
+		let level = precision.level
 		// The fundamental arguments, reduced to (-π, π], and their rates
 		var x = [Double](repeating: 0, count: 13)
 		var xp = [Double](repeating: 0, count: 13)
@@ -185,12 +191,12 @@ extension ELPMPP02.FittedSeries {
 		var v = [0.0, 0.0, 0.0]
 		var vp = [0.0, 0.0, 0.0]
 
-		var index = 0
+		var start = 0
 		for series in mainSeries {
 			let variable = Int(series.variable) - 1
 			var sum = v[variable]
 			var rate = vp[variable]
-			for _ in 0 ..< Int(series.count) {
+			for index in start ..< start + Int(levelValue(series.counts, level)) {
 				let i = mainTerms[index].multipliers
 				let (i0, i1, i2, i3) = (Double(i.0), Double(i.1), Double(i.2), Double(i.3))
 				let y = i0 * x[0] + i1 * x[1] + i2 * x[2] + i3 * x[3]
@@ -205,13 +211,13 @@ extension ELPMPP02.FittedSeries {
 					sum = sum + amplitude * s
 					rate = rate + amplitude * yp * c
 				}
-				index += 1
 			}
 			v[variable] = sum
 			vp[variable] = rate
+			start += Int(series.counts.0)
 		}
 
-		index = 0
+		start = 0
 		for series in perturbationSeries {
 			let variable = Int(series.variable) - 1
 			let power = Int(series.power)
@@ -219,7 +225,7 @@ extension ELPMPP02.FittedSeries {
 			let tPowerRate = power == 0 ? 0 : Double(power) * powers[power - 1]
 			var sum = v[variable]
 			var rate = vp[variable]
-			for _ in 0 ..< Int(series.count) {
+			for index in start ..< start + Int(levelValue(series.counts, level)) {
 				let term = perturbationTerms[index]
 				var y = 0.0
 				var yp = 0.0
@@ -234,10 +240,10 @@ extension ELPMPP02.FittedSeries {
 				let value = term.s * s + term.c * c
 				sum = sum + tPower * value
 				rate = rate + tPowerRate * value + tPower * yp * (term.s * c - term.c * s)
-				index += 1
 			}
 			v[variable] = sum
 			vp[variable] = rate
+			start += Int(series.counts.0)
 		}
 
 		return Self.rectangular(longitude: v[0], latitude: v[1], distance: v[2], rates: vp, meanLongitude: meanLongitude, at: t)

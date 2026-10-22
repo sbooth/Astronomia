@@ -125,10 +125,11 @@ extension IAU2006 {
 	/// - Parameters:
 	///   - t: TT in Julian centuries from J2000.0.
 	///   - arguments: The fundamental arguments at `t`.
+	///   - precision: The precision level of the series.
 	/// - Returns: Δψ and Δε, in radians.
-	static func nutation(at t: Double, arguments: FundamentalArguments) -> (longitude: Double, obliquity: Double) {
-		let longitude = nutationInLongitude.value(at: t, arguments: arguments)
-		let obliquity = nutationInObliquity.value(at: t, arguments: arguments)
+	static func nutation(at t: Double, arguments: FundamentalArguments, precision: Precision = .full) -> (longitude: Double, obliquity: Double) {
+		let longitude = nutationInLongitude.value(at: t, arguments: arguments, precision: precision)
+		let obliquity = nutationInObliquity.value(at: t, arguments: arguments, precision: precision)
 		return (longitude / microarcsecondsPerRadian, obliquity / microarcsecondsPerRadian)
 	}
 
@@ -154,9 +155,10 @@ extension IAU2006 {
 	///   - arguments: The fundamental arguments at `t`.
 	///   - x: The X coordinate of the CIP, in radians.
 	///   - y: The Y coordinate of the CIP, in radians.
+	///   - precision: The precision level of the series.
 	/// - Returns: s, in radians.
-	static func cioLocator(at t: Double, arguments: FundamentalArguments, x: Double, y: Double) -> Double {
-		sPlusHalfXY.value(at: t, arguments: arguments) / microarcsecondsPerRadian - x * y / 2
+	static func cioLocator(at t: Double, arguments: FundamentalArguments, x: Double, y: Double, precision: Precision = .full) -> Double {
+		sPlusHalfXY.value(at: t, arguments: arguments, precision: precision) / microarcsecondsPerRadian - x * y / 2
 	}
 
 	/// Returns the equation of the origins, the angle from the CIO to the true equinox of date

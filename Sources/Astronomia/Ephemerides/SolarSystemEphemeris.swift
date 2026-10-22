@@ -26,12 +26,14 @@
 /// let ephemeris = SolarSystemEphemeris()
 /// let mars = try ephemeris.state(of: .mars, relativeTo: .earth, at: instant)
 /// let laserRanging = SolarSystemEphemeris(lunarFit: .laserRanging)
+/// let fast = SolarSystemEphemeris(precision: .arcsecond)
 /// ```
 ///
 /// The truncated series keep the error from truncation near 0.5 mas for the planets and
-/// 0.2 mas for the Moon, seen from the Earth. The solutions' own errors are larger far from
-/// the present: Chapront and Francou (2003) find ELP/MPP02 within about 1" in longitude of
-/// DE406 from 500 to 2500.
+/// 0.2 mas for the Moon, seen from the Earth. A coarser ``Precision`` sums fewer terms, for an
+/// error within its bound in a fraction of the time. The solutions' own errors are larger far
+/// from the present: Chapront and Francou (2003) find ELP/MPP02 within about 1" in longitude
+/// of DE406 from 500 to 2500.
 ///
 /// - Note: VSOP2013 gives the outer planets as the barycenters of their systems, which differ
 ///   from the planets by up to a few hundred kilometers. Pluto's solution is less accurate
@@ -94,12 +96,17 @@ public struct SolarSystemEphemeris: GeocentricEphemeris, Hashable {
 
 	/// The fit of the lunar solution.
 	public let lunarFit: LunarFit
+	/// The precision level of the series.
+	public let precision: Precision
 
 	/// Creates the ephemeris.
 	///
-	/// - Parameter lunarFit: The fit of the lunar solution, by default ``LunarFit/de405``.
-	public init(lunarFit: LunarFit = .de405) {
+	/// - Parameters:
+	///   - lunarFit: The fit of the lunar solution, by default ``LunarFit/de405``.
+	///   - precision: The precision level of the series, by default ``Precision/full``.
+	public init(lunarFit: LunarFit = .de405, precision: Precision = .full) {
 		self.lunarFit = lunarFit
+		self.precision = precision
 	}
 
 	public var coverage: ClosedRange<Instant<TDB>> { builtInEphemerisInstants }
@@ -115,8 +122,8 @@ public struct SolarSystemEphemeris: GeocentricEphemeris, Hashable {
 		var position = Vector3.zero
 		var velocity = Vector3.zero
 		if base != originBase {
-			guard let state = VSOP2013.heliocentricState(of: base, at: date),
-			      let originState = VSOP2013.heliocentricState(of: originBase, at: date)
+			guard let state = VSOP2013.heliocentricState(of: base, at: date, precision: precision),
+			      let originState = VSOP2013.heliocentricState(of: originBase, at: date, precision: precision)
 			else {
 				preconditionFailure("\(date) is outside the coverage of VSOP2013")
 			}
@@ -148,8 +155,8 @@ extension SolarSystemEphemeris {
 	///   day, or `nil` if `tdb` is outside the coverage.
 	func geocentricMoon(at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
 		switch lunarFit {
-		case .de405: ELPMPP02.de405.icrsState(at: tdb)
-		case .laserRanging: ELPMPP02.laserRanging.icrsState(at: tdb)
+		case .de405: ELPMPP02.DE405(precision: precision).icrsState(at: tdb)
+		case .laserRanging: ELPMPP02.LaserRanging(precision: precision).icrsState(at: tdb)
 		}
 	}
 }
