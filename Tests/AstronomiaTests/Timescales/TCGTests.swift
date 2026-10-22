@@ -23,21 +23,21 @@ import Testing
 
 	@Test func offsetAtJ2000TT() throws {
 		// TCG - TT = L_G / (1 - L_G) × (2451545.0 - 2443144.5003725) days at J2000.0 TT.
-		let tcg = try Instant<TT>(.J2000).converted(to: TCG.self)
-		#expect(try abs(seconds(from: .J2000, to: tcg.julianDate) - 0.505_833_286_021) <= timescaleTolerance)
+		let tcg = try Instant<TT>(.j2000).converted(to: TCG.self)
+		#expect(try abs(seconds(from: .j2000, to: tcg.julianDate) - 0.505_833_286_021) <= timescaleTolerance)
 	}
 
 	@Test func offsetAtJ2000TCG() throws {
 		// TCG - TT = L_G × (2451545.0 - 2443144.5003725) days at J2000.0 TCG.
-		let tt = try Instant<TCG>(.J2000).converted(to: TT.self)
-		#expect(try abs(seconds(from: tt.julianDate, to: .J2000) - 0.505_833_285_669) <= timescaleTolerance)
+		let tt = try Instant<TCG>(.j2000).converted(to: TT.self)
+		#expect(try abs(seconds(from: tt.julianDate, to: .j2000) - 0.505_833_285_669) <= timescaleTolerance)
 	}
 
 	@Test func rate() throws {
 		// TCG gains L_G / (1 - L_G) × 31,557,600 s ≈ 21.993 ms per Julian year of TT.
 		// Compare the offsets rather than the elapsed TCG, which a single Double resolves only
 		// to about 4 ns.
-		let ttStart = JulianDate.J2000
+		let ttStart = JulianDate.j2000
 		let ttEnd = try ttStart.adding(days: 365.25)
 		let offsetAtStart = try seconds(from: ttStart, to: TCG.fromTT(ttStart))
 		let offsetAtEnd = try seconds(from: ttEnd, to: TCG.fromTT(ttEnd))

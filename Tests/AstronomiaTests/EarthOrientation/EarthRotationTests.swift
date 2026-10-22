@@ -36,11 +36,11 @@ import Testing
 	}
 
 	@Test func angleAtJ2000AndRate() throws {
-		let j2000 = Instant<UT1>(.J2000)
+		let j2000 = Instant<UT1>(.j2000)
 		#expect(abs(EarthRotation.angle(at: j2000).radians - 0.779_057_273_264 * 2 * .pi) <= 1e-15)
 
 		// A UT1 day later, Earth has turned 1.00273781191135448 times.
-		let nextDay = try Instant<UT1>(JulianDate.J2000.adding(days: 1))
+		let nextDay = try Instant<UT1>(JulianDate.j2000.adding(days: 1))
 		let advance = (EarthRotation.angle(at: nextDay) - EarthRotation.angle(at: j2000)).normalized()
 		#expect(abs(advance.radians - 0.002_737_811_911_354_48 * 2 * .pi) <= 1e-12)
 	}
@@ -48,7 +48,7 @@ import Testing
 	@Test func classicGMSTAtJ2000() throws {
 		// At 2000-01-01T12:00:00 UT1, GMST is about 18.697375 hours.
 		let context = UT1.Context(deltaT: DeltaTFunction.constant(64.184))
-		let gmst = try EarthRotation.greenwichMeanSiderealTime(at: Instant<UT1>(.J2000), context: context)
+		let gmst = try EarthRotation.greenwichMeanSiderealTime(at: Instant<UT1>(.j2000), context: context)
 		#expect(abs(gmst.hours - 18.697_374_828_702_76) <= 1e-10)
 	}
 
@@ -69,7 +69,7 @@ import Testing
 
 	@Test func range() throws {
 		for days in stride(from: -400_000.0, through: 400_000, by: 12_345.678) {
-			let ut1 = try Instant<UT1>(JulianDate.J2000.adding(days: days))
+			let ut1 = try Instant<UT1>(JulianDate.j2000.adding(days: days))
 			let era = EarthRotation.angle(at: ut1).radians
 			#expect(era >= 0 && era < 2 * .pi)
 			let gmst = EarthRotation.greenwichMeanSiderealTime(ut1: ut1.julianDate, tt: ut1.julianDate).radians
@@ -80,10 +80,10 @@ import Testing
 	@Test func errors() throws {
 		let context = UT1.Context(deltaT: DeltaTSourceList([]))
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
-			try EarthRotation.greenwichMeanSiderealTime(at: Instant<TT>(.J2000), ut1Context: context)
+			try EarthRotation.greenwichMeanSiderealTime(at: Instant<TT>(.j2000), ut1Context: context)
 		}
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
-			try EarthRotation.greenwichMeanSiderealTime(at: Instant<UT1>(.J2000), context: context)
+			try EarthRotation.greenwichMeanSiderealTime(at: Instant<UT1>(.j2000), context: context)
 		}
 	}
 }

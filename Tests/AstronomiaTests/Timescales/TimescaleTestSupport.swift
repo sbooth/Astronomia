@@ -55,8 +55,8 @@ func seconds(from start: JulianDate, to end: JulianDate) throws -> Double {
 
 /// Dates spread over several millennia and times of day.
 let sampleDates: [JulianDate] = [
-	.J2000,
-	.MJD0,
+	.j2000,
+	.mjd0,
 	try! JulianDate(julianDayNumber: 2_461_328, fractionFromNoon: -0.123_456_789),
 	try! JulianDate(julianDayNumber: 2_457_754, fractionFromNoon: 0.499_999_999),
 	try! JulianDate(julianDayNumber: 1_721_424, fractionFromNoon: -0.5),
@@ -70,7 +70,7 @@ let utcSampleDates: [JulianDate] = [
 	try! JulianDate(julianDayNumber: 2_437_301, fractionFromNoon: 0.1), // 1961-01-01
 	try! JulianDate(julianDayNumber: 2_438_927, fractionFromNoon: -0.3), // 1965-06-15
 	try! JulianDate(julianDayNumber: 2_441_318, fractionFromNoon: 0), // 1972-01-01
-	.J2000,
+	.j2000,
 	try! JulianDate(julianDayNumber: 2_457_754, fractionFromNoon: 0.499_9), // 2016-12-31
 	try! JulianDate(julianDayNumber: 2_461_328, fractionFromNoon: -0.123_456_789), // 2026-10-14
 ]

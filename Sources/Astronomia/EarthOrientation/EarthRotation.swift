@@ -74,7 +74,7 @@ extension EarthRotation {
 	/// - Parameter ut1: A Julian Date in UT1.
 	/// - Returns: The Earth rotation angle, in the right-open interval [0, 2π).
 	static func earthRotationAngle(ut1: JulianDate) -> Angle {
-		let days = differenceAsDouble(ut1.julianDayNumber, JulianDate.J2000.julianDayNumber) + ut1.fractionFromNoon
+		let days = differenceAsDouble(ut1.julianDayNumber, JulianDate.j2000.julianDayNumber) + ut1.fractionFromNoon
 		let turns = ut1.fractionFromNoon + angleAtJ2000 + excessTurnsPerDay * days
 		let fraction = turns - turns.rounded(.down)
 		return Angle(radians: fraction * Angle.radiansPerTurn).normalized()
@@ -94,7 +94,7 @@ extension EarthRotation {
 	///   - tt: The same instant as a Julian Date in TT.
 	/// - Returns: Greenwich mean sidereal time, in the right-open interval [0, 2π).
 	static func greenwichMeanSiderealTime(ut1: JulianDate, tt: JulianDate) -> Angle {
-		let t = (differenceAsDouble(tt.julianDayNumber, JulianDate.J2000.julianDayNumber) + tt.fractionFromNoon) / daysPerJulianCentury
+		let t = (differenceAsDouble(tt.julianDayNumber, JulianDate.j2000.julianDayNumber) + tt.fractionFromNoon) / daysPerJulianCentury
 		let arcseconds = 0.014_506 + (4_612.156_534 + (1.391_581_7 + (-0.000_000_44 + (-0.000_029_956 + -0.000_000_036_8 * t) * t) * t) * t) * t
 		return (earthRotationAngle(ut1: ut1) + Angle(arcseconds: arcseconds)).normalized()
 	}

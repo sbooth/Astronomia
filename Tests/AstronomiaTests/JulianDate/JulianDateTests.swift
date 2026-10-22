@@ -12,18 +12,18 @@ import Testing
 	// MARK: - Epochs
 
 	@Test func epochs() {
-		#expect(JulianDate.J2000.julianDayNumber == 2_451_545)
-		#expect(JulianDate.J2000.fractionFromNoon == 0)
-		#expect(JulianDate.J2000.julianDate == 2_451_545.0)
+		#expect(JulianDate.j2000.julianDayNumber == 2_451_545)
+		#expect(JulianDate.j2000.fractionFromNoon == 0)
+		#expect(JulianDate.j2000.julianDate == 2_451_545.0)
 
-		#expect(JulianDate.MJD0.julianDayNumber == 2_400_001)
-		#expect(JulianDate.MJD0.fractionFromNoon == -0.5)
-		#expect(JulianDate.MJD0.julianDate == 2_400_000.5)
-		#expect(JulianDate.MJD0.modifiedJulianDate == 0)
+		#expect(JulianDate.mjd0.julianDayNumber == 2_400_001)
+		#expect(JulianDate.mjd0.fractionFromNoon == -0.5)
+		#expect(JulianDate.mjd0.julianDate == 2_400_000.5)
+		#expect(JulianDate.mjd0.modifiedJulianDate == 0)
 
-		#expect(JulianDate.B1900.julianDayNumber == 2_415_020)
-		#expect(JulianDate.B1900.fractionFromNoon == 0.313_52)
-		#expect(JulianDate.B1900.julianDate == 2_415_020.313_52)
+		#expect(JulianDate.b1900.julianDayNumber == 2_415_020)
+		#expect(JulianDate.b1900.fractionFromNoon == 0.313_52)
+		#expect(JulianDate.b1900.julianDate == 2_415_020.313_52)
 	}
 
 	// MARK: - Creation
@@ -32,7 +32,7 @@ import Testing
 		let date = try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25)
 		#expect(date.julianDayNumber == 2_451_545)
 		#expect(date.fractionFromNoon == 0.25)
-		#expect(try JulianDate(julianDayNumber: 2_451_545) == JulianDate.J2000)
+		#expect(try JulianDate(julianDayNumber: 2_451_545) == JulianDate.j2000)
 	}
 
 	@Test func fractionFromNoonIsNormalized() throws {
@@ -50,7 +50,7 @@ import Testing
 
 		let negativeZero = try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: -0.0)
 		#expect(negativeZero.fractionFromNoon.sign == .plus)
-		#expect(negativeZero == JulianDate.J2000)
+		#expect(negativeZero == JulianDate.j2000)
 	}
 
 	@Test func initFromDayNumberAndFractionErrors() {
@@ -81,7 +81,7 @@ import Testing
 		#expect(JulianDate.min < JulianDate.max)
 
 		// Every other date lies between them
-		for date in [JulianDate.J2000, JulianDate.MJD0, JulianDate.B1900] {
+		for date in [JulianDate.j2000, JulianDate.mjd0, JulianDate.b1900] {
 			#expect(JulianDate.min < date && date < JulianDate.max)
 		}
 		#expect(try JulianDate.min.adding(days: 0.25) > JulianDate.min)
@@ -93,10 +93,10 @@ import Testing
 	}
 
 	@Test func initFromTwoParts() throws {
-		#expect(try JulianDate(jd1: 2_451_545) == JulianDate.J2000)
+		#expect(try JulianDate(jd1: 2_451_545) == JulianDate.j2000)
 		#expect(try JulianDate(jd1: 2_451_545, jd2: 0.25) == JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25))
 		#expect(try JulianDate(jd1: 2_451_545.5, jd2: 0) == JulianDate(julianDayNumber: 2_451_546, fractionFromNoon: -0.5))
-		#expect(try JulianDate(jd1: 2_400_000.5, jd2: 51_544.5) == JulianDate.J2000)
+		#expect(try JulianDate(jd1: 2_400_000.5, jd2: 51_544.5) == JulianDate.j2000)
 		#expect(try JulianDate(jd1: 2_451_544.5, jd2: 0.75) == JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25))
 		#expect(try JulianDate(jd1: 0.25, jd2: 2_451_545) == JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25))
 
@@ -116,7 +116,7 @@ import Testing
 	}
 
 	@Test func initFromSingleValue() throws {
-		#expect(try JulianDate(julianDate: 2_451_545) == JulianDate.J2000)
+		#expect(try JulianDate(julianDate: 2_451_545) == JulianDate.j2000)
 		#expect(try JulianDate(julianDate: 2_451_545.25) == JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25))
 		#expect(try JulianDate(julianDate: 2_451_544.75) == JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: -0.25))
 		#expect(try JulianDate(julianDate: 0) == JulianDate(julianDayNumber: 0))
@@ -126,9 +126,9 @@ import Testing
 	}
 
 	@Test func initFromModifiedJulianDate() throws {
-		#expect(try JulianDate(modifiedJulianDate: 0) == JulianDate.MJD0)
-		#expect(try JulianDate(modifiedJulianDate: 51_544.5) == JulianDate.J2000)
-		#expect(try JulianDate(mjd1: 51_544, mjd2: 0.5) == JulianDate.J2000)
+		#expect(try JulianDate(modifiedJulianDate: 0) == JulianDate.mjd0)
+		#expect(try JulianDate(modifiedJulianDate: 51_544.5) == JulianDate.j2000)
+		#expect(try JulianDate(mjd1: 51_544, mjd2: 0.5) == JulianDate.j2000)
 		#expect(try JulianDate(mjd1: 51_544, mjd2: 0.75) == JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25))
 		#expect(try JulianDate(mjd1: -2_400_000.5) == JulianDate(julianDayNumber: 0))
 		#expect(throws: JulianDateError.nonFiniteValue) { try JulianDate(modifiedJulianDate: .infinity) }
@@ -137,20 +137,20 @@ import Testing
 	}
 
 	@Test func initFromDaysSinceJ2000() throws {
-		#expect(try JulianDate(daysSinceJ2000: 0) == JulianDate.J2000)
+		#expect(try JulianDate(daysSinceJ2000: 0) == JulianDate.j2000)
 		#expect(try JulianDate(daysSinceJ2000: 1.25) == JulianDate(julianDayNumber: 2_451_546, fractionFromNoon: 0.25))
 		#expect(try JulianDate(daysSinceJ2000: -36_525) == JulianDate(julianDayNumber: 2_415_020))
 		#expect(throws: JulianDateError.nonFiniteValue) { try JulianDate(daysSinceJ2000: .nan) }
 	}
 
 	@Test func julianEpoch() throws {
-		#expect(try JulianDate(julianEpoch: 2000) == JulianDate.J2000)
+		#expect(try JulianDate(julianEpoch: 2000) == JulianDate.j2000)
 		#expect(try JulianDate(julianEpoch: 1900) == JulianDate(julianDayNumber: 2_415_020))
 		// 0.5 Julian years is 182.625 days
 		let midYear = try JulianDate(julianEpoch: 2000.5)
 		#expect(midYear == (try JulianDate(julianDayNumber: 2_451_728, fractionFromNoon: -0.375)))
 
-		#expect(JulianDate.J2000.julianEpoch == 2000)
+		#expect(JulianDate.j2000.julianEpoch == 2000)
 		#expect(midYear.julianEpoch == 2000.5)
 		#expect(try JulianDate(julianDayNumber: 2_415_020).julianEpoch == 1900)
 
@@ -159,8 +159,8 @@ import Testing
 	}
 
 	@Test func besselianEpoch() throws {
-		#expect(try JulianDate(besselianEpoch: 1900) == JulianDate.B1900)
-		#expect(JulianDate.B1900.besselianEpoch == 1900)
+		#expect(try JulianDate(besselianEpoch: 1900) == JulianDate.b1900)
+		#expect(JulianDate.b1900.besselianEpoch == 1900)
 
 		// B1950.0 is JD 2433282.42345905
 		let b1950 = try JulianDate(besselianEpoch: 1950)
@@ -187,12 +187,12 @@ import Testing
 		#expect(before.daysSinceJ2000 == -0.25)
 		#expect(before.fractionSinceMidnight == 0.25)
 
-		#expect(JulianDate.MJD0.fractionSinceMidnight == 0)
-		#expect(JulianDate.MJD0.daysSinceJ2000 == -51_544.5)
+		#expect(JulianDate.mjd0.fractionSinceMidnight == 0)
+		#expect(JulianDate.mjd0.daysSinceJ2000 == -51_544.5)
 	}
 
 	@Test func julianCenturies() throws {
-		#expect(JulianDate.J2000.julianCenturiesSinceJ2000 == 0)
+		#expect(JulianDate.j2000.julianCenturiesSinceJ2000 == 0)
 		#expect(try JulianDate(julianDayNumber: 2_451_545 + 36_525).julianCenturiesSinceJ2000 == 1)
 		#expect(try JulianDate(julianDayNumber: 2_451_545 - 36_525).julianCenturiesSinceJ2000 == -1)
 		#expect(try JulianDate(daysSinceJ2000: 36_525 / 2).julianCenturiesSinceJ2000 == 0.5)
@@ -261,7 +261,7 @@ import Testing
 				#expect(try JulianDate(jd1: jd1, jd2: jd2) == date, "\(method) \(date)")
 			}
 			let fromJ2000 = date.parts(using: .dayAndFractionFromJ2000)
-			#expect(try JulianDate.J2000.adding(days1: fromJ2000.jd1, days2: fromJ2000.jd2) == date)
+			#expect(try JulianDate.j2000.adding(days1: fromJ2000.jd1, days2: fromJ2000.jd2) == date)
 			let fromMJD0 = date.parts(using: .dayAndFractionFromMJD0)
 			#expect(try JulianDate(mjd1: fromMJD0.jd1, mjd2: fromMJD0.jd2) == date)
 		}
@@ -310,7 +310,7 @@ import Testing
 	}
 
 	@Test func addingSeconds() throws {
-		let j2000 = JulianDate.J2000
+		let j2000 = JulianDate.j2000
 		#expect(try j2000.adding(seconds: 43_200) == JulianDate(julianDayNumber: 2_451_546, fractionFromNoon: -0.5))
 		#expect(try j2000.adding(seconds: 86_400) == JulianDate(julianDayNumber: 2_451_546))
 		#expect(try j2000.adding(seconds: -86_400 * 365) == JulianDate(julianDayNumber: 2_451_545 - 365))
@@ -342,7 +342,7 @@ import Testing
 	}
 
 	@Test func subtractingSeconds() throws {
-		let j2000 = JulianDate.J2000
+		let j2000 = JulianDate.j2000
 		#expect(try j2000.subtracting(seconds: 43_200) == JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: -0.5))
 		#expect(try j2000.subtracting(seconds: 86_400) == JulianDate(julianDayNumber: 2_451_544))
 		#expect(try j2000.subtracting(seconds: -86_400) == JulianDate(julianDayNumber: 2_451_546))
@@ -369,7 +369,7 @@ import Testing
 		#expect(try end.interval(to: start).inDays == -1.5)
 		#expect(try start.interval(to: end) == DayInterval(days: 1, fractionalDay: 0.5))
 		#expect(try start.interval(to: start) == .zero)
-		#expect(try JulianDate.MJD0.interval(to: JulianDate.J2000) == DayInterval(days: 51_544, fractionalDay: 0.5))
+		#expect(try JulianDate.mjd0.interval(to: JulianDate.j2000) == DayInterval(days: 51_544, fractionalDay: 0.5))
 
 		#expect(throws: DayIntervalError.dayCountNotRepresentable) { try JulianDate(julianDayNumber: .min).interval(to: JulianDate(julianDayNumber: .max)) }
 		#expect(throws: DayIntervalError.dayCountNotRepresentable) { try JulianDate(julianDayNumber: .max).interval(to: JulianDate(julianDayNumber: .min)) }
@@ -400,7 +400,7 @@ import Testing
 	@Test func comparison() throws {
 		let a = try JulianDate(julianDayNumber: 2_451_544, fractionFromNoon: 0.25)
 		let b = try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: -0.5)
-		let c = JulianDate.J2000
+		let c = JulianDate.j2000
 		let d = try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25)
 		let e = try JulianDate(julianDayNumber: 2_451_546, fractionFromNoon: -0.5)
 		#expect(a < b)
@@ -418,12 +418,12 @@ import Testing
 		#expect(a == b)
 		#expect(a == c)
 		#expect(a.hashValue == b.hashValue)
-		#expect(a != JulianDate.J2000)
-		#expect(Set([a, b, c, JulianDate.J2000]).count == 2)
+		#expect(a != JulianDate.j2000)
+		#expect(Set([a, b, c, JulianDate.j2000]).count == 2)
 	}
 
 	@Test func isApproximatelyEqual() throws {
-		let date = JulianDate.J2000
+		let date = JulianDate.j2000
 		let halfDayLater = try date.adding(days: 0.5)
 		#expect(date.isApproximatelyEqual(to: date, toleranceSeconds: 0))
 		#expect(date.isApproximatelyEqual(to: halfDayLater, toleranceSeconds: 43_200))
@@ -447,10 +447,10 @@ import Testing
 	// MARK: - Descriptions
 
 	@Test func descriptions() throws {
-		#expect(JulianDate.J2000.description == "JD 2451545")
+		#expect(JulianDate.j2000.description == "JD 2451545")
 		#expect(try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25).description == "JD 2451545 + 0.25")
 		#expect(try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: -0.25).description == "JD 2451545 - 0.25")
-		#expect(JulianDate.MJD0.description == "JD 2400001 - 0.5")
+		#expect(JulianDate.mjd0.description == "JD 2400001 - 0.5")
 		#expect(try JulianDate(julianDayNumber: -1).description == "JD -1")
 		#expect(try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25).debugDescription == "JulianDate(julianDayNumber: 2451545, fractionFromNoon: 0.25)")
 	}
@@ -471,9 +471,9 @@ private struct RawJulianDate: Encodable {
 
 	@Test func codableRoundTrip() throws {
 		let dates = try [
-			JulianDate.J2000,
-			JulianDate.MJD0,
-			JulianDate.B1900,
+			JulianDate.j2000,
+			JulianDate.mjd0,
+			JulianDate.b1900,
 			JulianDate(julianDayNumber: .min, fractionFromNoon: -0.5),
 			JulianDate(julianDayNumber: .max, fractionFromNoon: Double(0.5).nextDown),
 			JulianDate(jd1: 2_451_545, jd2: 1e-12),
