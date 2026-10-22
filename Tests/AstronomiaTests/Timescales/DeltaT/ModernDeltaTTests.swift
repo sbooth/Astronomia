@@ -64,17 +64,17 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 
 		// A year after the table, ΔT continues the rate over its last year.
 		let later = try end.adding(days: daysPerJulianYear)
-		#expect(try abs(UT1.deltaT(at: later, context: UT1.defaultContext) - (endDeltaT + rate)) <= 1e-9)
+		#expect(try abs(UT1.deltaT(atTT: later, context: UT1.defaultContext) - (endDeltaT + rate)) <= 1e-9)
 
 		// Past the trend, ΔT is the model's.
 		let pastTrend = try end.adding(days: (UT1.Context.defaultTrendYears + 0.1) * daysPerJulianYear)
 		let model = DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: pastTrend.decimalYear)
-		#expect(try UT1.deltaT(at: pastTrend, context: UT1.defaultContext) == model)
+		#expect(try UT1.deltaT(atTT: pastTrend, context: UT1.defaultContext) == model)
 
 		// Without a trend, ΔT is the model's right after the table.
 		let published = try UT1.Context(trendYears: nil)
 		let model2 = DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: later.decimalYear)
-		#expect(try UT1.deltaT(at: later, context: published) == model2)
+		#expect(try UT1.deltaT(atTT: later, context: published) == model2)
 	}
 
 	@Test func trendYears() throws {
@@ -83,8 +83,8 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		let afterTrend = try end.adding(days: 1.5 * daysPerJulianYear)
 		let short = try UT1.Context(trendYears: 1)
 		let model = DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: afterTrend.decimalYear)
-		#expect(try UT1.deltaT(at: afterTrend, context: short) == model)
-		#expect(try UT1.deltaT(at: afterTrend, context: UT1.Context()) != model)
+		#expect(try UT1.deltaT(atTT: afterTrend, context: short) == model)
+		#expect(try UT1.deltaT(atTT: afterTrend, context: UT1.Context()) != model)
 
 		for years in [-1, Double.infinity, Double.nan] {
 			#expect(throws: TimescaleConversionError.invalidExtrapolationLimit, "\(years)") {
@@ -99,15 +99,15 @@ private func midnight(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDat
 		let table = try #require(EarthOrientationTable(finals2000A: finalsAroundLeapSecond))
 		let context = UT1.Context(earthOrientation: table)
 		let mid2017 = try midnight(2017, 6, 1)
-		#expect(try UT1.deltaT(at: mid2017, context: context) == DeltaTTable.modern.deltaT(atTT: mid2017))
+		#expect(try UT1.deltaT(atTT: mid2017, context: context) == DeltaTTable.modern.deltaT(atTT: mid2017))
 
 		let later = try DeltaTTable.modern.coverage.upperBound.adding(days: daysPerJulianYear)
-		#expect(try UT1.deltaT(at: later, context: context) == UT1.deltaT(at: later, context: UT1.defaultContext))
+		#expect(try UT1.deltaT(atTT: later, context: context) == UT1.deltaT(atTT: later, context: UT1.defaultContext))
 
 		// Without the ΔT table, the Earth orientation data is continued instead.
 		let observationsOnly = UT1.Context(earthOrientation: table, deltaTTable: nil)
 		let afterObservations = try table.coverage.upperBound.adding(days: 30)
 		let endDeltaT = try #require(table.deltaT(atTT: table.coverage.upperBound))
-		#expect(try abs(UT1.deltaT(at: afterObservations, context: observationsOnly) - endDeltaT) <= 0.1)
+		#expect(try abs(UT1.deltaT(atTT: afterObservations, context: observationsOnly) - endDeltaT) <= 0.1)
 	}
 }

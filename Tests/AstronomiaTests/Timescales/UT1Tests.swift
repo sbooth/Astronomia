@@ -97,16 +97,16 @@ func observedContext() throws -> UT1.Context {
 		let tt = try uniformDate(civilDay(2000, 1, 1))
 
 		let withTables = UT1.Context(earthOrientation: table)
-		#expect(try abs(UT1.deltaT(at: tt, context: withTables) - 63.8285) <= timescaleTolerance)
+		#expect(try abs(UT1.deltaT(atTT: tt, context: withTables) - 63.8285) <= timescaleTolerance)
 		let continuous = UT1.Context.continuous(earthOrientation: table)
-		#expect(try abs(UT1.deltaT(at: tt, context: continuous) - 63.8285) <= timescaleTolerance)
+		#expect(try abs(UT1.deltaT(atTT: tt, context: continuous) - 63.8285) <= timescaleTolerance)
 
 		let observationsOnly = UT1.Context(earthOrientation: table, deltaTTable: nil, model: nil)
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
 			try UT1.fromTT(tt, context: observationsOnly)
 		}
 		#expect(throws: TimescaleConversionError.deltaTUnavailable) {
-			try UT1.deltaT(at: tt, context: UT1.Context(deltaTTable: nil, model: nil))
+			try UT1.deltaT(atTT: tt, context: UT1.Context(deltaTTable: nil, model: nil))
 		}
 	}
 
