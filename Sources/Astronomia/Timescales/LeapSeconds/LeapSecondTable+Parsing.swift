@@ -74,7 +74,7 @@ extension LeapSecondTable {
 				let words = line.dropFirst().split(whereSeparator: \.isWhitespace)
 				guard words.count >= 6, words[0] == "File", words[1] == "expires", words[2] == "on" else { continue }
 				guard let day = Int(words[3]), let month = months.firstIndex(of: words[4].lowercased()), let year = Int(words[5]),
-					  let jdn = try? GregorianCalendar.julianDayNumberFrom(year: year, month: month + 1, day: day)
+					  let jdn = try? GregorianCalendar.julianDayNumber(year: year, month: month + 1, day: day)
 				else { return nil }
 				expiry = jdn
 				continue
@@ -84,7 +84,7 @@ extension LeapSecondTable {
 			// MJD, day, month, year, TAI - UTC, such as 41317.0 1 1 1972 10
 			guard fields.count == 5, let mjd = Double(fields[0]), let mjdDay = Int(exactly: mjd),
 				  let day = Int(fields[1]), let month = Int(fields[2]), let year = Int(fields[3]), let offset = Int(fields[4]),
-				  let jdn = try? GregorianCalendar.julianDayNumberFrom(year: year, month: month, day: day)
+				  let jdn = try? GregorianCalendar.julianDayNumber(year: year, month: month, day: day)
 			else { return nil }
 			// MJD m starts at the midnight that begins civil day m + 2,400,001.
 			let (mjdJDN, overflow) = mjdDay.addingReportingOverflow(2_400_001)

@@ -15,7 +15,7 @@ private struct NoDeltaT: DeltaTSource {
 		return j2000 ... j2000
 	}
 
-	func deltaT(at tt: JulianDate) -> Double? {
+	func deltaT(atTT tt: JulianDate) -> Double? {
 		nil
 	}
 }

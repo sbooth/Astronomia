@@ -8,7 +8,7 @@
 extension EarthOrientationTable: DeltaTSource {
 	/// Returns ΔT = TT - UT1, in seconds, at the specified TT, interpolated linearly between
 	/// entries, or `nil` if `tt` is outside ``coverage``. Predicted entries are used.
-	public func deltaT(at tt: JulianDate) -> Double? {
+	public func deltaT(atTT tt: JulianDate) -> Double? {
 		deltaTAndPredictionStatus(at: tt)?.seconds
 	}
 

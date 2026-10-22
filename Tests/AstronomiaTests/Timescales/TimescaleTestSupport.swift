@@ -20,14 +20,14 @@ let timescaleTolerance = 1e-9
 let driftTolerance = 1e-8
 
 /// The UTC context that rejects days past the built-in table's horizon.
-let strictContext = UTC.Context(leapSecondTable: .builtIn, extrapolationPolicy: .strict)
+let rejectContext = UTC.Context(leapSecondTable: .builtIn, extrapolationPolicy: .reject)
 
 /// Returns the Julian day number of a Gregorian calendar date.
 ///
 /// This is the number of the Julian day whose noon falls on the date, so the date's midnight is
 /// at fraction -0.5.
 func civilDay(_ year: Int, _ month: Int, _ day: Int) throws -> JulianDayNumber {
-	try GregorianCalendar.julianDayNumberFrom(year: year, month: month, day: day)
+	try GregorianCalendar.julianDayNumber(year: year, month: month, day: day)
 }
 
 /// Returns the Julian Date `seconds` after the midnight that starts `day`, assuming
@@ -45,7 +45,7 @@ func utcDate(_ day: JulianDayNumber, seconds: Double = 0, table: LeapSecondTable
 
 /// Returns the clock reading, in seconds since midnight, of a UTC Julian Date.
 func clockReading(_ utc: JulianDate, table: LeapSecondTable = .builtIn) throws -> Double {
-	try UTCDay(containing: utc, leapSecondTable: table).secondsSinceMidnight(utc)
+	try UTCDay(containing: utc, leapSecondTable: table).secondsSinceMidnight(at: utc)
 }
 
 /// Returns the signed number of seconds from `start` to `end`, assuming 86,400-second days.

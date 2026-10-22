@@ -62,7 +62,7 @@ extension UTC {
 	/// Whether a conversion may use a UTC day past the leap-second table's horizon.
 	public enum ExtrapolationPolicy: Hashable, Sendable {
 		/// Throw ``TimescaleConversionError/leapSecondTableExpired`` for days past the horizon.
-		case strict
+		case reject
 		/// Assume no further leap seconds past the horizon.
 		case allow
 	}
@@ -105,7 +105,7 @@ extension UTC {
 	///   - ``TimescaleConversionError/unsupported`` if `utc` is before 1961, when UTC began.
 	///     Use ``UT1`` for earlier times.
 	///   - ``TimescaleConversionError/leapSecondTableExpired`` if `utc` is on or after the
-	///     table's horizon and the policy is ``ExtrapolationPolicy/strict``.
+	///     table's horizon and the policy is ``ExtrapolationPolicy/reject``.
 	public static func taiMinusUTC(at utc: JulianDate, context: Context = defaultContext) throws(TimescaleConversionError) -> Double {
 		let day = try UTCDay(containing: utc, leapSecondTable: context.leapSecondTable)
 		try day.offsetSource.check(context.extrapolationPolicy)
@@ -139,6 +139,6 @@ extension UTCDay {
 extension UTCDay.OffsetSource {
 	/// Throws if `policy` does not allow this offset source.
 	fileprivate func check(_ policy: UTC.ExtrapolationPolicy) throws(TimescaleConversionError) {
-		if policy == .strict && self == .extrapolation { throw .leapSecondTableExpired }
+		if policy == .reject && self == .extrapolation { throw .leapSecondTableExpired }
 	}
 }

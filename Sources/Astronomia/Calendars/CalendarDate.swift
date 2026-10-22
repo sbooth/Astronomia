@@ -11,7 +11,7 @@
 /// value it was created from.
 ///
 /// Equality is structural, so the same instant expressed in different calendars is not
-/// equal. Use ``isSameInstantAs(_:)`` to compare instants across calendars.
+/// equal. Use ``isSameInstant(as:)`` to compare instants across calendars.
 public struct CalendarDate: Hashable, Sendable {
 	/// The calendar day.
 	public let calendarDay: CalendarDay
@@ -53,8 +53,8 @@ public struct CalendarDate: Hashable, Sendable {
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the year, month, and day form
 	///     a valid date, but its Julian day number cannot be represented as a
 	///     ``JulianDayNumber``.
-	public init(year: Int, month: Int, day: Int, fractionSinceMidnight: Double = 0, _ calendar: CalendarIdentifier) throws(CalendarError) {
-		let calendarDay = try CalendarDay(year: year, month: month, day: day, calendar)
+	public init(year: Int, month: Int, day: Int, fractionSinceMidnight: Double = 0, calendar: CalendarIdentifier) throws(CalendarError) {
+		let calendarDay = try CalendarDay(year: year, month: month, day: day, calendar: calendar)
 		try self.init(calendarDay: calendarDay, fractionSinceMidnight: fractionSinceMidnight)
 	}
 }
@@ -196,7 +196,7 @@ extension CalendarDate {
 			case .overflow: throw .julianDayNumberNotRepresentable
 			}
 		}
-		self.init(calendarDay: CalendarDay(julianDayNumber: sum.days, calendar), uncheckedFractionSinceMidnight: sum.fractionSinceMidnight)
+		self.init(calendarDay: CalendarDay(julianDayNumber: sum.days, calendar: calendar), uncheckedFractionSinceMidnight: sum.fractionSinceMidnight)
 	}
 }
 
@@ -254,7 +254,7 @@ extension CalendarDate {
 	///
 	/// - Note: Months outside the closed interval [1, 12] roll over into earlier or later
 	///   years, days are counted from the normalized month, and the fraction since midnight
-	///   carries whole days. See ``JulianGregorianCalendar/julianDayNumberFromDate(_:)`` for how
+	///   carries whole days. See ``JulianGregorianCalendar/julianDayNumber(for:)`` for how
 	///   out-of-range values are interpreted in the Julian-Gregorian calendar.
 	/// - Parameters:
 	///   - year: The arithmetic year number. Year number 0 is 1 BCE.
@@ -270,8 +270,8 @@ extension CalendarDate {
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
 	///     year, month, and day or the resulting day's Julian day number cannot be represented
 	///     as a ``JulianDayNumber``.
-	public static func normalized(year: Int, month: Int, day: Int, fractionSinceMidnight: Double, _ calendar: CalendarIdentifier) throws(CalendarError) -> CalendarDate {
-		let calendarDay = try CalendarDay.normalized(year: year, month: month, day: day, calendar)
+	public static func normalized(year: Int, month: Int, day: Int, fractionSinceMidnight: Double, calendar: CalendarIdentifier) throws(CalendarError) -> CalendarDate {
+		let calendarDay = try CalendarDay.normalized(year: year, month: month, day: day, calendar: calendar)
 		return try normalized(calendarDay: calendarDay, fractionSinceMidnight: fractionSinceMidnight)
 	}
 }
@@ -289,8 +289,8 @@ extension CalendarDate {
 	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
 	///     day cannot be represented as a ``JulianDayNumber``.
-	public init(decimalYear: Double, _ calendar: CalendarIdentifier) throws(CalendarError) {
-		let calendarDay = try CalendarDay(decimalYear: decimalYear, calendar)
+	public init(decimalYear: Double, calendar: CalendarIdentifier) throws(CalendarError) {
+		let calendarDay = try CalendarDay(decimalYear: decimalYear, calendar: calendar)
 		let Y = calendarDay.year
 		let N = calendarDay.dayOfYear
 		let d = calendarDay.numberOfDaysInYear
@@ -335,8 +335,8 @@ extension CalendarDate {
 	///
 	/// - Parameter other: The calendar in which to express the date.
 	/// - Returns: A calendar date for the same day and time of day in `other`.
-	public func convertedTo(_ other: CalendarIdentifier) -> CalendarDate {
-		CalendarDate(calendarDay: calendarDay.convertedTo(other), uncheckedFractionSinceMidnight: fractionSinceMidnight)
+	public func converted(to other: CalendarIdentifier) -> CalendarDate {
+		CalendarDate(calendarDay: calendarDay.converted(to: other), uncheckedFractionSinceMidnight: fractionSinceMidnight)
 	}
 
 	/// Returns `true` if the specified calendar date denotes the same day and time of day,
@@ -345,8 +345,8 @@ extension CalendarDate {
 	/// - Parameter other: The calendar date to compare with.
 	/// - Returns: `true` if both calendar dates have the same Julian day number and fraction since
 	///   midnight; otherwise, `false`.
-	public func isSameInstantAs(_ other: CalendarDate) -> Bool {
-		calendarDay.isSameDayAs(other.calendarDay) && fractionSinceMidnight == other.fractionSinceMidnight
+	public func isSameInstant(as other: CalendarDate) -> Bool {
+		calendarDay.isSameDay(as: other.calendarDay) && fractionSinceMidnight == other.fractionSinceMidnight
 	}
 }
 
@@ -357,7 +357,7 @@ extension CalendarDate: Comparable {
 	/// - Returns: `true` if `lhs` is earlier than `rhs`, or if they denote the same instant and the
 	///   calendar of `lhs` sorts before that of `rhs`; otherwise, `false`.
 	public static func < (lhs: CalendarDate, rhs: CalendarDate) -> Bool {
-		if lhs.calendarDay.isSameDayAs(rhs.calendarDay), lhs.fractionSinceMidnight != rhs.fractionSinceMidnight {
+		if lhs.calendarDay.isSameDay(as: rhs.calendarDay), lhs.fractionSinceMidnight != rhs.fractionSinceMidnight {
 			return lhs.fractionSinceMidnight < rhs.fractionSinceMidnight
 		}
 		// `CalendarDay` breaks JDN ties by calendar
@@ -398,7 +398,7 @@ extension CalendarDate: Codable {
 		let calendar = try container.decode(CalendarIdentifier.self, forKey: .calendar)
 
 		do throws(CalendarError) {
-			self = try CalendarDate(year: year, month: month, day: day, fractionSinceMidnight: fractionSinceMidnight, calendar)
+			self = try CalendarDate(year: year, month: month, day: day, fractionSinceMidnight: fractionSinceMidnight, calendar: calendar)
 		} catch .nonFiniteValue {
 			throw DecodingError.dataCorruptedError(forKey: .fractionSinceMidnight, in: container, debugDescription: "Fraction since midnight must be finite")
 		} catch .invalidDayFraction {

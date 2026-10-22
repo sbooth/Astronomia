@@ -41,7 +41,7 @@ public enum GLONASS: Timescale {
 	public static func fromTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		let utc = try UTC.fromTT(julianDate, context: context)
 		let day = try UTCDay(julianDayNumber: utc.julianDayNumber, leapSecondTable: context.leapSecondTable)
-		let utcSeconds = try day.secondsSinceMidnight(utc)
+		let utcSeconds = try day.secondsSinceMidnight(at: utc)
 
 		let J: JulianDayNumber
 		let seconds: Double
@@ -93,7 +93,7 @@ extension GLONASS {
 	/// The inverse of ``julianDate(julianDayNumber:secondsSinceMidnight:leapSecondTable:)``.
 	///
 	/// - Throws: ``TimescaleConversionError/unsupported`` if the day is before 1961-01-02.
-	public static func secondsSinceMidnight(_ julianDate: JulianDate, leapSecondTable: LeapSecondTable = .builtIn) throws(TimescaleConversionError) -> Double {
+	public static func secondsSinceMidnight(at julianDate: JulianDate, leapSecondTable: LeapSecondTable = .builtIn) throws(TimescaleConversionError) -> Double {
 		let previous = try utcDay(before: julianDate.julianDayNumber, leapSecondTable: leapSecondTable)
 		return julianDate.fractionSinceMidnight * previous.clockSeconds
 	}

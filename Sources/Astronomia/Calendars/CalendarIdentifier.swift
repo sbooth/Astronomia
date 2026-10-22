@@ -38,7 +38,7 @@ extension CalendarIdentifier {
 	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years.
 	///   Out-of-range days are counted forward or backward from the normalized year and month.
-	///   See ``JulianGregorianCalendar/julianDayNumberFromDate(_:)`` for how out-of-range
+	///   See ``JulianGregorianCalendar/julianDayNumber(for:)`` for how out-of-range
 	///   values are interpreted in the Julian-Gregorian calendar.
 	/// - Parameters:
 	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
@@ -47,28 +47,28 @@ extension CalendarIdentifier {
 	/// - Returns: The Julian day number of the date.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
-	public func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> JulianDayNumber {
-		try julianDayNumberFromDate((Y, M, D))
+	public func julianDayNumber(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> JulianDayNumber {
+		try julianDayNumber(for: (Y, M, D))
 	}
 
 	/// Returns the Julian day number for the specified date.
 	///
 	/// - Note: Months less than 1 or greater than 12 roll over into adjacent years.
 	///   Out-of-range days are counted forward or backward from the normalized year and month.
-	///   See ``JulianGregorianCalendar/julianDayNumberFromDate(_:)`` for how out-of-range
+	///   See ``JulianGregorianCalendar/julianDayNumber(for:)`` for how out-of-range
 	///   values are interpreted in the Julian-Gregorian calendar.
 	/// - Parameter date: The year, month, and day, possibly out of range.
 	/// - Returns: The Julian day number of the date.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
-	public func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
+	public func julianDayNumber(for date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
 		switch self {
 		case .julian:
-			return try JulianCalendar.julianDayNumberFromDate(date)
+			return try JulianCalendar.julianDayNumber(for: date)
 		case .gregorian:
-			return try GregorianCalendar.julianDayNumberFromDate(date)
+			return try GregorianCalendar.julianDayNumber(for: date)
 		case .julianGregorian:
-			return try JulianGregorianCalendar.julianDayNumberFromDate(date)
+			return try JulianGregorianCalendar.julianDayNumber(for: date)
 		}
 	}
 
@@ -77,14 +77,14 @@ extension CalendarIdentifier {
 	/// - Note: Every ``JulianDayNumber`` value is a valid Julian day number.
 	/// - Parameter J: The Julian day number.
 	/// - Returns: A valid date in this calendar.
-	public func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
+	public func date(julianDayNumber J: JulianDayNumber) -> YearMonthDay {
 		switch self {
 		case .julian:
-			return JulianCalendar.dateFromJulianDayNumber(J)
+			return JulianCalendar.date(julianDayNumber: J)
 		case .gregorian:
-			return GregorianCalendar.dateFromJulianDayNumber(J)
+			return GregorianCalendar.date(julianDayNumber: J)
 		case .julianGregorian:
-			return JulianGregorianCalendar.dateFromJulianDayNumber(J)
+			return JulianGregorianCalendar.date(julianDayNumber: J)
 		}
 	}
 }
@@ -94,7 +94,7 @@ extension CalendarIdentifier {
 	/// out-of-range month and day values.
 	///
 	/// - Note: Out-of-range values are interpreted as by
-	///   ``julianDayNumberFrom(year:month:day:)``.
+	///   ``julianDayNumber(year:month:day:)``.
 	/// - Parameters:
 	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
 	///   - M: The month number, possibly outside the closed interval [1, 12].
@@ -102,20 +102,20 @@ extension CalendarIdentifier {
 	/// - Returns: The equivalent valid date in this calendar.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
-	public func normalizedDateFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> YearMonthDay {
+	public func normalizedDate(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> YearMonthDay {
 		try normalizedDate((Y, M, D))
 	}
 
 	/// Returns a valid year, month, and day for the specified year and possibly
 	/// out-of-range month and day values.
 	///
-	/// - Note: Out-of-range values are interpreted as by ``julianDayNumberFromDate(_:)``.
+	/// - Note: Out-of-range values are interpreted as by ``julianDayNumber(for:)``.
 	/// - Parameter date: The year, month, and day, possibly out of range.
 	/// - Returns: The equivalent valid date in this calendar.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public func normalizedDate(_ date: YearMonthDay) throws(CalendarError) -> YearMonthDay {
-		try dateFromJulianDayNumber(julianDayNumberFromDate(date))
+		try self.date(julianDayNumber: self.julianDayNumber(for: date))
 	}
 }
 
@@ -141,14 +141,14 @@ extension CalendarIdentifier {
 	///
 	/// - Parameter Y: The arithmetic year number. Year number 0 is 1 BCE.
 	/// - Returns: The number of days in year `Y`.
-	public func numberOfDaysInYear(_ Y: Int) -> Int {
+	public func numberOfDays(inYear Y: Int) -> Int {
 		switch self {
 		case .julian:
-			return JulianCalendar.numberOfDaysInYear(Y)
+			return JulianCalendar.numberOfDays(inYear: Y)
 		case .gregorian:
-			return GregorianCalendar.numberOfDaysInYear(Y)
+			return GregorianCalendar.numberOfDays(inYear: Y)
 		case .julianGregorian:
-			return JulianGregorianCalendar.numberOfDaysInYear(Y)
+			return JulianGregorianCalendar.numberOfDays(inYear: Y)
 		}
 	}
 
@@ -159,14 +159,14 @@ extension CalendarIdentifier {
 	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
 	/// - Returns: The number of days in the month.
 	/// - Throws: ``CalendarError/invalidDate`` if the month is outside the closed interval [1, 12].
-	public func numberOfDaysIn(month M: Int, year Y: Int) throws(CalendarError) -> Int {
+	public func numberOfDays(inMonth M: Int, year Y: Int) throws(CalendarError) -> Int {
 		switch self {
 		case .julian:
-			return try JulianCalendar.numberOfDaysIn(month: M, year: Y)
+			return try JulianCalendar.numberOfDays(inMonth: M, year: Y)
 		case .gregorian:
-			return try GregorianCalendar.numberOfDaysIn(month: M, year: Y)
+			return try GregorianCalendar.numberOfDays(inMonth: M, year: Y)
 		case .julianGregorian:
-			return try JulianGregorianCalendar.numberOfDaysIn(month: M, year: Y)
+			return try JulianGregorianCalendar.numberOfDays(inMonth: M, year: Y)
 		}
 	}
 }
@@ -176,14 +176,14 @@ extension CalendarIdentifier {
 	///
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The day of year, from 1 to the number of days in the year.
-	public func dayOfYearFromJulianDayNumber(_ J: JulianDayNumber) -> Int {
+	public func dayOfYear(julianDayNumber J: JulianDayNumber) -> Int {
 		switch self {
 		case .julian:
-			return JulianCalendar.dayOfYearFromJulianDayNumber(J)
+			return JulianCalendar.dayOfYear(julianDayNumber: J)
 		case .gregorian:
-			return GregorianCalendar.dayOfYearFromJulianDayNumber(J)
+			return GregorianCalendar.dayOfYear(julianDayNumber: J)
 		case .julianGregorian:
-			return JulianGregorianCalendar.dayOfYearFromJulianDayNumber(J)
+			return JulianGregorianCalendar.dayOfYear(julianDayNumber: J)
 		}
 	}
 
@@ -197,14 +197,14 @@ extension CalendarIdentifier {
 	/// - Returns: The day of year, from 1 to the number of days in the year.
 	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
 	///   a valid date.
-	public func dayOfYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Int {
+	public func dayOfYear(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Int {
 		switch self {
 		case .julian:
-			return try JulianCalendar.dayOfYearFrom(year: Y, month: M, day: D)
+			return try JulianCalendar.dayOfYear(year: Y, month: M, day: D)
 		case .gregorian:
-			return try GregorianCalendar.dayOfYearFrom(year: Y, month: M, day: D)
+			return try GregorianCalendar.dayOfYear(year: Y, month: M, day: D)
 		case .julianGregorian:
-			return try JulianGregorianCalendar.dayOfYearFrom(year: Y, month: M, day: D)
+			return try JulianGregorianCalendar.dayOfYear(year: Y, month: M, day: D)
 		}
 	}
 
@@ -216,14 +216,14 @@ extension CalendarIdentifier {
 	/// - Returns: The year, month, and day in this calendar.
 	/// - Throws: ``CalendarError/invalidDate`` if the year and day of year do not form
 	///   a valid date.
-	public func dateFrom(year Y: Int, dayOfYear N: Int) throws(CalendarError) -> YearMonthDay {
+	public func date(year Y: Int, dayOfYear N: Int) throws(CalendarError) -> YearMonthDay {
 		switch self {
 		case .julian:
-			return try JulianCalendar.dateFrom(year: Y, dayOfYear: N)
+			return try JulianCalendar.date(year: Y, dayOfYear: N)
 		case .gregorian:
-			return try GregorianCalendar.dateFrom(year: Y, dayOfYear: N)
+			return try GregorianCalendar.date(year: Y, dayOfYear: N)
 		case .julianGregorian:
-			return try JulianGregorianCalendar.dateFrom(year: Y, dayOfYear: N)
+			return try JulianGregorianCalendar.date(year: Y, dayOfYear: N)
 		}
 	}
 }
@@ -241,14 +241,14 @@ extension CalendarIdentifier {
 	///   Besselian epoch.
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The decimal year for the start of the day.
-	public func decimalYearFromJulianDayNumber(_ J: JulianDayNumber) -> Double {
+	public func decimalYear(julianDayNumber J: JulianDayNumber) -> Double {
 		switch self {
 		case .julian:
-			return JulianCalendar.decimalYearFromJulianDayNumber(J)
+			return JulianCalendar.decimalYear(julianDayNumber: J)
 		case .gregorian:
-			return GregorianCalendar.decimalYearFromJulianDayNumber(J)
+			return GregorianCalendar.decimalYear(julianDayNumber: J)
 		case .julianGregorian:
-			return JulianGregorianCalendar.decimalYearFromJulianDayNumber(J)
+			return JulianGregorianCalendar.decimalYear(julianDayNumber: J)
 		}
 	}
 
@@ -263,14 +263,14 @@ extension CalendarIdentifier {
 	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
 	///     day cannot be represented as a ``JulianDayNumber``.
-	public func julianDayNumberFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> JulianDayNumber {
+	public func julianDayNumber(decimalYear: Double) throws(CalendarError) -> JulianDayNumber {
 		switch self {
 		case .julian:
-			return try JulianCalendar.julianDayNumberFromDecimalYear(decimalYear)
+			return try JulianCalendar.julianDayNumber(decimalYear: decimalYear)
 		case .gregorian:
-			return try GregorianCalendar.julianDayNumberFromDecimalYear(decimalYear)
+			return try GregorianCalendar.julianDayNumber(decimalYear: decimalYear)
 		case .julianGregorian:
-			return try JulianGregorianCalendar.julianDayNumberFromDecimalYear(decimalYear)
+			return try JulianGregorianCalendar.julianDayNumber(decimalYear: decimalYear)
 		}
 	}
 
@@ -285,14 +285,14 @@ extension CalendarIdentifier {
 	/// - Returns: The decimal year for the start of the day.
 	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
 	///   a valid date.
-	public func decimalYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Double {
+	public func decimalYear(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Double {
 		switch self {
 		case .julian:
-			return try JulianCalendar.decimalYearFrom(year: Y, month: M, day: D)
+			return try JulianCalendar.decimalYear(year: Y, month: M, day: D)
 		case .gregorian:
-			return try GregorianCalendar.decimalYearFrom(year: Y, month: M, day: D)
+			return try GregorianCalendar.decimalYear(year: Y, month: M, day: D)
 		case .julianGregorian:
-			return try JulianGregorianCalendar.decimalYearFrom(year: Y, month: M, day: D)
+			return try JulianGregorianCalendar.decimalYear(year: Y, month: M, day: D)
 		}
 	}
 
@@ -305,14 +305,14 @@ extension CalendarIdentifier {
 	/// - Throws:
 	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
 	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
-	public func dateFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> YearMonthDay {
+	public func date(decimalYear: Double) throws(CalendarError) -> YearMonthDay {
 		switch self {
 		case .julian:
-			return try JulianCalendar.dateFromDecimalYear(decimalYear)
+			return try JulianCalendar.date(decimalYear: decimalYear)
 		case .gregorian:
-			return try GregorianCalendar.dateFromDecimalYear(decimalYear)
+			return try GregorianCalendar.date(decimalYear: decimalYear)
 		case .julianGregorian:
-			return try JulianGregorianCalendar.dateFromDecimalYear(decimalYear)
+			return try JulianGregorianCalendar.date(decimalYear: decimalYear)
 		}
 	}
 }
@@ -327,21 +327,21 @@ extension CalendarIdentifier {
 	/// - Returns: `true` if the year, month, and day form a valid date in this calendar; otherwise,
 	///   `false`.
 	public func isValid(year Y: Int, month M: Int, day D: Int) -> Bool {
-		isValidDate((Y, M, D))
+		isValid((Y, M, D))
 	}
 
 	/// Returns `true` if the specified date is valid.
 	///
 	/// - Parameter date: The year, month, and day to check.
 	/// - Returns: `true` if `date` is a valid date in this calendar; otherwise, `false`.
-	public func isValidDate(_ date: YearMonthDay) -> Bool {
+	public func isValid(_ date: YearMonthDay) -> Bool {
 		switch self {
 		case .julian:
-			return JulianCalendar.isValidDate(date)
+			return JulianCalendar.isValid(date)
 		case .gregorian:
-			return GregorianCalendar.isValidDate(date)
+			return GregorianCalendar.isValid(date)
 		case .julianGregorian:
-			return JulianGregorianCalendar.isValidDate(date)
+			return JulianGregorianCalendar.isValid(date)
 		}
 	}
 }

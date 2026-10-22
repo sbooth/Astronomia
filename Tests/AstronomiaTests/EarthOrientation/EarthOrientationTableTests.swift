@@ -84,8 +84,8 @@ let finalsWithPredictedNutation = """
 		// 0h UTC on 2016-12-29 is 00:01:08.184 TT; 0h UTC on 2017-01-02 is 00:01:09.184 TT.
 		#expect(try table.coverage.lowerBound.isApproximatelyEqual(to: uniformDate(civilDay(2016, 12, 29), seconds: 68.184), toleranceSeconds: timescaleTolerance))
 		#expect(try table.coverage.upperBound.isApproximatelyEqual(to: uniformDate(civilDay(2017, 1, 2), seconds: 69.184), toleranceSeconds: timescaleTolerance))
-		#expect(try table.deltaT(at: uniformDate(civilDay(2016, 12, 28))) == nil)
-		#expect(try table.deltaT(at: uniformDate(civilDay(2017, 1, 3))) == nil)
+		#expect(try table.deltaT(atTT: uniformDate(civilDay(2016, 12, 28))) == nil)
+		#expect(try table.deltaT(atTT: uniformDate(civilDay(2017, 1, 3))) == nil)
 	}
 
 	@Test func parseParameters() throws {

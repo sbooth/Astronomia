@@ -34,8 +34,8 @@ public enum JulianCalendar {
 	/// - Returns: The Julian day number of the date.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
-	public static func julianDayNumberFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> JulianDayNumber {
-		try julianDayNumberFromDate((Y, M, D))
+	public static func julianDayNumber(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> JulianDayNumber {
+		try julianDayNumber(for: (Y, M, D))
 	}
 
 	/// The 4-year cycle of the Julian calendar, positioned against the Julian day numbers.
@@ -76,7 +76,7 @@ public enum JulianCalendar {
 	/// - Returns: The Julian day number of the date.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
-	public static func julianDayNumberFromDate(_ date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
+	public static func julianDayNumber(for date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
 		let (y, mp) = try Arithmetic.marchBasedYearAndMonth(date)
 		assert(mp >= 0 && mp < 12, "March-based month is outside the right-open interval [0, 12)")
 		let (era, yoe) = Era.eraAndYearOfEra(marchBasedYear: y)
@@ -91,7 +91,7 @@ public enum JulianCalendar {
 	/// - Note: Every ``JulianDayNumber`` value is a valid Julian day number.
 	/// - Parameter J: The Julian day number.
 	/// - Returns: A valid date in the Julian calendar.
-	public static func dateFromJulianDayNumber(_ J: JulianDayNumber) -> YearMonthDay {
+	public static func date(julianDayNumber J: JulianDayNumber) -> YearMonthDay {
 		let (era, doe) = Era.eraAndDayOfEra(julianDayNumber: J)
 		assert(doe >= 0 && doe < Era.days, "Day of era is outside the right-open interval [0, \(Era.days))")
 		// Year of era in [0, 4)
@@ -116,7 +116,7 @@ extension JulianCalendar {
 	/// - Returns: The equivalent valid date in the Julian calendar.
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
-	public static func normalizedDateFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> YearMonthDay {
+	public static func normalizedDate(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> YearMonthDay {
 		try normalizedDate((Y, M, D))
 	}
 
@@ -130,7 +130,7 @@ extension JulianCalendar {
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public static func normalizedDate(_ date: YearMonthDay) throws(CalendarError) -> YearMonthDay {
-		try dateFromJulianDayNumber(julianDayNumberFromDate(date))
+		try Self.date(julianDayNumber: Self.julianDayNumber(for: date))
 	}
 }
 
@@ -144,7 +144,7 @@ extension JulianCalendar {
 	/// - Parameter J: The Julian day number.
 	/// - Returns: `true` if `J` is before January 1, 45 BCE in the Julian calendar; otherwise,
 	///   `false`.
-	public static func isProleptic(_ J: JulianDayNumber) -> Bool {
+	public static func isProleptic(julianDayNumber J: JulianDayNumber) -> Bool {
 		J < effective
 	}
 }
@@ -167,7 +167,7 @@ extension JulianCalendar {
 	///
 	/// - Parameter Y: The arithmetic year number. Year number 0 is 1 BCE.
 	/// - Returns: The number of days in year `Y`: 365 or 366.
-	public static func numberOfDaysInYear(_ Y: Int) -> Int {
+	public static func numberOfDays(inYear Y: Int) -> Int {
 		Arithmetic.numberOfDays(isLeap: isLeapYear(Y))
 	}
 
@@ -178,8 +178,8 @@ extension JulianCalendar {
 	///   - Y: The arithmetic year number. Year number 0 is 1 BCE.
 	/// - Returns: The number of days in the month, from 28 to 31.
 	/// - Throws: ``CalendarError/invalidDate`` if the month is outside the closed interval [1, 12].
-	public static func numberOfDaysIn(month M: Int, year Y: Int) throws(CalendarError) -> Int {
-		try Arithmetic.numberOfDaysIn(month: M, isLeap: isLeapYear(Y))
+	public static func numberOfDays(inMonth M: Int, year Y: Int) throws(CalendarError) -> Int {
+		try Arithmetic.numberOfDays(inMonth: M, isLeap: isLeapYear(Y))
 	}
 }
 
@@ -193,14 +193,14 @@ extension JulianCalendar {
 	/// - Returns: `true` if the year, month, and day form a valid date in the Julian calendar;
 	///   otherwise, `false`.
 	public static func isValid(year Y: Int, month M: Int, day D: Int) -> Bool {
-		isValidDate((Y, M, D))
+		isValid((Y, M, D))
 	}
 
 	/// Returns `true` if the specified date is valid.
 	///
 	/// - Parameter date: The year, month, and day to check.
 	/// - Returns: `true` if `date` is a valid date in the Julian calendar; otherwise, `false`.
-	public static func isValidDate(_ date: YearMonthDay) -> Bool {
+	public static func isValid(_ date: YearMonthDay) -> Bool {
 		Arithmetic.isValid(month: date.month, day: date.day, isLeap: isLeapYear(date.year))
 	}
 }
@@ -212,8 +212,8 @@ extension JulianCalendar {
 	/// - Note: The day of the week depends only on the Julian day number, not on the calendar.
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The day of the week from 1 (Sunday) to 7 (Saturday).
-	public static func dayOfWeek(_ J: JulianDayNumber) -> Int {
-		Arithmetic.dayOfWeek(J)
+	public static func dayOfWeek(julianDayNumber J: JulianDayNumber) -> Int {
+		Arithmetic.dayOfWeek(julianDayNumber: J)
 	}
 }
 
@@ -222,8 +222,8 @@ extension JulianCalendar {
 	///
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The day of year, from 1 to the number of days in the year.
-	public static func dayOfYearFromJulianDayNumber(_ J: JulianDayNumber) -> Int {
-		let (Y, M, D) = dateFromJulianDayNumber(J)
+	public static func dayOfYear(julianDayNumber J: JulianDayNumber) -> Int {
+		let (Y, M, D) = date(julianDayNumber: J)
 		return Arithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
 	}
 
@@ -237,7 +237,7 @@ extension JulianCalendar {
 	/// - Returns: The day of year, from 1 to the number of days in the year.
 	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
 	///   a valid date.
-	public static func dayOfYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Int {
+	public static func dayOfYear(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Int {
 		guard isValid(year: Y, month: M, day: D) else { throw .invalidDate }
 		return Arithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
 	}
@@ -250,8 +250,8 @@ extension JulianCalendar {
 	/// - Returns: The year, month, and day in the Julian calendar.
 	/// - Throws: ``CalendarError/invalidDate`` if the year and day of year do not form
 	///   a valid date.
-	public static func dateFrom(year Y: Int, dayOfYear N: Int) throws(CalendarError) -> YearMonthDay {
-		guard N >= 1, N <= numberOfDaysInYear(Y) else { throw .invalidDate }
+	public static func date(year Y: Int, dayOfYear N: Int) throws(CalendarError) -> YearMonthDay {
+		guard N >= 1, N <= numberOfDays(inYear: Y) else { throw .invalidDate }
 		let (M, D) = Arithmetic.monthAndDay(dayOfYear: N, isLeap: isLeapYear(Y))
 		return (Y, M, D)
 	}
@@ -270,10 +270,10 @@ extension JulianCalendar {
 	///   Besselian epoch.
 	/// - Parameter J: The Julian day number.
 	/// - Returns: The decimal year for the start of the day in the Julian calendar.
-	public static func decimalYearFromJulianDayNumber(_ J: JulianDayNumber) -> Double {
-		let (Y, M, D) = dateFromJulianDayNumber(J)
+	public static func decimalYear(julianDayNumber J: JulianDayNumber) -> Double {
+		let (Y, M, D) = date(julianDayNumber: J)
 		let N = Arithmetic.dayOfYear(month: M, day: D, isLeap: isLeapYear(Y))
-		let d = numberOfDaysInYear(Y)
+		let d = numberOfDays(inYear: Y)
 		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
 	}
 
@@ -288,8 +288,8 @@ extension JulianCalendar {
 	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number for the
 	///     day cannot be represented as a ``JulianDayNumber``.
-	public static func julianDayNumberFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> JulianDayNumber {
-		try julianDayNumberFromDate(dateFromDecimalYear(decimalYear))
+	public static func julianDayNumber(decimalYear: Double) throws(CalendarError) -> JulianDayNumber {
+		try julianDayNumber(for: date(decimalYear: decimalYear))
 	}
 
 	/// Returns the decimal year for the start of the specified year, month, and day.
@@ -303,9 +303,9 @@ extension JulianCalendar {
 	/// - Returns: The decimal year for the start of the day in the Julian calendar.
 	/// - Throws: ``CalendarError/invalidDate`` if the year, month, and day do not form
 	///   a valid date.
-	public static func decimalYearFrom(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Double {
-		let N = try dayOfYearFrom(year: Y, month: M, day: D)
-		let d = numberOfDaysInYear(Y)
+	public static func decimalYear(year Y: Int, month M: Int, day D: Int) throws(CalendarError) -> Double {
+		let N = try dayOfYear(year: Y, month: M, day: D)
+		let d = numberOfDays(inYear: Y)
 		return DecimalYearArithmetic.decimalYear(year: Y, dayOfYear: N, daysInYear: d)
 	}
 
@@ -318,8 +318,8 @@ extension JulianCalendar {
 	/// - Throws:
 	///   - ``CalendarError/nonFiniteValue`` if the decimal year is not finite.
 	///   - ``CalendarError/invalidDecimalYear`` if the year cannot be represented as an `Int`.
-	public static func dateFromDecimalYear(_ decimalYear: Double) throws(CalendarError) -> YearMonthDay {
-		let (Y, N) = try DecimalYearArithmetic.yearAndDayOfYear(decimalYear: decimalYear, daysInYear: numberOfDaysInYear)
+	public static func date(decimalYear: Double) throws(CalendarError) -> YearMonthDay {
+		let (Y, N) = try DecimalYearArithmetic.yearAndDayOfYear(decimalYear: decimalYear, daysInYear: numberOfDays(inYear:))
 		let (M, D) = Arithmetic.monthAndDay(dayOfYear: N, isLeap: isLeapYear(Y))
 		return (Y, M, D)
 	}

@@ -45,8 +45,8 @@ extension JulianDate {
 	///   - ``CalendarError/julianDayNumberNotRepresentable`` if the year, month, and day form
 	///     a valid date, but its Julian day number cannot be represented as a
 	///     ``JulianDayNumber``.
-	public init(year: Int, month: Int, day: Int, fractionSinceMidnight: Double = 0, _ calendar: CalendarIdentifier = .julianGregorian) throws(CalendarError) {
-		try self.init(CalendarDate(year: year, month: month, day: day, fractionSinceMidnight: fractionSinceMidnight, calendar))
+	public init(year: Int, month: Int, day: Int, fractionSinceMidnight: Double = 0, calendar: CalendarIdentifier = .julianGregorian) throws(CalendarError) {
+		try self.init(CalendarDate(year: year, month: month, day: day, fractionSinceMidnight: fractionSinceMidnight, calendar: calendar))
 	}
 }
 
@@ -54,11 +54,11 @@ extension JulianDate {
 	/// The Julian Date as a calendar date in the Julian-Gregorian calendar.
 	///
 	/// The Julian-Gregorian calendar is the conventional choice in astronomy.
-	/// Use ``calendarDate(_:)`` for another calendar.
+	/// Use ``calendarDate(in:)`` for another calendar.
 	///
 	/// - Note: The calendar date is in this Julian Date's timescale.
 	public var calendarDate: CalendarDate {
-		calendarDate(.julianGregorian)
+		calendarDate(in: .julianGregorian)
 	}
 
 	/// Returns the Julian Date as a calendar date in the specified calendar.
@@ -71,7 +71,7 @@ extension JulianDate {
 	/// - Note: The calendar date is in this Julian Date's timescale.
 	/// - Parameter calendar: The calendar in which to express the date.
 	/// - Returns: The calendar date and time of day of this Julian Date.
-	public func calendarDate(_ calendar: CalendarIdentifier) -> CalendarDate {
-		CalendarDate(calendarDay: CalendarDay(julianDayNumber: julianDayNumber, calendar), uncheckedFractionSinceMidnight: fractionSinceMidnight)
+	public func calendarDate(in calendar: CalendarIdentifier) -> CalendarDate {
+		CalendarDate(calendarDay: CalendarDay(julianDayNumber: julianDayNumber, calendar: calendar), uncheckedFractionSinceMidnight: fractionSinceMidnight)
 	}
 }

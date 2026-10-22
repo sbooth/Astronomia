@@ -83,7 +83,7 @@ import Testing
 		#expect(try entries.last == Self.entry(1984.5, 54.087, uncertainty: 0.001))
 
 		// 1657.5 is noon on July 2, 1657
-		#expect(try entries[1].tt == JulianDate(julianDayNumber: GregorianCalendar.julianDayNumberFrom(year: 1657, month: 7, day: 2)))
+		#expect(try entries[1].tt == JulianDate(julianDayNumber: GregorianCalendar.julianDayNumber(year: 1657, month: 7, day: 2)))
 	}
 }
 
@@ -91,14 +91,14 @@ import Testing
 	@Test(arguments: [1657.25, 1700.25, 1900, 1972.5])
 	func defaultUsesHistoricTable(decimalYear: Double) throws {
 		let tt = try JulianDate(decimalYear: decimalYear)
-		let tabulated = try #require(DeltaTTable.historic.deltaT(at: tt))
+		let tabulated = try #require(DeltaTTable.historic.deltaT(atTT: tt))
 		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == tabulated)
 	}
 
 	@Test(arguments: [1600.0, 1656.9])
 	func modelBeforeTables(decimalYear: Double) throws {
 		let tt = try JulianDate(decimalYear: decimalYear)
-		#expect(DeltaTTable.historic.deltaT(at: tt) == nil)
+		#expect(DeltaTTable.historic.deltaT(atTT: tt) == nil)
 		#expect(try UT1.deltaT(at: tt, context: UT1.defaultContext) == DeltaTModel.stephensonMorrisonHohenkerk2016.deltaT(decimalYear: tt.decimalYear))
 		#expect(try UT1.deltaT(at: tt, context: .continuous()) == historicJoinedModel(tt.decimalYear))
 	}
@@ -112,7 +112,7 @@ import Testing
 
 		// The continuous context follows the model joined to the end of the modern table.
 		let end = DeltaTTable.modern.coverage.upperBound
-		let endDeltaT = try #require(DeltaTTable.modern.deltaT(at: end))
+		let endDeltaT = try #require(DeltaTTable.modern.deltaT(atTT: end))
 		let joined = model.deltaT(decimalYear: tt.decimalYear) + (endDeltaT - model.deltaT(decimalYear: end.decimalYear))
 		#expect(try abs(UT1.deltaT(at: tt, context: .continuous()) - joined) <= 1e-9)
 	}
@@ -121,7 +121,7 @@ import Testing
 		// The model is fitted to Morrison & Stephenson (2004), not to this table, so the two
 		// differ by 3.7 s at 1657 (within the table's 12 s uncertainty) and 0.04 s at 1984.5.
 		for (decimalYear, tolerance) in [(1657.0, 4.0), (1984.5, 0.05)] {
-			let table = try #require(DeltaTTable.historic.deltaT(at: JulianDate(decimalYear: decimalYear)))
+			let table = try #require(DeltaTTable.historic.deltaT(atTT: JulianDate(decimalYear: decimalYear)))
 			#expect(abs(table - DeltaTModel.espenakMeeus2006.deltaT(decimalYear: decimalYear)) < tolerance)
 		}
 	}
@@ -129,7 +129,7 @@ import Testing
 	@Test func requiresTabulatedValuesWithoutModel() throws {
 		let context = UT1.Context(model: nil)
 		let inTable = try JulianDate(decimalYear: 1900)
-		let tabulated = try #require(DeltaTTable.historic.deltaT(at: inTable))
+		let tabulated = try #require(DeltaTTable.historic.deltaT(atTT: inTable))
 		#expect(try UT1.deltaT(at: inTable, context: context) == tabulated)
 
 		let outsideTable = try JulianDate(decimalYear: 2035)
