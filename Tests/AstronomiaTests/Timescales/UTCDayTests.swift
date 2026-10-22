@@ -106,11 +106,11 @@ import Testing
 	@Test func toTAIMatchesConversion() throws {
 		let day = try UTCDay(julianDayNumber: civilDay(2016, 12, 31))
 		for reading in [0.0, 43_200, 86_400.5] {
-			let direct = try day.toTAI(secondsSinceMidnight: reading)
+			let direct = try day.taiJulianDate(secondsSinceMidnight: reading)
 			let converted = try Instant<UTC>(day.julianDate(secondsSinceMidnight: reading)).converted(to: TAI.self)
 			#expect(direct.isApproximatelyEqual(to: converted.julianDate, toleranceSeconds: timescaleTolerance), "reading \(reading)")
 		}
-		#expect(throws: TimescaleConversionError.invalidTimeOfDay) { try day.toTAI(secondsSinceMidnight: 86_401) }
+		#expect(throws: TimescaleConversionError.invalidTimeOfDay) { try day.taiJulianDate(secondsSinceMidnight: 86_401) }
 	}
 
 	@Test func containing() throws {

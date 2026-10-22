@@ -138,7 +138,7 @@ extension UTCDay {
 	/// - Parameter seconds: The clock reading as seconds since midnight.
 	/// - Throws: ``TimescaleConversionError/invalidTimeOfDay`` if the reading does not occur on
 	///   this UTC day.
-	public func toTAI(secondsSinceMidnight seconds: Double) throws(TimescaleConversionError) -> JulianDate {
+	public func taiJulianDate(secondsSinceMidnight seconds: Double) throws(TimescaleConversionError) -> JulianDate {
 		guard seconds.isFinite else { throw .nonFiniteValue }
 		let fraction = try fractionSinceMidnight(secondsSinceMidnight: seconds)
 		return try tai(fractionSinceMidnight: fraction)

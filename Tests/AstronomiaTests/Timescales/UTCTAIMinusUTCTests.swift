@@ -48,7 +48,7 @@ import Testing
 		// TAI = UTC clock reading + (TAI - UTC), with the reading counted from UTC midnight.
 		let j = try GregorianCalendar.julianDayNumber(year: year, month: month, day: day)
 		let utcDay = try UTCDay(julianDayNumber: j)
-		let tai = try utcDay.toTAI(secondsSinceMidnight: seconds)
+		let tai = try utcDay.taiJulianDate(secondsSinceMidnight: seconds)
 		let taiMinusClock = try utcDay.start.interval(to: tai).inSeconds - seconds
 		let value = try UTC.taiMinusUTC(at: utcDay.julianDate(secondsSinceMidnight: seconds))
 		#expect(abs(value - taiMinusClock) <= 1e-8)
