@@ -28,7 +28,7 @@ public struct Temperature: Hashable, Sendable {
 
 extension Temperature {
 	/// The kelvins of 0 °C.
-	static let kelvinsAtZeroCelsius = 273.15
+	static let kelvinsAtZeroCelsius: Double = 273.15
 
 	/// Creates a temperature from degrees Celsius.
 	///

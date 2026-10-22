@@ -30,8 +30,8 @@ extension Pressure {
 	/// The standard atmosphere, 101,325 Pa.
 	public static let standardAtmosphere = Pressure(pascals: 101_325)
 
-	/// Pascals per inch of mercury at 0 °C, 3,386.389.
-	static let pascalsPerInchOfMercury = 3_386.389
+	/// Pascals per inch of mercury at 0 °C.
+	static let pascalsPerInchOfMercury: Double = 3_386.389
 
 	/// Creates a pressure from hectopascals, which equal millibars.
 	///
