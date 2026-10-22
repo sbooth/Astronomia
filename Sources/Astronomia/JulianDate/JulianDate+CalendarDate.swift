@@ -23,8 +23,8 @@ extension JulianDate {
 	/// with the specified fraction since midnight.
 	///
 	/// This is equivalent to creating a ``CalendarDate`` and passing it to
-	/// ``init(_:)``. Errors are ``CalendarError`` values, not ``JulianDateError`` values,
-	/// because they describe an invalid calendar date.
+	/// ``init(_:)-(CalendarDate)``. Errors are ``CalendarError`` values, not ``JulianDateError``
+	/// values, because they describe an invalid calendar date.
 	///
 	/// The conversion is exact for times of day from 06:00. Earlier times can round by up to
 	/// 2^-55 days (about 2.4 ps).
