@@ -39,7 +39,7 @@ let tdbReferences: [TDBReference] = [
 	}
 
 	@Test func valueAtJ2000() {
-		#expect(abs(TDB.tdbMinusTT(at: .J2000) - -9.575_743_486_095e-5) <= 1e-15)
+		#expect(abs(TDB.tdbMinusTT(at: .j2000) - -9.575_743_486_095e-5) <= 1e-15)
 	}
 
 	@Test(arguments: tdbReferences)
@@ -116,25 +116,25 @@ let tdbReferences: [TDBReference] = [
 
 	@Test func offsetAtJ2000TDB() throws {
 		// TCB - TDB = -TDB0 + L_B / (1 - L_B) × (J2000.0 - TDB0 - T0) at J2000.0 TDB.
-		let tcb = try TCB.fromTDB(.J2000)
-		#expect(try abs(seconds(from: .J2000, to: tcb) - 11.253_787_268_249) <= timescaleTolerance)
+		let tcb = try TCB.fromTDB(.j2000)
+		#expect(try abs(seconds(from: .j2000, to: tcb) - 11.253_787_268_249) <= timescaleTolerance)
 	}
 
 	@Test func offsetAtJ2000TCB() throws {
 		// TCB - TDB = L_B × (J2000.0 - T0) - TDB0 at J2000.0 TCB.
-		let tdb = try TCB.toTDB(.J2000)
-		#expect(try abs(seconds(from: tdb, to: .J2000) - 11.253_787_093_757) <= timescaleTolerance)
+		let tdb = try TCB.toTDB(.j2000)
+		#expect(try abs(seconds(from: tdb, to: .j2000) - 11.253_787_093_757) <= timescaleTolerance)
 	}
 
 	@Test func offsetAtJ2000TT() throws {
 		// TCB - TT at J2000.0 TT, with TDB - TT from the default series.
-		let tcb = try Instant<TT>(.J2000).converted(to: TCB.self)
-		#expect(try abs(seconds(from: .J2000, to: tcb.julianDate) - 11.253_691_510_813) <= timescaleTolerance)
+		let tcb = try Instant<TT>(.j2000).converted(to: TCB.self)
+		#expect(try abs(seconds(from: .j2000, to: tcb.julianDate) - 11.253_691_510_813) <= timescaleTolerance)
 	}
 
 	@Test func rate() throws {
 		// TCB gains L_B / (1 - L_B) × 31,557,600 s ≈ 0.4893 s per Julian year of TDB.
-		let tdbStart = JulianDate.J2000
+		let tdbStart = JulianDate.j2000
 		let tdbEnd = try tdbStart.adding(days: 365.25)
 		let offsetAtStart = try seconds(from: tdbStart, to: TCB.fromTDB(tdbStart))
 		let offsetAtEnd = try seconds(from: tdbEnd, to: TCB.fromTDB(tdbEnd))

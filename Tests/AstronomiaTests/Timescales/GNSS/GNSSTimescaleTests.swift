@@ -50,10 +50,10 @@ private enum MinimumOffsetTimescale: FixedTAIOffsetTimescale {
 @Suite struct FixedTAIOffsetTimescaleTests {
 	@Test func minimumOffset() throws {
 		// TAI is 2^63 s after this timescale's reading, about 10^14 days, which is representable.
-		let tt = try MinimumOffsetTimescale.toTT(.J2000)
-		let expected = try JulianDate.J2000.adding(seconds: Int.max).adding(seconds: 1).adding(seconds: TT.offsetFromTAI)
+		let tt = try MinimumOffsetTimescale.toTT(.j2000)
+		let expected = try JulianDate.j2000.adding(seconds: Int.max).adding(seconds: 1).adding(seconds: TT.offsetFromTAI)
 		#expect(tt.isApproximatelyEqual(to: expected, toleranceSeconds: 1e-6))
-		#expect(try MinimumOffsetTimescale.fromTT(tt).isApproximatelyEqual(to: .J2000, toleranceSeconds: 1e-6))
+		#expect(try MinimumOffsetTimescale.fromTT(tt).isApproximatelyEqual(to: .j2000, toleranceSeconds: 1e-6))
 	}
 
 	@Test func offsets() throws {

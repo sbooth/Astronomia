@@ -10,9 +10,9 @@ import Testing
 
 @Suite struct JulianDateCalendarDateTests {
 	@Test func initFromCalendarDate() throws {
-		#expect(JulianDate(try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian)) == JulianDate.J2000)
-		#expect(JulianDate(try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian)) == JulianDate.J2000)
-		#expect(JulianDate(try CalendarDate(year: 1858, month: 11, day: 17, calendar: .gregorian)) == JulianDate.MJD0)
+		#expect(JulianDate(try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian)) == JulianDate.j2000)
+		#expect(JulianDate(try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian)) == JulianDate.j2000)
+		#expect(JulianDate(try CalendarDate(year: 1858, month: 11, day: 17, calendar: .gregorian)) == JulianDate.mjd0)
 		#expect(JulianDate(try CalendarDate(year: -4712, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .julian)) == (try JulianDate(julianDayNumber: 0)))
 		#expect(JulianDate(try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.75, calendar: .gregorian)) == (try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: 0.25)))
 		#expect(JulianDate(try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.25, calendar: .gregorian)) == (try JulianDate(julianDayNumber: 2_451_545, fractionFromNoon: -0.25)))
@@ -20,14 +20,14 @@ import Testing
 
 	@Test func initFromComponents() throws {
 		// The Julian-Gregorian calendar is the default
-		#expect(try JulianDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5) == JulianDate.J2000)
-		#expect(try JulianDate(year: 1858, month: 11, day: 17) == JulianDate.MJD0)
+		#expect(try JulianDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5) == JulianDate.j2000)
+		#expect(try JulianDate(year: 1858, month: 11, day: 17) == JulianDate.mjd0)
 		#expect(try JulianDate(year: -4712, month: 1, day: 1, fractionSinceMidnight: 0.5) == JulianDate(julianDayNumber: 0))
 		#expect(try JulianDate(year: 1582, month: 10, day: 4) == JulianDate(julianDayNumber: 2_299_160, fractionFromNoon: -0.5))
 		#expect(try JulianDate(year: 1582, month: 10, day: 15) == JulianDate(julianDayNumber: 2_299_161, fractionFromNoon: -0.5))
 
-		#expect(try JulianDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian) == JulianDate.J2000)
-		#expect(try JulianDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian) == JulianDate.J2000)
+		#expect(try JulianDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian) == JulianDate.j2000)
+		#expect(try JulianDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian) == JulianDate.j2000)
 		// Valid in the Gregorian calendar but not in the Julian-Gregorian calendar
 		#expect(try JulianDate(year: 1582, month: 10, day: 10, calendar: .gregorian) == JulianDate(julianDayNumber: 2_299_156, fractionFromNoon: -0.5))
 	}
@@ -42,10 +42,10 @@ import Testing
 	}
 
 	@Test func calendarDate() throws {
-		#expect(JulianDate.J2000.calendarDate == (try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .julianGregorian)))
-		#expect(JulianDate.J2000.calendarDate(in: .gregorian) == (try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian)))
-		#expect(JulianDate.J2000.calendarDate(in: .julian) == (try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian)))
-		#expect(JulianDate.MJD0.calendarDate == (try CalendarDate(year: 1858, month: 11, day: 17, calendar: .julianGregorian)))
+		#expect(JulianDate.j2000.calendarDate == (try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .julianGregorian)))
+		#expect(JulianDate.j2000.calendarDate(in: .gregorian) == (try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .gregorian)))
+		#expect(JulianDate.j2000.calendarDate(in: .julian) == (try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian)))
+		#expect(JulianDate.mjd0.calendarDate == (try CalendarDate(year: 1858, month: 11, day: 17, calendar: .julianGregorian)))
 		#expect(try JulianDate(julianDayNumber: 0).calendarDate == CalendarDate(year: -4712, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .julianGregorian))
 		#expect(try JulianDate(julianDayNumber: 0).calendarDate(in: .gregorian) == CalendarDate(year: -4713, month: 11, day: 24, fractionSinceMidnight: 0.5, calendar: .gregorian))
 
@@ -99,11 +99,11 @@ import Testing
 		#expect(try JulianDate(decimalYear: -0.5, calendar: .julian) == JulianDate(year: -1, month: 7, day: 2, fractionSinceMidnight: 0.5, calendar: .julian))
 
 		#expect(try JulianDate(year: 1985, month: 7, day: 2, fractionSinceMidnight: 0.5).decimalYear == 1985.5)
-		#expect(JulianDate.J2000.decimalYear == (try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .julianGregorian)).decimalYear)
-		#expect(JulianDate.J2000.decimalYear(in: .julian) == (try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian)).decimalYear)
-		#expect(abs(JulianDate.J2000.decimalYear - (2000 + 0.5 / 366)) < 1e-12)
+		#expect(JulianDate.j2000.decimalYear == (try CalendarDate(year: 2000, month: 1, day: 1, fractionSinceMidnight: 0.5, calendar: .julianGregorian)).decimalYear)
+		#expect(JulianDate.j2000.decimalYear(in: .julian) == (try CalendarDate(year: 1999, month: 12, day: 19, fractionSinceMidnight: 0.5, calendar: .julian)).decimalYear)
+		#expect(abs(JulianDate.j2000.decimalYear - (2000 + 0.5 / 366)) < 1e-12)
 		// The calendars disagree about the decimal year of the same instant
-		#expect(JulianDate.J2000.decimalYear(in: .julian) < JulianDate.J2000.decimalYear(in: .gregorian))
+		#expect(JulianDate.j2000.decimalYear(in: .julian) < JulianDate.j2000.decimalYear(in: .gregorian))
 
 		#expect(throws: CalendarError.nonFiniteValue) { try JulianDate(decimalYear: .nan) }
 		#expect(throws: CalendarError.invalidDecimalYear) { try JulianDate(decimalYear: 1e300) }
@@ -142,10 +142,10 @@ import Foundation
 		// The Unix epoch, 1970-01-01T00:00:00 UTC, is JD 2440587.5
 		#expect(try JulianDate(Date(timeIntervalSince1970: 0)) == JulianDate(julianDayNumber: 2_440_588, fractionFromNoon: -0.5))
 		// J2000.0 as a UTC label is 2000-01-01T12:00:00
-		#expect(JulianDate.J2000.date.timeIntervalSinceReferenceDate == -31_579_200)
-		#expect(try JulianDate(Date(timeIntervalSinceReferenceDate: -31_579_200)) == JulianDate.J2000)
+		#expect(JulianDate.j2000.date.timeIntervalSinceReferenceDate == -31_579_200)
+		#expect(try JulianDate(Date(timeIntervalSinceReferenceDate: -31_579_200)) == JulianDate.j2000)
 		// MJD zero is 1858-11-17T00:00:00
-		#expect(try JulianDate(Date(timeIntervalSince1970: -3_506_716_800)) == JulianDate.MJD0)
+		#expect(try JulianDate(Date(timeIntervalSince1970: -3_506_716_800)) == JulianDate.mjd0)
 		#expect(try JulianDate(Date(timeIntervalSinceReferenceDate: 43_200)) == JulianDate(julianDayNumber: 2_451_911))
 	}
 

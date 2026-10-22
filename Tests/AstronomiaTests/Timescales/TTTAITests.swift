@@ -25,9 +25,9 @@ import Testing
 @Suite struct TAITests {
 	@Test func offsetAtJ2000() throws {
 		// J2000.0 TAI is 2000-01-01T12:00:32.184 TT.
-		let tt = try Instant<TAI>(.J2000).converted(to: TT.self)
-		#expect(tt.julianDate.julianDayNumber == JulianDate.J2000.julianDayNumber)
-		#expect(try abs(seconds(from: .J2000, to: tt.julianDate) - 32.184) <= timescaleTolerance)
+		let tt = try Instant<TAI>(.j2000).converted(to: TT.self)
+		#expect(tt.julianDate.julianDayNumber == JulianDate.j2000.julianDayNumber)
+		#expect(try abs(seconds(from: .j2000, to: tt.julianDate) - 32.184) <= timescaleTolerance)
 	}
 
 	@Test(arguments: sampleDates)

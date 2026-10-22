@@ -47,7 +47,7 @@ public enum UT1: Timescale {
 
 	public static func fromTT(_ julianDate: JulianDate, context: Context) throws(TimescaleConversionError) -> JulianDate {
 		// UT1 = TT - ΔT(TT)
-		let deltaT = try deltaT(at: julianDate, context: context)
+		let deltaT = try deltaT(atTT: julianDate, context: context)
 		do throws(JulianDateError) {
 			return try julianDate.adding(seconds: -deltaT)
 		}
@@ -249,7 +249,7 @@ extension UT1 {
 	///   - ``TimescaleConversionError/deltaTUnavailable`` if the context's source
 	///     does not cover `tt`.
 	///   - ``TimescaleConversionError/nonFiniteValue`` if the source returns NaN or infinity.
-	public static func deltaT(at tt: JulianDate, context: Context) throws(TimescaleConversionError) -> Double {
+	public static func deltaT(atTT tt: JulianDate, context: Context) throws(TimescaleConversionError) -> Double {
 		guard let deltaT = context.deltaT.deltaT(atTT: tt) else { throw .deltaTUnavailable }
 		guard deltaT.isFinite else { throw .nonFiniteValue }
 		return deltaT

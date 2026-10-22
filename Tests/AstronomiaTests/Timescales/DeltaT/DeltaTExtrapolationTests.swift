@@ -121,7 +121,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let end = try Self.year(2002)
 		let function = DeltaTFunction(coverage: .min ... end) { tt in
 			// 2 s per Julian year
-			(try? JulianDate.J2000.interval(to: tt)).map { 64 + 2 * $0.inDays / daysPerJulianYear }
+			(try? JulianDate.j2000.interval(to: tt)).map { 64 + 2 * $0.inDays / daysPerJulianYear }
 		}
 		let trend = try LinearDeltaTExtrapolation(after: function, through: Self.year(2003))
 		#expect(abs(trend.rate - 2) <= 1e-9)
@@ -249,8 +249,8 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let inside = try JulianDate(decimalYear: 1657.001)
 		let outside = try JulianDate(decimalYear: 1656.999)
 		let continuous = UT1.Context.continuous()
-		#expect(try abs(UT1.deltaT(at: inside, context: continuous) - UT1.deltaT(at: outside, context: continuous)) <= 0.01)
-		#expect(try abs(UT1.deltaT(at: inside, context: UT1.defaultContext) - UT1.deltaT(at: outside, context: UT1.defaultContext)) >= 3.6)
+		#expect(try abs(UT1.deltaT(atTT: inside, context: continuous) - UT1.deltaT(atTT: outside, context: continuous)) <= 0.01)
+		#expect(try abs(UT1.deltaT(atTT: inside, context: UT1.defaultContext) - UT1.deltaT(atTT: outside, context: UT1.defaultContext)) >= 3.6)
 	}
 
 	@Test func observationsJoinModelBeforeTheirStart() throws {
@@ -266,8 +266,8 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		#expect(abs(model.deltaT(decimalYear: start.decimalYear) - startDeltaT) > 1)
 
 		let before = try start.adding(seconds: -1)
-		#expect(try abs(UT1.deltaT(at: before, context: context) - startDeltaT) <= 1e-6)
-		#expect(try UT1.deltaT(at: start, context: context) == startDeltaT)
+		#expect(try abs(UT1.deltaT(atTT: before, context: context) - startDeltaT) <= 1e-6)
+		#expect(try UT1.deltaT(atTT: start, context: context) == startDeltaT)
 
 		// UT1 advances by a second across the first observation, as TT does
 		let ut1Before = try UT1.fromTT(before, context: context)
@@ -284,7 +284,7 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 
 		// A day after the last observation, ΔT is close to it, not the model's value
 		let nextDay = try table.coverage.upperBound.adding(days: 1)
-		let joined = try UT1.deltaT(at: nextDay, context: context)
+		let joined = try UT1.deltaT(atTT: nextDay, context: context)
 		#expect(abs(joined - endDeltaT) <= 0.01)
 		#expect(abs(joined - DeltaTModel.espenakMeeus2006.deltaT(decimalYear: nextDay.decimalYear)) > 1)
 
@@ -292,6 +292,6 @@ func historicJoinedModel(_ decimalYear: Double) -> Double {
 		let later = try table.coverage.upperBound.adding(days: 365)
 		let model = DeltaTModel.espenakMeeus2006
 		let expected = endDeltaT + (model.deltaT(decimalYear: later.decimalYear) - model.deltaT(decimalYear: end.decimalYear))
-		#expect(try abs(UT1.deltaT(at: later, context: context) - expected) <= 1e-9)
+		#expect(try abs(UT1.deltaT(atTT: later, context: context) - expected) <= 1e-9)
 	}
 }

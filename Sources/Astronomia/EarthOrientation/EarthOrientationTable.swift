@@ -100,13 +100,12 @@ public struct EarthOrientationTable: Hashable, Sendable {
 	let samples: [Sample]
 
 	/// Creates a table from entries of Earth orientation parameters.
+	/// Returns `nil` if the entries are invalid or a date is not covered by `leapSecondTable`.
 	///
 	/// - Parameters:
 	///   - entries: At least two entries in strictly increasing order of date, with finite
 	///     values and UT1 - UTC smaller than a second in magnitude.
 	///   - leapSecondTable: The leap seconds used to convert UT1 - UTC to ΔT.
-	/// - Returns: `nil` if the entries are invalid or a date is not covered by
-	///   `leapSecondTable`.
 	public init?(entries: [Entry], leapSecondTable: LeapSecondTable = .builtIn) {
 		guard entries.count >= 2 else { return nil }
 		let utc = UTC.Context(leapSecondTable: leapSecondTable, extrapolationPolicy: .allow)
@@ -229,6 +228,8 @@ private func days(from start: JulianDate, to end: JulianDate) -> Double {
 extension EarthOrientationTable {
 	/// Creates a table from the contents of an IERS `finals2000A` data file, using the
 	/// Bulletin A values.
+	/// Returns `nil` if a row is malformed or the entries fail the checks of
+	/// ``init(entries:leapSecondTable:)``.
 	///
 	/// Rows without a UT1 - UTC value are skipped. Polar motion, the celestial pole offsets,
 	/// and the excess length of day are read where present, each with its own prediction flag;
@@ -237,14 +238,11 @@ extension EarthOrientationTable {
 	/// - Important: In the older IAU 1980 `finals` files, the columns of dX and dY hold the
 	///   nutation offsets dψ and dε instead, which this initializer would read as dX and dY.
 	///   UT1 - UTC and polar motion are in the same columns of both.
-	///
 	/// - Parameters:
 	///   - text: The contents of the file.
 	///   - includePredictions: Whether to include predicted values. Without them, rows whose
 	///     UT1 - UTC is predicted are skipped, and other predicted values are left out.
 	///   - leapSecondTable: The leap seconds used to convert UT1 - UTC to ΔT.
-	/// - Returns: `nil` if a row is malformed or the entries fail the checks of
-	///   ``init(entries:leapSecondTable:)``.
 	public init?(finals2000A text: String, includePredictions: Bool = true, leapSecondTable: LeapSecondTable = .builtIn) {
 		/// Returns the 1-based, inclusive columns `range` of `bytes` without spaces, or an empty
 		/// string if the row is shorter.

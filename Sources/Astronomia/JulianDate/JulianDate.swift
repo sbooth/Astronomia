@@ -20,7 +20,7 @@
 /// For second-level accuracy in UTC near a leap second, convert seconds to a fraction of
 /// the specific day by dividing by that day's actual length, split intervals that cross
 /// midnight at the day boundary, and use the day-based functions such as
-/// ``adding(days:)`` and ``init(julianDayNumber:fractionFromNoon:)``.
+/// ``adding(days:)-(Double)`` and ``init(julianDayNumber:fractionFromNoon:)``.
 public struct JulianDate: Hashable, Sendable {
 	/// The Julian day number of the calendar day containing this date.
 	///
@@ -46,9 +46,9 @@ public struct JulianDate: Hashable, Sendable {
 
 extension JulianDate {
 	/// JD of reference epoch J2000.0 (TT).
-	static let J2000_JD: Double = 2_451_545.0
+	static let j2000JD: Double = 2_451_545.0
 	/// JD of MJD zero.
-	static let MJD0_JD: Double = 2_400_000.5
+	static let mjd0JD: Double = 2_400_000.5
 
 	/// Days per tropical year, used for Besselian epochs.
 	static let daysPerTropicalYear: Double = 365.242198781
@@ -56,11 +56,11 @@ extension JulianDate {
 
 extension JulianDate {
 	/// J2000.0 epoch (JD 2451545.0, 2000-01-01T12:00:00 TT).
-	public static let J2000 = JulianDate(uncheckedJulianDayNumber: 2_451_545, fractionFromNoon: 0)
+	public static let j2000 = JulianDate(uncheckedJulianDayNumber: 2_451_545, fractionFromNoon: 0)
 	/// B1900.0 epoch (JD 2415020.31352).
-	public static let B1900 = JulianDate(uncheckedJulianDayNumber: 2_415_020, fractionFromNoon: 0.313_52)
+	public static let b1900 = JulianDate(uncheckedJulianDayNumber: 2_415_020, fractionFromNoon: 0.313_52)
 	/// Modified Julian Day (MJD) zero (JD 2400000.5, 1858-11-17T00:00:00).
-	public static let MJD0 = JulianDate(uncheckedJulianDayNumber: 2_400_001, fractionFromNoon: -0.5)
+	public static let mjd0 = JulianDate(uncheckedJulianDayNumber: 2_400_001, fractionFromNoon: -0.5)
 }
 
 extension JulianDate {
@@ -138,7 +138,7 @@ extension JulianDate {
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public init(mjd1: Double, mjd2: Double = 0) throws(JulianDateError) {
-		self = try Self.MJD0.adding(days1: mjd1, days2: mjd2)
+		self = try Self.mjd0.adding(days1: mjd1, days2: mjd2)
 	}
 
 	/// Creates a Julian Date from a single Modified Julian Date value.
@@ -162,7 +162,7 @@ extension JulianDate {
 	///   - ``JulianDateError/julianDayNumberNotRepresentable`` if the resulting Julian day
 	///     number cannot be represented as a ``JulianDayNumber``.
 	public init(daysSinceJ2000 days: Double) throws(JulianDateError) {
-		self = try Self.J2000.adding(days: days)
+		self = try Self.j2000.adding(days: days)
 	}
 
 	/// Creates a Julian Date from a Julian epoch value, e.g. 2000.0.
@@ -177,7 +177,7 @@ extension JulianDate {
 	public init(julianEpoch epoch: Double) throws(JulianDateError) {
 		// J2000.0 + (epoch - 2000) × 365.25
 		try self.init { acc throws(DayAccumulator.Failure) in
-			try acc.add(noonBased: Self.J2000)
+			try acc.add(noonBased: Self.j2000)
 			try acc.add(product: epoch, daysPerJulianYear)
 			try acc.add(-730_500) // 2000 × 365.25
 		}
@@ -195,7 +195,7 @@ extension JulianDate {
 	public init(besselianEpoch epoch: Double) throws(JulianDateError) {
 		// B1900.0 + (epoch - 1900) × days per tropical year
 		try self.init { acc throws(DayAccumulator.Failure) in
-			try acc.add(noonBased: Self.B1900)
+			try acc.add(noonBased: Self.b1900)
 			try acc.add(product: epoch, Self.daysPerTropicalYear)
 			try acc.add(product: -1900, Self.daysPerTropicalYear)
 		}
@@ -280,14 +280,14 @@ extension JulianDate {
 	///
 	/// Use ``parts(using:)`` with ``SplitMethod/dayAndFractionFromMJD0`` for full precision.
 	public var modifiedJulianDate: Double {
-		(differenceAsDouble(julianDayNumber, Self.MJD0.julianDayNumber) + noonToMidnightOffset) + fractionFromNoon
+		(differenceAsDouble(julianDayNumber, Self.mjd0.julianDayNumber) + noonToMidnightOffset) + fractionFromNoon
 	}
 
 	/// Days from J2000.0 as a single value.
 	///
 	/// Use ``parts(using:)`` with ``SplitMethod/dayAndFractionFromJ2000`` for full precision.
 	public var daysSinceJ2000: Double {
-		differenceAsDouble(julianDayNumber, Self.J2000.julianDayNumber) + (fractionFromNoon /*- Self.J2000.fraction*/)
+		differenceAsDouble(julianDayNumber, Self.j2000.julianDayNumber) + (fractionFromNoon /*- Self.j2000.fraction*/)
 	}
 
 	/// Julian centuries of 36,525 days from J2000.0.
@@ -308,7 +308,7 @@ extension JulianDate {
 	///
 	/// A Besselian epoch counts tropical years of 365.242198781 days from B1900.0.
 	public var besselianEpoch: Double {
-		let days = differenceAsDouble(julianDayNumber, Self.B1900.julianDayNumber) + (fractionFromNoon - Self.B1900.fractionFromNoon)
+		let days = differenceAsDouble(julianDayNumber, Self.b1900.julianDayNumber) + (fractionFromNoon - Self.b1900.fractionFromNoon)
 		return 1900.0 + days / Self.daysPerTropicalYear
 	}
 }
@@ -362,17 +362,17 @@ extension JulianDate {
 		case .julianDate:
 			return (Double(julianDayNumber) + fractionFromNoon, 0)
 		case .j2000:
-			return (Self.J2000_JD, daysSinceJ2000)
+			return (Self.j2000JD, daysSinceJ2000)
 		case .mjd:
-			return (Self.MJD0_JD, modifiedJulianDate)
+			return (Self.mjd0JD, modifiedJulianDate)
 		case .dateAndTime:
 			return (Double(julianDayNumber) - noonToMidnightOffset, fractionSinceMidnight)
 		case .dayAndFraction:
 			return (Double(julianDayNumber), fractionFromNoon)
 		case .dayAndFractionFromJ2000:
-			return (differenceAsDouble(julianDayNumber, Self.J2000.julianDayNumber), fractionFromNoon)
+			return (differenceAsDouble(julianDayNumber, Self.j2000.julianDayNumber), fractionFromNoon)
 		case .dayAndFractionFromMJD0:
-			return (differenceAsDouble(julianDayNumber, Self.MJD0.julianDayNumber), fractionSinceMidnight)
+			return (differenceAsDouble(julianDayNumber, Self.mjd0.julianDayNumber), fractionSinceMidnight)
 		}
 	}
 }

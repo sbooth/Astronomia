@@ -63,6 +63,6 @@ import Testing
 
 	@Test func julianDate() throws {
 		// 2000-01-01T12:00:00 is J2000.0 as a Julian Date.
-		#expect(try JulianDate.J2000.calendarDate.timeOfDay == TimeOfDay(hour: 12, minute: 0))
+		#expect(try JulianDate.j2000.calendarDate.timeOfDay == TimeOfDay(hour: 12, minute: 0))
 	}
 }
