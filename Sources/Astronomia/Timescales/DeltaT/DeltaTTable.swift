@@ -46,13 +46,12 @@ public struct DeltaTTable: Hashable, Sendable {
 	/// The entries, in increasing order of date.
 	public let entries: [Entry]
 
-	/// Creates a table.
+	/// Creates a table, returning `nil` if the entries are invalid.
 	///
 	/// - Parameter entries: At least two entries in strictly increasing order of date, with
 	///   finite values of ΔT and finite, nonnegative uncertainties. ΔT must change by less
 	///   than the time between neighboring entries, so that it changes more slowly than TT and
 	///   each UT1 date has one TT.
-	/// - Returns: `nil` if the entries are invalid.
 	public init?(entries: [Entry]) {
 		guard entries.count >= 2 else { return nil }
 

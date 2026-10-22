@@ -44,6 +44,8 @@ public struct LeapSecondTable: Hashable, Sendable {
 	public let horizon: JulianDayNumber
 
 	/// Creates a leap second table.
+	/// Returns `nil` if `leapSeconds` does not begin at 1972-01-01 with 10 s, or the leap
+	/// seconds or horizon are otherwise invalid.
 	///
 	/// - Parameters:
 	///   - leapSeconds: TAI - UTC from 1972-01-01, when it was 10 s, in strictly increasing
@@ -53,8 +55,6 @@ public struct LeapSecondTable: Hashable, Sendable {
 	///     less than a day.
 	///   - horizon: The Julian day number of the UTC day on which the leap second list expires,
 	///     the first it does not cover. Must be after the last leap second's effective day.
-	/// - Returns: `nil` if `leapSeconds` does not begin at 1972-01-01 with 10 s, or the leap
-	///   seconds or horizon are otherwise invalid.
 	public init?(leapSeconds: [LeapSecond], horizon: JulianDayNumber) {
 		guard let first = leapSeconds.first, first.effective == Self.firstDayOf1972, first.taiMinusUTC == 10,
 			  let last = leapSeconds.last, horizon > last.effective
