@@ -40,7 +40,8 @@ extension Observer {
 	///     earlier instant at which the light left the body.
 	///   - ``EphemerisError/timescaleConversion(_:)`` if `instant` can't be converted.
 	///   - ``EphemerisError/invalidState`` if the ephemeris gives a position or velocity that is
-	///     NaN, infinite, or too large for the light time to be represented.
+	///     NaN or infinite, a speed of light or more, or a position too far for the light time
+	///     to be represented.
 	public func astrometricPlace<E: GeocentricEphemeris, Scale: Timescale>(of body: E.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, ephemeris: E) throws(EphemerisError) -> AstrometricPlace<ICRS> {
 		let (tt, geometry, _) = try observe(body, at: instant, context: context, ephemeris: ephemeris)
 		let position = Position<ICRS>(geometry.target - geometry.observer.position)
@@ -68,7 +69,8 @@ extension Observer {
 	///     earlier instant at which the light left the body.
 	///   - ``EphemerisError/timescaleConversion(_:)`` if `instant` can't be converted.
 	///   - ``EphemerisError/invalidState`` if the ephemeris gives a position or velocity that is
-	///     NaN, infinite, or too large for the light time to be represented.
+	///     NaN or infinite, a speed of light or more, or a position too far for the light time
+	///     to be represented.
 	public func apparentPlace<E: GeocentricEphemeris, Scale: Timescale>(of body: E.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, ephemeris: E) throws(EphemerisError) -> ApparentPlace<ICRS> {
 		let (tt, geometry, positions) = try observe(body, at: instant, context: context, ephemeris: ephemeris)
 		let relative = geometry.target - geometry.observer.position
@@ -79,6 +81,10 @@ extension Observer {
 		let deflected = try Astrometry.deflected(relative / distance, geometry: geometry, of: body, positions: positions)
 		let sunGravitationalParameter = E.lightDeflectingBodies.first { $0.body == E.sun }?.gravitationalParameter ?? 0
 		let apparent = Astrometry.aberrated(deflected, velocity: geometry.observer.velocity, sunDistance: (geometry.observer.position - positions.sun.position).length, sunGravitationalParameter: sunGravitationalParameter)
+		// Finite states can still meet in a degenerate geometry, such as an observer at the Sun.
+		guard apparent.x.isFinite, apparent.y.isFinite, apparent.z.isFinite else {
+			throw .invalidState
+		}
 		let lightTime: DayInterval
 		do throws(DayIntervalError) {
 			lightTime = try DayInterval(days: geometry.lightTime)

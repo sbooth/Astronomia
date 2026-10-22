@@ -18,6 +18,9 @@ enum Astrometry {
 	/// ``SolarSystemEphemeris``, where the barycenter needs every body. The Sun's barycentric
 	/// motion is carried back linearly over the light time, which neglects its acceleration:
 	/// under 50 m over Pluto's light time of five hours.
+	///
+	/// Every state is checked as it is read, so that an ephemeris's NaN, infinite, or faster
+	/// than light values throw ``EphemerisError/invalidState`` instead of reaching the places.
 	struct Positions<E: GeocentricEphemeris> {
 		let ephemeris: E
 		/// The instant of observation.
@@ -29,7 +32,7 @@ enum Astrometry {
 			self.ephemeris = ephemeris
 			self.tdb = tdb
 			let state = try ephemeris.state(of: E.sun, relativeTo: E.solarSystemBarycenter, at: tdb).converted(to: ICRS.self)
-			sun = (state.position.vector, state.velocity.vector)
+			sun = try Self.validated(state.position.vector, state.velocity.vector)
 		}
 
 		/// Returns a body's barycentric position and velocity some days before the instant of
@@ -37,7 +40,19 @@ enum Astrometry {
 		func state(of body: E.Body, daysEarlier days: Double = 0) throws(EphemerisError) -> (position: Vector3, velocity: Vector3) {
 			let instant = days == 0 ? tdb : try Astrometry.instant(tdb, minusDays: days)
 			let heliocentric = try ephemeris.state(of: body, relativeTo: E.sun, at: instant).converted(to: ICRS.self)
-			return (heliocentric.position.vector + sun.position - sun.velocity * days, heliocentric.velocity.vector + sun.velocity)
+			return try Self.validated(heliocentric.position.vector + sun.position - sun.velocity * days, heliocentric.velocity.vector + sun.velocity)
+		}
+
+		/// Returns a state, checked to be finite and slower than light.
+		///
+		/// - Throws: ``EphemerisError/invalidState`` if a component is NaN or infinite, or the
+		///   speed is the speed of light or more, outside the domain of aberration.
+		static func validated(_ position: Vector3, _ velocity: Vector3) throws(EphemerisError) -> (position: Vector3, velocity: Vector3) {
+			let components = [position.x, position.y, position.z, velocity.x, velocity.y, velocity.z]
+			guard components.allSatisfy(\.isFinite), velocity.length < speedOfLightAstronomicalUnitsPerDay else {
+				throw .invalidState
+			}
+			return (position, velocity)
 		}
 	}
 
