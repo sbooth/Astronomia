@@ -20,7 +20,7 @@
 /// For second-level accuracy in UTC near a leap second, convert seconds to a fraction of
 /// the specific day by dividing by that day's actual length, split intervals that cross
 /// midnight at the day boundary, and use the day-based functions such as
-/// ``adding(days:)`` and ``init(julianDayNumber:fractionFromNoon:)``.
+/// ``adding(days:)-(Double)`` and ``init(julianDayNumber:fractionFromNoon:)``.
 public struct JulianDate: Hashable, Sendable {
 	/// The Julian day number of the calendar day containing this date.
 	///
