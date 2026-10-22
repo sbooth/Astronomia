@@ -208,6 +208,28 @@ import Testing
 		#expect(throws: AtmosphericConditionsError.invalidWavelength) { try AtmosphericConditions(pressure: p, temperature: t, relativeHumidity: 0.5, wavelength: .meters(1.01)) }
 	}
 
+	@Test func limitsInOtherUnits() throws {
+		// Each limit given in another unit rounds past it in conversion, and is accepted.
+		let p = Pressure.hectopascals(1000)
+		let t = Temperature.degreesCelsius(10)
+		for wavelength in [Distance.meters(1e-7), .micrometers(0.1), .kilometers(0.001), .micrometers(1e6)] {
+			_ = try AtmosphericConditions(pressure: p, temperature: t, relativeHumidity: 0.5, wavelength: wavelength)
+		}
+		for temperature in [Temperature.kelvins(123.15), .degreesFahrenheit(-238), .kelvins(473.15), .degreesFahrenheit(392)] {
+			_ = try AtmosphericConditions(pressure: p, temperature: temperature, relativeHumidity: 0)
+		}
+		_ = try AtmosphericConditions(pressure: .inchesOfMercury(10_000 / 33.863_89), temperature: t, relativeHumidity: 0.5)
+		_ = try AtmosphericConditions(pressure: .pascals(1e6), temperature: t, relativeHumidity: 0.5)
+		// 100 µm is optical in any unit.
+		let optical = try AtmosphericConditions(pressure: p, temperature: t, relativeHumidity: 0.5, wavelength: .micrometers(100)).refractionConstants
+		#expect(try AtmosphericConditions(pressure: p, temperature: t, relativeHumidity: 0.5, wavelength: .meters(1e-4)).refractionConstants == optical)
+		// Beyond the rounding, the limits hold.
+		#expect(throws: AtmosphericConditionsError.invalidWavelength) { try AtmosphericConditions(pressure: p, temperature: t, relativeHumidity: 0.5, wavelength: .micrometers(0.099_999_99)) }
+		#expect(throws: AtmosphericConditionsError.invalidWavelength) { try AtmosphericConditions(pressure: p, temperature: t, relativeHumidity: 0.5, wavelength: .micrometers(1.000_000_01e6)) }
+		#expect(throws: AtmosphericConditionsError.invalidTemperature) { try AtmosphericConditions(pressure: p, temperature: .kelvins(123.149_999), relativeHumidity: 0) }
+		#expect(throws: AtmosphericConditionsError.invalidPressure) { try AtmosphericConditions(pressure: .hectopascals(10_000.000_01), temperature: t, relativeHumidity: 0) }
+	}
+
 	@Test func vaporPressure() throws {
 		// The vapor-pressure model diverges as the pressure approaches the saturation vapor
 		// pressure, here at 6.13 hPa for 10 °C and 50% humidity, which once gave A ≈ -2.2e9.

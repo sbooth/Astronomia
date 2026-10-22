@@ -72,16 +72,16 @@ public struct AtmosphericConditions: Hashable, Sendable {
 		guard pressure.pascals.isFinite, temperature.kelvins.isFinite, relativeHumidity.isFinite, wavelength.astronomicalUnits.isFinite else {
 			throw .nonFiniteValue
 		}
-		guard (0 ... 10_000).contains(pressure.hectopascals) else {
+		guard Self.pressureRange.contains(pressure.hectopascals) else {
 			throw .invalidPressure
 		}
-		guard (-150 ... 200).contains(temperature.degreesCelsius) else {
+		guard Self.temperatureRange.contains(temperature.degreesCelsius) else {
 			throw .invalidTemperature
 		}
 		guard (0 ... 1).contains(relativeHumidity) else {
 			throw .invalidRelativeHumidity
 		}
-		guard (0.1 ... 1e6).contains(wavelength.micrometers) else {
+		guard Self.wavelengthRange.contains(wavelength.micrometers) else {
 			throw .invalidWavelength
 		}
 		// Humid air needs a pressure above the saturation vapor pressure; nearer it, the
@@ -127,7 +127,7 @@ public struct AtmosphericConditions: Hashable, Sendable {
 		guard height.astronomicalUnits.isFinite, temperature.kelvins.isFinite else {
 			throw .nonFiniteValue
 		}
-		guard (-150 ... 200).contains(temperature.degreesCelsius) else {
+		guard Self.temperatureRange.contains(temperature.degreesCelsius) else {
 			throw .invalidTemperature
 		}
 		let pressure = Pressure.standardAtmosphere.hectopascals * Math.exp(-height.meters / (Self.scaleHeightPerKelvin * temperature.kelvins))
@@ -140,10 +140,10 @@ public struct AtmosphericConditions: Hashable, Sendable {
 	/// - Precondition: The values satisfy the requirements of the public initializer.
 	init(uncheckedPressure pressure: Pressure, temperature: Temperature, relativeHumidity: Double, wavelength: Distance) {
 		assert(pressure.pascals.isFinite && temperature.kelvins.isFinite && relativeHumidity.isFinite && wavelength.astronomicalUnits.isFinite, "Non-finite value")
-		assert((0 ... 10_000).contains(pressure.hectopascals), "Invalid pressure")
-		assert((-150 ... 200).contains(temperature.degreesCelsius), "Invalid temperature")
+		assert(Self.pressureRange.contains(pressure.hectopascals), "Invalid pressure")
+		assert(Self.temperatureRange.contains(temperature.degreesCelsius), "Invalid temperature")
 		assert((0 ... 1).contains(relativeHumidity), "Invalid relative humidity")
-		assert((0.1 ... 1e6).contains(wavelength.micrometers), "Invalid wavelength")
+		assert(Self.wavelengthRange.contains(wavelength.micrometers), "Invalid wavelength")
 		assert(relativeHumidity == 0 || pressure.hectopascals == 0 || Self.saturationVaporPressure(pressure: pressure.hectopascals, temperature: temperature.degreesCelsius) < pressure.hectopascals, "Invalid vapor pressure")
 		self.pressure = pressure
 		self.temperature = temperature
@@ -204,6 +204,22 @@ extension AtmosphericConditions {
 		return try AtmosphericConditions(pressure: .pascals(pressure), temperature: .kelvins(temperature), relativeHumidity: relativeHumidity, wavelength: wavelength)
 	}
 
+	/// The accepted pressures, in hPa: 0 to 10,000 hPa, with an allowance for rounding in a
+	/// conversion from another unit.
+	static let pressureRange: ClosedRange<Double> = 0 ... 10_000 * (1 + 1e-12)
+
+	/// The accepted temperatures, in °C: -150 °C to 200 °C, with an allowance for rounding in
+	/// a conversion from another unit.
+	static let temperatureRange: ClosedRange<Double> = (-150 - 1e-9) ... (200 + 1e-9)
+
+	/// The accepted wavelengths, in µm: 0.1 µm to 1 m, with an allowance for rounding in a
+	/// conversion through astronomical units.
+	static let wavelengthRange: ClosedRange<Double> = (0.1 * (1 - 1e-12)) ... (1e6 * (1 + 1e-12))
+
+	/// The longest optical and infrared wavelength, in µm: 100 µm, as in `eraRefco`, with an
+	/// allowance for rounding, so that 100 µm in any unit is optical.
+	static let longestOpticalWavelength: Double = 100 * (1 + 1e-12)
+
 	/// The scale height of an atmosphere per kelvin of its temperature, R / (M g), in meters,
 	/// as in ERFA's estimate of the pressure at a site.
 	static let scaleHeightPerKelvin: Double = 29.3
@@ -247,7 +263,7 @@ extension AtmosphericConditions {
 	/// infrared and Rueger (2002) in the radio; the decrease of the index with height follows
 	/// Stone (1996), and A and B follow Green (1987).
 	var refractionConstants: (a: Double, b: Double) {
-		let isOptical = wavelength.micrometers <= 100
+		let isOptical = wavelength.micrometers <= Self.longestOpticalWavelength
 		let p = pressure.hectopascals
 		let t = temperature.degreesCelsius
 		let r = relativeHumidity
