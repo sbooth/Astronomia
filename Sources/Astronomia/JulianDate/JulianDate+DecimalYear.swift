@@ -14,9 +14,9 @@ extension JulianDate {
 	/// July 2, 1985.
 	///
 	/// This is equivalent to creating a ``CalendarDate`` with
-	/// ``CalendarDate/init(decimalYear:calendar:)`` and passing it to ``init(_:)``. Errors are
-	/// ``CalendarError`` values, not ``JulianDateError`` values, because they describe an
-	/// invalid decimal year.
+	/// ``CalendarDate/init(decimalYear:calendar:)`` and passing it to ``init(_:)-(CalendarDate)``.
+	/// Errors are ``CalendarError`` values, not ``JulianDateError`` values, because they describe
+	/// an invalid decimal year.
 	///
 	/// - Note: The Julian Date is in the timescale the decimal year was expressed in.
 	/// - Note: The resolution of a decimal year depends on the year's magnitude.
