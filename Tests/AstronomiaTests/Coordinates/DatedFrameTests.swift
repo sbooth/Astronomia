@@ -8,16 +8,6 @@
 import Testing
 @testable import Astronomia
 
-/// A frame of date for the tests, standing in for the equator of date.
-enum TestEquatorOfDate: EquatorialFrame, DatedReferenceFrame {
-	static let name = "Test equator of date"
-
-	/// The ICRS axes at every epoch.
-	static func rotationFromICRS(at epoch: Instant<TT>, earthOrientation: EarthOrientation) -> Rotation<ICRS, TestEquatorOfDate> {
-		Rotation<ICRS, ICRS>.identity.relabeled(fromFrameEpoch: NoEpoch(), toFrameEpoch: epoch)
-	}
-}
-
 @Suite struct DatedFrameTests {
 	static let epoch = Instant<TT>(.J2000)
 	static let later = Instant<TT>(JulianDate(uncheckedJulianDayNumber: 2_488_070, fractionFromNoon: 0))

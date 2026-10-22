@@ -125,16 +125,32 @@ extension Rotation where To.Epoch == Instant<TT> {
 }
 
 extension Rotation {
-	/// Returns a rotation with these rows between other frames, at their epochs.
+	/// Returns a rotation with the same matrix between other frames, at their epochs.
 	///
-	/// Rotations of dated frames are built from elementary rotations between fixed frames,
-	/// then given their frames and epochs with this.
+	/// This is how a frame defines its own rotation. Build the matrix from elementary
+	/// rotations between frames without an epoch, or from another frame's rotation, then give
+	/// it the frames and epochs it is for. A frame of date's rotation from the ICRS has the
+	/// ICRS's ``NoEpoch`` and the frame's epoch:
+	///
+	/// ```swift
+	/// static func rotationFromICRS(
+	/// 	at epoch: Instant<TT>,
+	/// 	earthOrientation: EarthOrientation
+	/// ) -> Rotation<ICRS, Self> {
+	/// 	let axes = Rotation<ICRS, ICRS>.aboutZ(angle(at: epoch))
+	/// 	return axes.relabeled(fromFrameEpoch: NoEpoch(), toFrameEpoch: epoch)
+	/// }
+	/// ```
+	///
+	/// The type system can't check that the matrix suits the new frames: the frames and
+	/// epochs given are trusted.
 	///
 	/// - Parameters:
-	///   - fromFrameEpoch: The epoch of the new `From` frame.
-	///   - toFrameEpoch: The epoch of the new `To` frame.
+	///   - fromFrameEpoch: The epoch of the new `From` frame, ``NoEpoch`` for a frame without
+	///     one.
+	///   - toFrameEpoch: The epoch of the new `To` frame, ``NoEpoch`` for a frame without one.
 	/// - Returns: The rotation with the same matrix.
-	func relabeled<NewFrom: ReferenceFrame, NewTo: ReferenceFrame>(fromFrameEpoch: NewFrom.Epoch, toFrameEpoch: NewTo.Epoch) -> Rotation<NewFrom, NewTo> {
+	public func relabeled<NewFrom: ReferenceFrame, NewTo: ReferenceFrame>(fromFrameEpoch: NewFrom.Epoch, toFrameEpoch: NewTo.Epoch) -> Rotation<NewFrom, NewTo> {
 		Rotation<NewFrom, NewTo>(uncheckedRows: storage.0, storage.1, storage.2, fromFrameEpoch: fromFrameEpoch, toFrameEpoch: toFrameEpoch)
 	}
 

@@ -9,5 +9,5 @@
 /// Earth.
 public struct NoEpoch: Hashable, Sendable {
 	/// Creates the empty epoch.
-	init() {}
+	public init() {}
 }

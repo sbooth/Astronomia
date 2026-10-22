@@ -21,7 +21,8 @@
 /// A frame of your own fixed to the Earth, with ``NoEpoch``, conforms by composing a rotation
 /// from the ``ITRS``, built with ``Rotation/aboutX(_:)``, ``Rotation/aboutY(_:)``, and
 /// ``Rotation/aboutZ(_:)``, with `ITRS.rotationFromICRS(at:ut1:earthOrientation:)`, and
-/// rotating the ITRS angular velocity into its axes.
+/// rotating the ITRS angular velocity into its axes. A frame with an epoch gives its rotation
+/// the epoch with ``Rotation/relabeled(fromFrameEpoch:toFrameEpoch:)``.
 public protocol TerrestrialReferenceFrame: ReferenceFrame {
 	/// Returns the rotation from ICRS axes to this frame's axes at an instant.
 	///

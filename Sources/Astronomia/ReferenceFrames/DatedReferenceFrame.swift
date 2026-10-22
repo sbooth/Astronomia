@@ -16,6 +16,28 @@
 ///
 /// A frame of date turns slowly, so a velocity in it is the rotated inertial velocity; the
 /// rate of the frame's own rotation, below one part in 10⁹, is left out.
+///
+/// A frame of your own conforms by building its rotation from the ICRS and giving it the
+/// epoch with ``Rotation/relabeled(fromFrameEpoch:toFrameEpoch:)``. To build on another frame
+/// of date, relabel that frame's rotation as one between fixed frames, compose, and relabel the
+/// result:
+///
+/// ```swift
+/// enum OffsetEquator: EquatorialFrame, DatedReferenceFrame {
+/// 	static let name = "Offset equator of date"
+///
+/// 	static func rotationFromICRS(
+/// 		at epoch: Instant<TT>,
+/// 		earthOrientation: EarthOrientation
+/// 	) -> Rotation<ICRS, Self> {
+/// 		let trueEquator: Rotation<ICRS, ICRS> = TrueEquatorOfDate
+/// 			.rotationFromICRS(at: epoch, earthOrientation: earthOrientation)
+/// 			.relabeled(fromFrameEpoch: NoEpoch(), toFrameEpoch: NoEpoch())
+/// 		let offset = Rotation<ICRS, ICRS>.aboutZ(.degrees(1)) * trueEquator
+/// 		return offset.relabeled(fromFrameEpoch: NoEpoch(), toFrameEpoch: epoch)
+/// 	}
+/// }
+/// ```
 public protocol DatedReferenceFrame: ReferenceFrame where Epoch == Instant<TT> {
 	/// Returns the rotation from ICRS axes to this frame's axes at an epoch.
 	///
