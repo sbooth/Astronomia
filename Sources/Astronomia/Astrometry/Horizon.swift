@@ -77,12 +77,13 @@ struct Horizon: Sendable {
 		// The direction toward the meridian on the site's equator, and toward its pole
 		let meridian = cosLatitude * observedU - sinLatitude * observedN
 		let pole = cosLatitude * observedN + sinLatitude * observedU
+		// atan2 gives -π for the lower meridian, which the hour angle includes as +π.
 		let hourAngle = Math.atan2(-observedE, meridian)
 		let declination = Math.atan2(pole, (meridian * meridian + observedE * observedE).squareRoot())
 		return ObservedPlace(
-			azimuth: Angle(radians: azimuth < 0 ? azimuth + twoPi : azimuth),
+			azimuth: Angle(radians: azimuth).normalized(),
 			altitude: Angle(radians: altitude),
-			hourAngle: Angle(radians: hourAngle),
+			hourAngle: Angle(radians: hourAngle == -.pi ? .pi : hourAngle),
 			declination: Angle(radians: declination),
 			distance: distance,
 			instant: instant)

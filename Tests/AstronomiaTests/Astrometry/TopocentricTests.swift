@@ -69,6 +69,21 @@ import Testing
 		_ = try Observer.site(latitude: .degrees(90), longitude: .zero, height: .kilometers(100))
 	}
 
+	@Test func sitesAtTheHeightLimits() throws {
+		// A site created at either limit survives the round trip through its ITRS position,
+		// though the recovered height rounds past the limit.
+		for latitude in [0.0, 45, 90] {
+			for height in [Distance.kilometers(100), .kilometers(-100)] {
+				let site = try Observer.site(latitude: .degrees(latitude), longitude: .degrees(30), height: height)
+				let position = try #require(site.position)
+				#expect(try Observer.site(position).position == position, "\(latitude)° \(height)")
+			}
+		}
+		// Beyond the allowance, it is still rejected.
+		let position = try #require(try Observer.site(latitude: .zero, longitude: .zero, height: .kilometers(100)).position)
+		#expect(throws: ObserverError.invalidHeight) { try Observer.site(Position<ITRS>(x: position.x + .meters(0.001), y: .zero, z: .zero)) }
+	}
+
 	@Test func siteValidation() {
 		#expect(throws: ObserverError.nonFiniteValue) { try Observer.site(latitude: .degrees(.nan), longitude: .zero) }
 		#expect(throws: ObserverError.nonFiniteValue) { try Observer.site(latitude: .zero, longitude: .degrees(.infinity)) }

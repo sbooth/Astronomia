@@ -63,6 +63,9 @@ public struct AtmosphericConditions: Hashable, Sendable {
 	///     -150 °C or above 200 °C.
 	///   - ``AtmosphericConditionsError/invalidRelativeHumidity`` if the relative humidity is
 	///     outside [0, 1].
+	///   - ``AtmosphericConditionsError/invalidVapourPressure`` if the relative humidity is
+	///     above 0 and the pressure is at or below the saturation vapour pressure of water at
+	///     the temperature, as at 6 hPa and 10 °C, where water would boil.
 	///   - ``AtmosphericConditionsError/invalidWavelength`` if the wavelength is shorter than
 	///     0.1 µm or longer than 1 m.
 	public init(pressure: Pressure, temperature: Temperature, relativeHumidity: Double, wavelength: Distance = .micrometers(0.55)) throws(AtmosphericConditionsError) {
@@ -80,6 +83,11 @@ public struct AtmosphericConditions: Hashable, Sendable {
 		}
 		guard (0.1 ... 1e6).contains(wavelength.micrometers) else {
 			throw .invalidWavelength
+		}
+		// Humid air needs a pressure above the saturation vapour pressure; nearer it, the
+		// vapour-pressure model diverges.
+		guard relativeHumidity == 0 || pressure.hectopascals == 0 || Self.saturationVapourPressure(pressure: pressure.hectopascals, temperature: temperature.degreesCelsius) < pressure.hectopascals else {
+			throw .invalidVapourPressure
 		}
 		self.init(uncheckedPressure: pressure, temperature: temperature, relativeHumidity: relativeHumidity, wavelength: wavelength)
 	}
@@ -112,7 +120,9 @@ public struct AtmosphericConditions: Hashable, Sendable {
 	/// - Throws: An ``AtmosphericConditionsError``, as
 	///   ``init(pressure:temperature:relativeHumidity:wavelength:)`` does for the estimated
 	///   pressure: ``AtmosphericConditionsError/invalidPressure`` for a height so far below
-	///   sea level that the pressure would be greater than 10,000 hPa.
+	///   sea level that the pressure would be greater than 10,000 hPa, and
+	///   ``AtmosphericConditionsError/invalidVapourPressure`` for humid air so high that the
+	///   pressure would be at or below the saturation vapour pressure.
 	public init(height: Distance, temperature: Temperature, relativeHumidity: Double, wavelength: Distance = .micrometers(0.55)) throws(AtmosphericConditionsError) {
 		guard height.astronomicalUnits.isFinite, temperature.kelvins.isFinite else {
 			throw .nonFiniteValue
@@ -134,6 +144,7 @@ public struct AtmosphericConditions: Hashable, Sendable {
 		assert((-150 ... 200).contains(temperature.degreesCelsius), "Invalid temperature")
 		assert((0 ... 1).contains(relativeHumidity), "Invalid relative humidity")
 		assert((0.1 ... 1e6).contains(wavelength.micrometers), "Invalid wavelength")
+		assert(relativeHumidity == 0 || pressure.hectopascals == 0 || Self.saturationVapourPressure(pressure: pressure.hectopascals, temperature: temperature.degreesCelsius) < pressure.hectopascals, "Invalid vapour pressure")
 		self.pressure = pressure
 		self.temperature = temperature
 		self.relativeHumidity = relativeHumidity
@@ -218,6 +229,17 @@ extension AtmosphericConditions {
 }
 
 extension AtmosphericConditions {
+	/// Returns the saturation vapour pressure of water in air, in hPa, from Gill (1982) as in
+	/// `eraRefco` of ERFA, with the enhancement for air at a pressure.
+	///
+	/// - Parameters:
+	///   - pressure: The air pressure, in hPa.
+	///   - temperature: The temperature, in °C.
+	static func saturationVapourPressure(pressure: Double, temperature: Double) -> Double {
+		let t = temperature
+		return Math.pow(10, (0.7859 + 0.03477 * t) / (1 + 0.00412 * t)) * (1 + pressure * (4.5e-6 + 6e-10 * t * t))
+	}
+
 	/// The constants A and B of the refraction A tan z + B tan³ z, in radians, following
 	/// `eraRefco` of ERFA.
 	///
@@ -231,10 +253,11 @@ extension AtmosphericConditions {
 		let r = relativeHumidity
 		let w = wavelength.micrometers
 
-		// The water vapour pressure at the site, in hPa
+		// The water vapour pressure at the site, in hPa, from Crane (1976), which with the
+		// saturation vapour pressure below the pressure, as validated, is at most the pressure
 		let waterVapourPressure: Double
-		if p > 0 {
-			let saturation = Math.pow(10, (0.7859 + 0.03477 * t) / (1 + 0.00412 * t)) * (1 + p * (4.5e-6 + 6e-10 * t * t))
+		if p > 0, r > 0 {
+			let saturation = Self.saturationVapourPressure(pressure: p, temperature: t)
 			waterVapourPressure = r * saturation / (1 - (1 - r) * saturation / p)
 		} else {
 			waterVapourPressure = 0

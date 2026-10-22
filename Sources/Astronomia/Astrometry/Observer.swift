@@ -92,7 +92,8 @@ public struct Observer: Hashable, Sendable {
 			throw .nonFiniteValue
 		}
 		let geodetic = Ellipsoid.wgs84.geodetic(vector)
-		guard abs(geodetic.height) <= maximumHeight.astronomicalUnits else {
+		// A micrometer's allowance for the rounding of a site's coordinates through the ITRS
+		guard abs(geodetic.height) <= maximumHeight.astronomicalUnits + 1e-6 / metersPerAstronomicalUnit else {
 			throw .invalidHeight
 		}
 		return Observer(location: .site(vector, latitude: geodetic.latitude, longitude: geodetic.longitude))
