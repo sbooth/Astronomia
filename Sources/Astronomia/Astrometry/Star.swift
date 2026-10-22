@@ -74,9 +74,9 @@ public struct Star: Hashable, Sendable {
 	/// - Throws:
 	///   - ``StarError/nonFiniteValue`` if any value is NaN or infinite.
 	///   - ``StarError/invalidDeclination`` if the declination is outside [-90°, 90°].
-	///   - ``StarError/invalidParallax`` if the parallax is negative, or greater than 10″,
+	///   - ``StarError/invalidParallax`` if the parallax is negative, or greater than 10",
 	///     which would put the source within about 20,600 au of the Sun. The nearest star's is
-	///     0.77″.
+	///     0.77".
 	///   - ``StarError/excessiveRadialVelocity`` if the radial velocity is half the speed of
 	///     light or more.
 	public init(

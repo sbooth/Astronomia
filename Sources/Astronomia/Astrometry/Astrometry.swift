@@ -191,6 +191,9 @@ enum Astrometry {
 		let gravitationalParameter: Double
 		/// The body's radius, in au.
 		let radius: Double
+		/// Whether the observer is on the body's surface, so that light from above its horizon
+		/// is deflected by it, and light from below passes through it.
+		let isObserversBody: Bool
 	}
 
 	/// Returns a direction deflected by the gravity of the light-deflecting bodies.
@@ -199,7 +202,10 @@ enum Astrometry {
 	/// velocity, as `eraLdn` of ERFA does, and the farthest bodies deflect the light first. No
 	/// deflection is applied when the light's path from the target passes within the body's
 	/// radius, as for a target behind the body's disk, and a body that is the target deflects
-	/// nothing.
+	/// nothing. For an observer on a body's surface, as on the Earth, the body deflects light
+	/// from above the horizon, the plane through the observer perpendicular to the direction
+	/// from the body's center: there q · (q + e) is about 1 or more, and the deflection about
+	/// its value at the limb at most, while light from below would pass through the body.
 	///
 	/// - Parameters:
 	///   - direction: The unit vector from the observer to the source.
@@ -209,19 +215,25 @@ enum Astrometry {
 	/// - Returns: The deflected unit vector.
 	static func deflected<Body>(_ direction: Vector3, geometry: Geometry, deflectors: [Deflector<Body>], excluding body: Body?) -> Vector3 {
 		let c = speedOfLightAstronomicalUnitsPerDay
-		var backtracked: [(position: Vector3, gravitationalParameter: Double, radius: Double)] = []
+		var backtracked: [(position: Vector3, gravitationalParameter: Double, radius: Double, isObserversBody: Bool)] = []
 		for deflector in deflectors where deflector.body != body {
 			// The time since the light passed the body, between the target's and the observer's
 			let toObserver = geometry.observer.position - deflector.state.position
 			let elapsed = min(max(direction.dot(toObserver) / c, -geometry.lightTime), 0)
-			backtracked.append((deflector.state.position + deflector.state.velocity * elapsed, deflector.gravitationalParameter, deflector.radius))
+			backtracked.append((deflector.state.position + deflector.state.velocity * elapsed, deflector.gravitationalParameter, deflector.radius, deflector.isObserversBody))
 		}
 		backtracked.sort { ($0.position - geometry.observer.position).length > ($1.position - geometry.observer.position).length }
 		var p = direction
 		for deflector in backtracked {
-			guard closestApproach(of: deflector.position, from: geometry.observer.position, to: geometry.target) > deflector.radius else { continue }
 			let toObserver = geometry.observer.position - deflector.position
 			let distance = toObserver.length
+			if deflector.isObserversBody {
+				// A site on an ellipsoid can be inside the body's equatorial radius, so its
+				// horizon decides instead.
+				guard p.dot(toObserver) >= 0 else { continue }
+			} else {
+				guard closestApproach(of: deflector.position, from: geometry.observer.position, to: geometry.target) > deflector.radius else { continue }
+			}
 			let toTarget = geometry.target - deflector.position
 			let q = toTarget / toTarget.length
 			let e = toObserver / distance

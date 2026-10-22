@@ -11,9 +11,9 @@
 /// The position is the apparent direction with the target's distance when the light left it.
 /// For a ``Star`` the light time is its distance over c, years or more, and nominal for a star
 /// without a parallax.
-/// It begins in the axes of the ICRS, as the geocentric place in the GCRS, and converts to a
-/// frame of date at its own instant: to ``TrueEquatorOfDate`` for the classical apparent right
-/// ascension and declination, or to ``CIRS`` for the intermediate place.
+/// It begins in the axes of the ICRS, as the geocentric or topocentric place in the GCRS, and
+/// converts to a frame of date at its own instant: to ``TrueEquatorOfDate`` for the classical
+/// apparent right ascension and declination, or to ``CIRS`` for the intermediate place.
 ///
 /// ```swift
 /// let place = try Observer.geocenter.apparentPlace(of: .mars, at: instant)

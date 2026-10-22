@@ -8,8 +8,8 @@
 import Testing
 @testable import Astronomia
 
-/// The built-in ephemeris with the Earth also listed as a light-deflecting body.
-struct EarthDeflectingEphemeris: GeocentricEphemeris {
+/// The built-in ephemeris without the Earth among the light-deflecting bodies.
+struct NoEarthDeflectionEphemeris: GeocentricEphemeris {
 	typealias Body = SolarSystemEphemeris.Body
 	typealias Frame = ICRS
 
@@ -17,9 +17,7 @@ struct EarthDeflectingEphemeris: GeocentricEphemeris {
 	static let earth = Body.earth
 	static let sun = Body.sun
 	static let solarSystemBarycenter = Body.solarSystemBarycenter
-	static let lightDeflectingBodies = SolarSystemEphemeris.lightDeflectingBodies + [
-		LightDeflectingBody(uncheckedBody: .earth, gravitationalParameter: 8.9e-10, radius: .kilometers(6_378)),
-	]
+	static let lightDeflectingBodies = SolarSystemEphemeris.lightDeflectingBodies.filter { $0.body != .earth }
 
 	let base = SolarSystemEphemeris()
 
@@ -89,10 +87,11 @@ struct EarthDeflectingEphemeris: GeocentricEphemeris {
 	@Test func observersOwnBodyDeflectsNothing() throws {
 		// A geocentric observer is at the Earth's center, inside its radius, but the Earth
 		// deflects nothing it sees.
-		let listed = try Observer.geocenter.observation(at: Self.tdb, ephemeris: EarthDeflectingEphemeris())
-		let builtIn = try Observer.geocenter.observation(at: Self.tdb)
-		#expect(try listed.apparentPlace(of: .mars) == builtIn.apparentPlace(of: .mars))
+		#expect(SolarSystemEphemeris.lightDeflectingBodies.contains { $0.body == .earth })
+		let withEarth = try Observer.geocenter.observation(at: Self.tdb)
+		let withoutEarth = try Observer.geocenter.observation(at: Self.tdb, ephemeris: NoEarthDeflectionEphemeris())
+		#expect(try withEarth.apparentPlace(of: .mars) == withoutEarth.apparentPlace(of: .mars))
 		let star = try Self.star(2)
-		#expect(try listed.apparentPlace(of: star) == builtIn.apparentPlace(of: star))
+		#expect(try withEarth.apparentPlace(of: star) == withoutEarth.apparentPlace(of: star))
 	}
 }

@@ -91,4 +91,16 @@ static inline double astronomia_log(double x)
 	return log(x);
 }
 
+/// Returns e raised to the power `x`.
+static inline double astronomia_exp(double x)
+{
+	return exp(x);
+}
+
+/// Returns `x` raised to the power `y`.
+static inline double astronomia_pow(double x, double y)
+{
+	return pow(x, y);
+}
+
 #endif

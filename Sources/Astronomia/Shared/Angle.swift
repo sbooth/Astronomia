@@ -32,17 +32,17 @@ public struct Angle: Hashable, Sendable {
 
 extension Angle {
 	/// Radians per degree, π / 180.
-	static let radiansPerDegree = Double.pi / 180
+	static let radiansPerDegree: Double = .pi / 180
 	/// Radians per arcminute, π / 10,800.
-	static let radiansPerArcminute = Double.pi / 10_800
+	static let radiansPerArcminute: Double = .pi / 10_800
 	/// Radians per arcsecond, π / 648,000.
-	static let radiansPerArcsecond = Double.pi / 648_000
+	static let radiansPerArcsecond: Double = .pi / 648_000
 	/// Radians per milliarcsecond, π / 648,000,000.
-	static let radiansPerMilliarcsecond = Double.pi / 648_000_000
+	static let radiansPerMilliarcsecond: Double = .pi / 648_000_000
 	/// Radians per hour of time measure, π / 12.
-	static let radiansPerHour = Double.pi / 12
+	static let radiansPerHour: Double = .pi / 12
 	/// Radians per turn, 2π.
-	static let radiansPerTurn = 2 * Double.pi
+	static let radiansPerTurn: Double = 2 * .pi
 
 	/// Creates an angle from degrees.
 	///
@@ -182,7 +182,7 @@ extension Angle {
 	public func normalizedSigned() -> Angle {
 		// The IEEE remainder lies in [-π, π].
 		var r = radians.remainder(dividingBy: Self.radiansPerTurn)
-		if r >= Double.pi {
+		if r >= .pi {
 			r -= Self.radiansPerTurn
 		}
 		return Angle(radians: r)
