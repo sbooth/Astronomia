@@ -136,7 +136,7 @@ extension JulianCalendar {
 
 extension JulianCalendar {
 	/// The Julian day number for January 1, 45 BCE in the Julian calendar.
-	static let effective: JulianDayNumber = 1_704_987
+	static let effectiveDay: JulianDayNumber = 1_704_987
 
 	/// Returns `true` if the specified Julian day number is less than 1,704,987
 	/// (January 1, 45 BCE in the Julian calendar), the day the Julian calendar took effect.
@@ -145,7 +145,7 @@ extension JulianCalendar {
 	/// - Returns: `true` if `J` is before January 1, 45 BCE in the Julian calendar; otherwise,
 	///   `false`.
 	public static func isProleptic(julianDayNumber J: JulianDayNumber) -> Bool {
-		J < effective
+		J < effectiveDay
 	}
 }
 

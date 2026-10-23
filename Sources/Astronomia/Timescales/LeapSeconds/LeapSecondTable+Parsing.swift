@@ -45,7 +45,7 @@ extension LeapSecondTable {
 			}
 			let (days, remainder) = seconds.quotientAndRemainder(dividingBy: 86_400)
 			guard remainder == 0, let day = day(ntpDays: days) else { return nil }
-			leapSeconds.append(LeapSecond(effective: day, taiMinusUTC: offset))
+			leapSeconds.append(LeapSecond(effectiveDay: day, taiMinusUTC: offset))
 		}
 
 		guard let expiry else { return nil }
@@ -89,7 +89,7 @@ extension LeapSecondTable {
 			// MJD m starts at the midnight that begins civil day m + 2,400,001.
 			let (mjdJDN, overflow) = mjdDay.addingReportingOverflow(2_400_001)
 			guard !overflow, mjdJDN == jdn else { return nil }
-			leapSeconds.append(LeapSecond(effective: jdn, taiMinusUTC: offset))
+			leapSeconds.append(LeapSecond(effectiveDay: jdn, taiMinusUTC: offset))
 		}
 
 		guard let expiry else { return nil }

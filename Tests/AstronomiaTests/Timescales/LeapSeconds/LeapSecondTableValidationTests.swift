@@ -23,29 +23,29 @@ import Testing
 
 	@Test func validCustomTable() throws {
 		// The built-in table plus a fictitious leap second on 2027-07-01.
-		let leapSeconds = LeapSecondTable.builtIn.leapSeconds + [LeapSecond(effective: 2_461_588, taiMinusUTC: 38)]
+		let leapSeconds = LeapSecondTable.builtIn.leapSeconds + [LeapSecond(effectiveDay: 2_461_588, taiMinusUTC: 38)]
 		let table = try #require(LeapSecondTable(leapSeconds: leapSeconds, horizon: 2_461_772))
 		#expect(table.leapSeconds == leapSeconds)
 		#expect(table.horizon == 2_461_772)
 	}
 
 	@Test func notStartingIn1972() {
-		#expect(LeapSecondTable(leapSeconds: [LeapSecond(effective: start, taiMinusUTC: 10)], horizon: start + 1) != nil)
+		#expect(LeapSecondTable(leapSeconds: [LeapSecond(effectiveDay: start, taiMinusUTC: 10)], horizon: start + 1) != nil)
 		#expect(LeapSecondTable(leapSeconds: [], horizon: start + 1) == nil)
-		#expect(LeapSecondTable(leapSeconds: [LeapSecond(effective: july, taiMinusUTC: 11)], horizon: july + 1) == nil)
-		#expect(LeapSecondTable(leapSeconds: [LeapSecond(effective: start, taiMinusUTC: 11)], horizon: start + 1) == nil)
-		#expect(LeapSecondTable(leapSeconds: [LeapSecond(effective: start - 1, taiMinusUTC: 10)], horizon: start + 1) == nil)
+		#expect(LeapSecondTable(leapSeconds: [LeapSecond(effectiveDay: july, taiMinusUTC: 11)], horizon: july + 1) == nil)
+		#expect(LeapSecondTable(leapSeconds: [LeapSecond(effectiveDay: start, taiMinusUTC: 11)], horizon: start + 1) == nil)
+		#expect(LeapSecondTable(leapSeconds: [LeapSecond(effectiveDay: start - 1, taiMinusUTC: 10)], horizon: start + 1) == nil)
 	}
 
 	@Test func notInIncreasingOrder() {
 		for second in [start, start - 1] {
-			let leapSeconds = [LeapSecond(effective: start, taiMinusUTC: 10), LeapSecond(effective: second, taiMinusUTC: 11)]
+			let leapSeconds = [LeapSecond(effectiveDay: start, taiMinusUTC: 10), LeapSecond(effectiveDay: second, taiMinusUTC: 11)]
 			#expect(LeapSecondTable(leapSeconds: leapSeconds, horizon: july) == nil)
 		}
 	}
 
 	@Test func horizonNotAfterLastEntry() {
-		let leapSeconds = [LeapSecond(effective: start, taiMinusUTC: 10), LeapSecond(effective: july, taiMinusUTC: 11)]
+		let leapSeconds = [LeapSecond(effectiveDay: start, taiMinusUTC: 10), LeapSecond(effectiveDay: july, taiMinusUTC: 11)]
 		for horizon in [july, july - 1] {
 			#expect(LeapSecondTable(leapSeconds: leapSeconds, horizon: horizon) == nil)
 		}
@@ -54,21 +54,21 @@ import Testing
 	@Test func stepsOfOneSecond() {
 		// A positive or a negative leap second
 		for offset in [11, 9] {
-			let leapSeconds = [LeapSecond(effective: start, taiMinusUTC: 10), LeapSecond(effective: july, taiMinusUTC: offset)]
+			let leapSeconds = [LeapSecond(effectiveDay: start, taiMinusUTC: 10), LeapSecond(effectiveDay: july, taiMinusUTC: offset)]
 			#expect(LeapSecondTable(leapSeconds: leapSeconds, horizon: july + 1) != nil)
 		}
 		// No change, or a change of more than a second, is not a leap second.
 		for offset in [10, 12, 8, 50, -1, 86_400, .max, .min] {
-			let leapSeconds = [LeapSecond(effective: start, taiMinusUTC: 10), LeapSecond(effective: july, taiMinusUTC: offset)]
+			let leapSeconds = [LeapSecond(effectiveDay: start, taiMinusUTC: 10), LeapSecond(effectiveDay: july, taiMinusUTC: offset)]
 			#expect(LeapSecondTable(leapSeconds: leapSeconds, horizon: july + 1) == nil, "\(offset)")
 		}
 	}
 
 	@Test func offsetOutOfRange() {
 		// Ten negative leap seconds from 10 s reach 0 s; an eleventh would make it negative.
-		let tenDown = (0 ... 10).map { LeapSecond(effective: start + 183 * $0, taiMinusUTC: 10 - $0) }
+		let tenDown = (0 ... 10).map { LeapSecond(effectiveDay: start + 183 * $0, taiMinusUTC: 10 - $0) }
 		#expect(LeapSecondTable(leapSeconds: tenDown, horizon: start + 183 * 11) != nil)
-		let elevenDown = (0 ... 11).map { LeapSecond(effective: start + 183 * $0, taiMinusUTC: 10 - $0) }
+		let elevenDown = (0 ... 11).map { LeapSecond(effectiveDay: start + 183 * $0, taiMinusUTC: 10 - $0) }
 		#expect(LeapSecondTable(leapSeconds: elevenDown, horizon: start + 183 * 12) == nil)
 	}
 }

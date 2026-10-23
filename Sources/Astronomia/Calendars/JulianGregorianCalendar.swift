@@ -134,7 +134,7 @@ extension JulianGregorianCalendar {
 	/// - Returns: `true` if `J` is before January 1, 45 BCE in the Julian calendar; otherwise,
 	///   `false`.
 	public static func isProlepticJulian(julianDayNumber J: JulianDayNumber) -> Bool {
-		J < JulianCalendar.effective
+		J < JulianCalendar.effectiveDay
 	}
 }
 

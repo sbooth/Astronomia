@@ -12,34 +12,34 @@
 /// TAI - UTC in whole seconds from the start of each UTC day listed, from 1972-01-01
 /// to 2017-01-01, as of 2026-07-06.
 let builtInLeapSeconds: [LeapSecondTable.LeapSecond] = [
-	.init(effective: 2_441_318, taiMinusUTC: 10), // 1972-01-01
-	.init(effective: 2_441_500, taiMinusUTC: 11), // 1972-07-01
-	.init(effective: 2_441_684, taiMinusUTC: 12), // 1973-01-01
-	.init(effective: 2_442_049, taiMinusUTC: 13), // 1974-01-01
-	.init(effective: 2_442_414, taiMinusUTC: 14), // 1975-01-01
-	.init(effective: 2_442_779, taiMinusUTC: 15), // 1976-01-01
-	.init(effective: 2_443_145, taiMinusUTC: 16), // 1977-01-01
-	.init(effective: 2_443_510, taiMinusUTC: 17), // 1978-01-01
-	.init(effective: 2_443_875, taiMinusUTC: 18), // 1979-01-01
-	.init(effective: 2_444_240, taiMinusUTC: 19), // 1980-01-01
-	.init(effective: 2_444_787, taiMinusUTC: 20), // 1981-07-01
-	.init(effective: 2_445_152, taiMinusUTC: 21), // 1982-07-01
-	.init(effective: 2_445_517, taiMinusUTC: 22), // 1983-07-01
-	.init(effective: 2_446_248, taiMinusUTC: 23), // 1985-07-01
-	.init(effective: 2_447_162, taiMinusUTC: 24), // 1988-01-01
-	.init(effective: 2_447_893, taiMinusUTC: 25), // 1990-01-01
-	.init(effective: 2_448_258, taiMinusUTC: 26), // 1991-01-01
-	.init(effective: 2_448_805, taiMinusUTC: 27), // 1992-07-01
-	.init(effective: 2_449_170, taiMinusUTC: 28), // 1993-07-01
-	.init(effective: 2_449_535, taiMinusUTC: 29), // 1994-07-01
-	.init(effective: 2_450_084, taiMinusUTC: 30), // 1996-01-01
-	.init(effective: 2_450_631, taiMinusUTC: 31), // 1997-07-01
-	.init(effective: 2_451_180, taiMinusUTC: 32), // 1999-01-01
-	.init(effective: 2_453_737, taiMinusUTC: 33), // 2006-01-01
-	.init(effective: 2_454_833, taiMinusUTC: 34), // 2009-01-01
-	.init(effective: 2_456_110, taiMinusUTC: 35), // 2012-07-01
-	.init(effective: 2_457_205, taiMinusUTC: 36), // 2015-07-01
-	.init(effective: 2_457_755, taiMinusUTC: 37), // 2017-01-01
+	.init(effectiveDay: 2_441_318, taiMinusUTC: 10), // 1972-01-01
+	.init(effectiveDay: 2_441_500, taiMinusUTC: 11), // 1972-07-01
+	.init(effectiveDay: 2_441_684, taiMinusUTC: 12), // 1973-01-01
+	.init(effectiveDay: 2_442_049, taiMinusUTC: 13), // 1974-01-01
+	.init(effectiveDay: 2_442_414, taiMinusUTC: 14), // 1975-01-01
+	.init(effectiveDay: 2_442_779, taiMinusUTC: 15), // 1976-01-01
+	.init(effectiveDay: 2_443_145, taiMinusUTC: 16), // 1977-01-01
+	.init(effectiveDay: 2_443_510, taiMinusUTC: 17), // 1978-01-01
+	.init(effectiveDay: 2_443_875, taiMinusUTC: 18), // 1979-01-01
+	.init(effectiveDay: 2_444_240, taiMinusUTC: 19), // 1980-01-01
+	.init(effectiveDay: 2_444_787, taiMinusUTC: 20), // 1981-07-01
+	.init(effectiveDay: 2_445_152, taiMinusUTC: 21), // 1982-07-01
+	.init(effectiveDay: 2_445_517, taiMinusUTC: 22), // 1983-07-01
+	.init(effectiveDay: 2_446_248, taiMinusUTC: 23), // 1985-07-01
+	.init(effectiveDay: 2_447_162, taiMinusUTC: 24), // 1988-01-01
+	.init(effectiveDay: 2_447_893, taiMinusUTC: 25), // 1990-01-01
+	.init(effectiveDay: 2_448_258, taiMinusUTC: 26), // 1991-01-01
+	.init(effectiveDay: 2_448_805, taiMinusUTC: 27), // 1992-07-01
+	.init(effectiveDay: 2_449_170, taiMinusUTC: 28), // 1993-07-01
+	.init(effectiveDay: 2_449_535, taiMinusUTC: 29), // 1994-07-01
+	.init(effectiveDay: 2_450_084, taiMinusUTC: 30), // 1996-01-01
+	.init(effectiveDay: 2_450_631, taiMinusUTC: 31), // 1997-07-01
+	.init(effectiveDay: 2_451_180, taiMinusUTC: 32), // 1999-01-01
+	.init(effectiveDay: 2_453_737, taiMinusUTC: 33), // 2006-01-01
+	.init(effectiveDay: 2_454_833, taiMinusUTC: 34), // 2009-01-01
+	.init(effectiveDay: 2_456_110, taiMinusUTC: 35), // 2012-07-01
+	.init(effectiveDay: 2_457_205, taiMinusUTC: 36), // 2015-07-01
+	.init(effectiveDay: 2_457_755, taiMinusUTC: 37), // 2017-01-01
 ]
 
 /// The UTC day on which the source expires, the first it does not cover.

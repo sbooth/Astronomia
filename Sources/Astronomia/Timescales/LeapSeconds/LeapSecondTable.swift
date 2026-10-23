@@ -21,18 +21,18 @@ public struct LeapSecondTable: Hashable, Sendable {
 	/// TAI - UTC in whole seconds from the start of a UTC day.
 	public struct LeapSecond: Hashable, Sendable {
 		/// The Julian day number of the UTC day from whose start the offset applies.
-		public let effective: JulianDayNumber
+		public let effectiveDay: JulianDayNumber
 		/// TAI - UTC, in seconds.
 		public let taiMinusUTC: Int
 
 		/// Creates a leap second entry.
 		///
 		/// - Parameters:
-		///   - effective: The Julian day number of the UTC day from whose start the offset
+		///   - effectiveDay: The Julian day number of the UTC day from whose start the offset
 		///     applies.
 		///   - taiMinusUTC: TAI - UTC, in seconds.
-		public init(effective: JulianDayNumber, taiMinusUTC: Int) {
-			self.effective = effective
+		public init(effectiveDay: JulianDayNumber, taiMinusUTC: Int) {
+			self.effectiveDay = effectiveDay
 			self.taiMinusUTC = taiMinusUTC
 		}
 	}
@@ -56,15 +56,15 @@ public struct LeapSecondTable: Hashable, Sendable {
 	///   - horizon: The Julian day number of the UTC day on which the leap second list expires,
 	///     the first it does not cover. Must be after the last leap second's effective day.
 	public init?(leapSeconds: [LeapSecond], horizon: JulianDayNumber) {
-		guard let first = leapSeconds.first, first.effective == Self.firstDayOf1972, first.taiMinusUTC == 10,
-			  let last = leapSeconds.last, horizon > last.effective
+		guard let first = leapSeconds.first, first.effectiveDay == Self.firstDayOf1972, first.taiMinusUTC == 10,
+			  let last = leapSeconds.last, horizon > last.effectiveDay
 		else { return nil }
 
 		for (index, leapSecond) in leapSeconds.enumerated() {
 			guard leapSecond.taiMinusUTC >= 0, leapSecond.taiMinusUTC < Int(secondsPerDay) else { return nil }
 			if index > 0 {
 				let previous = leapSeconds[index - 1]
-				guard leapSecond.effective > previous.effective,
+				guard leapSecond.effectiveDay > previous.effectiveDay,
 					  (leapSecond.taiMinusUTC - previous.taiMinusUTC).magnitude == 1
 				else { return nil }
 			}
@@ -109,7 +109,7 @@ extension LeapSecondTable {
 		var high = leapSeconds.count - 1
 		while low < high {
 			let mid = (low + high + 1) / 2
-			if leapSeconds[mid].effective <= J {
+			if leapSeconds[mid].effectiveDay <= J {
 				low = mid
 			} else {
 				high = mid - 1
@@ -122,58 +122,58 @@ extension LeapSecondTable {
 extension LeapSecondTable {
 	/// TAI - UTC from 1961 through 1971, when UTC followed UT with a rate offset.
 	///
-	/// TAI - UTC = offset + (day - reference) × rate from the start of the effective day.
-	/// `effective` and `reference` are civil-day Julian day numbers: the day that starts at the
-	/// midnight JD in each source line, so `effective` = JD + 0.5 and `reference` =
+	/// TAI - UTC = offset + (day - referenceDay) × rate from the start of the effective day.
+	/// `effectiveDay` and `referenceDay` are civil-day Julian day numbers: the day that starts at
+	/// the midnight JD in each source line, so `effectiveDay` = JD + 0.5 and `referenceDay` =
 	/// MJD + 2,400,001.
 	struct RateSegment: Hashable, Sendable {
 		/// The Julian day number of the UTC day from whose start the segment applies.
-		let effective: JulianDayNumber
+		let effectiveDay: JulianDayNumber
 		/// TAI - UTC at the start of the reference day, in seconds.
 		let offset: Double
-		/// The reference Julian day number.
-		let reference: JulianDayNumber
+		/// The Julian day number of the reference day.
+		let referenceDay: JulianDayNumber
 		/// The rate of change of TAI - UTC, in seconds per day.
 		let rate: Double
 
 		/// TAI - UTC, in seconds, at the start of the UTC day `J`.
 		func taiMinusUTC(atStartOfUTCDay J: JulianDayNumber) -> Double {
-			offset + differenceAsDouble(J, reference) * rate
+			offset + differenceAsDouble(J, referenceDay) * rate
 		}
 
 		/// Returns the segment in effect on a UTC day before 1972, or `nil` before 1961.
 		static func segment(forUTCJulianDayNumber J: JulianDayNumber) -> RateSegment? {
-			all.last { $0.effective <= J }
+			all.last { $0.effectiveDay <= J }
 		}
 
 		/// The segments from https://maia.usno.navy.mil/ser7/tai-utc.dat, which do not change.
 		static let all: [RateSegment] = [
 			// 1961 JAN  1 =JD 2437300.5  TAI-UTC=   1.4228180 S + (MJD - 37300.) X 0.001296 S
-			.init(effective: 2_437_301, offset: 1.4228180, reference: 2_437_301, rate: 0.001296),
+			.init(effectiveDay: 2_437_301, offset: 1.4228180, referenceDay: 2_437_301, rate: 0.001296),
 			// 1961 AUG  1 =JD 2437512.5  TAI-UTC=   1.3728180 S + (MJD - 37300.) X 0.001296 S
-			.init(effective: 2_437_513, offset: 1.3728180, reference: 2_437_301, rate: 0.001296),
+			.init(effectiveDay: 2_437_513, offset: 1.3728180, referenceDay: 2_437_301, rate: 0.001296),
 			// 1962 JAN  1 =JD 2437665.5  TAI-UTC=   1.8458580 S + (MJD - 37665.) X 0.0011232S
-			.init(effective: 2_437_666, offset: 1.8458580, reference: 2_437_666, rate: 0.0011232),
+			.init(effectiveDay: 2_437_666, offset: 1.8458580, referenceDay: 2_437_666, rate: 0.0011232),
 			// 1963 NOV  1 =JD 2438334.5  TAI-UTC=   1.9458580 S + (MJD - 37665.) X 0.0011232S
-			.init(effective: 2_438_335, offset: 1.9458580, reference: 2_437_666, rate: 0.0011232),
+			.init(effectiveDay: 2_438_335, offset: 1.9458580, referenceDay: 2_437_666, rate: 0.0011232),
 			// 1964 JAN  1 =JD 2438395.5  TAI-UTC=   3.2401300 S + (MJD - 38761.) X 0.001296 S
-			.init(effective: 2_438_396, offset: 3.2401300, reference: 2_438_762, rate: 0.001296),
+			.init(effectiveDay: 2_438_396, offset: 3.2401300, referenceDay: 2_438_762, rate: 0.001296),
 			// 1964 APR  1 =JD 2438486.5  TAI-UTC=   3.3401300 S + (MJD - 38761.) X 0.001296 S
-			.init(effective: 2_438_487, offset: 3.3401300, reference: 2_438_762, rate: 0.001296),
+			.init(effectiveDay: 2_438_487, offset: 3.3401300, referenceDay: 2_438_762, rate: 0.001296),
 			// 1964 SEP  1 =JD 2438639.5  TAI-UTC=   3.4401300 S + (MJD - 38761.) X 0.001296 S
-			.init(effective: 2_438_640, offset: 3.4401300, reference: 2_438_762, rate: 0.001296),
+			.init(effectiveDay: 2_438_640, offset: 3.4401300, referenceDay: 2_438_762, rate: 0.001296),
 			// 1965 JAN  1 =JD 2438761.5  TAI-UTC=   3.5401300 S + (MJD - 38761.) X 0.001296 S
-			.init(effective: 2_438_762, offset: 3.5401300, reference: 2_438_762, rate: 0.001296),
+			.init(effectiveDay: 2_438_762, offset: 3.5401300, referenceDay: 2_438_762, rate: 0.001296),
 			// 1965 MAR  1 =JD 2438820.5  TAI-UTC=   3.6401300 S + (MJD - 38761.) X 0.001296 S
-			.init(effective: 2_438_821, offset: 3.6401300, reference: 2_438_762, rate: 0.001296),
+			.init(effectiveDay: 2_438_821, offset: 3.6401300, referenceDay: 2_438_762, rate: 0.001296),
 			// 1965 JUL  1 =JD 2438942.5  TAI-UTC=   3.7401300 S + (MJD - 38761.) X 0.001296 S
-			.init(effective: 2_438_943, offset: 3.7401300, reference: 2_438_762, rate: 0.001296),
+			.init(effectiveDay: 2_438_943, offset: 3.7401300, referenceDay: 2_438_762, rate: 0.001296),
 			// 1965 SEP  1 =JD 2439004.5  TAI-UTC=   3.8401300 S + (MJD - 38761.) X 0.001296 S
-			.init(effective: 2_439_005, offset: 3.8401300, reference: 2_438_762, rate: 0.001296),
+			.init(effectiveDay: 2_439_005, offset: 3.8401300, referenceDay: 2_438_762, rate: 0.001296),
 			// 1966 JAN  1 =JD 2439126.5  TAI-UTC=   4.3131700 S + (MJD - 39126.) X 0.002592 S
-			.init(effective: 2_439_127, offset: 4.3131700, reference: 2_439_127, rate: 0.002592),
+			.init(effectiveDay: 2_439_127, offset: 4.3131700, referenceDay: 2_439_127, rate: 0.002592),
 			// 1968 FEB  1 =JD 2439887.5  TAI-UTC=   4.2131700 S + (MJD - 39126.) X 0.002592 S
-			.init(effective: 2_439_888, offset: 4.2131700, reference: 2_439_127, rate: 0.002592),
+			.init(effectiveDay: 2_439_888, offset: 4.2131700, referenceDay: 2_439_127, rate: 0.002592),
 		]
 	}
 }

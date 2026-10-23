@@ -140,7 +140,7 @@ import Testing
 		#expect(!GregorianCalendar.isLeapYear(1582))
 
 		// The Julian calendar took effect on January 1, 45 BCE (year -44)
-		#expect(JulianCalendar.effective == (try JulianCalendar.julianDayNumber(year: -44, month: 1, day: 1)))
+		#expect(JulianCalendar.effectiveDay == (try JulianCalendar.julianDayNumber(year: -44, month: 1, day: 1)))
 	}
 	
 	@Test func decimalYear() throws {
