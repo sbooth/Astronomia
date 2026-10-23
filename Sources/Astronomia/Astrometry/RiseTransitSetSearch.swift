@@ -11,7 +11,7 @@
 /// increases by about 15° an hour, so a transit falls between two samples whose hour angles
 /// straddle 0° or 180°. A rising or setting falls between two samples, or a sample and a
 /// transit, on either side of the event altitude. Each is then found to 0.1 s by the Illinois
-/// variant of the method of false position.
+/// variant of the method of false position, safeguarded by bisection.
 ///
 /// A target that rises and sets again within an hour, grazing the event altitude near its
 /// transit, can be missed when both crossings fall between two samples; this happens only for
@@ -90,60 +90,15 @@ struct RiseTransitSetSearch {
 		return r == -.pi ? .pi : r
 	}
 
-	/// Finds where a function of the place changes sign between two samples, by the Illinois
-	/// method, safeguarded by bisection.
-	///
-	/// The bracket around the root narrows until it is within the tolerance. The Illinois
-	/// method narrows it quickly where the function is nearly linear; where it is not, as for an
-	/// altitude near transit, where the altitude barely changes, a step that fails to halve the
-	/// bracket over two steps is followed by a bisection, so the bracket always closes.
+	/// Finds where a function of the place changes sign between two samples, to the tolerance,
+	/// as ``RootFinder/refine(_:_:time:tolerance:maximumIterations:evaluate:function:)`` does.
 	///
 	/// - Parameters:
 	///   - a: The earlier sample.
 	///   - b: The later sample, on the other side of the root.
 	///   - function: The function, negative on one side and nonnegative on the other.
-	/// - Returns: The end of the final bracket, within the tolerance of the root, with the
-	///   smaller value of the function.
+	/// - Returns: The sample within the tolerance of the root.
 	func refine(_ a: Sample, _ b: Sample, function: (Sample) -> Double) throws(RiseTransitSetError) -> Sample {
-		var (lower, upper) = (a, b)
-		var (fLower, fUpper) = (function(a), function(b))
-		// The Illinois method halves the value kept at an end that a step doesn't move.
-		var (weightedLower, weightedUpper) = (fLower, fUpper)
-		var side = 0
-		var widths = [upper.time - lower.time]
-		for _ in 0 ..< Self.maximumIterations {
-			let width = upper.time - lower.time
-			guard width > Self.tolerance, fLower != 0, fUpper != 0 else { break }
-			var time: Double
-			if widths.count >= 3, width > widths[widths.count - 3] / 2 {
-				time = (lower.time + upper.time) / 2
-			} else {
-				time = (lower.time * weightedUpper - upper.time * weightedLower) / (weightedUpper - weightedLower)
-				if !(time > lower.time && time < upper.time) {
-					time = (lower.time + upper.time) / 2
-				}
-			}
-			let sample = try evaluate(time)
-			let f = function(sample)
-			if (f < 0) == (fUpper < 0) {
-				upper = sample
-				fUpper = f
-				weightedUpper = f
-				if side == -1 {
-					weightedLower /= 2
-				}
-				side = -1
-			} else {
-				lower = sample
-				fLower = f
-				weightedLower = f
-				if side == 1 {
-					weightedUpper /= 2
-				}
-				side = 1
-			}
-			widths.append(upper.time - lower.time)
-		}
-		return abs(fLower) <= abs(fUpper) ? lower : upper
+		try RootFinder.refine(a, b, time: \.time, tolerance: Self.tolerance, maximumIterations: Self.maximumIterations, evaluate: evaluate, function: function)
 	}
 }
