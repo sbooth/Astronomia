@@ -9,10 +9,11 @@ import Testing
 @testable import Astronomia
 
 /// An ephemeris of the Earth on a circular orbit about a fixed Sun, in the plane of the
-/// ICRS's equator, covering 10,000 years either side of J2000.0, wider than the built-in one.
+/// ICRS's equator, covering 10,000 years either side of J2000.0, wider than the built-in one,
+/// with a Moon that keeps 45° from the Sun, so it never reaches a phase.
 struct CircularEphemeris: GeocentricEphemeris {
 	enum Body: Hashable, Sendable {
-		case solarSystemBarycenter, sun, earth
+		case solarSystemBarycenter, sun, earth, moon
 	}
 
 	typealias Frame = ICRS
@@ -34,10 +35,17 @@ struct CircularEphemeris: GeocentricEphemeris {
 	func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<ICRS> {
 		guard coverage.contains(tdb) else { throw .outsideCoverage }
 		func heliocentric(_ body: Body) -> (position: Vector3, velocity: Vector3) {
-			guard body == .earth else { return (.zero, .zero) }
+			guard body != .sun, body != .solarSystemBarycenter else { return (.zero, .zero) }
 			let rate = twoPi / 365.256_363
 			let (s, c) = Math.sincos(phase + rate * tdb.julianDate.daysSinceJ2000)
-			return (Vector3(c, s, 0), Vector3(-s, c, 0) * rate)
+			let earth = (position: Vector3(c, s, 0), velocity: Vector3(-s, c, 0) * rate)
+			guard body == .moon else { return earth }
+			// The Sun's direction from the Earth, turned 45° east, at the Moon's distance
+			let (s45, c45) = Math.sincos(Double.pi / 4)
+			let distance = 0.002_57
+			let turned = Vector3(-(c * c45 - s * s45), -(c * s45 + s * c45), 0)
+			let rotating = Vector3(-turned.y, turned.x, 0) * rate
+			return (earth.position + turned * distance, earth.velocity + rotating * distance)
 		}
 		let (a, b) = (heliocentric(body), heliocentric(origin))
 		return StateVector(a.position - b.position, a.velocity - b.velocity)
