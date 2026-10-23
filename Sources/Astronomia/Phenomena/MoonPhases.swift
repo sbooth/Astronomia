@@ -146,6 +146,8 @@ extension MoonPhases {
 	///     represented.
 	///   - ``MoonPhaseError/ephemeris(_:)`` if a place of the Sun or the Moon fails, as for an
 	///     ``Observation``, such as for a phase past the ephemeris's coverage.
+	///   - ``MoonPhaseError/phaseNotFound`` if the phase isn't within a synodic month after
+	///     `instant`, as for an ephemeris whose Moon doesn't move as the Moon does.
 	public static func next<E: GeocentricEphemeris, Scale: Timescale>(_ kind: MoonPhaseEvent.Kind, of moon: E.Body, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(MoonPhaseError) -> Instant<TT> {
 		let start: Instant<TT>
 		do throws(TimescaleConversionError) {
@@ -177,7 +179,7 @@ extension MoonPhases {
 		}
 		// Every phase occurs within a synodic month, unless a custom ephemeris's Moon doesn't
 		// move as the Moon does.
-		throw .invalidInterval
+		throw .phaseNotFound
 	}
 
 	/// Returns the first instant of a phase after an instant, with the built-in ephemeris.

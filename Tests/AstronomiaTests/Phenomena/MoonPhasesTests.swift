@@ -98,6 +98,14 @@ import Testing
 		}
 	}
 
+	@Test func phaseNotFound() throws {
+		// A Moon that keeps 45° from the Sun never reaches a phase.
+		let start = Instant<TT>(try JulianDate(julianDate: 2_461_041.5))
+		let ephemeris = CircularEphemeris()
+		#expect(try MoonPhases.events(of: .moon, from: start, to: Instant<TT>(try start.julianDate.adding(days: 60)), ephemeris: ephemeris).isEmpty)
+		#expect(throws: MoonPhaseError.phaseNotFound) { try MoonPhases.next(.fullMoon, of: .moon, after: start, ephemeris: ephemeris) }
+	}
+
 	@Test func intervals() throws {
 		let start = Instant<TT>(try JulianDate(julianDate: 2_461_041.5))
 		// An empty interval, and one that ends before it starts

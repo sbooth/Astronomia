@@ -13,6 +13,9 @@ public enum MoonPhaseError: Error, Hashable, Sendable {
 	case timescaleConversion(TimescaleConversionError)
 	/// The ephemeris failed for an instant in the interval.
 	case ephemeris(EphemerisError)
+	/// The phase wasn't found within a synodic month after the instant, as for an ephemeris
+	/// whose Moon doesn't move as the Moon does.
+	case phaseNotFound
 }
 
 extension MoonPhaseError {
