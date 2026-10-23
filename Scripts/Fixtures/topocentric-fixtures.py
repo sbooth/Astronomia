@@ -192,6 +192,6 @@ out = [
 ] + star_places + ["]", "",
 	f"/// Apparent places of bodies from Skyfield {skyfield.__version__} and DE421 at TT Julian Dates, with ΔT = {DELTA_T} s:",
 	"/// the geocentric position and the position seen from the WGS84 site, in au in the GCRS.",
-	"let skyfieldTopocentricPlaces: [(site: Int, julianDate: Double, body: SolarSystemEphemeris.Body, geocentric: [Double], topocentric: [Double])] = [",
+	"let skyfieldTopocentricPlaces: [(site: Int, julianDate: Double, body: BuiltInEphemeris.Body, geocentric: [Double], topocentric: [Double])] = [",
 ] + body_places + ["]", ""]
 open(sys.argv[2], "w").write("\n".join(out))

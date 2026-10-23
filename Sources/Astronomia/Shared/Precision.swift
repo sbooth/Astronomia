@@ -33,7 +33,7 @@
 /// available.
 ///
 /// ```swift
-/// let ephemeris = SolarSystemEphemeris(precision: .arcsecond)
+/// let ephemeris = BuiltInEphemeris(precision: .arcsecond)
 /// let earthOrientation = EarthOrientation(precision: .arcsecond)
 /// ```
 public enum Precision: Hashable, Sendable, CaseIterable {

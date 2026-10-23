@@ -10,16 +10,16 @@ import Testing
 
 /// The built-in ephemeris without the Earth among the light-deflecting bodies.
 struct NoEarthDeflectionEphemeris: GeocentricEphemeris {
-	typealias Body = SolarSystemEphemeris.Body
+	typealias Body = BuiltInEphemeris.Body
 	typealias Frame = ICRS
 
 	static let defaultOrigin = Body.solarSystemBarycenter
 	static let earth = Body.earth
 	static let sun = Body.sun
 	static let solarSystemBarycenter = Body.solarSystemBarycenter
-	static let lightDeflectingBodies = SolarSystemEphemeris.lightDeflectingBodies.filter { $0.body != .earth }
+	static let lightDeflectingBodies = BuiltInEphemeris.lightDeflectingBodies.filter { $0.body != .earth }
 
-	let base = SolarSystemEphemeris()
+	let base = BuiltInEphemeris()
 
 	var coverage: ClosedRange<Instant<TDB>> {
 		base.coverage
@@ -39,7 +39,7 @@ struct NoEarthDeflectionEphemeris: GeocentricEphemeris {
 
 	@Test func bodyPlacesMatchTheObserverMethods() throws {
 		let observation = try Observer.geocenter.observation(at: Self.tdb)
-		for body in [SolarSystemEphemeris.Body.sun, .moon, .mars, .earth] {
+		for body in [BuiltInEphemeris.Body.sun, .moon, .mars, .earth] {
 			#expect(try observation.astrometricPlace(of: body) == Observer.geocenter.astrometricPlace(of: body, at: Self.tdb))
 			#expect(try observation.apparentPlace(of: body) == Observer.geocenter.apparentPlace(of: body, at: Self.tdb))
 		}
@@ -60,7 +60,7 @@ struct NoEarthDeflectionEphemeris: GeocentricEphemeris {
 		#expect(observation.observer == .geocenter)
 		// The Earth's barycentric state, as the ephemeris gives it
 		let tdb = try utc.converted(to: TDB.self)
-		let earth = try SolarSystemEphemeris().state(of: .earth, relativeTo: .solarSystemBarycenter, at: tdb)
+		let earth = try BuiltInEphemeris().state(of: .earth, relativeTo: .solarSystemBarycenter, at: tdb)
 		#expect((observation.observerState.position.vector - earth.position.vector).length <= 1e-15)
 		#expect((observation.observerState.velocity.vector - earth.velocity.vector).length <= 1e-17)
 		let sendable: any Sendable = observation
@@ -75,7 +75,7 @@ struct NoEarthDeflectionEphemeris: GeocentricEphemeris {
 
 	@Test func observerMustBeOutsideTheDeflectors() throws {
 		// At Jupiter's center
-		let jupiter = try SolarSystemEphemeris().state(of: .jupiterBarycenter, relativeTo: .sun, at: Self.tdb).position.vector
+		let jupiter = try BuiltInEphemeris().state(of: .jupiterBarycenter, relativeTo: .sun, at: Self.tdb).position.vector
 		#expect(throws: EphemerisError.invalidState) {
 			try Observer.geocenter.observation(at: Self.tdb, ephemeris: AlteredEphemeris(position: SIMD3(jupiter.x, jupiter.y, jupiter.z)))
 		}
@@ -87,7 +87,7 @@ struct NoEarthDeflectionEphemeris: GeocentricEphemeris {
 	@Test func observersOwnBodyDeflectsNothing() throws {
 		// A geocentric observer is at the Earth's center, inside its radius, but the Earth
 		// deflects nothing it sees.
-		#expect(SolarSystemEphemeris.lightDeflectingBodies.contains { $0.body == .earth })
+		#expect(BuiltInEphemeris.lightDeflectingBodies.contains { $0.body == .earth })
 		let withEarth = try Observer.geocenter.observation(at: Self.tdb)
 		let withoutEarth = try Observer.geocenter.observation(at: Self.tdb, ephemeris: NoEarthDeflectionEphemeris())
 		#expect(try withEarth.apparentPlace(of: .mars) == withoutEarth.apparentPlace(of: .mars))

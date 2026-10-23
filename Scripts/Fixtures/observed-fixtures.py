@@ -193,6 +193,6 @@ out = [
 	f"/// Places of bodies from Skyfield {skyfield.__version__} and DE421 seen from the WGS84 sites at TT Julian",
 	f"/// Dates, with ΔT = {DELTA_T} s and no polar motion: the apparent position, in au in the GCRS, and",
 	"/// the altitude, azimuth, hour angle, and declination, in radians, without refraction.",
-	"let skyfieldObservedPlaces: [(site: Int, julianDate: Double, body: SolarSystemEphemeris.Body, apparent: [Double], altitude: Double, azimuth: Double, hourAngle: Double, declination: Double)] = [",
+	"let skyfieldObservedPlaces: [(site: Int, julianDate: Double, body: BuiltInEphemeris.Body, apparent: [Double], altitude: Double, azimuth: Double, hourAngle: Double, declination: Double)] = [",
 ] + body_places + ["]", ""]
 open(sys.argv[2], "w").write("\n".join(out))

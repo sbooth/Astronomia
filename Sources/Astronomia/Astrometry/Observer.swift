@@ -142,8 +142,8 @@ extension Observer {
 	///     has no effect for an observer at the center of the Earth.
 	/// - Returns: The observation.
 	/// - Throws: An ``EphemerisError``, as the method taking an ephemeris does.
-	public func observation<Scale: Timescale>(at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model) throws(EphemerisError) -> Observation<SolarSystemEphemeris> {
-		try observation(at: instant, context: context, earthOrientation: earthOrientation, ephemeris: SolarSystemEphemeris())
+	public func observation<Scale: Timescale>(at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model) throws(EphemerisError) -> Observation<BuiltInEphemeris> {
+		try observation(at: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris())
 	}
 }
 
@@ -195,8 +195,8 @@ extension Observer {
 	///     has no effect for an observer at the center of the Earth.
 	/// - Returns: The astrometric place, in ICRS axes.
 	/// - Throws: An ``EphemerisError``, as the method taking an ephemeris does.
-	public func astrometricPlace<Scale: Timescale>(of body: SolarSystemEphemeris.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model) throws(EphemerisError) -> AstrometricPlace<ICRS> {
-		try astrometricPlace(of: body, at: instant, context: context, earthOrientation: earthOrientation, ephemeris: SolarSystemEphemeris())
+	public func astrometricPlace<Scale: Timescale>(of body: BuiltInEphemeris.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model) throws(EphemerisError) -> AstrometricPlace<ICRS> {
+		try astrometricPlace(of: body, at: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris())
 	}
 
 	/// Returns the place where a body of the built-in ephemeris appears.
@@ -209,7 +209,7 @@ extension Observer {
 	///     has no effect for an observer at the center of the Earth.
 	/// - Returns: The apparent place, in ICRS axes.
 	/// - Throws: An ``EphemerisError``, as the method taking an ephemeris does.
-	public func apparentPlace<Scale: Timescale>(of body: SolarSystemEphemeris.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model) throws(EphemerisError) -> ApparentPlace<ICRS> {
-		try apparentPlace(of: body, at: instant, context: context, earthOrientation: earthOrientation, ephemeris: SolarSystemEphemeris())
+	public func apparentPlace<Scale: Timescale>(of body: BuiltInEphemeris.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model) throws(EphemerisError) -> ApparentPlace<ICRS> {
+		try apparentPlace(of: body, at: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris())
 	}
 }
