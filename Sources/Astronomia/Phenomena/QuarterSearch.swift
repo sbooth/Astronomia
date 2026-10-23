@@ -21,7 +21,7 @@ struct QuarterSearch<Failure: Error> {
 		let time: Double
 		/// The instant of the time.
 		let instant: Instant<TT>
-		/// The angle, in radians in [0, 2π).
+		/// The angle, in radians in the right-open interval [0, 2π).
 		let angle: Double
 	}
 
@@ -136,7 +136,7 @@ struct QuarterSearch<Failure: Error> {
 		}
 	}
 
-	/// Returns an angle reduced to (-π, π].
+	/// Returns an angle reduced to the left-open interval (-π, π].
 	static func reduced(_ angle: Double) -> Double {
 		let r = angle.remainder(dividingBy: twoPi)
 		return r == -.pi ? .pi : r

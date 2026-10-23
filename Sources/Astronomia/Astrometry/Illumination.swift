@@ -28,14 +28,17 @@
 /// From a site on the Earth the Moon's parallax, up to about 1°, changes its phase angle by
 /// as much, and so its illuminated fraction by up to about 0.009.
 public struct Illumination: Hashable, Sendable {
-	/// The angle at the body between the Sun and the observer, in [0°, 180°].
+	/// The angle at the body between the Sun and the observer, in the closed interval
+	/// [0°, 180°].
 	public let phaseAngle: Angle
-	/// The illuminated fraction of the body's disk, in [0, 1].
+	/// The illuminated fraction of the body's disk, in the closed interval [0, 1].
 	public let illuminatedFraction: Double
-	/// The angle between the body and the Sun seen by the observer, in [0°, 180°].
+	/// The angle between the body and the Sun seen by the observer, in the closed interval
+	/// [0°, 180°].
 	public let elongation: Angle
 	/// The position angle of the midpoint of the bright limb, measured from the north point of
-	/// the body's disk through east, in the true equator and equinox of date, in [0°, 360°).
+	/// the body's disk through east, in the true equator and equinox of date, in the right-open
+	/// interval [0°, 360°).
 	public let brightLimbPositionAngle: Angle
 	/// The instant of observation.
 	public let instant: Instant<TT>
@@ -43,9 +46,10 @@ public struct Illumination: Hashable, Sendable {
 	/// Creates an illumination from its phase angle, elongation, and bright limb.
 	///
 	/// - Parameters:
-	///   - phaseAngle: The phase angle, in [0, π].
-	///   - elongation: The elongation, in [0, π].
-	///   - brightLimbPositionAngle: The position angle of the bright limb, in [0, 2π).
+	///   - phaseAngle: The phase angle, in the closed interval [0, π].
+	///   - elongation: The elongation, in the closed interval [0, π].
+	///   - brightLimbPositionAngle: The position angle of the bright limb, in the right-open
+	///     interval [0, 2π).
 	///   - instant: The instant of observation.
 	init(phaseAngle: Angle, elongation: Angle, brightLimbPositionAngle: Angle, instant: Instant<TT>) {
 		assert(phaseAngle.radians >= 0 && phaseAngle.radians <= .pi, "The phase angle must be in [0, π]")

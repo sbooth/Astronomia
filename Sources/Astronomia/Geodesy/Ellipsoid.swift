@@ -32,7 +32,7 @@ extension Ellipsoid {
 	/// `eraGd2gce` of ERFA.
 	///
 	/// - Parameters:
-	///   - latitude: The geodetic latitude, in radians, in [-π/2, π/2].
+	///   - latitude: The geodetic latitude, in radians, in the closed interval [-π/2, π/2].
 	///   - longitude: The longitude, in radians, positive east.
 	///   - height: The height above the ellipsoid, in au.
 	/// - Returns: The position in the ITRS, in au.

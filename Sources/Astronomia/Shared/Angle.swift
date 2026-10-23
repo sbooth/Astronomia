@@ -219,7 +219,7 @@ extension Angle {
 
 	/// Returns the angle whose sine is `x`, in the closed interval [-π/2, π/2].
 	///
-	/// - Parameter x: The sine, in [-1, 1]. Values outside that interval give NaN.
+	/// - Parameter x: The sine, in the closed interval [-1, 1]. Values outside it give NaN.
 	/// - Returns: The arcsine of `x`.
 	public static func asin(_ x: Double) -> Angle {
 		Angle(radians: Math.asin(x))
@@ -227,7 +227,7 @@ extension Angle {
 
 	/// Returns the angle whose cosine is `x`, in the closed interval [0, π].
 	///
-	/// - Parameter x: The cosine, in [-1, 1]. Values outside that interval give NaN.
+	/// - Parameter x: The cosine, in the closed interval [-1, 1]. Values outside it give NaN.
 	/// - Returns: The arccosine of `x`.
 	public static func acos(_ x: Double) -> Angle {
 		Angle(radians: Math.acos(x))
@@ -241,10 +241,11 @@ extension Angle {
 		Angle(radians: Math.atan(x))
 	}
 
-	/// Returns the angle of the point (`x`, `y`) from the positive x axis, in [-π, π].
+	/// Returns the angle of the point (`x`, `y`) from the positive x axis, in the closed
+	/// interval [-π, π].
 	///
 	/// Unlike ``atan(_:)``, the result is in the correct quadrant. Use ``normalized()`` to
-	/// reduce it to [0, 2π), as for right ascension.
+	/// reduce it to the right-open interval [0, 2π), as for right ascension.
 	///
 	/// - Parameters:
 	///   - y: The y coordinate.

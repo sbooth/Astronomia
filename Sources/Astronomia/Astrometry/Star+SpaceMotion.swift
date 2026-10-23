@@ -11,7 +11,7 @@ extension Star {
 	/// The star moves in a straight line at constant speed, following `eraStarpm` of ERFA: the
 	/// result is the direction from which its light reaches the solar system barycenter at
 	/// `epoch`, with the proper motion, parallax, and radial velocity seen there. The right
-	/// ascension is in [0°, 360°).
+	/// ascension is in the right-open interval [0°, 360°).
 	///
 	/// A star without a parallax has none at the new epoch. A star with a parallax too small for
 	/// its proper motion, as described for ``Star``, has the parallax of the distance its motion

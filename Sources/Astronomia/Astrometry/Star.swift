@@ -73,7 +73,8 @@ public struct Star: Hashable, Sendable {
 	///   - epoch: The epoch of the catalog values.
 	/// - Throws:
 	///   - ``StarError/nonFiniteValue`` if any value is NaN or infinite.
-	///   - ``StarError/invalidDeclination`` if the declination is outside [-90°, 90°].
+	///   - ``StarError/invalidDeclination`` if the declination is outside the
+	///     closed interval [-90°, 90°].
 	///   - ``StarError/invalidParallax`` if the parallax is negative, or greater than 10",
 	///     which would put the source within about 20,600 au of the Sun. The nearest star's is
 	///     0.77".

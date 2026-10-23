@@ -22,8 +22,8 @@ public struct SphericalPosition<Frame: ReferenceFrame>: Hashable, Sendable {
 	/// The epoch of the frame, ``NoEpoch`` for a frame without one.
 	let frameEpoch: Frame.Epoch
 
-	/// Creates a spherical position at an epoch of the frame, reducing the longitude to
-	/// [0, 2π).
+	/// Creates a spherical position at an epoch of the frame, reducing the longitude to the
+	/// right-open interval [0, 2π).
 	init(longitude: Angle, latitude: Angle, distance: Distance, frameEpoch: Frame.Epoch) {
 		self.longitude = longitude.normalized()
 		self.latitude = latitude
@@ -35,8 +35,9 @@ public struct SphericalPosition<Frame: ReferenceFrame>: Hashable, Sendable {
 extension SphericalPosition where Frame.Epoch == NoEpoch {
 	/// Creates a spherical position.
 	///
-	/// The longitude is reduced to [0, 2π). A latitude outside [-π/2, π/2] is kept as given; it
-	/// still describes a direction, the one reached by continuing over the pole.
+	/// The longitude is reduced to the right-open interval [0, 2π). A latitude outside the
+	/// closed interval [-π/2, π/2] is kept as given; it still describes a direction, the one
+	/// reached by continuing over the pole.
 	///
 	/// - Parameters:
 	///   - longitude: The longitude.
@@ -50,8 +51,9 @@ extension SphericalPosition where Frame.Epoch == NoEpoch {
 extension SphericalPosition where Frame.Epoch == Instant<TT> {
 	/// Creates a spherical position in a frame with an epoch.
 	///
-	/// The longitude is reduced to [0, 2π). A latitude outside [-π/2, π/2] is kept as given; it
-	/// still describes a direction, the one reached by continuing over the pole.
+	/// The longitude is reduced to the right-open interval [0, 2π). A latitude outside the
+	/// closed interval [-π/2, π/2] is kept as given; it still describes a direction, the one
+	/// reached by continuing over the pole.
 	///
 	/// - Parameters:
 	///   - longitude: The longitude.

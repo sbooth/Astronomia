@@ -26,11 +26,12 @@
 /// print(moon.azimuth.degrees, moon.altitude.degrees)
 /// ```
 public struct ObservedPlace: Hashable, Sendable {
-	/// The azimuth, measured from north through east, in [0°, 360°).
+	/// The azimuth, measured from north through east, in the right-open interval [0°, 360°).
 	public let azimuth: Angle
 	/// The altitude above the horizon, raised by refraction if the atmosphere is given.
 	public let altitude: Angle
-	/// The hour angle, measured west from the site's meridian, in (-180°, 180°].
+	/// The hour angle, measured west from the site's meridian, in the left-open interval
+	/// (-180°, 180°].
 	public let hourAngle: Angle
 	/// The declination, from the site's equator.
 	public let declination: Angle

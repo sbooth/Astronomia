@@ -173,9 +173,10 @@ extension CalendarDate {
 	/// Creates a calendar date in `calendar` from the exact sum of the terms that `body` adds
 	/// to an empty accumulator, rounding the time of day once at the end.
 	///
-	/// The sum is a midnight-based day count: `J + f`, for `f` in [0, 1), is the instant `f`
-	/// days after midnight at the start of the calendar day whose Julian day number is `J`.
-	/// This differs from a Julian Date, which counts from noon, by half a day.
+	/// The sum is a midnight-based day count: `J + f`, for `f` in the right-open interval
+	/// [0, 1), is the instant `f` days after midnight at the start of the calendar day whose
+	/// Julian day number is `J`. This differs from a Julian Date, which counts from noon, by half
+	/// a day.
 	///
 	/// - Parameters:
 	///   - calendar: The calendar in which to express the result.
