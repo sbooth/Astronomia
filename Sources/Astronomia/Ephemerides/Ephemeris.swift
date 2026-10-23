@@ -84,4 +84,20 @@ public protocol GeocentricEphemeris: Ephemeris {
 	/// The Sun's entry also gives the gravitational parameter for the Shapiro delay in light
 	/// times and for the Sun's potential in aberration. Without it, both are left out.
 	static var lightDeflectingBodies: [LightDeflectingBody<Body>] { get }
+
+	/// Returns the radius of a body, or `nil` for a point, such as a barycenter.
+	///
+	/// The radius gives the semidiameter of the Sun and the Moon when they rise and set. By
+	/// default every body is a point.
+	///
+	/// - Parameter body: The body.
+	/// - Returns: The body's equatorial radius, or `nil`.
+	static func radius(of body: Body) -> Distance?
+}
+
+extension GeocentricEphemeris {
+	/// Returns `nil`: every body is a point.
+	public static func radius(of body: Body) -> Distance? {
+		nil
+	}
 }
