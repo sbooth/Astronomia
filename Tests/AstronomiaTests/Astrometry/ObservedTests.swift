@@ -35,13 +35,13 @@ import Testing
 	/// Returns observations from the fixture sites, one per site and date.
 	final class Observations {
 		let earthOrientation: EarthOrientation
-		var cache: [String: Observation<SolarSystemEphemeris>] = [:]
+		var cache: [String: Observation<BuiltInEphemeris>] = [:]
 
 		init(earthOrientation: EarthOrientation) {
 			self.earthOrientation = earthOrientation
 		}
 
-		func observation(site: Int, julianDate: Double) throws -> Observation<SolarSystemEphemeris> {
+		func observation(site: Int, julianDate: Double) throws -> Observation<BuiltInEphemeris> {
 			let key = "\(site) \(julianDate)"
 			if let observation = cache[key] { return observation }
 			let observation = try TopocentricTests.site(site).observation(at: Instant<TT>(try JulianDate(julianDate: julianDate)), earthOrientation: earthOrientation)

@@ -57,6 +57,6 @@ out = [
 	f"/// Geocentric places from Skyfield {skyfield.__version__} and DE421 at TDB Julian Dates: the astrometric",
 	"/// position, in au in the ICRS, its light time, in days, and the apparent position, with",
 	"/// deflection by the Sun, Jupiter, and Saturn and aberration.",
-	"let skyfieldPlaces: [(julianDate: Double, body: SolarSystemEphemeris.Body, astrometric: [Double], lightTime: Double, apparent: [Double])] = [",
+	"let skyfieldPlaces: [(julianDate: Double, body: BuiltInEphemeris.Body, astrometric: [Double], lightTime: Double, apparent: [Double])] = [",
 ] + rows + ["]", ""]
 open(sys.argv[2], "w").write("\n".join(out))

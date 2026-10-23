@@ -23,10 +23,10 @@
 /// origin is given.
 ///
 /// ```swift
-/// let ephemeris = SolarSystemEphemeris()
+/// let ephemeris = BuiltInEphemeris()
 /// let mars = try ephemeris.state(of: .mars, relativeTo: .earth, at: instant)
-/// let laserRanging = SolarSystemEphemeris(lunarFit: .laserRanging)
-/// let fast = SolarSystemEphemeris(precision: .arcsecond)
+/// let laserRanging = BuiltInEphemeris(lunarFit: .laserRanging)
+/// let fast = BuiltInEphemeris(precision: .arcsecond)
 /// ```
 ///
 /// The truncated series keep the error from truncation near 0.5 mas for the planets and
@@ -38,7 +38,7 @@
 /// - Note: VSOP2013 gives the outer planets as the barycenters of their systems, which differ
 ///   from the planets by up to a few hundred kilometers. Pluto's solution is less accurate
 ///   than the planets'.
-public struct SolarSystemEphemeris: GeocentricEphemeris, Hashable {
+public struct BuiltInEphemeris: GeocentricEphemeris, Hashable {
 	/// A body of the ephemeris.
 	public enum Body: Hashable, Sendable, CaseIterable {
 		/// The barycenter of the solar system.
@@ -144,7 +144,7 @@ public struct SolarSystemEphemeris: GeocentricEphemeris, Hashable {
 	}
 }
 
-extension SolarSystemEphemeris {
+extension BuiltInEphemeris {
 	/// The ratio of the masses of the Earth and the Moon, from INPOP10.
 	static let earthMoonMassRatio = 81.300_57
 
@@ -161,13 +161,13 @@ extension SolarSystemEphemeris {
 	}
 }
 
-extension SolarSystemEphemeris.Body {
+extension BuiltInEphemeris.Body {
 	/// The body as a body of VSOP2013 plus a fraction of the geocentric Moon.
 	///
 	/// The Earth and the Moon are on either side of their barycenter, at distances inversely
 	/// proportional to their masses.
 	var decomposition: (base: VSOP2013.Body, moonFraction: Double) {
-		let ratio = SolarSystemEphemeris.earthMoonMassRatio
+		let ratio = BuiltInEphemeris.earthMoonMassRatio
 		switch self {
 		case .solarSystemBarycenter: return (.solarSystemBarycenter, 0)
 		case .sun: return (.sun, 0)

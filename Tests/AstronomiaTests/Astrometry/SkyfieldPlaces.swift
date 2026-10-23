@@ -12,7 +12,7 @@
 /// Geocentric places from Skyfield 1.55 and DE421 at TDB Julian Dates: the astrometric
 /// position, in au in the ICRS, its light time, in days, and the apparent position, with
 /// deflection by the Sun, Jupiter, and Saturn and aberration.
-let skyfieldPlaces: [(julianDate: Double, body: SolarSystemEphemeris.Body, astrometric: [Double], lightTime: Double, apparent: [Double])] = [
+let skyfieldPlaces: [(julianDate: Double, body: BuiltInEphemeris.Body, astrometric: [Double], lightTime: Double, apparent: [Double])] = [
 	(2433282.5, .sun, [0.18271715537043798, -0.88635223586837, -0.3843984794491999], 0.005678741609224409, [0.1826195523238615, -0.8863691652208651, -0.38440582455665184]),
 	(2433282.5, .moon, [0.0012470265605457054, 0.0020912277273265056, 0.0010989805392691565], 1.5428383387887008e-05, [0.0012468399530844987, 0.0020913131693565574, 0.00109902967885587]),
 	(2433282.5, .mercury, [0.5036783338642546, -0.7869727125204302, -0.3646555954106626], 0.0057927948399389894, [0.5035956884890509, -0.7870164477820397, -0.3646753501076253]),

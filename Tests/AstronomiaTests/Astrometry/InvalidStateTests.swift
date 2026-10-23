@@ -11,16 +11,16 @@ import Testing
 /// The built-in ephemeris with one body's heliocentric state replaced, as a custom ephemeris
 /// might give it, counting the evaluations of each body.
 struct AlteredEphemeris: GeocentricEphemeris {
-	typealias Body = SolarSystemEphemeris.Body
+	typealias Body = BuiltInEphemeris.Body
 	typealias Frame = ICRS
 
 	static let defaultOrigin = Body.solarSystemBarycenter
 	static let earth = Body.earth
 	static let sun = Body.sun
 	static let solarSystemBarycenter = Body.solarSystemBarycenter
-	static let lightDeflectingBodies = SolarSystemEphemeris.lightDeflectingBodies
+	static let lightDeflectingBodies = BuiltInEphemeris.lightDeflectingBodies
 
-	let base = SolarSystemEphemeris()
+	let base = BuiltInEphemeris()
 	/// The body whose state is replaced.
 	var altered = Body.earth
 	/// The body's position relative to the Sun, in au, or `nil` for the built-in one.
@@ -48,9 +48,9 @@ struct AlteredEphemeris: GeocentricEphemeris {
 
 /// A count of the states evaluated for each body.
 final class EvaluationCounter: @unchecked Sendable {
-	private(set) var counts: [SolarSystemEphemeris.Body: Int] = [:]
+	private(set) var counts: [BuiltInEphemeris.Body: Int] = [:]
 
-	func count(_ body: SolarSystemEphemeris.Body) {
+	func count(_ body: BuiltInEphemeris.Body) {
 		counts[body, default: 0] += 1
 	}
 }

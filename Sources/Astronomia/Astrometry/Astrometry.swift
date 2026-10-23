@@ -15,7 +15,7 @@ enum Astrometry {
 	/// Sun and the Sun's barycentric state at the instant of observation.
 	///
 	/// A state relative to the barycenter can cost far more than one relative to the Sun, as in
-	/// ``SolarSystemEphemeris``, where the barycenter needs every body. The Sun's barycentric
+	/// ``BuiltInEphemeris``, where the barycenter needs every body. The Sun's barycentric
 	/// motion is carried back linearly over the light time, which neglects its acceleration:
 	/// under 50 m over Pluto's light time of five hours.
 	///

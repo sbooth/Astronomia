@@ -204,7 +204,7 @@ let erfaTopocentricStarPlaces: [(site: Int, julianDate: Double, star: Int, astro
 
 /// Apparent places of bodies from Skyfield 1.55 and DE421 at TT Julian Dates, with ΔT = 69.2 s:
 /// the geocentric position and the position seen from the WGS84 site, in au in the GCRS.
-let skyfieldTopocentricPlaces: [(site: Int, julianDate: Double, body: SolarSystemEphemeris.Body, geocentric: [Double], topocentric: [Double])] = [
+let skyfieldTopocentricPlaces: [(site: Int, julianDate: Double, body: BuiltInEphemeris.Body, geocentric: [Double], topocentric: [Double])] = [
 	(0, 2451545.0, .sun, [0.1770373560661521, -0.8874448973684498, -0.38474999745542776], [0.17703359336970662, -0.8874185218613696, -0.38478319002256545]),
 	(0, 2451545.0, .moon, [-0.001949122770281186, -0.001782735316179033, -0.0005086680273434155], [-0.0019538186683326873, -0.0017565458957491023, -0.0005418658724686514]),
 	(0, 2451545.0, .mars, [1.5677768599110424, -0.8862718418467281, -0.42181539462063017], [1.5677727875684215, -0.8862446887401048, -0.42184828916112016]),

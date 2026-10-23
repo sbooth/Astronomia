@@ -33,7 +33,7 @@ import Testing
 	}
 
 	/// Returns an observation from a fixture site at a TT Julian Date.
-	static func observation(site: Int, julianDate: Double) throws -> Observation<SolarSystemEphemeris> {
+	static func observation(site: Int, julianDate: Double) throws -> Observation<BuiltInEphemeris> {
 		try Self.site(site).observation(at: Instant<TT>(try JulianDate(julianDate: julianDate)), earthOrientation: Self.earthOrientation)
 	}
 
@@ -110,7 +110,7 @@ import Testing
 	}
 
 	@Test func starPlacesMatchERFA() throws {
-		var observations: [String: Observation<SolarSystemEphemeris>] = [:]
+		var observations: [String: Observation<BuiltInEphemeris>] = [:]
 		for row in erfaTopocentricStarPlaces {
 			let key = "\(row.site) \(row.julianDate)"
 			let observation = try observations[key] ?? Self.observation(site: row.site, julianDate: row.julianDate)
@@ -127,7 +127,7 @@ import Testing
 		// scale the parallax. Below the horizon, where light would pass through the Earth,
 		// Skyfield deflects it and Astronomia doesn't.
 		var compared = 0
-		var observations: [String: Observation<SolarSystemEphemeris>] = [:]
+		var observations: [String: Observation<BuiltInEphemeris>] = [:]
 		for row in skyfieldTopocentricPlaces {
 			let tt = Instant<TT>(try JulianDate(julianDate: row.julianDate))
 			let key = "\(row.site) \(row.julianDate)"

@@ -112,29 +112,29 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 	}
 }
 
-@Suite struct SolarSystemEphemerisTests {
-	let ephemeris = SolarSystemEphemeris()
+@Suite struct BuiltInEphemerisTests {
+	let ephemeris = BuiltInEphemeris()
 
 	@Test func defaults() throws {
-		#expect(SolarSystemEphemeris.defaultOrigin == .solarSystemBarycenter)
-		#expect(SolarSystemEphemeris.earth == .earth && SolarSystemEphemeris.sun == .sun)
-		#expect(SolarSystemEphemeris.solarSystemBarycenter == .solarSystemBarycenter)
+		#expect(BuiltInEphemeris.defaultOrigin == .solarSystemBarycenter)
+		#expect(BuiltInEphemeris.earth == .earth && BuiltInEphemeris.sun == .sun)
+		#expect(BuiltInEphemeris.solarSystemBarycenter == .solarSystemBarycenter)
 		// The default lunar fit is DE405.
 		#expect(ephemeris.lunarFit == .de405)
-		#expect(ephemeris == SolarSystemEphemeris(lunarFit: .de405))
-		#expect(ephemeris != SolarSystemEphemeris(lunarFit: .laserRanging))
+		#expect(ephemeris == BuiltInEphemeris(lunarFit: .de405))
+		#expect(ephemeris != BuiltInEphemeris(lunarFit: .laserRanging))
 		let moon = try #require(ephemeris.geocentricMoon(at: tdb.julianDate))
 		let de405 = try #require(ELPMPP02.de405.icrsState(at: tdb.julianDate))
 		#expect(moon.position == de405.position && moon.velocity == de405.velocity)
-		let laserRanging = try #require(SolarSystemEphemeris(lunarFit: .laserRanging).geocentricMoon(at: tdb.julianDate))
+		let laserRanging = try #require(BuiltInEphemeris(lunarFit: .laserRanging).geocentricMoon(at: tdb.julianDate))
 		let expected = try #require(ELPMPP02.laserRanging.icrsState(at: tdb.julianDate))
 		#expect(laserRanging.position == expected.position && laserRanging.velocity == expected.velocity)
 	}
 
 	@Test func coverageIsThatOfBothSolutions() {
 		// Both solutions cover the same span, so the ephemeris covers all of it with either fit.
-		for fit in SolarSystemEphemeris.LunarFit.allCases {
-			let coverage = SolarSystemEphemeris(lunarFit: fit).coverage
+		for fit in BuiltInEphemeris.LunarFit.allCases {
+			let coverage = BuiltInEphemeris(lunarFit: fit).coverage
 			#expect(coverage == VSOP2013.solution.coverage)
 			#expect(coverage == ELPMPP02.de405.coverage && coverage == ELPMPP02.laserRanging.coverage)
 		}
@@ -145,7 +145,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 		let elp = try ELPMPP02.de405.state(of: .moon, at: tdb).converted(to: ICRS.self)
 		#expect((moon.position.vector - elp.position.vector).length <= 1e-15)
 		#expect((moon.velocity.vector - elp.velocity.vector).length <= 1e-17)
-		let laserRanging = SolarSystemEphemeris(lunarFit: .laserRanging)
+		let laserRanging = BuiltInEphemeris(lunarFit: .laserRanging)
 		let other = try laserRanging.state(of: .moon, relativeTo: .earth, at: tdb)
 		let elpOther = try ELPMPP02.laserRanging.state(of: .moon, at: tdb).converted(to: ICRS.self)
 		#expect((other.position.vector - elpOther.position.vector).length <= 1e-15)
@@ -162,7 +162,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 
 	@Test func combinesTheSolutions() throws {
 		// The combination as documented, from the two solutions
-		let μ = SolarSystemEphemeris.earthMoonMassRatio
+		let μ = BuiltInEphemeris.earthMoonMassRatio
 		let barycenter = try VSOP2013.Solution().state(of: .earthMoonBarycenter, at: tdb).converted(to: ICRS.self)
 		let geocentricMoon = try ELPMPP02.de405.state(of: .moon, at: tdb).converted(to: ICRS.self)
 		let earth = barycenter - geocentricMoon * (1 / (1 + μ))
@@ -177,7 +177,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 	@Test func earthAndMoonBalanceAtTheirBarycenter() throws {
 		let earth = try ephemeris.state(of: .earth, relativeTo: .earthMoonBarycenter, at: tdb)
 		let moon = try ephemeris.state(of: .moon, relativeTo: .earthMoonBarycenter, at: tdb)
-		let ratio = SolarSystemEphemeris.earthMoonMassRatio
+		let ratio = BuiltInEphemeris.earthMoonMassRatio
 		#expect((earth.position.vector + moon.position.vector / ratio).length <= 5e-16)
 		#expect((earth.velocity.vector + moon.velocity.vector / ratio).length <= 2e-17)
 		// The Earth is about 4,670 km from the barycenter.
@@ -197,7 +197,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 		// DE421 and INPOP10a, to which VSOP2013 is fitted, differ most for the outer planets,
 		// whose orbits the observations constrain least. The limits are the largest
 		// differences from 1950 to 2050, rounded up.
-		let bodies: [Int: (body: SolarSystemEphemeris.Body, limit: Double)] = [
+		let bodies: [Int: (body: BuiltInEphemeris.Body, limit: Double)] = [
 			10: (.sun, 2), 199: (.mercury, 5), 299: (.venus, 2.5), 3: (.earthMoonBarycenter, 15),
 			301: (.moon, 15), 499: (.mars, 3.5), 5: (.jupiterBarycenter, 35), 6: (.saturnBarycenter, 1),
 			7: (.uranusBarycenter, 400), 8: (.neptuneBarycenter, 200), 9: (.plutoBarycenter, 3000),
@@ -223,7 +223,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 	}
 
 	@Test func existential() throws {
-		let any: any Ephemeris<SolarSystemEphemeris.Body, ICRS> = ephemeris
+		let any: any Ephemeris<BuiltInEphemeris.Body, ICRS> = ephemeris
 		#expect(try any.state(of: .moon, relativeTo: .earth, at: tdb) == ephemeris.state(of: .moon, relativeTo: .earth, at: tdb))
 	}
 
@@ -242,7 +242,7 @@ private func geocentricState<E: GeocentricEphemeris>(of body: E.Body, from ephem
 		let coverage = ephemeris.coverage
 		#expect(coverage.lowerBound.julianDate.daysSinceJ2000 == -365_250)
 		#expect(coverage.upperBound.julianDate.daysSinceJ2000 == 365_250)
-		for body in [SolarSystemEphemeris.Body.moon, .earth, .solarSystemBarycenter] {
+		for body in [BuiltInEphemeris.Body.moon, .earth, .solarSystemBarycenter] {
 			_ = try ephemeris.state(of: body, relativeTo: .sun, at: coverage.lowerBound)
 			_ = try ephemeris.state(of: body, relativeTo: .sun, at: coverage.upperBound)
 		}

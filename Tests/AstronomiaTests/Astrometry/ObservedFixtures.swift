@@ -618,7 +618,7 @@ let erfaObservedStarPlaces: [(site: Int, julianDate: Double, star: Int, conditio
 /// Places of bodies from Skyfield 1.55 and DE421 seen from the WGS84 sites at TT Julian
 /// Dates, with ΔT = 69.2 s and no polar motion: the apparent position, in au in the GCRS, and
 /// the altitude, azimuth, hour angle, and declination, in radians, without refraction.
-let skyfieldObservedPlaces: [(site: Int, julianDate: Double, body: SolarSystemEphemeris.Body, apparent: [Double], altitude: Double, azimuth: Double, hourAngle: Double, declination: Double)] = [
+let skyfieldObservedPlaces: [(site: Int, julianDate: Double, body: BuiltInEphemeris.Body, apparent: [Double], altitude: Double, azimuth: Double, hourAngle: Double, declination: Double)] = [
 	(0, 2451545.0, .sun, [0.1770335933666903, -0.8874185218618771, -0.38478319002278716], 0.2702088627860535, 3.1230894775673583, -0.019376868486188137, -0.4020344186762982),
 	(0, 2451545.0, .moon, [-0.001953818668369287, -0.0017565458956758317, -0.0005418658724378436], 0.16404655026397558, 4.1459914211651245, 1.0160329712656901, -0.20335151154340914),
 	(0, 2451545.0, .mars, [1.5677727875652852, -0.8862446887430585, -0.42184828916246025], 0.21005962524052602, 2.268208355888933, -0.8787645664216477, -0.23010073510566065),

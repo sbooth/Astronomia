@@ -13,7 +13,7 @@
 /// in any timescale:
 ///
 /// ```swift
-/// let ephemeris = SolarSystemEphemeris()
+/// let ephemeris = BuiltInEphemeris()
 /// let mars = try ephemeris.state(of: .mars, relativeTo: .earth, at: instant)
 /// ```
 ///

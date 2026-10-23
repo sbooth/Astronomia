@@ -104,8 +104,8 @@ import Testing
 	@Test func levelsAreWithinTheirBounds() throws {
 		// The direction of each planet and the Moon from the Earth, plus the nutation, at
 		// dates across the coverage
-		let full = SolarSystemEphemeris()
-		let bodies: [SolarSystemEphemeris.Body] = [.sun, .mercury, .venus, .moon, .mars, .jupiterBarycenter, .saturnBarycenter, .uranusBarycenter, .neptuneBarycenter]
+		let full = BuiltInEphemeris()
+		let bodies: [BuiltInEphemeris.Body] = [.sun, .mercury, .venus, .moon, .mars, .jupiterBarycenter, .saturnBarycenter, .uranusBarycenter, .neptuneBarycenter]
 		var largest: [Precision: Double] = [:]
 		for epoch in stride(from: 1000.0, through: 3000, by: 97.3) {
 			let tdb = Instant<TDB>(try JulianDate(julianEpoch: epoch))
@@ -113,7 +113,7 @@ import Testing
 			let t = (epoch - 2000) / 100
 			let trueEquator = IAU2006.Orientation(at: t, poleOffsets: nil).trueEquator
 			for precision in Precision.allCases.dropFirst() {
-				let ephemeris = SolarSystemEphemeris(precision: precision)
+				let ephemeris = BuiltInEphemeris(precision: precision)
 				var ephemerisError = 0.0
 				for (body, direction) in zip(bodies, directions) {
 					ephemerisError = max(ephemerisError, Self.angle(direction, try ephemeris.state(of: body, relativeTo: .earth, at: tdb).position.vector))
@@ -133,8 +133,8 @@ import Testing
 		let tdb = Instant<TDB>(try JulianDate(julianDate: 2_461_335.5))
 		let tt = Instant<TT>(try JulianDate(julianDate: 2_461_335.5))
 		for precision in Precision.allCases {
-			#expect(SolarSystemEphemeris(precision: precision).precision == precision)
-			#expect(SolarSystemEphemeris(lunarFit: .laserRanging, precision: precision).lunarFit == .laserRanging)
+			#expect(BuiltInEphemeris(precision: precision).precision == precision)
+			#expect(BuiltInEphemeris(lunarFit: .laserRanging, precision: precision).lunarFit == .laserRanging)
 			#expect(EarthOrientation(precision: precision).precision == precision)
 			let mars = try VSOP2013.Solution(precision: precision).state(of: .mars, at: tdb)
 			let expected = try #require(VSOP2013.heliocentricState(of: .mars, at: tdb.julianDate, precision: precision))
@@ -149,7 +149,7 @@ import Testing
 			#expect(nutation.longitude.radians == direct.longitude && nutation.obliquity.radians == direct.obliquity)
 		}
 		// The defaults are full precision.
-		#expect(SolarSystemEphemeris().precision == .full && EarthOrientation.model.precision == .full)
+		#expect(BuiltInEphemeris().precision == .full && EarthOrientation.model.precision == .full)
 		#expect(VSOP2013.solution.precision == .full && ELPMPP02.de405.precision == .full && ELPMPP02.laserRanging.precision == .full)
 		// Coarser levels differ.
 		#expect(try VSOP2013.Solution(precision: .arcsecond).state(of: .mars, at: tdb) != VSOP2013.solution.state(of: .mars, at: tdb))
@@ -163,7 +163,7 @@ import Testing
 		let fullSky = try site.observation(at: tdb)
 		let full = try fullSky.observedPlace(of: fullSky.apparentPlace(of: .moon))
 		for precision in Precision.allCases.dropFirst() {
-			let sky = try site.observation(at: tdb, earthOrientation: EarthOrientation(precision: precision), ephemeris: SolarSystemEphemeris(precision: precision))
+			let sky = try site.observation(at: tdb, earthOrientation: EarthOrientation(precision: precision), ephemeris: BuiltInEphemeris(precision: precision))
 			let place = try sky.observedPlace(of: sky.apparentPlace(of: .moon))
 			#expect(Self.angle(Self.horizontal(place), Self.horizontal(full)) <= Self.bound(precision), "\(precision)")
 		}

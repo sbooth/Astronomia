@@ -10,7 +10,7 @@ extension VSOP2013 {
 	/// the solution's ecliptic, for J1000.0 to J3000.0.
 	///
 	/// States are heliocentric unless another origin is given. For the Earth and the Moon, use
-	/// ``SolarSystemEphemeris``.
+	/// ``BuiltInEphemeris``.
 	///
 	/// ```swift
 	/// let mars = try VSOP2013.Solution().state(of: .mars, at: instant)

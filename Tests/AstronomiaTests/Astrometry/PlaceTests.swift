@@ -59,7 +59,7 @@ import Testing
 		// Jupiter, and up to 2.6" for Pluto. The corrections from astrometric to apparent, for
 		// deflection and aberration, agree to 1.5 µas plus about 1e-4 of the difference in
 		// direction, the size of aberration. Skyfield has no Shapiro delay, of up to 0.2 ms.
-		let ephemerisTolerance: [SolarSystemEphemeris.Body: Double] = [
+		let ephemerisTolerance: [BuiltInEphemeris.Body: Double] = [
 			.sun: 3, .moon: 12, .mercury: 6, .venus: 3, .mars: 4, .jupiterBarycenter: 35, .saturnBarycenter: 1,
 			.uranusBarycenter: 450, .neptuneBarycenter: 250, .plutoBarycenter: 3_000,
 		]
@@ -86,7 +86,7 @@ import Testing
 	@Test func lightTimeIsTheDistanceOverC() throws {
 		// The light time solves τ = |r_T(t - τ) - r_O(t)| / c + Δt_S.
 		let tdb = try Instant<TDB>(JulianDate(julianDate: 2_460_967.25))
-		let positions = try Astrometry.Positions(ephemeris: SolarSystemEphemeris(), at: tdb)
+		let positions = try Astrometry.Positions(ephemeris: BuiltInEphemeris(), at: tdb)
 		let earth = try positions.state(of: .earth)
 		let geometry = try Astrometry.geometry(of: .jupiterBarycenter, observer: earth, positions: positions)
 		let target = try positions.state(of: .jupiterBarycenter, daysEarlier: geometry.lightTime).position
@@ -117,8 +117,8 @@ import Testing
 		let tdb = try Instant<TDB>(JulianDate(julianDate: 2_460_967.25))
 		// The built-in ephemeris by default, and the lunar fit chosen otherwise
 		let built = try Observer.geocenter.apparentPlace(of: .moon, at: tdb)
-		#expect(try Observer.geocenter.apparentPlace(of: .moon, at: tdb, ephemeris: SolarSystemEphemeris()) == built)
-		let laserRanging = try Observer.geocenter.apparentPlace(of: .moon, at: tdb, ephemeris: SolarSystemEphemeris(lunarFit: .laserRanging))
+		#expect(try Observer.geocenter.apparentPlace(of: .moon, at: tdb, ephemeris: BuiltInEphemeris()) == built)
+		let laserRanging = try Observer.geocenter.apparentPlace(of: .moon, at: tdb, ephemeris: BuiltInEphemeris(lunarFit: .laserRanging))
 		#expect(laserRanging != built)
 		// The observer's own body is at the origin.
 		let earth = try Observer.geocenter.apparentPlace(of: .earth, at: tdb)
@@ -145,7 +145,7 @@ import Testing
 			}
 		}
 		// The built-in bodies are valid.
-		for deflector in SolarSystemEphemeris.lightDeflectingBodies {
+		for deflector in BuiltInEphemeris.lightDeflectingBodies {
 			let checked = try LightDeflectingBody(body: deflector.body, gravitationalParameter: deflector.gravitationalParameter, radius: deflector.radius)
 			#expect(checked == deflector && deflector.gravitationalParameter > 0)
 		}
@@ -153,7 +153,7 @@ import Testing
 
 	@Test func lightTimeEvaluatesTheTargetTwice() throws {
 		let tdb = try Instant<TDB>(JulianDate(julianDate: 2_461_334.5))
-		for (body, expected) in [(SolarSystemEphemeris.Body.moon, 2), (.mercury, 2), (.sun, 2), (.plutoBarycenter, 2), (.earth, 1)] {
+		for (body, expected) in [(BuiltInEphemeris.Body.moon, 2), (.mercury, 2), (.sun, 2), (.plutoBarycenter, 2), (.earth, 1)] {
 			let ephemeris = AlteredEphemeris(altered: .solarSystemBarycenter)
 			let positions = try Astrometry.Positions(ephemeris: ephemeris, at: tdb)
 			let earth = try positions.state(of: .earth)
