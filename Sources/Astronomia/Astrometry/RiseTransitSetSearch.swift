@@ -23,7 +23,7 @@ struct RiseTransitSetSearch {
 		let time: Double
 		/// The instant of the time.
 		let instant: Instant<TT>
-		/// The hour angle, in radians in (-π, π].
+		/// The hour angle, in radians in the left-open interval (-π, π].
 		let hourAngle: Double
 		/// The altitude of the target above the event altitude, in radians.
 		let height: Double
@@ -84,7 +84,7 @@ struct RiseTransitSetSearch {
 			.map { RiseTransitSetEvent(kind: $0.kind, instant: $0.sample.instant, place: $0.sample.place) }
 	}
 
-	/// Returns an angle reduced to (-π, π].
+	/// Returns an angle reduced to the left-open interval (-π, π].
 	static func reduced(_ angle: Double) -> Double {
 		let r = angle.remainder(dividingBy: twoPi)
 		return r == -.pi ? .pi : r

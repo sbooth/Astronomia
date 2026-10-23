@@ -24,17 +24,19 @@ enum Math {
 		return (result.sin, result.cos)
 	}
 
-	/// Returns the arcsine of `x`, in radians in [-π/2, π/2], or NaN if `x` is outside [-1, 1].
+	/// Returns the arcsine of `x`, in radians in the closed interval [-π/2, π/2], or NaN if `x`
+	/// is outside the closed interval [-1, 1].
 	@inline(__always) static func asin(_ x: Double) -> Double { astronomia_asin(x) }
 
-	/// Returns the arccosine of `x`, in radians in [0, π], or NaN if `x` is outside [-1, 1].
+	/// Returns the arccosine of `x`, in radians in the closed interval [0, π], or NaN if `x` is
+	/// outside the closed interval [-1, 1].
 	@inline(__always) static func acos(_ x: Double) -> Double { astronomia_acos(x) }
 
-	/// Returns the arctangent of `x`, in radians in (-π/2, π/2).
+	/// Returns the arctangent of `x`, in radians in the open interval (-π/2, π/2).
 	@inline(__always) static func atan(_ x: Double) -> Double { astronomia_atan(x) }
 
-	/// Returns the angle of the point (`x`, `y`) from the positive x axis, in radians in
-	/// [-π, π].
+	/// Returns the angle of the point (`x`, `y`) from the positive x axis, in radians in the
+	/// closed interval [-π, π].
 	@inline(__always) static func atan2(_ y: Double, _ x: Double) -> Double { astronomia_atan2(y, x) }
 
 	/// Returns the natural logarithm of `x`, or NaN if `x` is negative.

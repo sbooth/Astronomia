@@ -9,8 +9,9 @@
 ///
 /// A UTC Julian Date is a quasi-JD whose fraction is the fraction of the UTC clock day elapsed,
 /// whatever that day's length. On a day ending in a positive leap second the clock reads from
-/// 0 to 86,401 s, so 23:59:60 is represented by fractions in [86,400/86,401, 1). This follows
-/// the IAU SOFA convention and makes the conversion invertible.
+/// 0 to 86,401 s, so 23:59:60 is represented by fractions in the right-open interval
+/// [86,400/86,401, 1). This follows the IAU SOFA convention and makes the conversion
+/// invertible.
 ///
 /// - Important: On a day ending in a leap second, or a pre-1972 day ending in a fractional
 ///   step, a UTC fraction is not seconds / 86,400. Use

@@ -62,7 +62,7 @@ public struct AtmosphericConditions: Hashable, Sendable {
 	///   - ``AtmosphericConditionsError/invalidTemperature`` if the temperature is below
 	///     -150 °C or above 200 °C.
 	///   - ``AtmosphericConditionsError/invalidRelativeHumidity`` if the relative humidity is
-	///     outside [0, 1].
+	///     outside the closed interval [0, 1].
 	///   - ``AtmosphericConditionsError/invalidVaporPressure`` if the relative humidity is
 	///     above 0 and the pressure is at or below the saturation vapor pressure of water at
 	///     the temperature, as at 6 hPa and 10 °C, where water would boil.
@@ -188,7 +188,7 @@ extension AtmosphericConditions {
 	///   - ``AtmosphericConditionsError/invalidHeight`` if the height is below -2 km or above
 	///     11 km.
 	///   - ``AtmosphericConditionsError/invalidRelativeHumidity`` if the relative humidity is
-	///     outside [0, 1].
+	///     outside the closed interval [0, 1].
 	///   - ``AtmosphericConditionsError/invalidWavelength`` if the wavelength is shorter than
 	///     0.1 µm or longer than 1 m.
 	public static func standard(height: Distance, relativeHumidity: Double = 0, wavelength: Distance = .micrometers(0.55)) throws(AtmosphericConditionsError) -> AtmosphericConditions {

@@ -64,7 +64,8 @@ public struct Observer: Hashable, Sendable {
 	/// - Returns: The observer.
 	/// - Throws:
 	///   - ``ObserverError/nonFiniteValue`` if a coordinate is NaN or infinite.
-	///   - ``ObserverError/invalidLatitude`` if the latitude is outside [-90°, 90°].
+	///   - ``ObserverError/invalidLatitude`` if the latitude is outside the closed
+	///     interval [-90°, 90°].
 	///   - ``ObserverError/invalidHeight`` if the height is more than 100 km above or below
 	///     the ellipsoid.
 	public static func site(latitude: Angle, longitude: Angle, height: Distance = .zero, ellipsoid: Ellipsoid = .wgs84) throws(ObserverError) -> Observer {

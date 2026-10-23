@@ -249,7 +249,8 @@ extension DayAccumulator {
 		return try adding(n).adding(q).adding(residual / secondsPerDay)
 	}
 
-	/// Adds `x`, which must be finite and in [-0.5, 0.5], to the fractional day.
+	/// Adds `x`, which must be finite and in the closed interval [-0.5, 0.5], to the fractional
+	/// day.
 	private func addingFraction(_ x: Double) throws(Failure) -> DayAccumulator {
 		assert(x.isFinite && x >= -0.5 && x <= 0.5, "Fraction to add is outside [-0.5, 0.5]")
 		// All operands are bounded by 1, so these twoSum calls cannot fail.

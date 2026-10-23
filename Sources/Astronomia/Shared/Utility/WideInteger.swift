@@ -41,7 +41,8 @@ struct WideInteger: Hashable {
 		self.init(Int64(n))
 	}
 
-	/// Creates a wide integer equal to `x`, if `x` is an integer in the range [-2^127, 2^127).
+	/// Creates a wide integer equal to `x`, if `x` is an integer in the right-open interval
+	/// [-2^127, 2^127).
 	///
 	/// - Parameter x: The value to convert.
 	init?(exactly x: Double) {
