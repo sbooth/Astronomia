@@ -73,3 +73,9 @@ let jupiterEquatorialRadius: Distance = .kilometers(71_492)
 /// From the report of the IAU Working Group on Cartographic Coordinates and Rotational
 /// Elements, 2015 (Archinal et al. 2018).
 let saturnEquatorialRadius: Distance = .kilometers(60_268)
+
+/// The mean radius of the Moon, in kilometers.
+///
+/// From the report of the IAU Working Group on Cartographic Coordinates and Rotational
+/// Elements, 2015 (Archinal et al. 2018).
+let lunarMeanRadius: Distance = .kilometers(1_737.4)

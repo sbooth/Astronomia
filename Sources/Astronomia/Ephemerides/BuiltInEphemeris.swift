@@ -86,6 +86,32 @@ public struct BuiltInEphemeris: GeocentricEphemeris, Hashable {
 	]
 	public static let solarSystemBarycenter = Body.solarSystemBarycenter
 
+	/// Returns the radius of a body: the Sun's nominal radius of IAU 2015 Resolution B3, the
+	/// Moon's mean radius, the Earth's WGS84 equatorial radius, and the other planets'
+	/// equatorial radii from the IAU Working Group on Cartographic Coordinates and Rotational
+	/// Elements, 2015 (Archinal et al. 2018), for the gas giants at the 1 bar level. The
+	/// barycenters of the outer planets' systems take their planets' radii, and the solar
+	/// system and Earth-Moon barycenters are points.
+	///
+	/// - Parameter body: The body.
+	/// - Returns: The body's radius, or `nil` for the solar system and Earth-Moon barycenters.
+	public static func radius(of body: Body) -> Distance? {
+		switch body {
+		case .solarSystemBarycenter, .earthMoonBarycenter: nil
+		case .sun: nominalSolarRadius
+		case .mercury: .kilometers(2_440.53)
+		case .venus: .kilometers(6_051.8)
+		case .earth: earthEquatorialRadius
+		case .moon: lunarMeanRadius
+		case .mars: .kilometers(3_396.19)
+		case .jupiterBarycenter: jupiterEquatorialRadius
+		case .saturnBarycenter: saturnEquatorialRadius
+		case .uranusBarycenter: .kilometers(25_559)
+		case .neptuneBarycenter: .kilometers(24_764)
+		case .plutoBarycenter: .kilometers(1_188.3)
+		}
+	}
+
 	/// A fit of the lunar solution ELP/MPP02.
 	public enum LunarFit: Hashable, Sendable, CaseIterable {
 		/// ``ELPMPP02/de405``, the fit to DE405, the default.
