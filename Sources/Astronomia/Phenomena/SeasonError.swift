@@ -11,6 +11,9 @@ public enum SeasonError: Error, Hashable, Sendable {
 	case invalidInterval
 	/// The year can't be represented in the calendar.
 	case invalidYear
+	/// The event isn't in the year, as when a calendar that has drifted far from the seasons
+	/// puts it at the turn of the year.
+	case eventNotInYear
 	/// The interval can't be converted to TT.
 	case timescaleConversion(TimescaleConversionError)
 	/// The ephemeris failed for an instant in the interval.

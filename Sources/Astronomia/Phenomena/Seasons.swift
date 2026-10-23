@@ -64,6 +64,23 @@ extension Seasons {
 	///   - ``SeasonError/ephemeris(_:)`` if a place of the Sun in the interval fails, as for an
 	///     ``Observation``, such as outside the ephemeris's coverage.
 	public static func events<E: GeocentricEphemeris, Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(SeasonError) -> [SeasonEvent] {
+		try events(from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: ephemeris, stoppingAt: nil)
+	}
+
+	/// Returns the equinoxes and solstices in an interval, in order, up to the first of a kind.
+	///
+	/// - Parameters:
+	///   - start: The start of the interval.
+	///   - end: The end of the interval.
+	///   - context: Observational data for converting the interval to TT.
+	///   - earthOrientation: Observed Earth orientation.
+	///   - ephemeris: The ephemeris of the Sun and the Earth.
+	///   - last: The only kind of event to find, after which to stop, without evaluating the
+	///     ephemeris for the rest of the interval, or `nil` for every event. Events of other
+	///     kinds are bracketed, to step past them, but not refined or returned.
+	/// - Returns: The events, in order of their instants.
+	/// - Throws: A ``SeasonError``, as the public method does.
+	static func events<E: GeocentricEphemeris, Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, earthOrientation: EarthOrientation, ephemeris: E, stoppingAt last: SeasonEvent.Kind?) throws(SeasonError) -> [SeasonEvent] {
 		let startTT: Instant<TT>
 		let endTT: Instant<TT>
 		do throws(TimescaleConversionError) {
@@ -140,8 +157,16 @@ extension Seasons {
 				upper = sample
 			}
 			guard let upper else { break }
+			if let last, kind != last {
+				// Step past an event of another kind without refining it.
+				current = upper
+				continue
+			}
 			let event = try RootFinder.refine(lower, upper, time: \.time, tolerance: tolerance, maximumIterations: maximumIterations, evaluate: evaluate, function: past)
 			events.append(SeasonEvent(kind: kind, instant: event.instant))
+			if kind == last {
+				break
+			}
 			// The next event is a quarter of a year later.
 			let next = event.time + 1
 			guard next < length else { break }
@@ -170,8 +195,10 @@ extension Seasons {
 
 	/// Returns the instant of an equinox or a solstice in a year.
 	///
-	/// The search covers a few weeks around the event's usual date, so it evaluates the
-	/// ephemeris for that event alone.
+	/// The search covers the year from its start to the event, stepping past the year's earlier
+	/// equinoxes and solstices with a couple of places of the Sun each, refining only the
+	/// requested event, and evaluating the ephemeris no further. It assumes nothing of the
+	/// ephemeris's coverage or the calendar's drift from the seasons.
 	///
 	/// - Parameters:
 	///   - kind: The equinox or solstice.
@@ -184,6 +211,9 @@ extension Seasons {
 	/// - Returns: The instant of the event.
 	/// - Throws:
 	///   - ``SeasonError/invalidYear`` if the year can't be represented in the calendar.
+	///   - ``SeasonError/eventNotInYear`` if the event isn't in the year, as when a calendar
+	///     that has drifted far from the seasons puts it at the turn of the year, in the year
+	///     before or after.
 	///   - ``SeasonError/ephemeris(_:)`` if a place of the Sun fails, as for an
 	///     ``Observation``, such as outside the ephemeris's coverage.
 	public static func instant<E: GeocentricEphemeris>(of kind: SeasonEvent.Kind, year: Int, calendar: CalendarIdentifier = .julianGregorian, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(SeasonError) -> Instant<TT> {
@@ -195,24 +225,14 @@ extension Seasons {
 		} catch {
 			throw .invalidYear
 		}
-		// The usual day of the year of each event, which the Julian calendar's drift and the
-		// precession move by under three weeks between J1000.0 and J3000.0
-		let usualDay = [79.0, 172, 265, 355][kind.index]
-		let yearLength = end.daysSinceJ2000 - start.daysSinceJ2000
-		let window = (from: max(0, usualDay - 30), to: min(yearLength, usualDay + 30))
-		let from: JulianDate
-		let to: JulianDate
-		do throws(JulianDateError) {
-			from = try start.adding(days: window.from)
-			to = try start.adding(days: window.to)
-		} catch {
-			throw .invalidYear
-		}
-		let found = try events(from: Instant<TT>(from), to: Instant<TT>(to), earthOrientation: earthOrientation, ephemeris: ephemeris)
-		guard let event = found.first(where: { $0.kind == kind }) else {
-			// Each event falls within its window in every year the calendars and the
-			// ephemeris cover.
-			throw .invalidYear
+		// The search stops at the event, so it doesn't evaluate the ephemeris past it, as near
+		// the end of its coverage.
+		let found = try events(from: Instant<TT>(start), to: Instant<TT>(end), context: TT.defaultContext, earthOrientation: earthOrientation, ephemeris: ephemeris, stoppingAt: kind)
+		guard let event = found.first else {
+			// A calendar year of 365 days is shorter than the tropical year, so where a
+			// calendar has drifted until an event falls at the turn of the year, a year can
+			// lack it.
+			throw .eventNotInYear
 		}
 		return event.instant
 	}
