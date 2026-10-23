@@ -27,9 +27,37 @@ import Testing
 		Math.atan2(a.cross(b).length, a.dot(b)) * uas
 	}
 
-	/// Returns the largest displacement of an axis between two rotations, in µas.
+	/// Returns the angle of the rotation between two rotations, the largest displacement of any
+	/// direction between them, in µas.
+	///
+	/// For a rotation by θ, the trace is 1 + 2 cos θ, and the antisymmetric part is 2 sin θ times
+	/// the axis.
 	static func angle(_ a: Rotation<ICRS, ICRS>, _ b: Rotation<ICRS, ICRS>) -> Double {
-		[Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)].map { angle(a.apply(to: $0), b.apply(to: $0)) }.max() ?? 0
+		let (r0, r1, r2) = (a * b.inverse).storage
+		let axis = Vector3(r2.y - r1.z, r0.z - r2.x, r1.x - r0.y)
+		return Math.atan2(axis.length, r0.x + r1.y + r2.z - 1) * uas
+	}
+
+	/// Returns the unit vector of a place on the horizon.
+	static func horizontal(_ place: ObservedPlace) -> Vector3 {
+		let (sinAltitude, cosAltitude) = Math.sincos(place.altitude.radians)
+		let (sinAzimuth, cosAzimuth) = Math.sincos(place.azimuth.radians)
+		return Vector3(cosAltitude * cosAzimuth, cosAltitude * sinAzimuth, sinAltitude)
+	}
+
+	@Test func rotationAngle() {
+		// A rotation about (1, 1, 1), which moves each axis by less than its angle
+		let angle = Angle(arcseconds: 1.1)
+		let (s, c) = Math.sincos(angle.radians / 2)
+		let q = Vector3(1, 1, 1) / Vector3(1, 1, 1).length * s
+		// The rotation matrix of the quaternion (c, q)
+		let rotation = Rotation<ICRS, ICRS>(uncheckedRows:
+			Vector3(1 - 2 * (q.y * q.y + q.z * q.z), 2 * (q.x * q.y - c * q.z), 2 * (q.x * q.z + c * q.y)),
+			Vector3(2 * (q.x * q.y + c * q.z), 1 - 2 * (q.x * q.x + q.z * q.z), 2 * (q.y * q.z - c * q.x)),
+			Vector3(2 * (q.x * q.z - c * q.y), 2 * (q.y * q.z + c * q.x), 1 - 2 * (q.x * q.x + q.y * q.y)))
+		#expect(abs(Self.angle(rotation, .identity) - angle.radians * Self.uas) < 1e-3)
+		let axes = [Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)].map { Self.angle(rotation.apply(to: $0), $0) }
+		#expect(axes.allSatisfy { $0 < 0.9 * angle.radians * Self.uas })
 	}
 
 	/// Returns the counts of a series at each level.
@@ -137,9 +165,7 @@ import Testing
 		for precision in Precision.allCases.dropFirst() {
 			let sky = try site.observation(at: tdb, earthOrientation: EarthOrientation(precision: precision), ephemeris: SolarSystemEphemeris(precision: precision))
 			let place = try sky.observedPlace(of: sky.apparentPlace(of: .moon))
-			let altitude = abs(place.altitude.radians - full.altitude.radians) * Self.uas
-			let azimuth = abs((place.azimuth.radians - full.azimuth.radians).remainder(dividingBy: twoPi)) * full.altitude.cos * Self.uas
-			#expect(altitude <= Self.bound(precision) && azimuth <= Self.bound(precision), "\(precision)")
+			#expect(Self.angle(Self.horizontal(place), Self.horizontal(full)) <= Self.bound(precision), "\(precision)")
 		}
 	}
 }

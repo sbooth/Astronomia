@@ -133,7 +133,7 @@ VARIABLES = "a λ k h q p".split()
 # microarcseconds. They were chosen by measurement over J1000.0 to J3000.0 so that the error in
 # the geocentric direction of the Moon and the planets other than Pluto, plus the error in the
 # nutation, is within each level's bound: 10 mas, 0.1", 1", and 10". The largest errors found
-# were 5.9 mas, 84 mas, 0.83", and 6.7".
+# were 6.0 mas, 84 mas, 0.83", and 6.7".
 LEVELS = 5
 VSOP_LEVEL_FACTORS = [4, 80, 1500, 30000]
 ELP_LEVEL_FACTORS = [3, 60, 1500, 30000]
