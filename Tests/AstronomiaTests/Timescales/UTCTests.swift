@@ -319,7 +319,7 @@ let stepDays: [StepDay] = [
 	/// The built-in table plus a fictitious leap second at the end of 2027-06-30.
 	func tableWithExtraLeapSecond() throws -> LeapSecondTable {
 		var leapSeconds = LeapSecondTable.builtIn.leapSeconds
-		leapSeconds.append(try .init(effective: civilDay(2027, 7, 1), taiMinusUTC: 38))
+		leapSeconds.append(try .init(effectiveDay: civilDay(2027, 7, 1), taiMinusUTC: 38))
 		return try #require(LeapSecondTable(leapSeconds: leapSeconds, horizon: civilDay(2028, 1, 1)))
 	}
 

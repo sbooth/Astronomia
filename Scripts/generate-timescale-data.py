@@ -323,7 +323,7 @@ def leap_seconds(args: argparse.Namespace, data: bytes) -> str:
 		declaration(args, "[LeapSecondTable.LeapSecond]"),
 	]
 	for day, offset in leaps:
-		lines.append(f"\t.init(effective: {day:_}, taiMinusUTC: {offset}), // {civil_date(day)}")
+		lines.append(f"\t.init(effectiveDay: {day:_}, taiMinusUTC: {offset}), // {civil_date(day)}")
 	lines += [
 		"]",
 		"",

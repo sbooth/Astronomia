@@ -127,7 +127,7 @@ import Testing
 
 		// Equality depends on the leap second table: with a leap second at the end of
 		// 2027-06-30, that day differs from the built-in table's, and earlier days do not.
-		let leapSecond = try LeapSecondTable.LeapSecond(effective: civilDay(2027, 7, 1), taiMinusUTC: 38)
+		let leapSecond = try LeapSecondTable.LeapSecond(effectiveDay: civilDay(2027, 7, 1), taiMinusUTC: 38)
 		let table = try #require(LeapSecondTable(leapSeconds: LeapSecondTable.builtIn.leapSeconds + [leapSecond], horizon: civilDay(2028, 1, 1)))
 		let lastDay = try civilDay(2027, 6, 30)
 		#expect(try UTCDay(julianDayNumber: lastDay, leapSecondTable: table) != UTCDay(julianDayNumber: lastDay))
