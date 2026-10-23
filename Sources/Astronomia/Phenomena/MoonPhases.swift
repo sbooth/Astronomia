@@ -197,3 +197,30 @@ extension MoonPhases {
 		try next(kind, of: BuiltInEphemeris.Body.moon, after: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 }
+
+extension MoonPhases {
+	/// Returns how the Moon is lit by the Sun at an instant, with the built-in ephemeris.
+	///
+	/// This is the ``Observation/illumination(of:)`` of the Moon in an observation at the
+	/// instant.
+	///
+	/// - Parameters:
+	///   - instant: The instant.
+	///   - context: Observational data for converting `instant`.
+	///   - observer: The observer, by default the center of the Earth.
+	///   - earthOrientation: Observed Earth orientation, whose UT1 places a site, and whose
+	///     celestial pole offsets and precision apply to the nutation.
+	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	/// - Returns: The Moon's phase angle, illuminated fraction, elongation, and bright limb.
+	/// - Throws: ``IlluminationError/ephemeris(_:)`` if the observation or a place fails, as
+	///   for ``Observation``, such as outside the ephemeris's coverage.
+	public static func illumination<Scale: Timescale>(at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, observer: Observer = .geocenter, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(IlluminationError) -> Illumination {
+		let observation: Observation<BuiltInEphemeris>
+		do throws(EphemerisError) {
+			observation = try observer.observation(at: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
+		} catch {
+			throw .ephemeris(error)
+		}
+		return try observation.illumination(of: .moon)
+	}
+}
