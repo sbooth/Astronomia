@@ -44,6 +44,35 @@ struct CircularEphemeris: GeocentricEphemeris {
 	}
 }
 
+/// An ephemeris whose coverage ends early, at an instant within another's.
+struct TruncatedEphemeris<Base: GeocentricEphemeris>: GeocentricEphemeris {
+	typealias Body = Base.Body
+	typealias Frame = Base.Frame
+
+	static var defaultOrigin: Body { Base.defaultOrigin }
+	static var earth: Body { Base.earth }
+	static var sun: Body { Base.sun }
+	static var solarSystemBarycenter: Body { Base.solarSystemBarycenter }
+	static var lightDeflectingBodies: [LightDeflectingBody<Body>] { Base.lightDeflectingBodies }
+
+	let base: Base
+	/// The end of the coverage.
+	let end: Instant<TDB>
+
+	/// Creates an ephemeris whose coverage ends at an instant in TT.
+	init(_ base: Base, endingAt end: Instant<TT>) throws {
+		self.base = base
+		self.end = try end.converted(to: TDB.self)
+	}
+
+	var coverage: ClosedRange<Instant<TDB>> { base.coverage.lowerBound ... end }
+
+	func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<Frame> {
+		guard coverage.contains(tdb) else { throw .outsideCoverage }
+		return try base.state(of: body, relativeTo: origin, at: tdb)
+	}
+}
+
 @Suite struct SeasonsTests {
 	static func julianDate(_ instant: Instant<TT>) -> Double {
 		instant.julianDate.daysSinceJ2000 + 2_451_545
@@ -122,6 +151,23 @@ struct CircularEphemeris: GeocentricEphemeris {
 		#expect(throws: SeasonError.ephemeris(.outsideCoverage)) {
 			try Seasons.events(from: julian, to: Instant<TT>(try JulianDate(year: 3000, month: 1, day: 1, calendar: .julian)), precision: .arcsecond)
 		}
+	}
+
+	@Test func eventAtTheEndOfTheCoverage() throws {
+		// An event 15 minutes before the end of the coverage is found, though the bracket the
+		// search predicts runs days past it.
+		let june = try Seasons.instant(of: .juneSolstice, year: 2026, precision: .arcsecond)
+		let ephemeris = try TruncatedEphemeris(BuiltInEphemeris(precision: .arcsecond), endingAt: Instant(try june.julianDate.adding(seconds: 900)))
+		let found = try Seasons.instant(of: .juneSolstice, year: 2026, ephemeris: ephemeris)
+		#expect(abs(Self.julianDate(found) - Self.julianDate(june)) * secondsPerDay < 0.1)
+		let start = Instant<TT>(try june.julianDate.adding(days: -100))
+		let events = try Seasons.events(from: start, to: Instant<TT>(try june.julianDate.adding(seconds: 600)), ephemeris: ephemeris)
+		#expect(events.map(\.kind) == [.marchEquinox, .juneSolstice])
+		#expect(abs(Self.julianDate(try #require(events.last).instant) - Self.julianDate(june)) * secondsPerDay < 0.1)
+		// An event past the end isn't.
+		#expect(throws: SeasonError.ephemeris(.outsideCoverage)) { try Seasons.instant(of: .septemberEquinox, year: 2026, ephemeris: ephemeris) }
+		let early = try TruncatedEphemeris(BuiltInEphemeris(precision: .arcsecond), endingAt: Instant(try june.julianDate.adding(seconds: -900)))
+		#expect(throws: SeasonError.ephemeris(.outsideCoverage)) { try Seasons.instant(of: .juneSolstice, year: 2026, ephemeris: early) }
 	}
 
 	@Test func yearsOfAWiderEphemeris() throws {

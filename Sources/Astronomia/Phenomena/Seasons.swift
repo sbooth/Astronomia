@@ -24,27 +24,13 @@
 /// Sun's own error is far smaller than the bound of a coarser ``Precision``: at
 /// ``Precision/tenthArcsecond`` the same events are within 0.13 s, at about 40 ms each.
 public enum Seasons {
-	/// The precision of an event, 0.1 s, in days.
-	static let tolerance = 0.1 / secondsPerDay
-	/// The most evaluations to refine one event.
-	static let maximumIterations = 100
 	/// The Sun's mean motion in longitude, in radians per day, which predicts the next event.
-	static let meanMotion = twoPi / 365.242_19
+	static let meanMotion: Double = twoPi / 365.242_19
 	/// The half-width of the bracket around a predicted event, in days.
 	///
 	/// The Sun's motion in longitude differs from its mean by under 3.5%, so a prediction
 	/// across at most a quarter of a year is within about 3.2 days.
-	static let margin = 5.0
-
-	/// The Sun's apparent longitude at a time.
-	struct Sample {
-		/// The time, in days after the start of the interval.
-		let time: Double
-		/// The instant of the time.
-		let instant: Instant<TT>
-		/// The Sun's apparent longitude, in radians in [0, 2π).
-		let longitude: Double
-	}
+	static let margin: Double = 5.0
 }
 
 extension Seasons {
@@ -81,31 +67,18 @@ extension Seasons {
 	/// - Returns: The events, in order of their instants.
 	/// - Throws: A ``SeasonError``, as the public method does.
 	static func events<E: GeocentricEphemeris, Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, earthOrientation: EarthOrientation, ephemeris: E, stoppingAt last: SeasonEvent.Kind?) throws(SeasonError) -> [SeasonEvent] {
-		let startTT: Instant<TT>
-		let endTT: Instant<TT>
-		do throws(TimescaleConversionError) {
-			startTT = try start.converted(to: TT.self, sourceContext: context)
-			endTT = try end.converted(to: TT.self, sourceContext: context)
+		let interval: SearchInterval
+		do throws(SearchInterval.Failure) {
+			interval = try SearchInterval(from: start, to: end, context: context)
 		} catch {
-			throw .timescaleConversion(error)
+			throw SeasonError(error)
 		}
-		guard startTT <= endTT else {
-			throw .invalidInterval
-		}
-		let origin = startTT.julianDate
-		let length = endTT.julianDate.daysSinceJ2000 - origin.daysSinceJ2000
-
-		func evaluate(_ days: Double) throws(SeasonError) -> Sample {
+		let search = QuarterSearch(length: interval.length, meanMotion: meanMotion, margin: margin) { (days: Double) throws(SeasonError) -> QuarterSearch<SeasonError>.Sample in
 			let instant: Instant<TT>
-			if days >= length {
-				instant = endTT
-			} else {
-				do throws(JulianDateError) {
-					instant = Instant(try origin.adding(days: days))
-				} catch {
-					// A time between two representable instants is representable.
-					throw .invalidInterval
-				}
+			do throws(SearchInterval.Failure) {
+				instant = try interval.instant(days)
+			} catch {
+				throw SeasonError(error)
 			}
 			let place: ApparentPlace<ICRS>
 			do throws(EphemerisError) {
@@ -114,65 +87,19 @@ extension Seasons {
 				throw .ephemeris(error)
 			}
 			let longitude = place.converted(to: TrueEclipticOfDate.self, earthOrientation: earthOrientation).position.spherical.longitude.radians
-			return Sample(time: min(days, length), instant: instant, longitude: longitude)
+			return QuarterSearch.Sample(time: min(days, interval.length), instant: instant, angle: longitude)
 		}
-		/// Returns an angle reduced to (-π, π].
-		func reduced(_ angle: Double) -> Double {
-			let r = angle.remainder(dividingBy: twoPi)
-			return r == -.pi ? .pi : r
-		}
+		return try search.events(stoppingAt: last?.index).map { SeasonEvent(kind: SeasonEvent.Kind.allCases[$0.quarter], instant: $0.instant) }
+	}
+}
 
-		var events: [SeasonEvent] = []
-		var current = try evaluate(0)
-		while current.time < length {
-			// The next multiple of 90° after the current longitude, and when the Sun reaches it
-			let index = Int((current.longitude / halfPi).rounded(.down)) + 1
-			let target = Double(index) * halfPi
-			let kind = SeasonEvent.Kind.allCases[index % 4]
-			let predicted = current.time + (target - current.longitude) / meanMotion
-			/// How far past the target the Sun is, negative before it.
-			let past = { (sample: Sample) in reduced(sample.longitude - target) }
-
-			// The bracket is the margin either side of the prediction, within the interval and
-			// after the current time, which is before the event.
-			var lower = current
-			var upper: Sample? = nil
-			if predicted - margin > current.time, predicted - margin < length {
-				let sample = try evaluate(predicted - margin)
-				if past(sample) < 0 {
-					lower = sample
-				} else {
-					upper = sample
-				}
-			}
-			if upper == nil {
-				let sample = try evaluate(min(predicted + margin, length))
-				guard past(sample) >= 0 else {
-					// The event is after the end of the interval, or past the bracket, which the
-					// Sun's motion doesn't allow but a custom ephemeris might.
-					if sample.time >= length { break }
-					current = sample
-					continue
-				}
-				upper = sample
-			}
-			guard let upper else { break }
-			if let last, kind != last {
-				// Step past an event of another kind without refining it.
-				current = upper
-				continue
-			}
-			let event = try RootFinder.refine(lower, upper, time: \.time, tolerance: tolerance, maximumIterations: maximumIterations, evaluate: evaluate, function: past)
-			events.append(SeasonEvent(kind: kind, instant: event.instant))
-			if kind == last {
-				break
-			}
-			// The next event is a quarter of a year later.
-			let next = event.time + 1
-			guard next < length else { break }
-			current = try evaluate(next)
+extension SeasonError {
+	/// Creates the error for a failure of an interval.
+	init(_ failure: SearchInterval.Failure) {
+		switch failure {
+		case .invalidInterval: self = .invalidInterval
+		case let .timescaleConversion(error): self = .timescaleConversion(error)
 		}
-		return events
 	}
 }
 
