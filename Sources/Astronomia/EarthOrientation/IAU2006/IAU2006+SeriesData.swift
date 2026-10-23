@@ -15,12 +15,14 @@ extension IAU2006 {
 		// The data is immutable, so the pointers into it can be shared.
 		/// The coefficients of t⁰ to t⁵ of the polynomial part, in microarcseconds.
 		let polynomial: [Double]
-		/// The series, each a power of time and number of terms.
+		/// The series, each a power of time and number of terms at each precision level, with
+		/// their terms in order of decreasing amplitude.
 		let series: UnsafeBufferPointer<astronomia_iau_series>
 		/// The terms, in the order of the series.
 		let terms: UnsafeBufferPointer<astronomia_iau_term>
-		/// The threshold below which terms were left out, in microarcseconds.
-		let threshold: Double
+		/// The threshold of each precision level, below which terms are left out, in
+		/// microarcseconds.
+		let thresholds: (Double, Double, Double, Double, Double)
 		/// The Julian epochs of the span the threshold applies to.
 		let span: ClosedRange<Double>
 
@@ -29,7 +31,7 @@ extension IAU2006 {
 			polynomial = withUnsafeBytes(of: data.polynomial) { Array($0.bindMemory(to: Double.self)) }
 			series = UnsafeBufferPointer(start: data.series, count: data.series_count)
 			terms = UnsafeBufferPointer(start: data.terms, count: data.term_count)
-			threshold = data.threshold
+			thresholds = data.thresholds
 			span = data.start_epoch ... data.end_epoch
 		}
 	}
@@ -55,21 +57,23 @@ extension IAU2006.SeriesData {
 
 	/// Returns the sum of the series at a time.
 	///
-	/// The terms are summed from the last, the smallest, to the first, so the small terms are
-	/// not lost in the large ones.
+	/// The leading terms of the precision level are summed from the last, the smallest, to the
+	/// first, so the small terms are not lost in the large ones.
 	///
 	/// - Parameters:
 	///   - t: TT in Julian centuries from J2000.0.
 	///   - arguments: The fourteen fundamental arguments at `t`, in radians.
+	///   - precision: The precision level.
 	/// - Returns: The sum, in microarcseconds.
-	func seriesValue(at t: Double, arguments: IAU2006.FundamentalArguments) -> Double {
+	func seriesValue(at t: Double, arguments: IAU2006.FundamentalArguments, precision: Precision) -> Double {
 		let a = arguments.values
+		let level = precision.level
 		var total = 0.0
 		var end = terms.count
 		for header in series.reversed() {
-			let start = end - Int(header.count)
+			let start = end - Int(header.counts.0)
 			var sum = 0.0
-			for index in stride(from: end - 1, through: start, by: -1) {
+			for index in stride(from: start + Int(levelValue(header.counts, level)) - 1, through: start, by: -1) {
 				let term = terms[index]
 				let m = term.multipliers
 				// The sum of every multiple, most of them zero, is faster than testing for zeros.
@@ -95,8 +99,9 @@ extension IAU2006.SeriesData {
 	/// - Parameters:
 	///   - t: TT in Julian centuries from J2000.0.
 	///   - arguments: The fourteen fundamental arguments at `t`, in radians.
+	///   - precision: The precision level of the series.
 	/// - Returns: The value, in microarcseconds.
-	func value(at t: Double, arguments: IAU2006.FundamentalArguments) -> Double {
-		polynomialValue(at: t) + seriesValue(at: t, arguments: arguments)
+	func value(at t: Double, arguments: IAU2006.FundamentalArguments, precision: Precision = .full) -> Double {
+		polynomialValue(at: t) + seriesValue(at: t, arguments: arguments, precision: precision)
 	}
 }

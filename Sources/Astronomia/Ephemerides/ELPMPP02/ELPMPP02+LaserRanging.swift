@@ -12,7 +12,7 @@ extension ELPMPP02 {
 	/// States are geocentric unless the origin is the Moon. With the published orientation of
 	/// its frame, this fit differs from modern ephemerides by about 40 mas, mostly in its origin
 	/// of longitudes. Use ``ELPMPP02/laserRanging``.
-	public struct LaserRanging: Ephemeris, Fit {
+	public struct LaserRanging: Ephemeris, Fit, Hashable {
 		/// The inertial mean ecliptic and equinox of J2000.0 as realized by the fit.
 		///
 		/// The frame is the ICRS rotated by R1(ε) R3(φ), with ε = 23° 26' 21.41100" and
@@ -43,13 +43,21 @@ extension ELPMPP02 {
 			secular: nil
 		))
 
-		/// Creates the solution. ``ELPMPP02/laserRanging`` is an instance.
-		public init() {}
+		/// The precision level of the series.
+		public let precision: Precision
+
+		/// Creates the solution. ``ELPMPP02/laserRanging`` is an instance at full precision.
+		///
+		/// - Parameter precision: The precision level of the series, by default
+		///   ``Precision/full``.
+		public init(precision: Precision = .full) {
+			self.precision = precision
+		}
 
 		public var coverage: ClosedRange<Instant<TDB>> { builtInEphemerisInstants }
 
 		public func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<Ecliptic> {
-			try Self.fitState(of: body, relativeTo: origin, at: tdb)
+			try Self.fitState(of: body, relativeTo: origin, at: tdb, precision: precision)
 		}
 	}
 }

@@ -35,14 +35,15 @@ extension IAU2006 {
 		/// - Parameters:
 		///   - t: TT in Julian centuries from J2000.0.
 		///   - poleOffsets: dX and dY, in radians, or `nil` for the model alone.
-		init(at t: Double, poleOffsets: (dX: Double, dY: Double)?) {
+		///   - precision: The precision level of the nutation series.
+		init(at t: Double, poleOffsets: (dX: Double, dY: Double)?, precision: Precision = .full) {
 			let arguments = FundamentalArguments(at: t)
 			angles = precessionAngles(at: t)
-			let modelNutation = IAU2006.nutation(at: t, arguments: arguments)
+			let modelNutation = IAU2006.nutation(at: t, arguments: arguments, precision: precision)
 			let model = biasPrecessionNutation(angles: angles, nutation: modelNutation)
 			let x = model.storage.2.x
 			let y = model.storage.2.y
-			s = cioLocator(at: t, arguments: arguments, x: x, y: y)
+			s = cioLocator(at: t, arguments: arguments, x: x, y: y, precision: precision)
 			if let poleOffsets {
 				nutation = correctedNutation(modelNutation, angles: angles, pole: (x, y), poleOffsets: poleOffsets)
 				let corrected = biasPrecessionNutation(angles: angles, nutation: nutation)
@@ -146,9 +147,9 @@ extension IAU2006.Orientation {
 	/// - Parameters:
 	///   - tt: An instant in TT.
 	///   - earthOrientation: Observed Earth orientation, whose pole offsets are applied where its
-	///     table covers `tt`.
+	///     table covers `tt`, and whose precision level sets the terms of the series.
 	init(at tt: Instant<TT>, earthOrientation: EarthOrientation) {
-		self.init(at: tt.julianDate.julianCenturiesSinceJ2000, poleOffsets: earthOrientation.poleOffsets(at: tt))
+		self.init(at: tt.julianDate.julianCenturiesSinceJ2000, poleOffsets: earthOrientation.poleOffsets(at: tt), precision: earthOrientation.precision)
 	}
 }
 

@@ -13,7 +13,7 @@ extension ELPMPP02 {
 	/// States are geocentric unless the origin is the Moon. With the published orientation of
 	/// its frame, this fit agrees with modern ephemerides near the present to about 6 mas, so it
 	/// is the library's default. Use ``ELPMPP02/de405``.
-	public struct DE405: Ephemeris, Fit {
+	public struct DE405: Ephemeris, Fit, Hashable {
 		/// The inertial mean ecliptic and equinox of J2000.0 as realized by the fit.
 		///
 		/// The frame is the axes of DE405 rotated by R1(ε) R3(φ), with ε = 23° 26' 21.40960" and
@@ -43,13 +43,21 @@ extension ELPMPP02 {
 			secular: SecularCorrections(w13: -0.000_188_65, w14: -0.000_010_24, w22: 0.004_706_02, w23: -0.000_252_13, w32: -0.002_610_70, w33: -0.000_107_12)
 		))
 
-		/// Creates the solution. ``ELPMPP02/de405`` is an instance.
-		public init() {}
+		/// The precision level of the series.
+		public let precision: Precision
+
+		/// Creates the solution. ``ELPMPP02/de405`` is an instance at full precision.
+		///
+		/// - Parameter precision: The precision level of the series, by default
+		///   ``Precision/full``.
+		public init(precision: Precision = .full) {
+			self.precision = precision
+		}
 
 		public var coverage: ClosedRange<Instant<TDB>> { builtInEphemerisInstants }
 
 		public func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<Ecliptic> {
-			try Self.fitState(of: body, relativeTo: origin, at: tdb)
+			try Self.fitState(of: body, relativeTo: origin, at: tdb, precision: precision)
 		}
 	}
 }

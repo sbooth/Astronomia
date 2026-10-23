@@ -9,11 +9,12 @@
 /// found.
 ///
 /// Creating an observation evaluates the ephemeris for the observer, the Sun's barycentric
-/// state, and the light-deflecting bodies, which is most of the cost of a place: about 17 ms
-/// with the built-in ephemeris. For a site on the Earth it also places the site in the GCRS
-/// with the observation's ``earthOrientation``, at the cost of a precession-nutation, and the
-/// Earth then deflects light from above the site's horizon. A place of a star then takes well
-/// under a microsecond, and a place of a body evaluates only the body itself, twice.
+/// state, and the light-deflecting bodies, which is most of the cost of a place: about 19 ms
+/// with the built-in ephemeris, or under a millisecond at a coarser ``Precision`` of it. For a
+/// site on the Earth it also places the site in the GCRS with the observation's
+/// ``earthOrientation``, at the cost of a precession-nutation, and the Earth then deflects
+/// light from above the site's horizon. A place of a star then takes well under a
+/// microsecond, and a place of a body evaluates only the body itself, twice.
 ///
 /// ```swift
 /// let sky = try Observer.geocenter.observation(at: instant)

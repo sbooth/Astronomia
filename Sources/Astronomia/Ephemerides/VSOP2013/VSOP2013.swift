@@ -11,9 +11,10 @@ internal import CAstronomiaData
 ///
 /// The solution gives heliocentric elliptic elements of the planets and the Earth-Moon
 /// barycenter as series in TDB, in its own realization of the dynamical ecliptic and equinox
-/// of J2000.0, ``Ecliptic``. ``Ephemeris`` gives their states. The built-in series are
+/// of J2000.0, ``Ecliptic``. ``Solution`` gives their states. The built-in series are
 /// truncated for J1000.0 to J3000.0 so that the geocentric error from truncation is near
-/// 0.5 mas, or below the solution's own error.
+/// 0.5 mas, or below the solution's own error, and coarser ``Precision`` levels sum fewer of
+/// their terms.
 ///
 /// - Note: Simon, J.-L., Francou, G., Fienga, A., Manche, H. (2013). New analytical planetary
 ///   theories VSOP2013 and TOP2013. Astronomy & Astrophysics 557, A49.
@@ -70,15 +71,25 @@ public enum VSOP2013 {
 	static let sunGravitationalParameter = 2.959_122_083_684_143_826_9e-4
 }
 
-/// The TDB dates of the built-in series of VSOP2013 and ELP/MPP02, J1000.0 to J3000.0.
-let builtInEphemerisCoverage = JulianDate(uncheckedJulianDayNumber: 2_086_295, fractionFromNoon: 0) ... JulianDate(uncheckedJulianDayNumber: 2_816_795, fractionFromNoon: 0)
+/// The TDB dates of the built-in series of VSOP2013 and ELP/MPP02, the span common to every
+/// series as the data gives it: J1000.0 to J3000.0.
+let builtInEphemerisCoverage: ClosedRange<JulianDate> = {
+	let spans = VSOP2013.seriesData.map(\.span) + [ELPMPP02.dataSpan]
+	let start = spans.map(\.lowerBound).max() ?? 2000
+	let end = spans.map(\.upperBound).min() ?? 2000
+	do throws(JulianDateError) {
+		return try JulianDate(julianEpoch: start) ... JulianDate(julianEpoch: end)
+	} catch {
+		preconditionFailure("The built-in series' span J\(start) to J\(end) is not representable")
+	}
+}()
 
 /// The TDB instants of the built-in series, J1000.0 to J3000.0.
 let builtInEphemerisInstants = Instant<TDB>(builtInEphemerisCoverage.lowerBound) ... Instant(builtInEphemerisCoverage.upperBound)
 
 extension VSOP2013 {
 	/// The series of each body, in the order of the data.
-	fileprivate static let seriesData = [
+	static let seriesData = [
 		SeriesData(astronomia_vsop2013_mercury),
 		SeriesData(astronomia_vsop2013_venus),
 		SeriesData(astronomia_vsop2013_earth_moon_barycenter),
@@ -153,12 +164,13 @@ extension VSOP2013 {
 	/// - Parameters:
 	///   - body: A body with series.
 	///   - t: TDB in thousands of Julian years from J2000.0.
+	///   - precision: The precision level.
 	/// - Returns: The elements, with the mean longitude in the right-open interval [0, 2π).
-	static func elements(of body: Body, at t: Double) -> EllipticElements {
+	static func elements(of body: Body, at t: Double, precision: Precision = .full) -> EllipticElements {
 		guard let seriesData = body.seriesData, let meanMotion = body.meanMotion else {
 			preconditionFailure("\(body) has no series")
 		}
-		let sums = seriesData.evaluate(at: t, variables: 6)
+		let sums = seriesData.evaluate(at: t, variables: 6, precision: precision)
 		var meanLongitude = (sums[1] + meanMotion * t).truncatingRemainder(dividingBy: twoPi)
 		if meanLongitude < 0 {
 			meanLongitude += twoPi
@@ -171,9 +183,10 @@ extension VSOP2013 {
 	/// - Parameters:
 	///   - body: A body with series.
 	///   - t: TDB in thousands of Julian years from J2000.0.
-	private static func orbitalState(of body: Body, at t: Double) -> (position: Vector3, velocity: Vector3) {
+	///   - precision: The precision level.
+	private static func orbitalState(of body: Body, at t: Double, precision: Precision) -> (position: Vector3, velocity: Vector3) {
 		guard let gm = body.gravitationalParameter else { preconditionFailure("\(body) has no series") }
-		return elements(of: body, at: t).state(gm: sunGravitationalParameter + gm)
+		return elements(of: body, at: t, precision: precision).state(gm: sunGravitationalParameter + gm)
 	}
 
 	/// Returns a body's heliocentric position and velocity in the solution's ecliptic.
@@ -181,31 +194,34 @@ extension VSOP2013 {
 	/// - Parameters:
 	///   - body: The body.
 	///   - tdb: A Julian Date in TDB.
+	///   - precision: The precision level.
 	/// - Returns: The position, in astronomical units, and velocity, in astronomical units per
 	///   day, or `nil` if `tdb` is outside the coverage.
-	static func heliocentricState(of body: Body, at tdb: JulianDate) -> (position: Vector3, velocity: Vector3)? {
+	static func heliocentricState(of body: Body, at tdb: JulianDate, precision: Precision = .full) -> (position: Vector3, velocity: Vector3)? {
 		guard builtInEphemerisCoverage.contains(tdb) else { return nil }
 		switch body {
 		case .sun:
 			return (.zero, .zero)
 		case .solarSystemBarycenter:
-			return barycenter(at: tdb.daysSinceJ2000 / daysPerJulianMillennium)
+			return barycenter(at: tdb.daysSinceJ2000 / daysPerJulianMillennium, precision: precision)
 		default:
-			return orbitalState(of: body, at: tdb.daysSinceJ2000 / daysPerJulianMillennium)
+			return orbitalState(of: body, at: tdb.daysSinceJ2000 / daysPerJulianMillennium, precision: precision)
 		}
 	}
 
 	/// Returns the heliocentric position and velocity of the solar system barycenter, the
 	/// center of mass of the Sun and the bodies of the solution, in the solution's ecliptic.
 	///
-	/// - Parameter t: TDB in thousands of Julian years from J2000.0.
-	private static func barycenter(at t: Double) -> (position: Vector3, velocity: Vector3) {
+	/// - Parameters:
+	///   - t: TDB in thousands of Julian years from J2000.0.
+	///   - precision: The precision level.
+	private static func barycenter(at t: Double, precision: Precision) -> (position: Vector3, velocity: Vector3) {
 		var position = Vector3.zero
 		var velocity = Vector3.zero
 		var total = sunGravitationalParameter
 		for body in Body.allCases where body.seriesData != nil {
 			guard let gm = body.gravitationalParameter else { preconditionFailure("\(body) has no mass") }
-			let state = orbitalState(of: body, at: t)
+			let state = orbitalState(of: body, at: t, precision: precision)
 			position = position + state.position * gm
 			velocity = velocity + state.velocity * gm
 			total += gm

@@ -16,10 +16,14 @@
 /// The Earth's rotation also needs UT1, from ``ut1``, which by default takes ΔT from the
 /// table, then the built-in ΔT table and model.
 ///
+/// The nutation series are summed to the ``precision`` level: a coarser level is faster, and
+/// its error is within the level's bound.
+///
 /// ```swift
 /// let observed = EarthOrientation(table: table)
 /// let tod = icrs.converted(to: TrueEquatorOfDate.self, at: tt, earthOrientation: observed)
 /// let cirs = icrs.converted(to: CIRS.self, at: tt) // earthOrientation: .model
+/// let fast = EarthOrientation(precision: .arcsecond)
 /// ```
 public struct EarthOrientation: Sendable {
 	/// The IAU models alone.
@@ -29,6 +33,8 @@ public struct EarthOrientation: Sendable {
 	public let table: EarthOrientationTable?
 	/// The source of UT1 for the Earth's rotation.
 	public let ut1: UT1.Context
+	/// The precision level of the nutation series.
+	public let precision: Precision
 
 	/// Creates a description of the Earth's orientation.
 	///
@@ -38,9 +44,12 @@ public struct EarthOrientation: Sendable {
 	///   - ut1: The source of UT1, or `nil` for a context that takes ΔT from `table`, then the
 	///     built-in ΔT table and model, as
 	///     ``UT1/Context/init(earthOrientationTable:deltaTTable:model:)`` does.
-	public init(table: EarthOrientationTable? = nil, ut1: UT1.Context? = nil) {
+	///   - precision: The precision level of the nutation series, by default
+	///     ``Precision/full``.
+	public init(table: EarthOrientationTable? = nil, ut1: UT1.Context? = nil, precision: Precision = .full) {
 		self.table = table
 		self.ut1 = ut1 ?? UT1.Context(earthOrientationTable: table)
+		self.precision = precision
 	}
 
 	/// Returns the polar motion at a TT instant, or zero if the table doesn't cover it or has

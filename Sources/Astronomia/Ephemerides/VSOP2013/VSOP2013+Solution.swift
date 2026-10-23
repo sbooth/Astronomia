@@ -14,18 +14,27 @@ extension VSOP2013 {
 	///
 	/// ```swift
 	/// let mars = try VSOP2013.Solution().state(of: .mars, at: instant)
+	/// let fast = try VSOP2013.Solution(precision: .arcsecond).state(of: .mars, at: instant)
 	/// ```
 	///
 	/// - Note: Pluto's solution is less accurate than the planets'.
-	public struct Solution: Ephemeris {
+	public struct Solution: Ephemeris, Hashable {
 		public typealias Body = VSOP2013.Body
 		public typealias Frame = Ecliptic
 
 		/// The Sun, the center of the solution.
 		public static let defaultOrigin = Body.sun
 
+		/// The precision level of the series.
+		public let precision: Precision
+
 		/// Creates the solution.
-		public init() {}
+		///
+		/// - Parameter precision: The precision level of the series, by default
+		///   ``Precision/full``.
+		public init(precision: Precision = .full) {
+			self.precision = precision
+		}
 
 		public var coverage: ClosedRange<Instant<TDB>> { builtInEphemerisInstants }
 
@@ -34,8 +43,8 @@ extension VSOP2013 {
 			if body == origin {
 				return .zero
 			}
-			guard let state = VSOP2013.heliocentricState(of: body, at: tdb.julianDate),
-			      let originState = VSOP2013.heliocentricState(of: origin, at: tdb.julianDate)
+			guard let state = VSOP2013.heliocentricState(of: body, at: tdb.julianDate, precision: precision),
+			      let originState = VSOP2013.heliocentricState(of: origin, at: tdb.julianDate, precision: precision)
 			else {
 				preconditionFailure("\(tdb.julianDate) is outside the coverage of VSOP2013")
 			}
@@ -43,6 +52,6 @@ extension VSOP2013 {
 		}
 	}
 
-	/// The solution.
+	/// The solution at full precision.
 	public static let solution = VSOP2013.Solution()
 }
