@@ -41,7 +41,16 @@ public struct Illumination: Hashable, Sendable {
 	public let instant: Instant<TT>
 
 	/// Creates an illumination from its phase angle, elongation, and bright limb.
+	///
+	/// - Parameters:
+	///   - phaseAngle: The phase angle, in [0, π].
+	///   - elongation: The elongation, in [0, π].
+	///   - brightLimbPositionAngle: The position angle of the bright limb, in [0, 2π).
+	///   - instant: The instant of observation.
 	init(phaseAngle: Angle, elongation: Angle, brightLimbPositionAngle: Angle, instant: Instant<TT>) {
+		assert(phaseAngle.radians >= 0 && phaseAngle.radians <= .pi, "The phase angle must be in [0, π]")
+		assert(elongation.radians >= 0 && elongation.radians <= .pi, "The elongation must be in [0, π]")
+		assert(brightLimbPositionAngle.radians >= 0 && brightLimbPositionAngle.radians < twoPi, "The position angle of the bright limb must be in [0, 2π)")
 		self.phaseAngle = phaseAngle
 		self.illuminatedFraction = (1 + Math.cos(phaseAngle.radians)) / 2
 		self.elongation = elongation
