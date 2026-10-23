@@ -71,6 +71,36 @@ import Testing
 		try Self.expectMatchesSkyfield(site: 0, precision: .arcsecond, tolerance: 0.15)
 	}
 
+	/// A search for a target at a constant declination from a latitude, turning with the sky,
+	/// whose event altitude is its altitude some seconds after upper transit.
+	static func constantDeclinationSearch(declination: Double, latitude: Double, secondsAfterTransit: Double, length: Double) -> RiseTransitSetSearch {
+		let rate = twoPi * 1.002_737_909
+		func altitude(_ days: Double) -> Double {
+			Math.asin(Math.sin(latitude) * Math.sin(declination) + Math.cos(latitude) * Math.cos(declination) * Math.cos(rate * days))
+		}
+		let threshold = altitude(secondsAfterTransit / secondsPerDay)
+		return RiseTransitSetSearch(length: length) { (days: Double) throws(RiseTransitSetError) -> RiseTransitSetSearch.Sample in
+			let instant = Instant<TT>(JulianDate.j2000)
+			let place = ObservedPlace(azimuth: .zero, altitude: Angle(radians: altitude(days)), hourAngle: Angle(radians: RiseTransitSetSearch.reduced(rate * days)), declination: Angle(radians: declination), distance: .astronomicalUnits(1), instant: instant)
+			return RiseTransitSetSearch.Sample(time: days, instant: instant, hourAngle: place.hourAngle.radians, height: altitude(days) - threshold, place: place)
+		}
+	}
+
+	@Test func crossingNearTransit() throws {
+		// Near transit the altitude barely changes, so the estimates of false position creep
+		// toward the crossing; they once stopped 10 s early, when two came within 0.1 s.
+		let latitude = Angle(degrees: 51.4769).radians
+		let declination = Angle(degrees: 20).radians
+		for seconds in [0.5, 10.0, 60, 600] {
+			let search = Self.constantDeclinationSearch(declination: declination, latitude: latitude, secondsAfterTransit: seconds, length: 1)
+			let crossing = try search.refine(search.evaluate(0), search.evaluate(1.0 / 24)) { $0.height }
+			#expect(abs(crossing.time * secondsPerDay - seconds) <= 0.1, "\(seconds) s")
+			// The full search finds the setting there too.
+			let setting = try #require(try search.events().first { $0.kind == .setting })
+			#expect(abs(setting.place.altitude.radians - crossing.place.altitude.radians) <= 1e-9)
+		}
+	}
+
 	@Test func eventsAreWhereTheyShouldBe() throws {
 		// At each rising and setting the upper limb is at -34', and at each transit the hour
 		// angle is 0° or 180°, within the motion of 0.1 s, about 1.5".

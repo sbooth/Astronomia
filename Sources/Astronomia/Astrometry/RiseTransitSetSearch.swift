@@ -36,7 +36,7 @@ struct RiseTransitSetSearch {
 	/// The precision of an event, 0.1 s, in days.
 	static let tolerance = 0.1 / secondsPerDay
 	/// The most evaluations to refine one event.
-	static let maximumIterations = 50
+	static let maximumIterations = 100
 
 	/// The length of the interval, in days.
 	let length: Double
@@ -91,49 +91,59 @@ struct RiseTransitSetSearch {
 	}
 
 	/// Finds where a function of the place changes sign between two samples, by the Illinois
-	/// method.
+	/// method, safeguarded by bisection.
+	///
+	/// The bracket around the root narrows until it is within the tolerance. The Illinois
+	/// method narrows it quickly where the function is nearly linear; where it is not, as for an
+	/// altitude near transit, where the altitude barely changes, a step that fails to halve the
+	/// bracket over two steps is followed by a bisection, so the bracket always closes.
 	///
 	/// - Parameters:
 	///   - a: The earlier sample.
 	///   - b: The later sample, on the other side of the root.
 	///   - function: The function, negative on one side and nonnegative on the other.
-	/// - Returns: The sample nearest the root.
+	/// - Returns: The end of the final bracket, within the tolerance of the root, with the
+	///   smaller value of the function.
 	func refine(_ a: Sample, _ b: Sample, function: (Sample) -> Double) throws(RiseTransitSetError) -> Sample {
 		var (lower, upper) = (a, b)
 		var (fLower, fUpper) = (function(a), function(b))
+		// The Illinois method halves the value kept at an end that a step doesn't move.
+		var (weightedLower, weightedUpper) = (fLower, fUpper)
 		var side = 0
-		var best = abs(fLower) < abs(fUpper) ? lower : upper
-		var previous = Double.nan
+		var widths = [upper.time - lower.time]
 		for _ in 0 ..< Self.maximumIterations {
-			guard upper.time - lower.time > Self.tolerance else { break }
-			var time = (lower.time * fUpper - upper.time * fLower) / (fUpper - fLower)
-			if !(time > lower.time && time < upper.time) {
+			let width = upper.time - lower.time
+			guard width > Self.tolerance, fLower != 0, fUpper != 0 else { break }
+			var time: Double
+			if widths.count >= 3, width > widths[widths.count - 3] / 2 {
 				time = (lower.time + upper.time) / 2
+			} else {
+				time = (lower.time * weightedUpper - upper.time * weightedLower) / (weightedUpper - weightedLower)
+				if !(time > lower.time && time < upper.time) {
+					time = (lower.time + upper.time) / 2
+				}
 			}
 			let sample = try evaluate(time)
 			let f = function(sample)
-			best = sample
-			// The estimates converge on the root, so a small change between them ends it.
-			if f == 0 || abs(time - previous) < Self.tolerance {
-				break
-			}
-			previous = time
 			if (f < 0) == (fUpper < 0) {
 				upper = sample
 				fUpper = f
+				weightedUpper = f
 				if side == -1 {
-					fLower /= 2
+					weightedLower /= 2
 				}
 				side = -1
 			} else {
 				lower = sample
 				fLower = f
+				weightedLower = f
 				if side == 1 {
-					fUpper /= 2
+					weightedUpper /= 2
 				}
 				side = 1
 			}
+			widths.append(upper.time - lower.time)
 		}
-		return best
+		return abs(fLower) <= abs(fUpper) ? lower : upper
 	}
 }
