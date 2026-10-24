@@ -12,11 +12,13 @@
 #include <vecLib/vForce.h>
 #endif
 
+// The number of terms whose sines and cosines are computed at once
 #define ELP_CHUNK_SIZE 128
 
+// Computes the sines and cosines of `count` angles, with vForce on Apple platforms
 static void elp_sincos_batch(const double *phases, double *sines, double *cosines, size_t count) {
 #if defined(__APPLE__)
-	int n = (int)count;
+	const int n = (int)count;
 	vvsincos(sines, cosines, phases, &n);
 #else
 	for (size_t j = 0; j < count; ++j) {
@@ -40,8 +42,9 @@ struct astronomia_elp_sum_rate astronomia_elp_main_evaluate(const struct astrono
 
 	for (size_t offset = 0; offset < count; ) {
 		size_t n = count - offset;
-		if (n > ELP_CHUNK_SIZE) n = ELP_CHUNK_SIZE;
+		if (n > ELP_CHUNK_SIZE) { n = ELP_CHUNK_SIZE; }
 
+		// The angles of the terms and their rates
 		for (size_t j = 0; j < n; ++j) {
 			const struct astronomia_elp_main_term *term = &terms[offset + j];
 
@@ -61,6 +64,7 @@ struct astronomia_elp_sum_rate astronomia_elp_main_evaluate(const struct astrono
 
 		elp_sincos_batch(phases, sines, cosines, n);
 
+		// Add the terms in their order
 		for (size_t j = 0; j < n; ++j) {
 			const double a = amplitudes[offset + j];
 			const double s = sines[j];
@@ -95,8 +99,9 @@ struct astronomia_elp_sum_rate astronomia_elp_perturbation_evaluate(const struct
 
 	for (size_t offset = 0; offset < count; ) {
 		size_t n = count - offset;
-		if (n > ELP_CHUNK_SIZE) n = ELP_CHUNK_SIZE;
+		if (n > ELP_CHUNK_SIZE) { n = ELP_CHUNK_SIZE; }
 
+		// The angles of the terms and their rates
 		for (size_t j = 0; j < n; ++j) {
 			const struct astronomia_elp_perturbation_term *term = &terms[offset + j];
 
@@ -115,6 +120,7 @@ struct astronomia_elp_sum_rate astronomia_elp_perturbation_evaluate(const struct
 
 		elp_sincos_batch(phases, sines, cosines, n);
 
+		// Add the terms in their order
 		for (size_t j = 0; j < n; ++j) {
 			const struct astronomia_elp_perturbation_term *term = &terms[offset + j];
 
