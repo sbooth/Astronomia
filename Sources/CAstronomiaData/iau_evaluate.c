@@ -7,10 +7,6 @@
 #include "CAstronomiaMath.h"
 #include "CAstronomiaData.h"
 
-#include <math.h>
-#include <stddef.h>
-#include <stdint.h>
-
 #if defined(__APPLE__)
 #include <vecLib/vForce.h>
 #endif
