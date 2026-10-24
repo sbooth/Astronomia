@@ -50,10 +50,10 @@ extension Seasons {
 	///   - ``SeasonError/ephemeris(_:)`` if a place of the Sun in the interval fails, as for an
 	///     ``Observation``, such as outside the ephemeris's coverage.
 	public static func events<E: GeocentricEphemeris, Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(SeasonError) -> [SeasonEvent] {
-		try events(from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: ephemeris, stoppingAt: nil)
+		try events(from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: ephemeris, only: nil, stoppingAfterFirst: false)
 	}
 
-	/// Returns the equinoxes and solstices in an interval, in order, up to the first of a kind.
+	/// Returns the equinoxes and solstices of one kind or every kind in an interval, in order.
 	///
 	/// - Parameters:
 	///   - start: The start of the interval.
@@ -61,12 +61,13 @@ extension Seasons {
 	///   - context: Observational data for converting the interval to TT.
 	///   - earthOrientation: Observed Earth orientation.
 	///   - ephemeris: The ephemeris of the Sun and the Earth.
-	///   - last: The only kind of event to find, after which to stop, without evaluating the
-	///     ephemeris for the rest of the interval, or `nil` for every event. Events of other
+	///   - kind: The only kind of event to find, or `nil` for every event. Events of other
 	///     kinds are bracketed, to step past them, but not refined or returned.
+	///   - stoppingAfterFirst: Whether to stop at the first event found, without evaluating
+	///     the ephemeris for the rest of the interval.
 	/// - Returns: The events, in order of their instants.
 	/// - Throws: A ``SeasonError``, as the public method does.
-	static func events<E: GeocentricEphemeris, Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, earthOrientation: EarthOrientation, ephemeris: E, stoppingAt last: SeasonEvent.Kind?) throws(SeasonError) -> [SeasonEvent] {
+	static func events<E: GeocentricEphemeris, Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, earthOrientation: EarthOrientation, ephemeris: E, only kind: SeasonEvent.Kind?, stoppingAfterFirst: Bool) throws(SeasonError) -> [SeasonEvent] {
 		let interval: SearchInterval
 		do throws(SearchInterval.Failure) {
 			interval = try SearchInterval(from: start, to: end, context: context)
@@ -89,7 +90,7 @@ extension Seasons {
 			let longitude = place.converted(to: TrueEclipticOfDate.self, earthOrientation: earthOrientation).position.spherical.longitude.radians
 			return QuarterSearch.Sample(time: min(days, interval.length), instant: instant, angle: longitude)
 		}
-		return try search.events(stoppingAt: last?.index).map { SeasonEvent(kind: SeasonEvent.Kind.allCases[$0.quarter], instant: $0.instant) }
+		return try search.events(only: kind?.index, stoppingAfterFirst: stoppingAfterFirst).map { SeasonEvent(kind: SeasonEvent.Kind.allCases[$0.quarter], instant: $0.instant) }
 	}
 }
 
@@ -154,7 +155,7 @@ extension Seasons {
 		}
 		// The search stops at the event, so it doesn't evaluate the ephemeris past it, as near
 		// the end of its coverage.
-		let found = try events(from: Instant<TT>(start), to: Instant<TT>(end), context: TT.defaultContext, earthOrientation: earthOrientation, ephemeris: ephemeris, stoppingAt: kind)
+		let found = try events(from: Instant<TT>(start), to: Instant<TT>(end), context: TT.defaultContext, earthOrientation: earthOrientation, ephemeris: ephemeris, only: kind, stoppingAfterFirst: true)
 		guard let event = found.first else {
 			// A calendar year of 365 days is shorter than the tropical year, so where a
 			// calendar has drifted until an event falls at the turn of the year, a year can
