@@ -10,7 +10,7 @@ extension Observation {
 	///
 	/// - Parameter body: The body.
 	/// - Returns: The body's phase angle, illuminated fraction, elongation and its side of the
-	///   Sun, and bright limb.
+	///   Sun, excess of ecliptic longitude, and bright limb.
 	/// - Throws:
 	///   - ``IlluminationError/notIlluminated`` if the body is the Sun, or the Earth, on or in
 	///     which the observer is.
@@ -49,12 +49,13 @@ extension Observation {
 			let east = s.dot(Vector3(0, 0, 1).cross(b))
 			let north = s.z - b.z * s.dot(b)
 			let brightLimb = Angle.atan2(y: east, x: north).normalized()
-			// The body is east of the Sun if its longitude exceeds the Sun's by under 180°: the
-			// component of s × b along the pole of the ecliptic, cos β_S cos β_B sin(λ_B - λ_S),
-			// is positive.
+			// The excess of the body's ecliptic longitude over the Sun's, from the components of
+			// s × b along the pole of the ecliptic, cos β_S cos β_B sin(λ_B - λ_S), and of their
+			// projections' dot product, cos β_S cos β_B cos(λ_B - λ_S)
 			let toEcliptic = TrueEclipticOfDate.rotationFromICRS(at: instant, earthOrientation: earthOrientation)
-			let isEastOfSun = toEcliptic.apply(to: sunApparent).cross(toEcliptic.apply(to: bodyApparent)).z > 0
-			return Illumination(phaseAngle: phaseAngle, elongation: elongation, isEastOfSun: isEastOfSun, brightLimbPositionAngle: brightLimb, instant: instant)
+			let (se, be) = (toEcliptic.apply(to: sunApparent), toEcliptic.apply(to: bodyApparent))
+			let excess = Angle.atan2(y: se.x * be.y - se.y * be.x, x: se.x * be.x + se.y * be.y).normalized()
+			return Illumination(phaseAngle: phaseAngle, elongation: elongation, excessEclipticLongitude: excess, brightLimbPositionAngle: brightLimb, instant: instant)
 		} catch {
 			throw .ephemeris(error)
 		}
