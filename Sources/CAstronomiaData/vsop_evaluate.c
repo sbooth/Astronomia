@@ -24,11 +24,10 @@ double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms,
 	double cosines[VSOP_CHUNK_SIZE];
 
 	double sum = initial_sum;
-	size_t offset = 0;
 
-	while (offset < count) {
-		size_t remaining = count - offset;
-		size_t n = remaining < VSOP_CHUNK_SIZE ? remaining : VSOP_CHUNK_SIZE;
+	for (size_t offset = 0; offset < count; ) {
+		size_t n = count - offset;
+		if (n > VSOP_CHUNK_SIZE) { n = VSOP_CHUNK_SIZE; }
 
 		// Build a contiguous batch of angles
 		for (size_t j = 0; j < n; ++j) {
