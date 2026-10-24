@@ -26,7 +26,15 @@ let package = Package(
 			]
 		),
 		.target(
-			name: "CAstronomiaData"
+			name: "CAstronomiaData",
+			dependencies: [
+				"CAstronomiaMath",
+			],
+			linkerSettings: [
+				.linkedFramework(
+					"Accelerate", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])
+				)
+			]
 		),
 		.target(
 			name: "CAstronomiaMath"
