@@ -199,4 +199,7 @@ extern const struct astronomia_iau_series_data astronomia_iau2006_nutation_longi
 extern const struct astronomia_iau_series_data astronomia_iau2006_nutation_obliquity;
 extern const struct astronomia_iau_series_data astronomia_iau2006_s_plus_half_xy;
 
+// Evaluate an IAU 2006 series at the requested precision level
+double astronomia_iau_series_evaluate(const struct astronomia_iau_series *series, size_t series_count, const struct astronomia_iau_term *terms, size_t term_count, const double arguments[14], double t, int32_t level);
+
 #endif

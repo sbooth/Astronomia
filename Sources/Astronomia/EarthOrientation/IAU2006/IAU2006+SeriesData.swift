@@ -67,31 +67,14 @@ extension IAU2006.SeriesData {
 	/// - Returns: The sum, in microarcseconds.
 	func seriesValue(at t: Double, arguments: IAU2006.FundamentalArguments, precision: Precision) -> Double {
 		let a = arguments.values
-		let level = precision.level
-		var total = 0.0
-		var end = terms.count
-		for header in series.reversed() {
-			let start = end - Int(header.counts.0)
-			var sum = 0.0
-			for index in stride(from: start + Int(levelValue(header.counts, level)) - 1, through: start, by: -1) {
-				let term = terms[index]
-				let m = term.multipliers
-				// The sum of every multiple, most of them zero, is faster than testing for zeros.
-				var argument = Double(m.0) * a.0 + Double(m.1) * a.1 + Double(m.2) * a.2 + Double(m.3) * a.3
-				argument = argument + Double(m.4) * a.4 + Double(m.5) * a.5 + Double(m.6) * a.6 + Double(m.7) * a.7
-				argument = argument + Double(m.8) * a.8 + Double(m.9) * a.9 + Double(m.10) * a.10 + Double(m.11) * a.11
-				argument = argument + Double(m.12) * a.12 + Double(m.13) * a.13
-				let (s, c) = Math.sincos(argument)
-				sum = sum + (term.s * s + term.c * c)
-			}
-			var power = 1.0
-			for _ in 0 ..< Int(header.power) {
-				power = power * t
-			}
-			total = total + sum * power
-			end = start
+		return withUnsafeBytes(of: a) { argumentBytes in
+			guard
+				let argumentPointer = argumentBytes.bindMemory(to: Double.self).baseAddress,
+				let seriesPointer = series.baseAddress,
+				let termsPointer = terms.baseAddress
+			else { return 0 }
+			return astronomia_iau_series_evaluate(seriesPointer, series.count, termsPointer, terms.count, argumentPointer, t, Int32(precision.level))
 		}
-		return total
 	}
 
 	/// Returns the polynomial part plus the series at a time.
