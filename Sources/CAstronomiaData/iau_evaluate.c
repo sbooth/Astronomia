@@ -4,8 +4,8 @@
 // SPDX-License-Identifier: MIT
 //
 
-#include "CAstronomiaMath.h"
 #include "CAstronomiaData.h"
+#include "CAstronomiaMath.h"
 
 #if defined(__APPLE__)
 #include <vecLib/vForce.h>
