@@ -8,6 +8,7 @@
 #ifndef CASTRONOMIACLOCK_H
 #define CASTRONOMIACLOCK_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -22,19 +23,23 @@ struct astronomia_unix_time {
 	int32_t nanoseconds;
 };
 
-/// Returns the system's real-time clock.
+/// Reads the system's real-time clock.
 ///
 /// Reads `clock_gettime(CLOCK_REALTIME)`, or on Windows C11's `timespec_get(TIME_UTC)`.
-static inline struct astronomia_unix_time astronomia_unix_time_now(void)
+///
+/// - Parameter time: The reading, set only if the clock is read.
+/// - Returns: `true` if the clock is read, or `false` if the platform reports a failure.
+static inline bool astronomia_unix_time_now(struct astronomia_unix_time *time)
 {
 	struct timespec ts;
 #if defined(_WIN32)
-	(void)timespec_get(&ts, TIME_UTC);
+	if (timespec_get(&ts, TIME_UTC) != TIME_UTC) { return false; }
 #else
-	(void)clock_gettime(CLOCK_REALTIME, &ts);
+	if (clock_gettime(CLOCK_REALTIME, &ts) != 0) { return false; }
 #endif
-	const struct astronomia_unix_time result = { (int64_t)ts.tv_sec, (int32_t)ts.tv_nsec };
-	return result;
+	time->seconds = (int64_t)ts.tv_sec;
+	time->nanoseconds = (int32_t)ts.tv_nsec;
+	return true;
 }
 
 #endif

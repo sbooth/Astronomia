@@ -19,11 +19,15 @@ extension Instant where Scale == UTC {
 	/// 23:59:59, and a clock synchronized to a smearing time server spreads the second over
 	/// hours. The result can then be off by up to one second.
 	///
-	/// - Throws: ``TimescaleConversionError/unsupported`` if the clock reads before
-	///   January 1, 1961, when UTC began.
+	/// - Precondition: The system clock can be read.
+	/// - Throws:
+	///   - ``TimescaleConversionError/invalidTimeOfDay`` if the system clock could not be read.
+	///   - ``TimescaleConversionError/unsupported`` if the clock reads before
+	///     January 1, 1961, when UTC began.
 	public static var now: Instant<UTC> {
 		get throws(TimescaleConversionError) {
-			let time = astronomia_unix_time_now()
+			var time = astronomia_unix_time()
+			guard astronomia_unix_time_now(&time) else { throw .invalidTimeOfDay }
 			return try Instant(unixSeconds: time.seconds, nanoseconds: time.nanoseconds)
 		}
 	}
@@ -39,7 +43,7 @@ extension Instant where Scale == UTC {
 	/// - Throws: ``TimescaleConversionError/unsupported`` if the reading is before
 	///   January 1, 1961.
 	init(unixSeconds: Int64, nanoseconds: Int32, leapSecondTable: LeapSecondTable = .builtIn) throws(TimescaleConversionError) {
-		assert(nanoseconds >= 0 && nanoseconds < 1_000_000_000, "Nanoseconds outside the right-open interval [0, 1,000,000,000)")
+		assert(nanoseconds >= 0 && nanoseconds < 1_000_000_000, "Nanoseconds must be in the right-open interval [0, 1,000,000,000)")
 		// The day and the seconds since its midnight, rounding the day down before the epoch
 		var (days, seconds) = unixSeconds.quotientAndRemainder(dividingBy: 86_400)
 		if seconds < 0 {
