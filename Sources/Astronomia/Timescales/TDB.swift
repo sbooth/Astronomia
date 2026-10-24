@@ -40,7 +40,7 @@ public enum TDB: UniformTimescale {
 
 extension TDB {
 	/// A model of TDB - TT.
-	public enum Model: Hashable, Sendable {
+	public enum Model: Hashable, Sendable, CaseIterable {
 		/// The seven-term series of USNO Circular 179 (Kaplan 2005), equation 2.6.
 		///
 		/// A truncation of Fairhead & Bretagnon (1990), within 10 µs of the full series from

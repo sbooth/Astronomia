@@ -9,7 +9,7 @@
 /// measured.
 ///
 /// The two differ in flattening only, by about 0.1 mm in the polar radius.
-public enum Ellipsoid: Hashable, Sendable {
+public enum Ellipsoid: Hashable, Sendable, CaseIterable {
 	/// The World Geodetic System 1984, used by GPS.
 	case wgs84
 	/// The Geodetic Reference System 1980, used by the ITRF's own geodetic coordinates.

@@ -6,7 +6,7 @@
 //
 
 /// A model of ΔT = TT - UT1 for dates without Earth orientation observations.
-public enum DeltaTModel: Hashable, Sendable {
+public enum DeltaTModel: Hashable, Sendable, CaseIterable {
 	/// The polynomials of Espenak & Meeus (2006), *Five Millennium Canon of Solar Eclipses*,
 	/// fitted to Morrison & Stephenson (2004) before 2005 and extrapolated after.
 	///
