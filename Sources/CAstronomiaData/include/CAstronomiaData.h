@@ -79,6 +79,9 @@ extern const struct astronomia_vsop_series_data astronomia_vsop2013_uranus;
 extern const struct astronomia_vsop_series_data astronomia_vsop2013_neptune;
 extern const struct astronomia_vsop_series_data astronomia_vsop2013_pluto;
 
+// Evaluates one VSOP2013 series
+double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms, size_t count, double t, double time_power, double initial_sum);
+
 // Series of the lunar theory ELP/MPP02, whose terms have arguments that are sums of integer
 // multiples of fundamental arguments, polynomials in time. The terms keep their multipliers,
 // because the fundamental arguments depend on the fit of the solution.

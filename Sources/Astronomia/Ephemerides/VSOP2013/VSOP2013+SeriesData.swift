@@ -70,10 +70,10 @@ extension VSOP2013.SeriesData {
 			let variable = Int(header.variable) - 1
 			let power = powers[Int(header.power)]
 			var sum = sums[variable]
-			for index in start ..< start + Int(levelValue(header.counts, level)) {
-				let term = terms[index]
-				let (s, c) = Math.sincos(term.phase + term.frequency * t)
-				sum = sum + power * (term.s * s + term.c * c)
+			let count = Int(levelValue(header.counts, level))
+			if count > 0 {
+				let seriesTerms = terms.baseAddress!.advanced(by: start)
+				sum = astronomia_vsop_evaluate_series(seriesTerms, count, t, power, sum)
 			}
 			sums[variable] = sum
 			start += Int(header.counts.0)
