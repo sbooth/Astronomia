@@ -204,7 +204,7 @@ extension ELPMPP02.FittedSeries {
 					let amplitudePointer = $0.baseAddress!.advanced(by: start)
 					let result = x.withUnsafeBufferPointer { xBuffer in
 						xp.withUnsafeBufferPointer { xpBuffer in
-							astronomia_elp_main_evaluate( termPointer, amplitudePointer, count, xBuffer.baseAddress!, xpBuffer.baseAddress!, variable == 2 ? 1 : 0, sum, rate)
+							astronomia_elp_evaluate_main( termPointer, amplitudePointer, count, xBuffer.baseAddress!, xpBuffer.baseAddress!, variable == 2 ? 1 : 0, sum, rate)
 						}
 					}
 					sum = result.sum
@@ -232,7 +232,7 @@ extension ELPMPP02.FittedSeries {
 
 				let result = x.withUnsafeBufferPointer { xBuffer in
 					xp.withUnsafeBufferPointer { xpBuffer in
-						astronomia_elp_perturbation_evaluate(termPointer, count, xBuffer.baseAddress!, xpBuffer.baseAddress!, tPower, tPowerRate, sum, rate)
+						astronomia_elp_evaluate_perturbation(termPointer, count, xBuffer.baseAddress!, xpBuffer.baseAddress!, tPower, tPowerRate, sum, rate)
 					}
 				}
 

@@ -29,7 +29,7 @@ static void elp_sincos_batch(const double *phases, double *sines, double *cosine
 #endif
 }
 
-struct astronomia_elp_sum_rate astronomia_elp_main_evaluate(const struct astronomia_elp_main_term *terms, const double *amplitudes, size_t count, const double *x, const double *xp, int is_distance, double initial_sum, double initial_rate) {
+struct astronomia_elp_sum_rate astronomia_elp_evaluate_main(const struct astronomia_elp_main_term *terms, const double *amplitudes, size_t count, const double *x, const double *xp, int is_distance, double initial_sum, double initial_rate) {
 	double phases[ELP_CHUNK_SIZE];
 	double angle_rates[ELP_CHUNK_SIZE];
 	double sines[ELP_CHUNK_SIZE];
@@ -86,7 +86,7 @@ struct astronomia_elp_sum_rate astronomia_elp_main_evaluate(const struct astrono
 	return result;
 }
 
-struct astronomia_elp_sum_rate astronomia_elp_perturbation_evaluate(const struct astronomia_elp_perturbation_term *terms, size_t count, const double *x, const double *xp, double t_power, double t_power_rate, double initial_sum, double initial_rate) {
+struct astronomia_elp_sum_rate astronomia_elp_evaluate_perturbation(const struct astronomia_elp_perturbation_term *terms, size_t count, const double *x, const double *xp, double t_power, double t_power_rate, double initial_sum, double initial_rate) {
 	double phases[ELP_CHUNK_SIZE];
 	double angle_rates[ELP_CHUNK_SIZE];
 	double sines[ELP_CHUNK_SIZE];

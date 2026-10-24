@@ -174,7 +174,7 @@ struct astronomia_elp_sum_rate {
 ///   - initial_sum: The sum the terms are added to.
 ///   - initial_rate: The derivative the terms' derivatives are added to.
 /// - Returns: The sum and its derivative.
-struct astronomia_elp_sum_rate astronomia_elp_main_evaluate(const struct astronomia_elp_main_term *terms, const double *amplitudes, size_t count, const double *x, const double *xp, int is_distance, double initial_sum, double initial_rate);
+struct astronomia_elp_sum_rate astronomia_elp_evaluate_main(const struct astronomia_elp_main_term *terms, const double *amplitudes, size_t count, const double *x, const double *xp, int is_distance, double initial_sum, double initial_rate);
 
 /// Adds the terms of one series of the perturbations to a sum and its derivative.
 ///
@@ -194,7 +194,7 @@ struct astronomia_elp_sum_rate astronomia_elp_main_evaluate(const struct astrono
 ///   - initial_sum: The sum the terms are added to.
 ///   - initial_rate: The derivative the terms' derivatives are added to.
 /// - Returns: The sum and its derivative.
-struct astronomia_elp_sum_rate astronomia_elp_perturbation_evaluate(const struct astronomia_elp_perturbation_term *terms, size_t count, const double *x, const double *xp, double t_power, double t_power_rate, double initial_sum, double initial_rate);
+struct astronomia_elp_sum_rate astronomia_elp_evaluate_perturbation(const struct astronomia_elp_perturbation_term *terms, size_t count, const double *x, const double *xp, double t_power, double t_power_rate, double initial_sum, double initial_rate);
 
 // Series of the IAU 2006 precession and IAU 2000A_R06 nutation, from the tables of the IERS
 // Conventions (2010), Chapter 5. The terms have arguments that are sums of integer multiples
