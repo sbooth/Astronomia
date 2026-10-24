@@ -55,13 +55,8 @@ struct astronomia_elp_sum_rate astronomia_elp_evaluate_main(const struct astrono
 			const double i2 = (double)term->multipliers[2];
 			const double i3 = (double)term->multipliers[3];
 
-			phases[j] =
-				i0 * x[0] + i1 * x[1] +
-				i2 * x[2] + i3 * x[3];
-
-			angle_rates[j] =
-				i0 * xp[0] + i1 * xp[1] +
-				i2 * xp[2] + i3 * xp[3];
+			phases[j] = i0 * x[0] + i1 * x[1] + i2 * x[2] + i3 * x[3];
+			angle_rates[j] = i0 * xp[0] + i1 * xp[1] + i2 * xp[2] + i3 * xp[3];
 		}
 
 		elp_sincos_batch(phases, sines, cosines, n);
