@@ -61,25 +61,28 @@ static inline struct astronomia_sincos_result astronomia_sincos(double x)
 	return result;
 }
 
-/// Returns the arcsine of `x`, in radians in [-π/2, π/2], or NaN if `x` is outside [-1, 1].
+/// Returns the arcsine of `x`, in radians in the closed interval [-π/2, π/2], or NaN if `x`
+/// is outside the closed interval [-1, 1].
 static inline double astronomia_asin(double x)
 {
 	return asin(x);
 }
 
-/// Returns the arccosine of `x`, in radians in [0, π], or NaN if `x` is outside [-1, 1].
+/// Returns the arccosine of `x`, in radians in the closed interval [0, π], or NaN if `x` is
+/// outside the closed interval [-1, 1].
 static inline double astronomia_acos(double x)
 {
 	return acos(x);
 }
 
-/// Returns the arctangent of `x`, in radians in (-π/2, π/2).
+/// Returns the arctangent of `x`, in radians in the open interval (-π/2, π/2).
 static inline double astronomia_atan(double x)
 {
 	return atan(x);
 }
 
-/// Returns the angle of the point (`x`, `y`) from the positive x axis, in radians in [-π, π].
+/// Returns the angle of the point (`x`, `y`) from the positive x axis, in radians in the
+/// closed interval [-π, π].
 static inline double astronomia_atan2(double y, double x)
 {
 	return atan2(y, x);
