@@ -81,7 +81,7 @@ import Testing
 		let threshold = altitude(secondsAfterTransit / secondsPerDay)
 		return RiseTransitSetSearch(length: length) { (days: Double) throws(RiseTransitSetError) -> RiseTransitSetSearch.Sample in
 			let instant = Instant<TT>(JulianDate.j2000)
-			let place = ObservedPlace(azimuth: .zero, altitude: Angle(radians: altitude(days)), hourAngle: Angle(radians: RiseTransitSetSearch.reduced(rate * days)), declination: Angle(radians: declination), distance: .astronomicalUnits(1), instant: instant)
+			let place = ObservedPlace(azimuth: .zero, altitude: Angle(radians: altitude(days)), hourAngle: Angle(radians: RiseTransitSetSearch.reduced(rate * days)), declination: Angle(radians: declination), parallacticAngle: .zero, distance: .astronomicalUnits(1), instant: instant)
 			return RiseTransitSetSearch.Sample(time: days, instant: instant, hourAngle: place.hourAngle.radians, height: altitude(days) - threshold, place: place)
 		}
 	}
