@@ -111,7 +111,7 @@ public struct Star: Hashable, Sendable {
 	) {
 		assert([rightAscension.radians, declination.radians, properMotionInRightAscension.radians, properMotionInDeclination.radians, parallax?.radians ?? 0, radialVelocity.astronomicalUnitsPerDay].allSatisfy(\.isFinite), "Non-finite value")
 		assert(abs(declination.radians) <= halfPi, "Declination must be in the closed interval [-π/2, π/2]")
-		assert((parallax?.radians ?? 0) >= 0 && (parallax?.radians ?? 0) <= Self.maximumParallax.radians, "Parallax must be in the closed interval [0, 10″]")
+		assert((parallax?.radians ?? 0) >= 0 && (parallax?.radians ?? 0) <= Self.maximumParallax.radians, "Parallax must be in the closed interval [0, 10]″")
 		assert(abs(radialVelocity.astronomicalUnitsPerDay) < Self.maximumSpeed, "Radial velocity must be in the open interval (-c/2, c/2)")
 		self.rightAscension = rightAscension
 		self.declination = declination
