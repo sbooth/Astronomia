@@ -5,11 +5,8 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-#include <stddef.h>
-#include <stdint.h>
-
-#include <CAstronomiaData.h>
-#include <CAstronomiaMath.h>
+#include "CAstronomiaData.h"
+#include "CAstronomiaMath.h"
 
 #if defined(__APPLE__)
 #include <vecLib/vForce.h>
