@@ -18,19 +18,23 @@
 /// let phases = try MoonPhases.events(from: start, to: end)
 /// ```
 ///
-/// The Moon's elongation from the Sun grows about 0.5" a second, so an error of 1" in either
+/// These are the instants of the principal phases. For the phase the Moon is in at any
+/// instant, one of eight, as "Waxing Gibbous", see ``MoonPhaseName``.
+///
+/// The excess of the Moon's longitude over the Sun's grows about 0.5" a second, so an error of
+/// 1" in either
 /// place moves a phase by about 2 s. The methods taking the built-in ephemeris default to its
 /// full precision, at about 0.3 s for each phase in a release build. The phases from 2000 to
 /// 2049 are within 0.03 s of Skyfield's with DE421; at ``Precision/tenthArcsecond`` they are
 /// within 0.11 s, at about 45 ms each, and at ``Precision/arcsecond`` within 1 s, at about
 /// 12 ms each.
 public enum MoonPhases {
-	/// The mean motion of the Moon's elongation from the Sun, a turn per synodic month, in
-	/// radians per day, which predicts the next phase.
+	/// The mean motion of the excess of the Moon's ecliptic longitude over the Sun's, a turn per
+	/// synodic month, in radians per day, which predicts the next phase.
 	static let meanMotion: Double = twoPi / 29.530_589
 	/// The half-width of the bracket around a predicted phase, in days.
 	///
-	/// The elongation grows by between about 10.8° and 14.4° a day, so a prediction across at
+	/// The excess grows by between about 10.8° and 14.4° a day, so a prediction across at
 	/// most a quarter of a turn is within about 1.2 days.
 	static let margin: Double = 3.0
 	/// The longest interval holding every phase, a synodic month and the margin, in days.
@@ -100,11 +104,11 @@ extension MoonPhases {
 			let rotation = ICRS.rotation(to: TrueEclipticOfDate.self, at: instant, earthOrientation: earthOrientation)
 			let sunLongitude = (rotation * sun.position).spherical.longitude.radians
 			let moonLongitude = (rotation * moonPlace.position).spherical.longitude.radians
-			var elongation = (moonLongitude - sunLongitude).truncatingRemainder(dividingBy: twoPi)
-			if elongation < 0 {
-				elongation += twoPi
+			var excess = (moonLongitude - sunLongitude).truncatingRemainder(dividingBy: twoPi)
+			if excess < 0 {
+				excess += twoPi
 			}
-			return QuarterSearch.Sample(time: min(days, interval.length), instant: instant, angle: elongation < twoPi ? elongation : 0)
+			return QuarterSearch.Sample(time: min(days, interval.length), instant: instant, angle: excess < twoPi ? excess : 0)
 		}
 		return try search.events(only: kind?.index, stoppingAfterFirst: stoppingAfterFirst).map { MoonPhaseEvent(kind: MoonPhaseEvent.Kind.allCases[$0.quarter], instant: $0.instant) }
 	}
@@ -212,7 +216,8 @@ extension MoonPhases {
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places a site, and whose
 	///     celestial pole offsets and precision apply to the nutation.
 	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
-	/// - Returns: The Moon's phase angle, illuminated fraction, elongation, and bright limb.
+	/// - Returns: The Moon's phase angle, illuminated fraction, elongation and its side of the
+	///   Sun, and bright limb.
 	/// - Throws: ``IlluminationError/ephemeris(_:)`` if the observation or a place fails, as
 	///   for ``Observation``, such as outside the ephemeris's coverage.
 	public static func illumination<Scale: Timescale>(at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, observer: Observer = .geocenter, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(IlluminationError) -> Illumination {

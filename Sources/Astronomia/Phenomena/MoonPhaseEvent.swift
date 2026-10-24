@@ -25,8 +25,12 @@ public struct MoonPhaseEvent: Hashable, Sendable {
 		/// Last quarter: the Moon's longitude exceeds the Sun's by 270°.
 		case lastQuarter
 
-		/// The Moon's apparent longitude less the Sun's at the phase.
-		public var elongation: Angle {
+		/// The excess of the Moon's apparent ecliptic longitude over the Sun's at the phase, by
+		/// which the Astronomical Almanac defines the phases: 0°, 90°, 180°, or 270°.
+		///
+		/// It isn't the Moon's elongation, its angle from the Sun on the sky, which
+		/// ``Illumination/elongation`` gives.
+		public var excessEclipticLongitude: Angle {
 			.degrees(Double(index) * 90)
 		}
 

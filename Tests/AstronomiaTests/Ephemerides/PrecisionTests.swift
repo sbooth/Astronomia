@@ -86,6 +86,24 @@ import Testing
 		#expect(total[4] * 20 < total[0])
 	}
 
+	@Test func seriesFitTheirTerms() {
+		// The kernels don't validate the generated data: each table's series together have
+		// every one of its terms, and their variables and powers of time are in range.
+		for data in VSOP2013.seriesData {
+			#expect(data.series.reduce(0) { $0 + Int($1.counts.0) } == data.terms.count)
+			#expect(data.series.allSatisfy { (1 ... 6).contains($0.variable) && $0.power >= 0 })
+		}
+		let lunar = ELPMPP02.DE405.fittedSeries
+		#expect(lunar.mainSeries.reduce(0) { $0 + Int($1.counts.0) } == lunar.mainTerms.count)
+		#expect(lunar.mainSeries.allSatisfy { (1 ... 3).contains($0.variable) })
+		#expect(lunar.perturbationSeries.reduce(0) { $0 + Int($1.counts.0) } == lunar.perturbationTerms.count)
+		#expect(lunar.perturbationSeries.allSatisfy { (1 ... 3).contains($0.variable) && (0 ... 3).contains($0.power) })
+		for table in [IAU2006.nutationInLongitude, IAU2006.nutationInObliquity, IAU2006.sPlusHalfXY] {
+			#expect(table.series.reduce(0) { $0 + Int($1.counts.0) } == table.terms.count)
+			#expect(table.series.allSatisfy { $0.power >= 0 })
+		}
+	}
+
 	@Test func dataDescribesItsTruncation() throws {
 		// The span and each level's thresholds come with the data.
 		#expect(builtInEphemerisCoverage == (try JulianDate(julianEpoch: 1000)) ... (try JulianDate(julianEpoch: 3000)))

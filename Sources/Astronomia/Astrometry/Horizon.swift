@@ -42,6 +42,25 @@ struct Horizon: Sendable {
 		self.up = Vector3(cosPhi * cosLambda, cosPhi * sinLambda, sinPhi)
 	}
 
+	/// Returns the parallactic angle, following `eraHd2pa` of ERFA.
+	///
+	/// - Parameters:
+	///   - hourAngle: The hour angle, in radians.
+	///   - declination: The declination, in radians.
+	///   - sinLatitude: The sine of the site's latitude.
+	///   - cosLatitude: The cosine of the site's latitude.
+	/// - Returns: The parallactic angle, in radians in the left-open interval (-π, π].
+	static func parallacticAngle(hourAngle: Double, declination: Double, sinLatitude: Double, cosLatitude: Double) -> Double {
+		let (sinH, cosH) = Math.sincos(hourAngle)
+		let (sinDelta, cosDelta) = Math.sincos(declination)
+		let y = cosLatitude * sinH
+		let x = sinLatitude * cosDelta - cosLatitude * sinDelta * cosH
+		// At the pole, or at the zenith, both are zero, and the angle is taken as 0.
+		guard y != 0 || x != 0 else { return 0 }
+		let angle = Math.atan2(y, x)
+		return angle == -.pi ? .pi : angle
+	}
+
 	/// Returns the observed place of a direction, following `eraAtioq` of ERFA.
 	///
 	/// - Parameters:
@@ -85,6 +104,7 @@ struct Horizon: Sendable {
 			altitude: Angle(radians: altitude),
 			hourAngle: Angle(radians: hourAngle == -.pi ? .pi : hourAngle),
 			declination: Angle(radians: declination),
+			parallacticAngle: Angle(radians: Self.parallacticAngle(hourAngle: hourAngle, declination: declination, sinLatitude: sinLatitude, cosLatitude: cosLatitude)),
 			distance: distance,
 			instant: instant)
 	}
