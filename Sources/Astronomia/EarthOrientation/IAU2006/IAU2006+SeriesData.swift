@@ -73,7 +73,7 @@ extension IAU2006.SeriesData {
 				let seriesPointer = series.baseAddress,
 				let termsPointer = terms.baseAddress
 			else { return 0 }
-			return astronomia_iau_series_evaluate(seriesPointer, series.count, termsPointer, terms.count, argumentPointer, t, Int32(precision.level))
+			return astronomia_iau_evaluate_series(seriesPointer, series.count, termsPointer, terms.count, argumentPointer, t, Int32(precision.level))
 		}
 	}
 

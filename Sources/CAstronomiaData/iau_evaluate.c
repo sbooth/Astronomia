@@ -17,7 +17,7 @@
 
 #define IAU_CHUNK_SIZE 128
 
-double astronomia_iau_series_evaluate(const struct astronomia_iau_series *series, size_t series_count, const struct astronomia_iau_term *terms, size_t term_count, const double arguments[14], double t, int32_t level)
+double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series, size_t series_count, const struct astronomia_iau_term *terms, size_t term_count, const double arguments[14], double t, int32_t level)
 {
 	if (series == NULL || terms == NULL || arguments == NULL || level < 0 || level >= ASTRONOMIA_PRECISION_LEVELS) {
 		return NAN;
