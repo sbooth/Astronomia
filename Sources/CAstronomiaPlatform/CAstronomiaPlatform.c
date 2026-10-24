@@ -6,4 +6,5 @@
 //
 
 // The functions are inline in the header; a C target needs a source file.
+#include "CAstronomiaClock.h"
 #include "CAstronomiaMath.h"
