@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// Errors that can occur when finding eclipses of the Moon.
+/// Errors that can occur when finding eclipses of the Moon, or their local circumstances.
 public enum LunarEclipseError: Error, Hashable, Sendable {
 	/// The interval ends before it starts, or an instant of the search can't be represented.
 	case invalidInterval
@@ -16,6 +16,8 @@ public enum LunarEclipseError: Error, Hashable, Sendable {
 	/// No eclipse was found within the search's span after the instant, as for an ephemeris
 	/// whose Moon doesn't move as the Moon does.
 	case eclipseNotFound
+	/// The observer is at the center of the Earth, which has no horizon.
+	case noHorizon
 }
 
 extension LunarEclipseError {
@@ -25,6 +27,20 @@ extension LunarEclipseError {
 		case .invalidInterval, .phaseNotFound: self = .invalidInterval
 		case let .timescaleConversion(error): self = .timescaleConversion(error)
 		case let .ephemeris(error): self = .ephemeris(error)
+		}
+	}
+}
+
+extension LunarEclipseError {
+	/// Creates the error for a failure finding risings and settings.
+	init(_ error: RiseTransitSetError) {
+		switch error {
+		case .noHorizon: self = .noHorizon
+		case .invalidInterval: self = .invalidInterval
+		case let .timescaleConversion(error): self = .timescaleConversion(error)
+		case let .ephemeris(error): self = .ephemeris(error)
+		// Only a star's place fails with a star error.
+		case .star: self = .ephemeris(.invalidState)
 		}
 	}
 }
