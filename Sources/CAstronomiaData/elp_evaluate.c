@@ -18,9 +18,11 @@
 // Computes the sines and cosines of `count` angles, with vForce on Apple platforms
 static void elp_sincos_batch(const double *phases, double *sines, double *cosines, size_t count) {
 #if defined(__APPLE__)
+	// Evaluate the batch of sine and cosine values
 	const int n = (int)count;
 	vvsincos(sines, cosines, phases, &n);
 #else
+	// Portable scalar fallback
 	for (size_t j = 0; j < count; ++j) {
 		struct astronomia_sincos_result sc = astronomia_sincos(phases[j]);
 		sines[j] = sc.sin;
