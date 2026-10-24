@@ -227,9 +227,7 @@ extension ELPMPP02.FittedSeries {
 			let count = Int(levelValue(series.counts, level))
 
 			if count > 0 {
-				let termPointer =
-				perturbationTerms.baseAddress!.advanced(by: start)
-
+				let termPointer = perturbationTerms.baseAddress!.advanced(by: start)
 				let result = x.withUnsafeBufferPointer { xBuffer in
 					xp.withUnsafeBufferPointer { xpBuffer in
 						astronomia_elp_evaluate_perturbation(termPointer, count, xBuffer.baseAddress!, xpBuffer.baseAddress!, tPower, tPowerRate, sum, rate)
