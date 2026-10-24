@@ -9,7 +9,8 @@ extension Observation {
 	/// Returns how a body is lit by the Sun as the observer sees it.
 	///
 	/// - Parameter body: The body.
-	/// - Returns: The body's phase angle, illuminated fraction, elongation, and bright limb.
+	/// - Returns: The body's phase angle, illuminated fraction, elongation and its side of the
+	///   Sun, and bright limb.
 	/// - Throws:
 	///   - ``IlluminationError/notIlluminated`` if the body is the Sun, or the Earth, on or in
 	///     which the observer is.
@@ -48,7 +49,12 @@ extension Observation {
 			let east = s.dot(Vector3(0, 0, 1).cross(b))
 			let north = s.z - b.z * s.dot(b)
 			let brightLimb = Angle.atan2(y: east, x: north).normalized()
-			return Illumination(phaseAngle: phaseAngle, elongation: elongation, brightLimbPositionAngle: brightLimb, instant: instant)
+			// The body is east of the Sun if its longitude exceeds the Sun's by under 180°: the
+			// component of s × b along the pole of the ecliptic, cos β_S cos β_B sin(λ_B - λ_S),
+			// is positive.
+			let toEcliptic = TrueEclipticOfDate.rotationFromICRS(at: instant, earthOrientation: earthOrientation)
+			let isEastOfSun = toEcliptic.apply(to: sunApparent).cross(toEcliptic.apply(to: bodyApparent)).z > 0
+			return Illumination(phaseAngle: phaseAngle, elongation: elongation, isEastOfSun: isEastOfSun, brightLimbPositionAngle: brightLimb, instant: instant)
 		} catch {
 			throw .ephemeris(error)
 		}

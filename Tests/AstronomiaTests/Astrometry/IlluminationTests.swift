@@ -36,6 +36,11 @@ import Testing
 			#expect(abs(limb.degrees) * 3600 * Math.sin(illumination.elongation.radians) <= 0.06, comment)
 			#expect(illumination.brightLimbPositionAngle.degrees >= 0 && illumination.brightLimbPositionAngle.degrees < 360)
 			#expect(illumination.instant == instant)
+			// East of the Sun, the bright limb faces west, its position angle past 180°, but near
+			// conjunction and opposition, where its direction turns quickly.
+			if expected.elongation > 10, expected.elongation < 170 {
+				#expect(illumination.isEastOfSun == (expected.brightLimb > 180), comment)
+			}
 		}
 		#expect(skyfieldIllumination.count > 300)
 	}
@@ -53,10 +58,12 @@ import Testing
 				#expect(illumination.illuminatedFraction < 0.005 && illumination.phaseAngle.degrees > 170)
 			case .firstQuarter:
 				#expect(abs(illumination.illuminatedFraction - 0.5) < 0.01 && limb > 220 && limb < 320)
+				#expect(illumination.isEastOfSun)
 			case .fullMoon:
 				#expect(illumination.illuminatedFraction > 0.995 && illumination.phaseAngle.degrees < 10)
 			case .lastQuarter:
 				#expect(abs(illumination.illuminatedFraction - 0.5) < 0.01 && limb > 40 && limb < 140)
+				#expect(!illumination.isEastOfSun)
 			}
 			// The elongation and the phase angle nearly sum to 180° for the Moon, whose distance
 			// is small beside the Sun's.
@@ -86,5 +93,24 @@ import Testing
 		// Outside the coverage
 		let far = Instant<TT>(try JulianDate(julianDate: 3_000_000.5))
 		#expect(throws: IlluminationError.ephemeris(.outsideCoverage)) { try MoonPhases.illumination(at: far, precision: .tenArcseconds) }
+	}
+
+	@Test func eastAndWestOfTheSun() throws {
+		// The Moon is east of the Sun from new Moon to full Moon, waxing, and west of it from full
+		// Moon to new Moon; the side changes at the instants of the phases.
+		let start = Instant<TT>(try JulianDate(julianDate: 2_461_041.5))
+		let full = try MoonPhases.next(.fullMoon, after: start, precision: .arcsecond)
+		let new = try MoonPhases.next(.newMoon, after: full, precision: .arcsecond)
+		for (instant, east) in [(full, true), (new, false)] {
+			let before = try MoonPhases.illumination(at: Instant<TT>(try instant.julianDate.adding(seconds: -60)), precision: .arcsecond)
+			let after = try MoonPhases.illumination(at: Instant<TT>(try instant.julianDate.adding(seconds: 60)), precision: .arcsecond)
+			#expect(before.isEastOfSun == east && after.isEastOfSun == !east)
+		}
+		// Venus as an evening star, east of the Sun, on March 1, 2026, after its superior
+		// conjunction of January 6, and as a morning star, west of it, on December 16, after
+		// its inferior conjunction of October 24
+		let sky = { (julianDate: Double) in try Observer.geocenter.observation(at: Instant<TT>(try JulianDate(julianDate: julianDate)), ephemeris: BuiltInEphemeris(precision: .arcsecond)) }
+		#expect(try sky(2_461_101.5).illumination(of: .venus).isEastOfSun)
+		#expect(try !sky(2_461_391.5).illumination(of: .venus).isEastOfSun)
 	}
 }

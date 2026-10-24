@@ -6,7 +6,7 @@
 //
 
 /// A search of an interval for the instants when an angle that increases steadily, as the Sun's
-/// longitude or the Moon's elongation from the Sun, reaches a multiple of 90°.
+/// longitude or the excess of the Moon's longitude over the Sun's, reaches a multiple of 90°.
 ///
 /// From each sample the next multiple is predicted from the angle's mean motion and bracketed by
 /// a margin either side, which the angle's true motion keeps it within, and the instant it is
