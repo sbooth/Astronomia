@@ -79,7 +79,20 @@ extern const struct astronomia_vsop_series_data astronomia_vsop2013_uranus;
 extern const struct astronomia_vsop_series_data astronomia_vsop2013_neptune;
 extern const struct astronomia_vsop_series_data astronomia_vsop2013_pluto;
 
-// Evaluates one VSOP2013 series
+/// Adds the terms of one series to a sum.
+///
+/// Each term T^α (S sin(φ + ν T) + C cos(φ + ν T)) is added to the sum in turn, in the order
+/// of the terms. On Apple platforms the sines and cosines are computed in batches with
+/// vForce's `vvsincos`, whose results can differ in the last bits from `__sincos`'s; elsewhere
+/// they are computed with `astronomia_sincos`.
+///
+/// - Parameters:
+///   - terms: The terms, `count` of them.
+///   - count: The number of terms, which may be 0.
+///   - t: The time T, in the unit of the terms' frequencies.
+///   - time_power: The power of time T^α of the series.
+///   - initial_sum: The sum the terms are added to.
+/// - Returns: The sum.
 double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms, size_t count, double t, double time_power, double initial_sum);
 
 // Series of the lunar theory ELP/MPP02, whose terms have arguments that are sums of integer

@@ -15,19 +15,20 @@
 #include <vecLib/vForce.h>
 #endif
 
-#define CHUNK_SIZE 128
+// The number of terms whose sines and cosines are computed at once
+#define VSOP_CHUNK_SIZE 128
 
 double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms, size_t count, double t, double time_power, double initial_sum) {
-	double phases[CHUNK_SIZE];
-	double sines[CHUNK_SIZE];
-	double cosines[CHUNK_SIZE];
+	double phases[VSOP_CHUNK_SIZE];
+	double sines[VSOP_CHUNK_SIZE];
+	double cosines[VSOP_CHUNK_SIZE];
 
 	double sum = initial_sum;
 	size_t offset = 0;
 
 	while (offset < count) {
 		size_t remaining = count - offset;
-		size_t n = remaining < CHUNK_SIZE ? remaining : CHUNK_SIZE;
+		size_t n = remaining < VSOP_CHUNK_SIZE ? remaining : VSOP_CHUNK_SIZE;
 
 		// Build a contiguous batch of angles
 		for (size_t j = 0; j < n; ++j) {
@@ -48,6 +49,7 @@ double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms,
 		}
 #endif
 
+		// Add the terms in their order
 		for (size_t j = 0; j < n; ++j) {
 			const struct astronomia_vsop_term *term = &terms[offset + j];
 			sum = sum + time_power * (term->s * sines[j] + term->c * cosines[j]);
