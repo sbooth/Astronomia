@@ -79,6 +79,22 @@ extern const struct astronomia_vsop_series_data astronomia_vsop2013_uranus;
 extern const struct astronomia_vsop_series_data astronomia_vsop2013_neptune;
 extern const struct astronomia_vsop_series_data astronomia_vsop2013_pluto;
 
+/// Adds the terms of one series to a sum.
+///
+/// Each term T^α (S sin(φ + ν T) + C cos(φ + ν T)) is added to the sum in turn, in the order
+/// of the terms. On Apple platforms the sines and cosines are computed in batches with
+/// vForce's `vvsincos`, whose results can differ in the last bits from `__sincos`'s; elsewhere
+/// they are computed with `astronomia_sincos`.
+///
+/// - Parameters:
+///   - terms: The terms, `count` of them.
+///   - count: The number of terms, which may be 0.
+///   - t: The time T, in the unit of the terms' frequencies.
+///   - time_power: The power of time T^α of the series.
+///   - initial_sum: The sum the terms are added to.
+/// - Returns: The sum.
+double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms, size_t count, double t, double time_power, double initial_sum);
+
 // Series of the lunar theory ELP/MPP02, whose terms have arguments that are sums of integer
 // multiples of fundamental arguments, polynomials in time. The terms keep their multipliers,
 // because the fundamental arguments depend on the fit of the solution.
@@ -147,6 +163,55 @@ struct astronomia_elp_series_data {
 // ELP/MPP02 geocentric lunar coordinates, from J1000.0 to J3000.0
 extern const struct astronomia_elp_series_data astronomia_elpmpp02;
 
+/// A sum of terms and its derivative with respect to time.
+struct astronomia_elp_sum_rate {
+	/// The sum.
+	double sum;
+	/// The derivative of the sum, per Julian century.
+	double rate;
+};
+
+/// Adds the terms of one series of the main problem to a sum and its derivative.
+///
+/// With y = Σ iₖ Dₖ and its rate ẏ = Σ iₖ Ḋₖ, each term adds A sin(y) to the sum and A ẏ cos(y)
+/// to the derivative, or in distance A cos(y) and −A ẏ sin(y), in turn in the order of the
+/// terms. On Apple platforms the sines and cosines are computed in batches with vForce's
+/// `vvsincos`, whose results can differ in the last bits from `__sincos`'s; elsewhere they
+/// are computed with `astronomia_sincos`.
+///
+/// - Parameters:
+///   - terms: The terms, `count` of them, whose multipliers are used.
+///   - amplitudes: The amplitudes A of the terms, corrected for the fit, `count` of them.
+///   - count: The number of terms, which may be 0.
+///   - x: The fundamental arguments, in radians, whose first four, the Delaunay arguments D,
+///     F, l, l', are used.
+///   - xp: The rates of the arguments, in radians per Julian century.
+///   - is_distance: Nonzero if the series is of distance, whose terms are cosines.
+///   - initial_sum: The sum the terms are added to.
+///   - initial_rate: The derivative the terms' derivatives are added to.
+/// - Returns: The sum and its derivative.
+struct astronomia_elp_sum_rate astronomia_elp_evaluate_main(const struct astronomia_elp_main_term *terms, const double *amplitudes, size_t count, const double *x, const double *xp, int is_distance, double initial_sum, double initial_rate);
+
+/// Adds the terms of one series of the perturbations to a sum and its derivative.
+///
+/// With y = Σ iₖ Aₖ and its rate ẏ = Σ iₖ Ȧₖ, each term adds T^α (S sin(y) + C cos(y)) to the
+/// sum and α T^(α−1) (S sin(y) + C cos(y)) + T^α ẏ (S cos(y) − C sin(y)) to the derivative, in
+/// turn in the order of the terms. On Apple platforms the sines and cosines are computed in
+/// batches with vForce's `vvsincos`, whose results can differ in the last bits from
+/// `__sincos`'s; elsewhere they are computed with `astronomia_sincos`.
+///
+/// - Parameters:
+///   - terms: The terms, `count` of them.
+///   - count: The number of terms, which may be 0.
+///   - x: The thirteen fundamental arguments A₁ to A₁₃, in radians.
+///   - xp: The rates of the arguments, in radians per Julian century.
+///   - t_power: The power of time T^α of the series, with T in Julian centuries.
+///   - t_power_rate: The derivative of the power of time, α T^(α−1), or 0 if α is 0.
+///   - initial_sum: The sum the terms are added to.
+///   - initial_rate: The derivative the terms' derivatives are added to.
+/// - Returns: The sum and its derivative.
+struct astronomia_elp_sum_rate astronomia_elp_evaluate_perturbation(const struct astronomia_elp_perturbation_term *terms, size_t count, const double *x, const double *xp, double t_power, double t_power_rate, double initial_sum, double initial_rate);
+
 // Series of the IAU 2006 precession and IAU 2000A_R06 nutation, from the tables of the IERS
 // Conventions (2010), Chapter 5. The terms have arguments that are sums of integer multiples
 // of fourteen fundamental arguments, polynomials in time: the Delaunay arguments l, l', F, D,
@@ -198,5 +263,26 @@ struct astronomia_iau_series_data {
 extern const struct astronomia_iau_series_data astronomia_iau2006_nutation_longitude;
 extern const struct astronomia_iau_series_data astronomia_iau2006_nutation_obliquity;
 extern const struct astronomia_iau_series_data astronomia_iau2006_s_plus_half_xy;
+
+/// Returns the sum of the series of one table at a time.
+///
+/// The series are summed from the last to the first, and the leading terms of each at the
+/// precision level from the last, the smallest, to the first, so the small terms are not lost
+/// in the large ones. Each series' sum is multiplied by its power of time t^j before it is
+/// added to the total. On Apple platforms the sines and cosines are computed in batches with
+/// vForce's `vvsincos`, whose results can differ in the last bits from `__sincos`'s; elsewhere
+/// they are computed with `astronomia_sincos`. The arguments aren't validated; the tests check
+/// that the counts of the generated series fit in their terms.
+///
+/// - Parameters:
+///   - series: The series, `series_count` of them.
+///   - series_count: The number of series.
+///   - terms: The terms of every series, in the order of the series, `term_count` of them.
+///   - term_count: The number of terms, the sum of the series' counts of every term.
+///   - arguments: The fourteen fundamental arguments at `t`, in radians.
+///   - t: TT in Julian centuries from J2000.0.
+///   - level: The precision level, from 0, every term, to `ASTRONOMIA_PRECISION_LEVELS` − 1.
+/// - Returns: The sum, in microarcseconds.
+double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series, size_t series_count, const struct astronomia_iau_term *terms, size_t term_count, const double arguments[14], double t, int32_t level);
 
 #endif
