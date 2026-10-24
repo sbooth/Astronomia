@@ -37,7 +37,7 @@ double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms,
 
 #if defined(__APPLE__)
 		// Evaluate the batch of sine and cosine values
-		int vector_count = (int)n;
+		const int vector_count = (int)n;
 		vvsincos(sines, cosines, phases, &vector_count);
 #else
 		// Portable scalar fallback
