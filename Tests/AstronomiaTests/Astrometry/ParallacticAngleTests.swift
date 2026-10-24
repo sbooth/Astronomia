@@ -98,4 +98,45 @@ import Testing
 			#expect(zenith > 90 && zenith < 270, "\(days) d: \(zenith)°")
 		}
 	}
+
+	@Test func brightLimbFromTheZenithWithPolarMotion() throws {
+		// With polar motion, exaggerated to 0.3° and 0.4°, the bright limb from the zenith is the
+		// Sun's position angle from the Moon measured from the zenith's direction at the Moon,
+		// found here from their unrefracted azimuths and altitudes alone, whatever the poles;
+		// the bright limb from the true pole less the parallactic angle, from the ITRS pole,
+		// differs from it by the polar motion's turn.
+		let motion = PolarMotion(x: .degrees(0.3), y: .degrees(0.4))
+		let entries = [2_460_900, 2_461_200].map { EarthOrientationTable.Entry(utcDay: $0, ut1MinusUTC: 0, polarMotion: motion) }
+		let ut1 = UT1.Context(deltaT: DeltaTFunction.constant(69.2))
+		let site = try Observer.site(latitude: .degrees(40), longitude: .degrees(-75))
+		let ephemeris = BuiltInEphemeris(precision: .arcsecond)
+		var largest = 0.0
+		for (earthOrientation, isExaggerated) in [(EarthOrientation(table: EarthOrientationTable(entries: entries), ut1: ut1), true), (EarthOrientation(ut1: ut1), false)] {
+			for hours in stride(from: 0.0, to: 72, by: 7) {
+				let instant = Instant<TT>(try JulianDate(julianDate: 2_461_041.5 + hours / 24))
+				let sky = try site.observation(at: instant, earthOrientation: earthOrientation, ephemeris: ephemeris)
+				let illumination = try sky.illumination(of: .moon)
+				let moon = try sky.observedPlace(of: sky.apparentPlace(of: .moon))
+				let sun = try sky.observedPlace(of: sky.apparentPlace(of: .sun))
+				func vector(_ place: ObservedPlace) -> Vector3 {
+					let (az, alt) = (place.azimuth.radians, place.altitude.radians)
+					return Vector3(Math.sin(az) * Math.cos(alt), Math.cos(az) * Math.cos(alt), Math.sin(alt))
+				}
+				let (m, s) = (vector(moon), vector(sun))
+				let z = Vector3(0, 0, 1) - m * m.z
+				let expected = Angle.atan2(y: s.dot(z.cross(m)), x: s.dot(z)).normalized()
+				let zenith = try #require(illumination.brightLimbZenithAngle)
+				let difference = Angle(radians: zenith.radians - expected.radians).normalizedSigned()
+				#expect(abs(difference.arcseconds) < 1e-3, "\(hours) h")
+				let subtracted = Angle(radians: illumination.brightLimbPositionAngle.radians - moon.parallacticAngle.radians - zenith.radians).normalizedSigned()
+				if isExaggerated {
+					largest = max(largest, abs(subtracted.degrees))
+				} else {
+					#expect(abs(subtracted.arcseconds) < 0.01, "\(hours) h")
+				}
+			}
+		}
+		// The difference is about the polar motion of 0.5°.
+		#expect(largest > 0.1 && largest < 1)
+	}
 }

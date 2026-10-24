@@ -56,11 +56,14 @@ extension Observation {
 			let toEcliptic = TrueEclipticOfDate.rotationFromICRS(at: instant, earthOrientation: earthOrientation)
 			let (se, be) = (toEcliptic.apply(to: sunApparent), toEcliptic.apply(to: bodyApparent))
 			let excess = Angle.atan2(y: se.x * be.y - se.y * be.x, x: se.x * be.x + se.y * be.y).normalized()
-			// From a site, the bright limb from the zenith, the north point turned by the
-			// parallactic angle of the body's unrefracted place
+			// From a site, the bright limb from the zenith, in the ITRS, where the zenith is
+			// fixed: the Sun's direction along the zenith's direction on the sky at the body,
+			// Z = u - (u · b) b, and along Z × b, which have the same length
 			let zenith = horizon.map { horizon in
-				let place = horizon.observedPlace(of: bodyApparent, refraction: nil, distance: Distance(astronomicalUnits: toBody.length), instant: instant)
-				return Angle(radians: brightLimb.radians - place.parallacticAngle.radians).normalized()
+				let b = horizon.toITRS.apply(to: bodyApparent)
+				let s = horizon.toITRS.apply(to: sunApparent)
+				let z = horizon.up - b * horizon.up.dot(b)
+				return Angle.atan2(y: s.dot(z.cross(b)), x: s.dot(z)).normalized()
 			}
 			return Illumination(phaseAngle: phaseAngle, elongation: elongation, excessEclipticLongitude: excess, brightLimbPositionAngle: brightLimb, brightLimbZenithAngle: zenith, instant: instant)
 		} catch {

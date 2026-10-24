@@ -65,11 +65,16 @@ public struct Illumination: Hashable, Sendable {
 	/// ``brightLimbPositionAngle``, in the right-open interval [0°, 360°), or `nil` for an
 	/// observer at the center of the Earth, which has no zenith.
 	///
-	/// It is ``brightLimbPositionAngle`` less the body's ``ObservedPlace/parallacticAngle``,
-	/// as Meeus gives it, the zenith's direction from the north point, measured from the pole
-	/// of the ITRS, which differs from the true pole of date by the polar motion, up to about
-	/// 0.5". Refraction, which raises the body's lower limb more than its upper, flattens the
-	/// disk near the horizon but doesn't turn it.
+	/// It is the Sun's position angle from the body measured from the zenith's direction on
+	/// the sky at the body, the normal to the site's ellipsoid, and is nearly
+	/// ``brightLimbPositionAngle`` less the body's ``ObservedPlace/parallacticAngle``, as Meeus
+	/// gives it. Nearly, because the two are measured from different poles: the position angle
+	/// from the true pole of date, and the parallactic angle from the pole of the ITRS, which
+	/// is the true pole moved by the polar motion, up to about 0.5". Their difference can differ
+	/// from this angle by the polar motion's turn of the north point at the body, about that
+	/// much, and more near the poles. Refraction, which raises the body's lower limb more than
+	/// its upper, flattens the disk near the horizon but doesn't turn it. At the zenith, where
+	/// the zenith has no direction on the sky, the angle is taken from a direction of 0.
 	public let brightLimbZenithAngle: Angle?
 	/// The instant of observation.
 	public let instant: Instant<TT>

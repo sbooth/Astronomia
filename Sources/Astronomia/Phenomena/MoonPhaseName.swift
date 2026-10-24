@@ -40,13 +40,18 @@ public enum MoonPhaseName: Hashable, Sendable, CaseIterable {
 	/// Waning crescent: from last quarter to new Moon.
 	case waningCrescent
 
+	/// The tolerance of the ends of a principal phase for roundoff, in radians, 1e-12, about
+	/// 2e-7".
+	static var roundoffTolerance: Double { 1e-12 }
+
 	/// The default half-width of a principal phase, 5°.
 	public static var defaultPrincipalHalfWidth: Angle { .degrees(5) }
 
 	/// Creates the phase of an excess of the Moon's ecliptic longitude over the Sun's.
 	///
-	/// A principal phase includes the ends of its interval, so with a half-width of 45° the
-	/// principal phases are the only ones.
+	/// A principal phase includes the ends of its interval, within the roundoff of reducing
+	/// and converting the angles, so with a half-width of 45° the principal phases are the only
+	/// ones.
 	///
 	/// - Parameters:
 	///   - excessEclipticLongitude: The excess of the Moon's ecliptic longitude over the Sun's,
@@ -76,14 +81,17 @@ public enum MoonPhaseName: Hashable, Sendable, CaseIterable {
 	init(uncheckedExcessEclipticLongitude excessEclipticLongitude: Angle, principalHalfWidth: Angle = MoonPhaseName.defaultPrincipalHalfWidth) {
 		assert(excessEclipticLongitude.radians.isFinite, "The excess must be finite")
 		assert(principalHalfWidth.degrees >= 0 && principalHalfWidth.degrees <= 45, "The half-width must be in [0°, 45°]")
-		let excess = excessEclipticLongitude.normalized().degrees
+		let excess = excessEclipticLongitude.normalized().radians
 		// The nearest principal phase, from 0 for new Moon to 4 for the next new Moon, and the
-		// excess's distance from it
-		let nearest = (excess / 90).rounded()
-		if abs(excess - nearest * 90) <= principalHalfWidth.degrees {
+		// excess's distance from it. Reducing an angle to a turn and converting it between
+		// degrees and radians round it by a few units in the last place, which would take an
+		// excess given at the end of a principal phase just outside it, so the ends are widened
+		// by the roundoff tolerance.
+		let nearest = (excess / halfPi).rounded()
+		if abs(excess - nearest * halfPi) <= principalHalfWidth.radians + Self.roundoffTolerance {
 			self = [MoonPhaseName.newMoon, .firstQuarter, .fullMoon, .lastQuarter][Int(nearest) % 4]
 		} else {
-			self = [MoonPhaseName.waxingCrescent, .waxingGibbous, .waningGibbous, .waningCrescent][Int(excess / 90) % 4]
+			self = [MoonPhaseName.waxingCrescent, .waxingGibbous, .waningGibbous, .waningCrescent][Int(excess / halfPi) % 4]
 		}
 	}
 

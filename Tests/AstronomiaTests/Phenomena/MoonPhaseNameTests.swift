@@ -30,6 +30,26 @@ import Testing
 		#expect(MoonPhaseName.defaultPrincipalHalfWidth == .degrees(5))
 	}
 
+	@Test func endsOfThePrincipalPhases() throws {
+		// The ends of a principal phase are in it, from any turn, though reducing the angle to a
+		// turn and converting it between degrees and radians round it, as -22.5° to
+		// 337.49999999999994°.
+		let ends: [(Double, Double, MoonPhaseName)] = [
+			(-22.5, 22.5, .newMoon), (22.5, 22.5, .newMoon), (382.5, 22.5, .newMoon), (-337.5, 22.5, .newMoon),
+			(-67.5, 22.5, .lastQuarter), (-247.5, 22.5, .firstQuarter), (720 + 112.5, 22.5, .firstQuarter),
+			(-85, 5, .lastQuarter), (-95, 5, .lastQuarter), (-175, 5, .fullMoon), (-185, 5, .fullMoon),
+			(1085, 5, .newMoon), (-1085, 5, .newMoon), (3600 + 95, 5, .firstQuarter), (-3600 - 265, 5, .firstQuarter),
+			(-0.1, 0.1, .newMoon), (-89.9, 0.1, .lastQuarter), (-60, 45, .lastQuarter), (-150, 45, .fullMoon),
+		]
+		for (degrees, width, phase) in ends {
+			#expect(try Self.phase(degrees, width) == phase, "\(degrees)° within \(width)°")
+		}
+		// Just outside, beyond the roundoff tolerance
+		#expect(try Self.phase(-22.500_001, 22.5) == .waningCrescent)
+		#expect(try Self.phase(382.500_001, 22.5) == .waxingCrescent)
+		#expect(try Self.phase(-84.999_999, 5) == .waningCrescent)
+	}
+
 	@Test func halfWidths() throws {
 		// No width: a principal phase only at its value
 		#expect(try Self.phase(0, 0) == .newMoon && Self.phase(0.001, 0) == .waxingCrescent)
