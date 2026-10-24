@@ -56,6 +56,16 @@ import Testing
 		}
 	}
 
+	@Test func largeIntervals() throws {
+		// Far from the reference epoch, the split into whole days and the seconds since
+		// midnight is exact, though the interval divided by the seconds of a day rounds.
+		for (t, julianDayNumber, seconds) in [(1e22, 115_740_740_743_192_651, 64_000.0), (1.000_000_000_000_000_3e21, 11_574_074_076_525_988, 9_344)] {
+			let instant = try Instant<UTC>(Date(timeIntervalSinceReferenceDate: t))
+			#expect(instant.julianDate.julianDayNumber == julianDayNumber, "\(t)")
+			#expect(abs(try clockReading(instant.julianDate) - seconds) < 1e-6, "\(t)")
+		}
+	}
+
 	@Test func convertsToOtherTimescales() throws {
 		// TT is 69.184 s ahead of UTC in 2017.
 		let utc = try Instant<UTC>(Date(timeIntervalSinceReferenceDate: Self.newYear2017))

@@ -36,20 +36,17 @@ extension Instant where Scale == UTC {
 	public init(_ date: Date) throws(TimescaleConversionError) {
 		let interval = date.timeIntervalSinceReferenceDate
 		guard interval.isFinite else { throw .nonFiniteValue }
-		// The day and the seconds since its midnight, rounding the day down before the epoch
-		let days = (interval / secondsPerDay).rounded(.down)
-		guard var wholeDays = JulianDayNumber(exactly: days) else { throw .dateOutOfRange }
-		var seconds = interval - days * secondsPerDay
-		// Rounding can leave the seconds just outside the day.
-		if seconds < 0 {
-			wholeDays -= 1
-			seconds += secondsPerDay
-		} else if seconds >= secondsPerDay {
-			wholeDays += 1
-			seconds -= secondsPerDay
+		// Split the interval without rounding away whole days or clock seconds.
+		let split: (days: Int, fractionSinceMidnight: Double)
+		do throws(DayAccumulator.Failure) {
+			var accumulator = DayAccumulator(days: Self.referenceDateJulianDayNumber)
+			try accumulator.add(seconds: interval)
+			split = try accumulator.flooredResult()
+		} catch {
+			throw .dateOutOfRange
 		}
-		let (julianDayNumber, overflow) = Self.referenceDateJulianDayNumber.addingReportingOverflow(wholeDays)
-		guard !overflow else { throw .dateOutOfRange }
+		let julianDayNumber = split.days
+		let seconds = split.fractionSinceMidnight * secondsPerDay
 		let day = try UTCDay(julianDayNumber: julianDayNumber)
 		self.init(try day.julianDate(secondsSinceMidnight: seconds))
 	}
