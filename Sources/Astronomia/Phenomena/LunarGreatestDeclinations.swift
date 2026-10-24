@@ -47,6 +47,9 @@ public enum LunarGreatestDeclinations {
 extension LunarGreatestDeclinations {
 	/// Returns the greatest declinations of the Moon in an interval, in order.
 	///
+	/// The ephemeris is evaluated up to 10 s outside the interval, so a greatest declination
+	/// at either end is found.
+	///
 	/// - Parameters:
 	///   - moon: The Moon.
 	///   - start: The start of the interval.
@@ -90,11 +93,13 @@ extension LunarGreatestDeclinations {
 			throw LunarGreatestDeclinationError(error)
 		}
 		let search = ExtremumSearch(length: interval.length, step: step, skip: skip) { (days: Double) throws(LunarGreatestDeclinationError) -> Double in
+			// The search runs a little past the ends of the interval, so the instant isn't
+			// clamped to it.
 			let instant: Instant<TT>
-			do throws(SearchInterval.Failure) {
-				instant = try interval.instant(days)
+			do throws(JulianDateError) {
+				instant = Instant(try interval.start.julianDate.adding(days: days))
 			} catch {
-				throw LunarGreatestDeclinationError(error)
+				throw .invalidInterval
 			}
 			do throws(EphemerisError) {
 				let sky = try Observer.geocenter.observation(at: instant, earthOrientation: earthOrientation, ephemeris: ephemeris)

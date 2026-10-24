@@ -84,6 +84,10 @@ import Testing
 	@Test func next() throws {
 		let events = try LunarGreatestDeclinations.events(from: Self.instant(2_461_041.5), to: Self.instant(2_461_100.5), precision: .arcsecond)
 		for event in events.prefix(3) {
+			// From two seconds before, that one, not the next
+			let justBefore = Instant<TT>(try event.instant.julianDate.adding(seconds: -2))
+			let soon = try LunarGreatestDeclinations.next(event.kind, after: justBefore, precision: .arcsecond)
+			#expect(abs(Self.julianDate(soon.instant) - Self.julianDate(event.instant)) * secondsPerDay < 0.1)
 			// From a day before, that one
 			let before = Instant<TT>(try event.instant.julianDate.adding(days: -1))
 			let found = try LunarGreatestDeclinations.next(event.kind, after: before, precision: .arcsecond)
@@ -109,7 +113,7 @@ import Testing
 		}
 		// An interval just around one finds it, and one just before or after doesn't.
 		let event = try LunarGreatestDeclinations.next(.north, after: start, precision: .arcsecond)
-		for (before, after) in [(60.0, 60.0), (10, 30_000), (30_000, 10)] {
+		for (before, after) in [(60.0, 60.0), (10, 30_000), (30_000, 10), (2, 30_000), (30_000, 2), (2, 3)] {
 			let from = Instant<TT>(try event.instant.julianDate.adding(seconds: -before))
 			let to = Instant<TT>(try event.instant.julianDate.adding(seconds: after))
 			let events = try LunarGreatestDeclinations.events(from: from, to: to, precision: .arcsecond)
@@ -176,15 +180,34 @@ import Testing
 	}
 
 	@Test func extremesNearTheEnds() {
-		// Within the first and last steps, but more than 5 seconds from the ends
-		for (start, length) in [(6.825 - 6 / secondsPerDay, 1.0), (6.825 - 0.5, 0.5 + 6 / secondsPerDay)] {
+		// Within a few seconds of either end, and in intervals shorter than a rise
+		let seconds = 1 / secondsPerDay
+		for (start, length) in [(6.825 - 2 * seconds, 1.0), (6.825 - 0.5, 0.5 + 2 * seconds), (6.825 - 2 * seconds, 4 * seconds), (6.825 - 0.5 * seconds, seconds)] {
 			let search = ExtremumSearch<Never>(length: length, step: 1, skip: 10) { Self.sinusoid(start + $0) }
 			let extremes = search.extremes()
-			#expect(extremes.count == 1)
+			#expect(extremes.count == 1, "\(length)")
 			#expect(abs(start + (extremes.first?.time ?? 0) - 6.825) * secondsPerDay < 0.1)
 		}
-		// None in an interval shorter than a rise
-		#expect(ExtremumSearch<Never>(length: 5 / secondsPerDay, step: 1, skip: 10) { Self.sinusoid($0) }.extremes().isEmpty)
+		// But not just outside the interval
+		for (start, length) in [(6.825 + 2 * seconds, 1.0), (6.825 - 0.5, 0.5 - 2 * seconds), (6.825 + 2 * seconds, 4 * seconds)] {
+			#expect(ExtremumSearch<Never>(length: length, step: 1, skip: 10) { Self.sinusoid(start + $0) }.extremes().isEmpty, "\(length)")
+		}
+	}
+
+	@Test func quantityUnavailableOutsideTheInterval() throws {
+		// Where the quantity can't be evaluated before or after the interval, as at the ends of
+		// an ephemeris's coverage, an extreme more than 5 seconds from that end is still found,
+		// without failing.
+		let seconds = 1 / secondsPerDay
+		for (start, length) in [(6.825 - 6 * seconds, 1.0), (6.825 - 0.5, 0.5 + 6 * seconds)] {
+			let search = ExtremumSearch<Unavailable>(length: length, step: 1, skip: 10) { (days: Double) throws(Unavailable) -> Double in
+				guard days >= 0, days <= length else { throw Unavailable() }
+				return Self.sinusoid(start + days)
+			}
+			let extremes = try search.extremes()
+			#expect(extremes.count == 1, "\(length)")
+			#expect(abs(start + (extremes.first?.time ?? 0) - 6.825) * secondsPerDay < 0.1)
+		}
 	}
 
 	struct Unavailable: Error {}

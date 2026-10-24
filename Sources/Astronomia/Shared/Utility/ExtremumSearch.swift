@@ -19,11 +19,13 @@
 /// over 10 seconds changes by about 3e-11 radians a second. After an extreme the search skips
 /// ahead by the least time to the next.
 ///
-/// The quantity is evaluated only within the interval, so an extreme within 5 seconds of either
-/// end isn't found. The search assumes nothing of the span over which the quantity can
-/// be evaluated: where it can't be at the next sample, as past the end of an ephemeris's
-/// coverage, the step halves toward the last sample, so an extreme before the end is still
-/// bracketed.
+/// The rises run from 10 seconds before the interval to 10 seconds after it, so an extreme at
+/// either end is bracketed, and only the extremes within the interval are kept. The search
+/// assumes nothing of the span over which the quantity can be evaluated: outside the interval,
+/// where it can't be, as at the start or end of an ephemeris's coverage, the rises keep within
+/// the interval, and an extreme within 5 seconds of that end isn't found; within it, where it
+/// can't be at the next sample, the step halves toward the last sample, so an extreme before
+/// the end of the coverage is still bracketed.
 struct ExtremumSearch<Failure: Error> {
 	/// The rise of the quantity over the interval of a rise.
 	struct Rise {
@@ -79,11 +81,17 @@ struct ExtremumSearch<Failure: Error> {
 	///   - stoppingAfterFirst: Whether to stop at the first extreme found, without evaluating
 	///     the quantity for the rest of the interval.
 	func extremes(only maxima: Bool? = nil, stoppingAfterFirst: Bool = false) throws(Failure) -> [Extreme] {
-		// The last time a rise can start
-		let last = length - Self.interval
-		guard last > 0 else { return [] }
+		// The rises run from one ending at the start to one starting at the end, so an extreme
+		// at either end is bracketed. Where the quantity can't be evaluated outside the
+		// interval, as at the end of an ephemeris's coverage, they keep within it.
+		var last = length
+		var previous: Rise
+		do throws(Failure) {
+			previous = try rise(at: -Self.interval)
+		} catch {
+			previous = try rise(at: 0)
+		}
 		var extremes: [Extreme] = []
-		var previous = try rise(at: 0)
 		// The earliest time a rise couldn't be evaluated, as past the end of an ephemeris's
 		// coverage
 		var failedTime: Double? = nil
@@ -97,6 +105,11 @@ struct ExtremumSearch<Failure: Error> {
 			do throws(Failure) {
 				current = try rise(at: next)
 			} catch {
+				if next + Self.interval > length, last == length {
+					// Past the end of the interval: keep within it.
+					last = max(length - Self.interval, previous.time)
+					continue
+				}
 				guard next - previous.time > Self.tolerance else {
 					throw error
 				}
@@ -114,15 +127,23 @@ struct ExtremumSearch<Failure: Error> {
 			if maxima == nil || maxima == isMaximum {
 				let found = try RootFinder.refine(previous, current, time: \.time, tolerance: Self.tolerance, maximumIterations: Self.maximumIterations, evaluate: rise, function: \.rise)
 				let time = found.time + Self.interval / 2
-				let extreme = Extreme(isMaximum: isMaximum, time: time, value: try evaluate(time))
-				extremes.append(extreme)
-				if stoppingAfterFirst {
-					break
+				// An extreme bracketed by the rises outside the interval may be outside it.
+				if time >= 0, time <= length {
+					extremes.append(Extreme(isMaximum: isMaximum, time: time, value: try evaluate(time)))
+					if stoppingAfterFirst {
+						break
+					}
 				}
-				resume = extreme.time + skip
+				resume = time + skip
 			}
 			guard resume < last else { break }
-			previous = try rise(at: resume)
+			do throws(Failure) {
+				previous = try rise(at: resume)
+			} catch {
+				// Past the end of the interval, where the quantity can't be evaluated
+				guard resume + Self.interval > length else { throw error }
+				break
+			}
 		}
 		return extremes
 	}
