@@ -133,16 +133,7 @@ import Testing
 		let afterFull = try around(-gap / 2, 7200)
 		#expect(afterFull.count == 1 && Self.same(afterFull[0], eclipse))
 		// And an interval that ends between greatest eclipse and a later full Moon
-		var later: (eclipse: LunarEclipse, gap: Double)? = nil
-		for candidate in try LunarEclipses.events(from: Instant<TT>(try JulianDate(year: 2025, month: 4, day: 1)), to: Instant<TT>(try JulianDate(year: 2028, month: 1, day: 1)), precision: .arcsecond) {
-			let candidateFull = try MoonPhases.next(.fullMoon, after: Instant<TT>(try candidate.greatestEclipse.julianDate.adding(days: -1)), precision: .arcsecond)
-			let lead = (Self.julianDate(candidateFull) - Self.julianDate(candidate.greatestEclipse)) * 86400
-			if lead > 60 {
-				later = (candidate, lead)
-				break
-			}
-		}
-		let (laterEclipse, lead) = try #require(later)
+		let (laterEclipse, lead) = try Self.eclipseBeforeFullMoon(after: Instant<TT>(try JulianDate(year: 2025, month: 4, day: 1)))
 		let beforeFull = try LunarEclipses.events(from: Instant<TT>(try laterEclipse.greatestEclipse.julianDate.adding(seconds: -7200)), to: Instant<TT>(try laterEclipse.greatestEclipse.julianDate.adding(seconds: lead / 2)), precision: .arcsecond)
 		#expect(beforeFull.count == 1 && Self.same(beforeFull[0], laterEclipse))
 		// A greatest eclipse just after the start of `next`, whose full Moon is before it
@@ -185,5 +176,62 @@ import Testing
 		// From UTC
 		let utc = try start.converted(to: UTC.self)
 		#expect(Self.same(try LunarEclipses.next(after: utc, precision: .arcsecond), try LunarEclipses.next(after: start, precision: .arcsecond)))
+	}
+
+	/// Returns the first eclipse greatest after an instant whose full Moon is after its greatest
+	/// eclipse by more than a minute, and the interval between them, in seconds.
+	static func eclipseBeforeFullMoon(after instant: Instant<TT>) throws -> (eclipse: LunarEclipse, lead: Double) {
+		var from = instant
+		for _ in 0 ..< 10 {
+			let eclipse = try LunarEclipses.next(after: from, precision: .arcsecond)
+			let full = try MoonPhases.next(.fullMoon, after: Instant<TT>(try eclipse.greatestEclipse.julianDate.adding(days: -1)), precision: .arcsecond)
+			let lead = (julianDate(full) - julianDate(eclipse.greatestEclipse)) * 86400
+			if lead > 60 {
+				return (eclipse, lead)
+			}
+			from = eclipse.greatestEclipse
+		}
+		throw LunarEclipseError.eclipseNotFound
+	}
+
+	@Test func repeatedNext() throws {
+		// From the greatest eclipse of one eclipse, the next is the next, not the same one found
+		// a little later, whether its full Moon is before greatest eclipse, as in March 2025, or
+		// after it.
+		let march = try LunarEclipses.next(after: Instant<TT>(try JulianDate(year: 2025, month: 3, day: 1)), precision: .arcsecond)
+		let (later, _) = try Self.eclipseBeforeFullMoon(after: Instant<TT>(try JulianDate(year: 2025, month: 4, day: 1)))
+		for eclipse in [march, later] {
+			for offset in [-0.3, 0, 0.3] {
+				let from = Instant<TT>(try eclipse.greatestEclipse.julianDate.adding(seconds: offset))
+				let next = try LunarEclipses.next(after: from, precision: .arcsecond)
+				#expect(Self.julianDate(next.greatestEclipse) - Self.julianDate(eclipse.greatestEclipse) > 100, "\(offset)")
+			}
+			// From a second before, the same one
+			let before = try LunarEclipses.next(after: Instant<TT>(try eclipse.greatestEclipse.julianDate.adding(seconds: -1)), precision: .arcsecond)
+			#expect(Self.same(before, eclipse))
+		}
+	}
+
+	@Test func endOfTheCoverage() throws {
+		// An eclipse whose last contact is 5 minutes before the end of the coverage is found,
+		// though the samples that bracket its contacts and its greatest eclipse run past it: a
+		// total eclipse, and a penumbral eclipse of 12 minutes.
+		let start = Instant<TT>(try JulianDate(year: 2025, month: 3, day: 1))
+		let total = try LunarEclipses.next(after: start, precision: .arcsecond)
+		let penumbral = try LunarEclipses.next(after: Instant<TT>(try JulianDate(year: 2027, month: 7, day: 10)), precision: .arcsecond)
+		#expect(total.kind == .total && Self.minutes(penumbral.penumbralPhase)! < 15)
+		for eclipse in [total, penumbral] {
+			let from = Instant<TT>(try eclipse.greatestEclipse.julianDate.adding(days: -10))
+			let end = eclipse.penumbralPhase.upperBound
+			let covered = try TruncatedEphemeris(BuiltInEphemeris(precision: .arcsecond), endingAt: Instant(try end.julianDate.adding(seconds: 300)))
+			let found = try LunarEclipses.next(of: .moon, after: from, ephemeris: covered)
+			#expect(Self.same(found, eclipse))
+			#expect(abs(Self.julianDate(found.penumbralPhase.upperBound) - Self.julianDate(end)) * 86400 < 0.2)
+			let inInterval = try LunarEclipses.events(of: .moon, from: from, to: Instant<TT>(try eclipse.greatestEclipse.julianDate.adding(seconds: 60)), ephemeris: covered)
+			#expect(inInterval.count == 1 && Self.same(inInterval[0], eclipse))
+			// The last contact past the end of the coverage
+			let short = try TruncatedEphemeris(BuiltInEphemeris(precision: .arcsecond), endingAt: Instant(try end.julianDate.adding(seconds: -60)))
+			#expect(throws: LunarEclipseError.ephemeris(.outsideCoverage)) { try LunarEclipses.next(of: .moon, after: from, ephemeris: short) }
+		}
 	}
 }

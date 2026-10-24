@@ -30,21 +30,23 @@
 /// ephemeris's full precision it takes about 1.5 s in a release build, and at
 /// ``Precision/arcsecond``, which changes the magnitudes by under 0.001, about 60 ms.
 public enum LunarEclipses {
-	/// The most a full Moon is from the greatest eclipse near it, in days.
-	///
-	/// The Moon's path crosses the ecliptic at about 5°, so its center is nearest the axis of
-	/// the shadow within about 25 minutes of the full Moon.
-	static let fullMoonMargin: Double = 0.1
 	/// The span either side of greatest eclipse that holds its contacts, in days.
 	///
 	/// The penumbral phase lasts at most about 6.3 hours.
 	static let contactSpan: Double = 0.25
-	/// The farthest the Moon's center is from the axis of the shadow, in radians, within
-	/// ``fullMoonMargin`` of an eclipse's full Moon: under the penumbra's radius and the Moon's,
-	/// at most about 1.6°, and the Moon's motion over the margin.
+	/// The farthest the Moon's center is from the axis of the shadow, in radians, between an
+	/// eclipse's full Moon and its greatest eclipse: the Moon's path crosses the ecliptic at
+	/// about 5°, so they are within about 25 minutes, over which the Moon moves about 0.25°
+	/// beyond the penumbra's radius and its own, at most about 1.6°.
 	static let nearAxis: Double = Angle(degrees: 3).radians
 	/// The precision of greatest eclipse and of a contact, 0.1 s, in days.
 	static let tolerance: Double = 0.1 / secondsPerDay
+	/// The interval within which an eclipse found by `next(after:)` is taken as at the
+	/// instant, not after it, 0.5 s, in days.
+	///
+	/// An eclipse found earlier and found again from its greatest eclipse may be found a little
+	/// later, within the precision of the two searches.
+	static let sameEclipse: Double = 0.5 / secondsPerDay
 	/// The most lunations searched for the next eclipse, more than the longest span between
 	/// eclipses of the Moon, of about six.
 	static let maximumLunations: Int = 14
@@ -158,12 +160,28 @@ struct LunarEclipseSearch<E: GeocentricEphemeris> {
 	/// nearly as a parabola in time, exactly so for motion in a straight line, so the vertex of
 	/// the parabola through three samples, each set closer around the last vertex, finds it
 	/// to well under 0.1 s. The parabola's curvature, twice the square of the speed, gives the
-	/// speed.
+	/// speed. A step whose samples the ephemeris doesn't cover is halved until they are.
 	func greatest(near time: Double) throws(LunarEclipseError) -> (sample: LunarEclipseSample, speed: Double) {
 		var center = time
 		var speed = 0.0
-		for step in [0.05, 0.007, 0.000_7, 0.000_07] {
-			let (before, at, after) = (try sample(center - step), try sample(center), try sample(center + step))
+		let smallest = 0.000_07
+		for nominal in [0.05, 0.007, 0.000_7, smallest] {
+			var step = nominal
+			var samples: (before: LunarEclipseSample, at: LunarEclipseSample, after: LunarEclipseSample)
+			while true {
+				do throws(LunarEclipseError) {
+					samples = (try sample(center - step), try sample(center), try sample(center + step))
+					break
+				} catch {
+					// Where the ephemeris doesn't cover the samples of a step, as for an eclipse
+					// just within the end of its coverage, a closer step may be.
+					guard step > smallest else {
+						throw error
+					}
+					step /= 2
+				}
+			}
+			let (before, at, after) = samples
 			let curvature = before.chordSquared - 2 * at.chordSquared + after.chordSquared
 			guard curvature > 0 else { break }
 			speed = (curvature / 2).squareRoot() / step
@@ -178,7 +196,8 @@ struct LunarEclipseSearch<E: GeocentricEphemeris> {
 	///
 	/// The Moon's straight path across the shadow at its speed predicts the instant, which a
 	/// bracket of 15 minutes either side holds; if it doesn't, as for a custom ephemeris, the
-	/// bracket is the span from greatest eclipse.
+	/// bracket is the span from greatest eclipse. The end of the bracket outside the shadow
+	/// closes on the contact where the ephemeris doesn't cover it.
 	func contact(_ greatest: LunarEclipseSample, speed: Double, before: Bool, radius: @escaping (LunarEclipseSample) -> Double) throws(LunarEclipseError) -> Instant<TT> {
 		let distance = { (sample: LunarEclipseSample) in sample.separation - radius(sample) }
 		let sign = before ? -1.0 : 1.0
@@ -188,32 +207,79 @@ struct LunarEclipseSearch<E: GeocentricEphemeris> {
 		let predicted = speed > 0 ? half / speed : LunarEclipses.contactSpan / 2
 		let margin = 15.0 / 1440
 		var near = greatest
-		var far = try sample(greatest.time + sign * min(predicted + margin, LunarEclipses.contactSpan))
 		if predicted > margin {
 			let inside = try sample(greatest.time + sign * (predicted - margin))
 			if distance(inside) < 0 {
 				near = inside
 			}
 		}
-		if distance(far) < 0 {
-			far = try sample(greatest.time + sign * LunarEclipses.contactSpan)
-			guard distance(far) >= 0 else {
-				// The Moon's motion doesn't take it out of the shadow within the span, which a
-				// custom ephemeris's might not.
-				throw .eclipseNotFound
-			}
+		var bracket = try outside(from: near, at: greatest.time + sign * min(predicted + margin, LunarEclipses.contactSpan), distance: distance)
+		if bracket.far == nil {
+			bracket = try outside(from: bracket.near, at: greatest.time + sign * LunarEclipses.contactSpan, distance: distance)
 		}
+		guard let far = bracket.far else {
+			// The Moon's motion doesn't take it out of the shadow within the span, which a
+			// custom ephemeris's might not.
+			throw .eclipseNotFound
+		}
+		near = bracket.near
 		let (lower, upper) = before ? (far, near) : (near, far)
 		let found = try RootFinder.refine(lower, upper, time: \.time, tolerance: LunarEclipses.tolerance, maximumIterations: 100, evaluate: sample, function: distance)
 		return found.instant
 	}
 
-	/// Returns the eclipse near a full Moon, or `nil` if there is none.
-	func eclipse(nearFullMoon time: Double) throws(LunarEclipseError) -> LunarEclipse? {
-		let full = try sample(time)
-		// The Moon's center is nearest the axis within about 0.5% of its distance at full Moon.
-		guard 0.99 * full.separation < full.penumbra + full.moon else {
-			return nil
+	/// Returns a sample outside a circle about the axis, after a sample inside it, toward a
+	/// time.
+	///
+	/// Where the ephemeris doesn't cover the time, as past the end of its coverage, the time
+	/// moves back halfway to the latest time inside the circle, until a sample outside is
+	/// found, or the failing times come within the tolerance of one inside, when the failure
+	/// is thrown, as ``QuarterSearch`` closes a bracket.
+	///
+	/// - Parameters:
+	///   - near: A sample inside the circle.
+	///   - time: The time of the outer end of the bracket.
+	///   - distance: The distance of a sample outside the circle, negative inside.
+	/// - Returns: The latest sample inside the circle, and a sample outside it, or `nil` if the
+	///   sample at `time` is inside.
+	func outside(from near: LunarEclipseSample, at time: Double, distance: (LunarEclipseSample) -> Double) throws(LunarEclipseError) -> (near: LunarEclipseSample, far: LunarEclipseSample?) {
+		var near = near
+		var time = time
+		var failed: Double? = nil
+		while true {
+			do throws(LunarEclipseError) {
+				let sample = try sample(time)
+				if distance(sample) >= 0 {
+					return (near, sample)
+				}
+				guard let failed else {
+					return (sample, nil)
+				}
+				near = sample
+				time = (near.time + failed) / 2
+			} catch {
+				guard abs(time - near.time) > LunarEclipses.tolerance else {
+					throw error
+				}
+				failed = time
+				time = (near.time + time) / 2
+			}
+		}
+	}
+
+	/// Returns the eclipse near a time, or `nil` if there is none.
+	///
+	/// - Parameters:
+	///   - time: The time, a full Moon or near the eclipse.
+	///   - isFullMoon: Whether the time is a full Moon, at which the Moon's center is within
+	///     about 0.5% of its least distance from the axis, so a full Moon farther from it than
+	///     the penumbra and the Moon's radii has no eclipse.
+	func eclipse(near time: Double, isFullMoon: Bool = true) throws(LunarEclipseError) -> LunarEclipse? {
+		if isFullMoon {
+			let full = try sample(time)
+			guard 0.99 * full.separation < full.penumbra + full.moon else {
+				return nil
+			}
 		}
 		let (greatest, speed) = try greatest(near: time)
 		guard greatest.separation < greatest.penumbra + greatest.moon else {
@@ -250,25 +316,25 @@ struct LunarEclipseSearch<E: GeocentricEphemeris> {
 
 	/// Returns the eclipses greatest from some days after the origin to others, in order.
 	///
-	/// The full Moons of the span are found, and those just outside it whose eclipses may be
-	/// greatest within it, where the Moon is near the axis of the shadow at the span's start
-	/// or end. The ephemeris is evaluated outside the span only for those, and for the contacts
-	/// of an eclipse.
+	/// The full Moons of the span are examined, and where the Moon is near the axis of the
+	/// shadow at the span's start or end, the eclipse there, which may be greatest within the
+	/// span though its full Moon is outside it. The ephemeris is evaluated outside the span
+	/// only for such an eclipse, and for the contacts of an eclipse.
 	func eclipses(from start: Double, to end: Double) throws(LunarEclipseError) -> [LunarEclipse] {
-		var times = try fullMoons(from: start, to: end)
+		var times = try fullMoons(from: start, to: end).map { (time: $0, isFullMoon: true) }
 		if try sample(start).separation < LunarEclipses.nearAxis {
-			times = try fullMoons(from: start - LunarEclipses.fullMoonMargin, to: start) + times
+			times.insert((start, false), at: 0)
 		}
 		if try sample(end).separation < LunarEclipses.nearAxis {
-			times += try fullMoons(from: end, to: end + LunarEclipses.fullMoonMargin)
+			times.append((end, false))
 		}
 		var eclipses: [LunarEclipse] = []
 		let (first, last) = (try instant(start), try instant(end))
-		for time in times {
-			guard let eclipse = try eclipse(nearFullMoon: time), eclipse.greatestEclipse >= first, eclipse.greatestEclipse <= last else {
+		for (time, isFullMoon) in times {
+			guard let eclipse = try eclipse(near: time, isFullMoon: isFullMoon), eclipse.greatestEclipse >= first, eclipse.greatestEclipse <= last else {
 				continue
 			}
-			// A full Moon at the start or the end of the span is found twice.
+			// An eclipse at the start or the end of the span may be found twice.
 			if let previous = eclipses.last, abs(Astrometry.days(from: Instant<TDB>(previous.greatestEclipse.julianDate), to: Instant<TDB>(eclipse.greatestEclipse.julianDate))) < 1 {
 				continue
 			}
@@ -334,6 +400,8 @@ extension LunarEclipses {
 	/// Returns the first eclipse of the Moon greatest after an instant.
 	///
 	/// The search steps from full Moon to full Moon, examining each, and stops at the eclipse.
+	/// An eclipse greatest within 0.5 s of the instant, as when the instant is the greatest
+	/// eclipse of one found earlier, is taken as at it, not after it.
 	///
 	/// - Parameters:
 	///   - moon: The Moon.
@@ -358,20 +426,21 @@ extension LunarEclipses {
 			throw .timescaleConversion(error)
 		}
 		let search = LunarEclipseSearch(origin: start.julianDate, moon: moon, earthOrientation: earthOrientation, ephemeris: ephemeris, shadowModel: shadowModel)
+		/// Whether an eclipse is greatest after the instant, not within ``sameEclipse`` of it, as
+		/// when the instant is an eclipse found earlier
+		func isAfter(_ eclipse: LunarEclipse) -> Bool {
+			Astrometry.days(from: Instant<TDB>(start.julianDate), to: Instant<TDB>(eclipse.greatestEclipse.julianDate)) > sameEclipse
+		}
 		// An eclipse greatest just after the instant may have its full Moon just before.
-		if try search.sample(0).separation < nearAxis {
-			for time in try search.fullMoons(from: -fullMoonMargin, to: 0) {
-				if let eclipse = try search.eclipse(nearFullMoon: time), eclipse.greatestEclipse > start {
-					return eclipse
-				}
-			}
+		if try search.sample(0).separation < nearAxis, let eclipse = try search.eclipse(near: 0, isFullMoon: false), isAfter(eclipse) {
+			return eclipse
 		}
 		var from = 0.0
 		for _ in 0 ..< maximumLunations {
 			guard let time = try search.fullMoons(from: from, to: from + MoonPhases.month, first: true).first else {
 				break
 			}
-			if let eclipse = try search.eclipse(nearFullMoon: time), eclipse.greatestEclipse > start {
+			if let eclipse = try search.eclipse(near: time), isAfter(eclipse) {
 				return eclipse
 			}
 			from = time + 1
