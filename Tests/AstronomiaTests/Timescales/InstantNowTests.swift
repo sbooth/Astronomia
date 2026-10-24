@@ -67,8 +67,8 @@ import Testing
 		#expect(throws: Never.self) { try instant.converted(to: TT.self) }
 #if canImport(FoundationEssentials) || canImport(Foundation)
 		// Within a second or two of Foundation's clock, read just after
-		let date = try JulianDate(Date())
-		let seconds = (date.julianDate - instant.julianDate.julianDate) * 86_400
+		let date = try Instant<UTC>(Date())
+		let seconds = (date.julianDate.julianDate - instant.julianDate.julianDate) * 86_400
 		#expect(seconds > -1e-3 && seconds < 2, "\(seconds)")
 #endif
 	}
