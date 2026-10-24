@@ -163,6 +163,55 @@ struct astronomia_elp_series_data {
 // ELP/MPP02 geocentric lunar coordinates, from J1000.0 to J3000.0
 extern const struct astronomia_elp_series_data astronomia_elpmpp02;
 
+/// A sum of terms and its derivative with respect to time.
+struct astronomia_elp_sum_rate {
+	/// The sum.
+	double sum;
+	/// The derivative of the sum, per Julian century.
+	double rate;
+};
+
+/// Adds the terms of one series of the main problem to a sum and its derivative.
+///
+/// With y = Σ iₖ Dₖ and its rate ẏ = Σ iₖ Ḋₖ, each term adds A sin(y) to the sum and A ẏ cos(y)
+/// to the derivative, or in distance A cos(y) and −A ẏ sin(y), in turn in the order of the
+/// terms. On Apple platforms the sines and cosines are computed in batches with vForce's
+/// `vvsincos`, whose results can differ in the last bits from `__sincos`'s; elsewhere they
+/// are computed with `astronomia_sincos`.
+///
+/// - Parameters:
+///   - terms: The terms, `count` of them, whose multipliers are used.
+///   - amplitudes: The amplitudes A of the terms, corrected for the fit, `count` of them.
+///   - count: The number of terms, which may be 0.
+///   - x: The fundamental arguments, in radians, whose first four, the Delaunay arguments D,
+///     F, l, l', are used.
+///   - xp: The rates of the arguments, in radians per Julian century.
+///   - is_distance: Nonzero if the series is of distance, whose terms are cosines.
+///   - initial_sum: The sum the terms are added to.
+///   - initial_rate: The derivative the terms' derivatives are added to.
+/// - Returns: The sum and its derivative.
+struct astronomia_elp_sum_rate astronomia_elp_evaluate_main(const struct astronomia_elp_main_term *terms, const double *amplitudes, size_t count, const double *x, const double *xp, int is_distance, double initial_sum, double initial_rate);
+
+/// Adds the terms of one series of the perturbations to a sum and its derivative.
+///
+/// With y = Σ iₖ Aₖ and its rate ẏ = Σ iₖ Ȧₖ, each term adds T^α (S sin(y) + C cos(y)) to the
+/// sum and α T^(α−1) (S sin(y) + C cos(y)) + T^α ẏ (S cos(y) − C sin(y)) to the derivative, in
+/// turn in the order of the terms. On Apple platforms the sines and cosines are computed in
+/// batches with vForce's `vvsincos`, whose results can differ in the last bits from
+/// `__sincos`'s; elsewhere they are computed with `astronomia_sincos`.
+///
+/// - Parameters:
+///   - terms: The terms, `count` of them.
+///   - count: The number of terms, which may be 0.
+///   - x: The thirteen fundamental arguments A₁ to A₁₃, in radians.
+///   - xp: The rates of the arguments, in radians per Julian century.
+///   - t_power: The power of time T^α of the series, with T in Julian centuries.
+///   - t_power_rate: The derivative of the power of time, α T^(α−1), or 0 if α is 0.
+///   - initial_sum: The sum the terms are added to.
+///   - initial_rate: The derivative the terms' derivatives are added to.
+/// - Returns: The sum and its derivative.
+struct astronomia_elp_sum_rate astronomia_elp_evaluate_perturbation(const struct astronomia_elp_perturbation_term *terms, size_t count, const double *x, const double *xp, double t_power, double t_power_rate, double initial_sum, double initial_rate);
+
 // Series of the IAU 2006 precession and IAU 2000A_R06 nutation, from the tables of the IERS
 // Conventions (2010), Chapter 5. The terms have arguments that are sums of integer multiples
 // of fourteen fundamental arguments, polynomials in time: the Delaunay arguments l, l', F, D,
