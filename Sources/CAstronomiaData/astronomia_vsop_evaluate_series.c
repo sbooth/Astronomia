@@ -12,7 +12,7 @@
 #include <CAstronomiaMath.h>
 
 #if defined(__APPLE__)
-#include <Accelerate/Accelerate.h>
+#include <vecLib/vForce.h>
 #endif
 
 #define CHUNK_SIZE 128
@@ -48,7 +48,6 @@ double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms,
 		}
 #endif
 
-		// Preserve the original left-to-right summation order.
 		for (size_t j = 0; j < n; ++j) {
 			const struct astronomia_vsop_term *term = &terms[offset + j];
 			sum = sum + time_power * (term->s * sines[j] + term->c * cosines[j]);
