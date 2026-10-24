@@ -150,7 +150,7 @@ extension DayInterval {
 	/// - Parameter seconds: The signed number of seconds.
 	/// - Returns: The interval.
 	public static func seconds(_ seconds: Int) -> DayInterval {
-		// Rounds to the nearest day, with halves up, leaving a remainder in [-43,200, 43,200).
+		// Rounds to the nearest day, with halves up, leaving a remainder in [-43,200, 43,200) s.
 		var (days, remainder) = seconds.quotientAndRemainder(dividingBy: integerSecondsPerDay)
 		let halfDay = integerSecondsPerDay / 2
 		if remainder >= halfDay {
@@ -265,7 +265,7 @@ extension DayInterval {
 
 		let (daySeconds, productOverflow) = days.multipliedReportingOverflow(by: integerSecondsPerDay)
 		if !productOverflow {
-			// `w` is in [-43,200, 43,200]
+			// `w` is in [-43,200, 43,200] s
 			let (seconds, sumOverflow) = daySeconds.addingReportingOverflow(Int(w))
 			if !sumOverflow {
 				return (Double(seconds), f)

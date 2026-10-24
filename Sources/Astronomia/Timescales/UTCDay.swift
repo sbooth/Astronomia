@@ -122,7 +122,7 @@ extension UTCDay {
 	/// Returns the clock reading, in seconds since midnight, for a UTC Julian Date on this UTC day.
 	///
 	/// The inverse of ``julianDate(secondsSinceMidnight:)``. On a day ending in a leap second,
-	/// the result is in the right-open interval [86,400, 86,401) during 23:59:60.
+	/// the result is in the right-open interval [86,400, 86,401) s during 23:59:60.
 	///
 	/// - Throws: ``TimescaleConversionError/dateOutOfRange`` if `julianDate` is not on this UTC
 	///   day.

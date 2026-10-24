@@ -58,7 +58,7 @@ extension TimeOfDay {
 	/// The hour and minute stop at 23 and 59, so a reading of 86,400 s or more, during a leap
 	/// second, has a second of 60 or more.
 	///
-	/// - Precondition: `seconds` is finite and in the right-open interval [0, 86,401).
+	/// - Precondition: `seconds` is finite and in the right-open interval [0, 86,401) s.
 	init(uncheckedSecondsSinceMidnight seconds: Double) {
 		assert(seconds.isFinite && seconds >= 0 && seconds < 86_401, "Seconds since midnight must be in the right-open interval [0, 86,401)")
 		let hour = min(Int(seconds / 3_600), 23)
