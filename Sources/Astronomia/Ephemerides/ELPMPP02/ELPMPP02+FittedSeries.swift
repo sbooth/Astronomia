@@ -200,18 +200,16 @@ extension ELPMPP02.FittedSeries {
 
 			if count > 0 {
 				let termPointer = mainTerms.baseAddress!.advanced(by: start)
-				let amplitudePointer = mainAmplitudes.withUnsafeBufferPointer {
-					$0.baseAddress!.advanced(by: start)
-				}
-
-				let result = x.withUnsafeBufferPointer { xBuffer in
-					xp.withUnsafeBufferPointer { xpBuffer in
-						astronomia_elp_main_evaluate( termPointer, amplitudePointer, count, xBuffer.baseAddress!, xpBuffer.baseAddress!, variable == 2 ? 1 : 0, sum, rate)
+				mainAmplitudes.withUnsafeBufferPointer {
+					let amplitudePointer = $0.baseAddress!.advanced(by: start)
+					let result = x.withUnsafeBufferPointer { xBuffer in
+						xp.withUnsafeBufferPointer { xpBuffer in
+							astronomia_elp_main_evaluate( termPointer, amplitudePointer, count, xBuffer.baseAddress!, xpBuffer.baseAddress!, variable == 2 ? 1 : 0, sum, rate)
+						}
 					}
+					sum = result.sum
+					rate = result.rate
 				}
-
-				sum = result.sum
-				rate = result.rate
 			}
 			v[variable] = sum
 			vp[variable] = rate
