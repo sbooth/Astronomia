@@ -17,10 +17,6 @@
 
 double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series, size_t series_count, const struct astronomia_iau_term *terms, size_t term_count, const double arguments[14], double t, int32_t level)
 {
-	if (series == NULL || terms == NULL || arguments == NULL || level < 0 || level >= ASTRONOMIA_PRECISION_LEVELS) {
-		return NAN;
-	}
-
 	double total = 0.0;
 	size_t end = term_count;
 
@@ -29,14 +25,8 @@ double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series
 		const struct astronomia_iau_series *header = &series[si - 1];
 
 		const size_t full_count = (size_t)header->counts[0];
-
-		// Invalid generated data
-		if (full_count > end) { return NAN; }
-
 		const size_t start = end - full_count;
 		const size_t selected_count = (size_t)header->counts[level];
-
-		if (selected_count > full_count) { return NAN; }
 
 		// Sum the leading terms of the level, in batches from the last term to the first
 		double sum = 0.0;

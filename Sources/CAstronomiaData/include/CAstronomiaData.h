@@ -206,7 +206,8 @@ extern const struct astronomia_iau_series_data astronomia_iau2006_s_plus_half_xy
 /// in the large ones. Each series' sum is multiplied by its power of time t^j before it is
 /// added to the total. On Apple platforms the sines and cosines are computed in batches with
 /// vForce's `vvsincos`, whose results can differ in the last bits from `__sincos`'s; elsewhere
-/// they are computed with `astronomia_sincos`.
+/// they are computed with `astronomia_sincos`. The arguments aren't validated; the tests check
+/// that the counts of the generated series fit in their terms.
 ///
 /// - Parameters:
 ///   - series: The series, `series_count` of them.
@@ -216,8 +217,7 @@ extern const struct astronomia_iau_series_data astronomia_iau2006_s_plus_half_xy
 ///   - arguments: The fourteen fundamental arguments at `t`, in radians.
 ///   - t: TT in Julian centuries from J2000.0.
 ///   - level: The precision level, from 0, every term, to `ASTRONOMIA_PRECISION_LEVELS` − 1.
-/// - Returns: The sum, in microarcseconds, or NaN if a pointer is `NULL`, `level` is out of
-///   range, or the series' counts don't fit in the terms.
+/// - Returns: The sum, in microarcseconds.
 double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series, size_t series_count, const struct astronomia_iau_term *terms, size_t term_count, const double arguments[14], double t, int32_t level);
 
 #endif

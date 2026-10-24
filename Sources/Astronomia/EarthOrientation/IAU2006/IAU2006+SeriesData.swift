@@ -66,14 +66,9 @@ extension IAU2006.SeriesData {
 	///   - precision: The precision level.
 	/// - Returns: The sum, in microarcseconds.
 	func seriesValue(at t: Double, arguments: IAU2006.FundamentalArguments, precision: Precision) -> Double {
-		let a = arguments.values
-		return withUnsafeBytes(of: a) { argumentBytes in
-			guard
-				let argumentPointer = argumentBytes.bindMemory(to: Double.self).baseAddress,
-				let seriesPointer = series.baseAddress,
-				let termsPointer = terms.baseAddress
-			else { return 0 }
-			return astronomia_iau_evaluate_series(seriesPointer, series.count, termsPointer, terms.count, argumentPointer, t, Int32(precision.level))
+		withUnsafeBytes(of: arguments.values) { argumentBytes in
+			let argumentPointer = argumentBytes.bindMemory(to: Double.self).baseAddress!
+			return astronomia_iau_evaluate_series(series.baseAddress!, series.count, terms.baseAddress!, terms.count, argumentPointer, t, Int32(precision.level))
 		}
 	}
 
