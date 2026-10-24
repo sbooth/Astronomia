@@ -38,7 +38,7 @@ import Testing
 		}
 	}
 
-	@Test func elongationAtThePhases() throws {
+	@Test func excessEclipticLongitudeAtThePhases() throws {
 		// At each phase the Moon's apparent longitude less the Sun's is the phase's, within its
 		// motion over 0.1 s, about 0.05"
 		let ephemeris = BuiltInEphemeris(precision: .tenthArcsecond)
@@ -48,10 +48,10 @@ import Testing
 			let sky = try Observer.geocenter.observation(at: instant, ephemeris: ephemeris)
 			let sun = try sky.apparentPlace(of: .sun, in: TrueEclipticOfDate.self).position.spherical.longitude
 			let moon = try sky.apparentPlace(of: .moon, in: TrueEclipticOfDate.self).position.spherical.longitude
-			let difference = (moon.radians - sun.radians - kind.elongation.radians).remainder(dividingBy: twoPi)
+			let difference = (moon.radians - sun.radians - kind.excessEclipticLongitude.radians).remainder(dividingBy: twoPi)
 			#expect(abs(difference) <= Angle(arcseconds: 0.1).radians, "\(kind)")
 		}
-		#expect(MoonPhaseEvent.Kind.allCases.map(\.elongation.degrees) == [0, 90, 180, 270])
+		#expect(MoonPhaseEvent.Kind.allCases.map(\.excessEclipticLongitude.degrees) == [0, 90, 180, 270])
 	}
 
 	@Test func next() throws {
