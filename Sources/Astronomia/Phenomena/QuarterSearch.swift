@@ -42,10 +42,12 @@ struct QuarterSearch<Failure: Error> {
 	/// Returns the multiples of 90° reached in the interval, in order: the quarter, from 0 for
 	/// 0° to 3 for 270°, and the instant.
 	///
-	/// - Parameter last: The only quarter to find, after which to stop, without evaluating the
-	///   angle for the rest of the interval, or `nil` for every quarter. Other quarters are
-	///   bracketed, to step past them, but not refined or returned.
-	func events(stoppingAt last: Int? = nil) throws(Failure) -> [(quarter: Int, instant: Instant<TT>)] {
+	/// - Parameters:
+	///   - quarter: The only quarter to find, or `nil` for every quarter. Other quarters are
+	///     bracketed, to step past them, but not refined or returned.
+	///   - stoppingAfterFirst: Whether to stop at the first quarter found, without evaluating
+	///     the angle for the rest of the interval.
+	func events(only quarter: Int? = nil, stoppingAfterFirst: Bool = false) throws(Failure) -> [(quarter: Int, instant: Instant<TT>)] {
 		var events: [(quarter: Int, instant: Instant<TT>)] = []
 		var current = try evaluate(0)
 		while current.time < length {
@@ -80,14 +82,14 @@ struct QuarterSearch<Failure: Error> {
 				upper = sample
 			}
 			guard let upper else { break }
-			if let last, index % 4 != last {
+			if let quarter, index % 4 != quarter {
 				// Step past another quarter without refining it.
 				current = upper
 				continue
 			}
 			let event = try RootFinder.refine(lower, upper, time: \.time, tolerance: Self.tolerance, maximumIterations: Self.maximumIterations, evaluate: evaluate, function: past)
 			events.append((index % 4, event.instant))
-			if last != nil {
+			if stoppingAfterFirst {
 				break
 			}
 			// The next event is days later.

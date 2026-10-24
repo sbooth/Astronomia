@@ -55,10 +55,10 @@ extension MoonPhases {
 	///   - ``MoonPhaseError/ephemeris(_:)`` if a place of the Sun or the Moon in the interval
 	///     fails, as for an ``Observation``, such as outside the ephemeris's coverage.
 	public static func events<E: GeocentricEphemeris, Scale: Timescale>(of moon: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(MoonPhaseError) -> [MoonPhaseEvent] {
-		try events(of: moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: ephemeris, stoppingAt: nil)
+		try events(of: moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: ephemeris, only: nil, stoppingAfterFirst: false)
 	}
 
-	/// Returns the phases of the Moon in an interval, in order, up to the first of a kind.
+	/// Returns the phases of the Moon of one kind or every kind in an interval, in order.
 	///
 	/// - Parameters:
 	///   - moon: The Moon.
@@ -67,12 +67,13 @@ extension MoonPhases {
 	///   - context: Observational data for converting the interval to TT.
 	///   - earthOrientation: Observed Earth orientation.
 	///   - ephemeris: The ephemeris of the Sun, the Earth, and the Moon.
-	///   - last: The only phase to find, after which to stop, without evaluating the ephemeris
-	///     for the rest of the interval, or `nil` for every phase. Other phases are bracketed,
+	///   - kind: The only phase to find, or `nil` for every phase. Other phases are bracketed,
 	///     to step past them, but not refined or returned.
+	///   - stoppingAfterFirst: Whether to stop at the first phase found, without evaluating the
+	///     ephemeris for the rest of the interval.
 	/// - Returns: The phases, in order of their instants.
 	/// - Throws: A ``MoonPhaseError``, as the public method does.
-	static func events<E: GeocentricEphemeris, Scale: Timescale>(of moon: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, earthOrientation: EarthOrientation, ephemeris: E, stoppingAt last: MoonPhaseEvent.Kind?) throws(MoonPhaseError) -> [MoonPhaseEvent] {
+	static func events<E: GeocentricEphemeris, Scale: Timescale>(of moon: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, earthOrientation: EarthOrientation, ephemeris: E, only kind: MoonPhaseEvent.Kind?, stoppingAfterFirst: Bool) throws(MoonPhaseError) -> [MoonPhaseEvent] {
 		let interval: SearchInterval
 		do throws(SearchInterval.Failure) {
 			interval = try SearchInterval(from: start, to: end, context: context)
@@ -105,7 +106,7 @@ extension MoonPhases {
 			}
 			return QuarterSearch.Sample(time: min(days, interval.length), instant: instant, angle: elongation < twoPi ? elongation : 0)
 		}
-		return try search.events(stoppingAt: last?.index).map { MoonPhaseEvent(kind: MoonPhaseEvent.Kind.allCases[$0.quarter], instant: $0.instant) }
+		return try search.events(only: kind?.index, stoppingAfterFirst: stoppingAfterFirst).map { MoonPhaseEvent(kind: MoonPhaseEvent.Kind.allCases[$0.quarter], instant: $0.instant) }
 	}
 
 	/// Returns the phases of the Moon in an interval, in order, with the built-in ephemeris.
@@ -166,7 +167,7 @@ extension MoonPhases {
 			} catch {
 				throw .invalidInterval
 			}
-			let found = try events(of: moon, from: from, to: end, context: TT.defaultContext, earthOrientation: earthOrientation, ephemeris: ephemeris, stoppingAt: kind).first
+			let found = try events(of: moon, from: from, to: end, context: TT.defaultContext, earthOrientation: earthOrientation, ephemeris: ephemeris, only: kind, stoppingAfterFirst: true).first
 			guard let found else { break }
 			if (found.instant.julianDate.daysSinceJ2000 - start.julianDate.daysSinceJ2000) * secondsPerDay > 0.5 {
 				return found.instant
