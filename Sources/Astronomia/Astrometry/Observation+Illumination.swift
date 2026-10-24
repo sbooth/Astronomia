@@ -10,7 +10,8 @@ extension Observation {
 	///
 	/// - Parameter body: The body.
 	/// - Returns: The body's phase angle, illuminated fraction, elongation and its side of the
-	///   Sun, excess of ecliptic longitude, and bright limb.
+	///   Sun, excess of ecliptic longitude, and bright limb, from the north point and, from a
+	///   site, from the zenith.
 	/// - Throws:
 	///   - ``IlluminationError/notIlluminated`` if the body is the Sun, or the Earth, on or in
 	///     which the observer is.
@@ -55,7 +56,13 @@ extension Observation {
 			let toEcliptic = TrueEclipticOfDate.rotationFromICRS(at: instant, earthOrientation: earthOrientation)
 			let (se, be) = (toEcliptic.apply(to: sunApparent), toEcliptic.apply(to: bodyApparent))
 			let excess = Angle.atan2(y: se.x * be.y - se.y * be.x, x: se.x * be.x + se.y * be.y).normalized()
-			return Illumination(phaseAngle: phaseAngle, elongation: elongation, excessEclipticLongitude: excess, brightLimbPositionAngle: brightLimb, instant: instant)
+			// From a site, the bright limb from the zenith, the north point turned by the
+			// parallactic angle of the body's unrefracted place
+			let zenith = horizon.map { horizon in
+				let place = horizon.observedPlace(of: bodyApparent, refraction: nil, distance: Distance(astronomicalUnits: toBody.length), instant: instant)
+				return Angle(radians: brightLimb.radians - place.parallacticAngle.radians).normalized()
+			}
+			return Illumination(phaseAngle: phaseAngle, elongation: elongation, excessEclipticLongitude: excess, brightLimbPositionAngle: brightLimb, brightLimbZenithAngle: zenith, instant: instant)
 		} catch {
 			throw .ephemeris(error)
 		}

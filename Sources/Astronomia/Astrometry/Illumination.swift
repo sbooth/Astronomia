@@ -22,7 +22,8 @@
 /// evening star, and west of it otherwise. The bright limb faces the Sun, so its position
 /// angle is the Sun's from the body, measured from the north point of the body's disk through
 /// east, in the true equator and equinox of date, as in Meeus, Astronomical Algorithms,
-/// Chapter 48.
+/// Chapter 48. From a site, the bright limb is also measured from the top of the disk as the
+/// site sees it, turned from the north point by the body's parallactic angle.
 ///
 /// The excess of the body's apparent ecliptic longitude over the Sun's, by which the
 /// Astronomical Almanac defines the phases of the Moon, grows steadily through each lunation,
@@ -59,6 +60,17 @@ public struct Illumination: Hashable, Sendable {
 	/// the body's disk through east, in the true equator and equinox of date, in the right-open
 	/// interval [0°, 360°).
 	public let brightLimbPositionAngle: Angle
+	/// The position angle of the midpoint of the bright limb measured from the top of the
+	/// body's disk as a site sees it, the zenith side, in the same sense as
+	/// ``brightLimbPositionAngle``, in the right-open interval [0°, 360°), or `nil` for an
+	/// observer at the center of the Earth, which has no zenith.
+	///
+	/// It is ``brightLimbPositionAngle`` less the body's ``ObservedPlace/parallacticAngle``,
+	/// as Meeus gives it, the zenith's direction from the north point, measured from the pole
+	/// of the ITRS, which differs from the true pole of date by the polar motion, up to about
+	/// 0.5". Refraction, which raises the body's lower limb more than its upper, flattens the
+	/// disk near the horizon but doesn't turn it.
+	public let brightLimbZenithAngle: Angle?
 	/// The instant of observation.
 	public let instant: Instant<TT>
 
@@ -72,17 +84,21 @@ public struct Illumination: Hashable, Sendable {
 	///     in the right-open interval [0, 2π).
 	///   - brightLimbPositionAngle: The position angle of the bright limb, in the right-open
 	///     interval [0, 2π).
+	///   - brightLimbZenithAngle: The bright limb's angle from the zenith, in the right-open
+	///     interval [0, 2π), or `nil` from the center of the Earth.
 	///   - instant: The instant of observation.
-	init(phaseAngle: Angle, elongation: Angle, excessEclipticLongitude: Angle, brightLimbPositionAngle: Angle, instant: Instant<TT>) {
+	init(phaseAngle: Angle, elongation: Angle, excessEclipticLongitude: Angle, brightLimbPositionAngle: Angle, brightLimbZenithAngle: Angle?, instant: Instant<TT>) {
 		assert(phaseAngle.radians >= 0 && phaseAngle.radians <= .pi, "The phase angle must be in [0, π]")
 		assert(elongation.radians >= 0 && elongation.radians <= .pi, "The elongation must be in [0, π]")
 		assert(excessEclipticLongitude.radians >= 0 && excessEclipticLongitude.radians < twoPi, "The excess of the ecliptic longitude must be in [0, 2π)")
 		assert(brightLimbPositionAngle.radians >= 0 && brightLimbPositionAngle.radians < twoPi, "The position angle of the bright limb must be in [0, 2π)")
+		assert(brightLimbZenithAngle.map { $0.radians >= 0 && $0.radians < twoPi } ?? true, "The bright limb's angle from the zenith must be in [0, 2π)")
 		self.phaseAngle = phaseAngle
 		self.illuminatedFraction = (1 + Math.cos(phaseAngle.radians)) / 2
 		self.elongation = elongation
 		self.excessEclipticLongitude = excessEclipticLongitude
 		self.brightLimbPositionAngle = brightLimbPositionAngle
+		self.brightLimbZenithAngle = brightLimbZenithAngle
 		self.instant = instant
 	}
 }
