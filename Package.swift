@@ -22,13 +22,13 @@ let package = Package(
 			name: "Astronomia",
 			dependencies: [
 				"CAstronomiaData",
-				"CAstronomiaMath",
+				"CAstronomiaPlatform",
 			]
 		),
 		.target(
 			name: "CAstronomiaData",
 			dependencies: [
-				"CAstronomiaMath",
+				"CAstronomiaPlatform",
 			],
 			linkerSettings: [
 				.linkedFramework(
@@ -37,7 +37,7 @@ let package = Package(
 			]
 		),
 		.target(
-			name: "CAstronomiaMath"
+			name: "CAstronomiaPlatform"
 		),
 		.testTarget(
 			name: "AstronomiaTests",

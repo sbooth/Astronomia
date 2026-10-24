@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-internal import CAstronomiaMath
+internal import CAstronomiaPlatform
 
 /// Elementary functions from the platform's C math library.
 enum Math {
