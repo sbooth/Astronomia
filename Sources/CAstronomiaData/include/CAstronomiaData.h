@@ -93,7 +93,7 @@ extern const struct astronomia_vsop_series_data astronomia_vsop2013_pluto;
 ///   - time_power: The power of time T^α of the series.
 ///   - initial_sum: The sum the terms are added to.
 /// - Returns: The sum.
-double astronomia_vsop_series_evaluate(const struct astronomia_vsop_term *terms, size_t count, double t, double time_power, double initial_sum);
+double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms, size_t count, double t, double time_power, double initial_sum);
 
 // Series of the lunar theory ELP/MPP02, whose terms have arguments that are sums of integer
 // multiples of fundamental arguments, polynomials in time. The terms keep their multipliers,

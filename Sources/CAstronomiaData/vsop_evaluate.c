@@ -18,7 +18,7 @@
 // The number of terms whose sines and cosines are computed at once
 #define VSOP_CHUNK_SIZE 128
 
-double astronomia_vsop_series_evaluate(const struct astronomia_vsop_term *terms, size_t count, double t, double time_power, double initial_sum) {
+double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms, size_t count, double t, double time_power, double initial_sum) {
 	double phases[VSOP_CHUNK_SIZE];
 	double sines[VSOP_CHUNK_SIZE];
 	double cosines[VSOP_CHUNK_SIZE];

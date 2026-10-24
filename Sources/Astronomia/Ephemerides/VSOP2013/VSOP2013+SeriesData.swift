@@ -73,7 +73,7 @@ extension VSOP2013.SeriesData {
 			let count = Int(levelValue(header.counts, level))
 			if count > 0 {
 				let seriesTerms = terms.baseAddress!.advanced(by: start)
-				sum = astronomia_vsop_series_evaluate(seriesTerms, count, t, power, sum)
+				sum = astronomia_vsop_evaluate_series(seriesTerms, count, t, power, sum)
 			}
 			sums[variable] = sum
 			start += Int(header.counts.0)
