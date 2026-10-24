@@ -55,13 +55,13 @@ public enum MoonPhaseName: Hashable, Sendable, CaseIterable {
 	///
 	/// - Parameters:
 	///   - excessEclipticLongitude: The excess of the Moon's ecliptic longitude over the Sun's,
-	///     any angle, which is reduced to the right-open interval [0°, 360°).
+	///     any angle, which is reduced to the right-open interval [0, 360)°.
 	///   - principalHalfWidth: The half-width of a principal phase, in the closed interval
-	///     [0°, 45°], by default 5°.
+	///     [0, 45]°, by default 5°.
 	/// - Throws:
 	///   - ``MoonPhaseNameError/nonFiniteValue`` if `excessEclipticLongitude` is NaN or infinite.
 	///   - ``MoonPhaseNameError/invalidHalfWidth`` if `principalHalfWidth` is NaN, infinite, or
-	///     outside the closed interval [0°, 45°].
+	///     outside the closed interval [0, 45]°.
 	public init(excessEclipticLongitude: Angle, principalHalfWidth: Angle = MoonPhaseName.defaultPrincipalHalfWidth) throws(MoonPhaseNameError) {
 		guard excessEclipticLongitude.radians.isFinite else {
 			throw .nonFiniteValue
@@ -77,10 +77,10 @@ public enum MoonPhaseName: Hashable, Sendable, CaseIterable {
 	/// checking the arguments.
 	///
 	/// - Precondition: `excessEclipticLongitude` is finite, and `principalHalfWidth` is in the
-	///   closed interval [0°, 45°].
+	///   closed interval [0, 45]°.
 	init(uncheckedExcessEclipticLongitude excessEclipticLongitude: Angle, principalHalfWidth: Angle = MoonPhaseName.defaultPrincipalHalfWidth) {
-		assert(excessEclipticLongitude.radians.isFinite, "The excess must be finite")
-		assert(principalHalfWidth.degrees >= 0 && principalHalfWidth.degrees <= 45, "The half-width must be in [0°, 45°]")
+		assert(excessEclipticLongitude.radians.isFinite, "Excess ecliptic longitude must be finite")
+		assert(principalHalfWidth.degrees >= 0 && principalHalfWidth.degrees <= 45, "Half-width must be in the closed interval [0, 45]°")
 		let excess = excessEclipticLongitude.normalized().radians
 		// The nearest principal phase, from 0 for new Moon to 4 for the next new Moon, and the
 		// excess's distance from it. Reducing an angle to a turn and converting it between

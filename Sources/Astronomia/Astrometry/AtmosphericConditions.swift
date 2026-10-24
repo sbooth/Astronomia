@@ -72,21 +72,19 @@ public struct AtmosphericConditions: Hashable, Sendable {
 		guard pressure.pascals.isFinite, temperature.kelvins.isFinite, relativeHumidity.isFinite, wavelength.astronomicalUnits.isFinite else {
 			throw .nonFiniteValue
 		}
-		guard Self.pressureRange.contains(pressure.hectopascals) else {
+		guard Self.isValid(pressure: pressure) else {
 			throw .invalidPressure
 		}
-		guard Self.temperatureRange.contains(temperature.degreesCelsius) else {
+		guard Self.isValid(temperature: temperature) else {
 			throw .invalidTemperature
 		}
-		guard (0 ... 1).contains(relativeHumidity) else {
+		guard Self.isValid(relativeHumidity: relativeHumidity) else {
 			throw .invalidRelativeHumidity
 		}
-		guard Self.wavelengthRange.contains(wavelength.micrometers) else {
+		guard Self.isValid(wavelength: wavelength) else {
 			throw .invalidWavelength
 		}
-		// Humid air needs a pressure above the saturation vapor pressure; nearer it, the
-		// vapor-pressure model diverges.
-		guard relativeHumidity == 0 || pressure.hectopascals == 0 || Self.saturationVaporPressure(pressure: pressure.hectopascals, temperature: temperature.degreesCelsius) < pressure.hectopascals else {
+		guard Self.isValidVaporPressure(pressure: pressure, temperature: temperature, relativeHumidity: relativeHumidity) else {
 			throw .invalidVaporPressure
 		}
 		self.init(uncheckedPressure: pressure, temperature: temperature, relativeHumidity: relativeHumidity, wavelength: wavelength)
@@ -127,7 +125,7 @@ public struct AtmosphericConditions: Hashable, Sendable {
 		guard height.astronomicalUnits.isFinite, temperature.kelvins.isFinite else {
 			throw .nonFiniteValue
 		}
-		guard Self.temperatureRange.contains(temperature.degreesCelsius) else {
+		guard Self.isValid(temperature: temperature) else {
 			throw .invalidTemperature
 		}
 		let pressure = Pressure.standardAtmosphere.hectopascals * Math.exp(-height.meters / (Self.scaleHeightPerKelvin * temperature.kelvins))
@@ -140,11 +138,11 @@ public struct AtmosphericConditions: Hashable, Sendable {
 	/// - Precondition: The values satisfy the requirements of the public initializer.
 	init(uncheckedPressure pressure: Pressure, temperature: Temperature, relativeHumidity: Double, wavelength: Distance) {
 		assert(pressure.pascals.isFinite && temperature.kelvins.isFinite && relativeHumidity.isFinite && wavelength.astronomicalUnits.isFinite, "Non-finite value")
-		assert(Self.pressureRange.contains(pressure.hectopascals), "Invalid pressure")
-		assert(Self.temperatureRange.contains(temperature.degreesCelsius), "Invalid temperature")
-		assert((0 ... 1).contains(relativeHumidity), "Invalid relative humidity")
-		assert(Self.wavelengthRange.contains(wavelength.micrometers), "Invalid wavelength")
-		assert(relativeHumidity == 0 || pressure.hectopascals == 0 || Self.saturationVaporPressure(pressure: pressure.hectopascals, temperature: temperature.degreesCelsius) < pressure.hectopascals, "Invalid vapor pressure")
+		assert(Self.isValid(pressure: pressure), "Pressure must be in the closed interval [0, 10,000] hPa")
+		assert(Self.isValid(temperature: temperature), "Temperature must be in the closed interval [-150, 200] °C")
+		assert(Self.isValid(relativeHumidity: relativeHumidity), "Relative humidity must be in the closed interval [0, 1]")
+		assert(Self.isValid(wavelength: wavelength), "Wavelength must be in the closed interval [0.1, 1,000,000] µm")
+		assert(Self.isValidVaporPressure(pressure: pressure, temperature: temperature, relativeHumidity: relativeHumidity), "Pressure of humid air must be above the saturation vapor pressure")
 		self.pressure = pressure
 		self.temperature = temperature
 		self.relativeHumidity = relativeHumidity
@@ -196,7 +194,7 @@ extension AtmosphericConditions {
 			throw .nonFiniteValue
 		}
 		// A micrometer's allowance for the rounding of a height in meters stored in au
-		guard (standardMinimumHeight - 1e-6 ... standardMaximumHeight + 1e-6).contains(height.meters) else {
+		guard height.meters >= standardMinimumHeight - 1e-6 && height.meters <= standardMaximumHeight + 1e-6 else {
 			throw .invalidHeight
 		}
 		let temperature = standardSeaLevelTemperature - standardLapseRate * height.meters
@@ -204,17 +202,39 @@ extension AtmosphericConditions {
 		return try AtmosphericConditions(pressure: .pascals(pressure), temperature: .kelvins(temperature), relativeHumidity: relativeHumidity, wavelength: wavelength)
 	}
 
-	/// The accepted pressures, in hPa: 0 to 10,000 hPa, with an allowance for rounding in a
-	/// conversion from another unit.
-	static let pressureRange: ClosedRange<Double> = 0 ... 10_000 * (1 + 1e-12)
+	/// Returns whether a pressure is accepted: 0 to 10,000 hPa, with an allowance for rounding
+	/// in a conversion from another unit.
+	static func isValid(pressure: Pressure) -> Bool {
+		let hectopascals = pressure.hectopascals
+		return hectopascals >= 0 && hectopascals <= 10_000 * (1 + 1e-12)
+	}
 
-	/// The accepted temperatures, in °C: -150 °C to 200 °C, with an allowance for rounding in
-	/// a conversion from another unit.
-	static let temperatureRange: ClosedRange<Double> = (-150 - 1e-9) ... (200 + 1e-9)
+	/// Returns whether a temperature is accepted: -150 °C to 200 °C, with an allowance for
+	/// rounding in a conversion from another unit.
+	static func isValid(temperature: Temperature) -> Bool {
+		let degreesCelsius = temperature.degreesCelsius
+		return degreesCelsius >= -150 - 1e-9 && degreesCelsius <= 200 + 1e-9
+	}
 
-	/// The accepted wavelengths, in µm: 0.1 µm to 1 m, with an allowance for rounding in a
-	/// conversion through astronomical units.
-	static let wavelengthRange: ClosedRange<Double> = (0.1 * (1 - 1e-12)) ... (1e6 * (1 + 1e-12))
+	/// Returns whether a relative humidity is accepted: 0 to 1.
+	static func isValid(relativeHumidity: Double) -> Bool {
+		relativeHumidity >= 0 && relativeHumidity <= 1
+	}
+
+	/// Returns whether a wavelength is accepted: 0.1 µm to 1 m, with an allowance for rounding
+	/// in a conversion through astronomical units.
+	static func isValid(wavelength: Distance) -> Bool {
+		let micrometers = wavelength.micrometers
+		return micrometers >= 0.1 * (1 - 1e-12) && micrometers <= 1e6 * (1 + 1e-12)
+	}
+
+	/// Returns whether the pressure of humid air is above the saturation vapor pressure of
+	/// water at its temperature, nearer which the vapor-pressure model diverges. Dry air and a
+	/// vacuum are always accepted.
+	static func isValidVaporPressure(pressure: Pressure, temperature: Temperature, relativeHumidity: Double) -> Bool {
+		let hectopascals = pressure.hectopascals
+		return relativeHumidity == 0 || hectopascals == 0 || Self.saturationVaporPressure(pressure: hectopascals, temperature: temperature.degreesCelsius) < hectopascals
+	}
 
 	/// The longest optical and infrared wavelength, in µm: 100 µm, as in `eraRefco`, with an
 	/// allowance for rounding, so that 100 µm in any unit is optical.

@@ -9,7 +9,7 @@
 public enum StarError: Error, Hashable, Sendable {
 	/// A coordinate, proper motion, parallax, or radial velocity is NaN or infinite.
 	case nonFiniteValue
-	/// The declination is outside the closed interval [-90°, 90°].
+	/// The declination is outside the closed interval [-90, 90]°.
 	case invalidDeclination
 	/// The parallax is negative, or greater than 10", which would put the source within about
 	/// 20,600 au of the Sun.

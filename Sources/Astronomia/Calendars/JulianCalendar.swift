@@ -78,9 +78,9 @@ public enum JulianCalendar {
 	///   for the date cannot be represented as a ``JulianDayNumber``.
 	public static func julianDayNumber(for date: YearMonthDay) throws(CalendarError) -> JulianDayNumber {
 		let (y, mp) = try Arithmetic.marchBasedYearAndMonth(date)
-		assert(mp >= 0 && mp < 12, "March-based month is outside the right-open interval [0, 12)")
+		assert(mp >= 0 && mp < 12, "March-based month must be in the right-open interval [0, 12)")
 		let (era, yoe) = Era.eraAndYearOfEra(marchBasedYear: y)
-		assert(yoe >= 0 && yoe < Era.years, "Year of era is outside the right-open interval [0, \(Era.years))")
+		assert(yoe >= 0 && yoe < Era.years, "Year of era must be in the right-open interval [0, \(Era.years))")
 		// Day of era of the first day of the month, in [0, 1,433)
 		let doe = yoe &* 365 + (153 &* mp &+ 2) / 5
 		return try Era.julianDayNumber(era: era, dayOfEra: doe, day: date.day)
@@ -93,10 +93,10 @@ public enum JulianCalendar {
 	/// - Returns: A valid date in the Julian calendar.
 	public static func date(julianDayNumber J: JulianDayNumber) -> YearMonthDay {
 		let (era, doe) = Era.eraAndDayOfEra(julianDayNumber: J)
-		assert(doe >= 0 && doe < Era.days, "Day of era is outside the right-open interval [0, \(Era.days))")
+		assert(doe >= 0 && doe < Era.days, "Day of era must be in the right-open interval [0, \(Era.days))")
 		// Year of era in [0, 4)
 		let yoe = (doe &- doe / 1_460) / 365
-		assert(yoe >= 0 && yoe < Era.years, "Year of era is outside the right-open interval [0, \(Era.years))")
+		assert(yoe >= 0 && yoe < Era.years, "Year of era must be in the right-open interval [0, \(Era.years))")
 		// Day of year in [0, 366) with March 1 = 0
 		let doy = doe &- 365 &* yoe
 		return Era.date(era: era, yearOfEra: yoe, dayOfYear: doy)

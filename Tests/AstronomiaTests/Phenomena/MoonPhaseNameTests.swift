@@ -20,7 +20,7 @@ import Testing
 			(175, .fullMoon), (180, .fullMoon), (185, .fullMoon), (185.001, .waningGibbous),
 			(265, .lastQuarter), (275, .lastQuarter), (275.001, .waningCrescent),
 			(354.999, .waningCrescent), (355, .newMoon), (359.999, .newMoon),
-			// Reduced to [0°, 360°)
+			// Reduced to [0, 360)°
 			(360, .newMoon), (-3, .newMoon), (-45, .waningCrescent), (450, .firstQuarter), (720 + 180, .fullMoon),
 		]
 		for (degrees, phase) in expected {
