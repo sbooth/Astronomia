@@ -65,11 +65,11 @@ import Testing
 		#expect(instant.julianDate > (try JulianDate(year: 2026, month: 10, day: 24)))
 		#expect(instant.julianDate < (try JulianDate(year: 2100, month: 1, day: 1)))
 		#expect(throws: Never.self) { try instant.converted(to: TT.self) }
-		#if canImport(FoundationEssentials) || canImport(Foundation)
+#if canImport(FoundationEssentials) || canImport(Foundation)
 		// Within a second or two of Foundation's clock, read just after
 		let date = try JulianDate(Date())
 		let seconds = (date.julianDate - instant.julianDate.julianDate) * 86_400
 		#expect(seconds > -1e-3 && seconds < 2, "\(seconds)")
-		#endif
+#endif
 	}
 }
