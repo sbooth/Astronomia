@@ -1,4 +1,3 @@
-
 //
 // SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
 // SPDX-License-Identifier: MIT
@@ -25,6 +24,7 @@ double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series
 	double total = 0.0;
 	size_t end = term_count;
 
+	// Sum the series from the last to the first
 	for (size_t si = series_count; si > 0; --si) {
 		const struct astronomia_iau_series *header = &series[si - 1];
 
@@ -38,6 +38,7 @@ double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series
 
 		if (selected_count > full_count) { return NAN; }
 
+		// Sum the leading terms of the level, in batches from the last term to the first
 		double sum = 0.0;
 
 		for(size_t current_end = start + selected_count; current_end > start; ) {
@@ -75,6 +76,7 @@ double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series
 			}
 #endif
 
+			// Add the terms in the order of their angles
 			for (size_t j = 0; j < n; ++j) {
 				const struct astronomia_iau_term *term = &terms[current_end - 1 - j];
 				sum = sum + (term->s * sines[j] + term->c * cosines[j]);
@@ -83,6 +85,7 @@ double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series
 			current_end -= n;
 		}
 
+		// Scale the series' sum by its power of time
 		const double power = astronomia_pow(t, header->power);
 		total = total + sum * power;
 

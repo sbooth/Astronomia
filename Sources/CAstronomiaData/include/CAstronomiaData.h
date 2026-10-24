@@ -199,7 +199,25 @@ extern const struct astronomia_iau_series_data astronomia_iau2006_nutation_longi
 extern const struct astronomia_iau_series_data astronomia_iau2006_nutation_obliquity;
 extern const struct astronomia_iau_series_data astronomia_iau2006_s_plus_half_xy;
 
-// Evaluate an IAU 2006 series at the requested precision level
+/// Returns the sum of the series of one table at a time.
+///
+/// The series are summed from the last to the first, and the leading terms of each at the
+/// precision level from the last, the smallest, to the first, so the small terms are not lost
+/// in the large ones. Each series' sum is multiplied by its power of time t^j before it is
+/// added to the total. On Apple platforms the sines and cosines are computed in batches with
+/// vForce's `vvsincos`, whose results can differ in the last bits from `__sincos`'s; elsewhere
+/// they are computed with `astronomia_sincos`.
+///
+/// - Parameters:
+///   - series: The series, `series_count` of them.
+///   - series_count: The number of series.
+///   - terms: The terms of every series, in the order of the series, `term_count` of them.
+///   - term_count: The number of terms, the sum of the series' counts of every term.
+///   - arguments: The fourteen fundamental arguments at `t`, in radians.
+///   - t: TT in Julian centuries from J2000.0.
+///   - level: The precision level, from 0, every term, to `ASTRONOMIA_PRECISION_LEVELS` − 1.
+/// - Returns: The sum, in microarcseconds, or NaN if a pointer is `NULL`, `level` is out of
+///   range, or the series' counts don't fit in the terms.
 double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series, size_t series_count, const struct astronomia_iau_term *terms, size_t term_count, const double arguments[14], double t, int32_t level);
 
 #endif
