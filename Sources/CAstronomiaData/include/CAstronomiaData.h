@@ -147,6 +147,17 @@ struct astronomia_elp_series_data {
 // ELP/MPP02 geocentric lunar coordinates, from J1000.0 to J3000.0
 extern const struct astronomia_elp_series_data astronomia_elpmpp02;
 
+struct astronomia_elp_sum_rate {
+	double sum;
+	double rate;
+};
+
+// Main problem: four fundamental arguments, sine except distance uses cosine
+struct astronomia_elp_sum_rate astronomia_elp_main_evaluate(const struct astronomia_elp_main_term *terms, const double *amplitudes, size_t count, const double *x, const double *xp, int is_distance, double initial_sum, double initial_rate);
+
+// Perturbations: thirteen arguments and T^power scaling
+struct astronomia_elp_sum_rate astronomia_elp_perturbation_evaluate(const struct astronomia_elp_perturbation_term *terms, size_t count, const double *x, const double *xp, double t_power, double t_power_rate, double initial_sum, double initial_rate);
+
 // Series of the IAU 2006 precession and IAU 2000A_R06 nutation, from the tables of the IERS
 // Conventions (2010), Chapter 5. The terms have arguments that are sums of integer multiples
 // of fourteen fundamental arguments, polynomials in time: the Delaunay arguments l, l', F, D,

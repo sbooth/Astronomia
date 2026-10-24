@@ -26,10 +26,13 @@ let package = Package(
 			]
 		),
 		.target(
-			name: "CAstronomiaData"
+			name: "CAstronomiaMath"
 		),
 		.target(
-			name: "CAstronomiaMath"
+			name: "CAstronomiaData",
+			dependencies: [
+				"CAstronomiaMath",
+			]
 		),
 		.testTarget(
 			name: "AstronomiaTests",

@@ -196,21 +196,22 @@ extension ELPMPP02.FittedSeries {
 			let variable = Int(series.variable) - 1
 			var sum = v[variable]
 			var rate = vp[variable]
-			for index in start ..< start + Int(levelValue(series.counts, level)) {
-				let i = mainTerms[index].multipliers
-				let (i0, i1, i2, i3) = (Double(i.0), Double(i.1), Double(i.2), Double(i.3))
-				let y = i0 * x[0] + i1 * x[1] + i2 * x[2] + i3 * x[3]
-				let yp = i0 * xp[0] + i1 * xp[1] + i2 * xp[2] + i3 * xp[3]
-				let amplitude = mainAmplitudes[index]
-				let (s, c) = Math.sincos(y)
-				if variable == 2 {
-					// The distance is a series of cosines, sines with a phase of π/2.
-					sum = sum + amplitude * c
-					rate = rate - amplitude * yp * s
-				} else {
-					sum = sum + amplitude * s
-					rate = rate + amplitude * yp * c
+			let count = Int(levelValue(series.counts, level))
+
+			if count > 0 {
+				let termPointer = mainTerms.baseAddress!.advanced(by: start)
+				let amplitudePointer = mainAmplitudes.withUnsafeBufferPointer {
+					$0.baseAddress!.advanced(by: start)
 				}
+
+				let result = x.withUnsafeBufferPointer { xBuffer in
+					xp.withUnsafeBufferPointer { xpBuffer in
+						astronomia_elp_main_evaluate( termPointer, amplitudePointer, count, xBuffer.baseAddress!, xpBuffer.baseAddress!, variable == 2 ? 1 : 0, sum, rate)
+					}
+				}
+
+				sum = result.sum
+				rate = result.rate
 			}
 			v[variable] = sum
 			vp[variable] = rate
@@ -225,21 +226,20 @@ extension ELPMPP02.FittedSeries {
 			let tPowerRate = power == 0 ? 0 : Double(power) * powers[power - 1]
 			var sum = v[variable]
 			var rate = vp[variable]
-			for index in start ..< start + Int(levelValue(series.counts, level)) {
-				let term = perturbationTerms[index]
-				var y = 0.0
-				var yp = 0.0
-				withUnsafeBytes(of: term.multipliers) { multipliers in
-					for k in 0 ..< 13 {
-						let multiplier = Double(Int8(bitPattern: multipliers[k]))
-						y = y + multiplier * x[k]
-						yp = yp + multiplier * xp[k]
+			let count = Int(levelValue(series.counts, level))
+
+			if count > 0 {
+				let termPointer =
+				perturbationTerms.baseAddress!.advanced(by: start)
+
+				let result = x.withUnsafeBufferPointer { xBuffer in
+					xp.withUnsafeBufferPointer { xpBuffer in
+						astronomia_elp_perturbation_evaluate(termPointer, count, xBuffer.baseAddress!, xpBuffer.baseAddress!, tPower, tPowerRate, sum, rate)
 					}
 				}
-				let (s, c) = Math.sincos(y)
-				let value = term.s * s + term.c * c
-				sum = sum + tPower * value
-				rate = rate + tPowerRate * value + tPower * yp * (term.s * c - term.c * s)
+
+				sum = result.sum
+				rate = result.rate
 			}
 			v[variable] = sum
 			vp[variable] = rate
