@@ -15,6 +15,7 @@
 #include <vecLib/vForce.h>
 #endif
 
+// The number of terms whose sines and cosines are computed at once
 #define IAU_CHUNK_SIZE 128
 
 double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series, size_t series_count, const struct astronomia_iau_term *terms, size_t term_count, const double arguments[14], double t, int32_t level)
@@ -31,26 +32,19 @@ double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series
 
 		const size_t full_count = (size_t)header->counts[0];
 
-		if (full_count > end) {
-			// Invalid generated data
-			return NAN;
-		}
+		// Invalid generated data
+		if (full_count > end) { return NAN; }
 
 		const size_t start = end - full_count;
 		const size_t selected_count = (size_t)header->counts[level];
 
-		if (selected_count > full_count) {
-			return NAN;
-		}
+		if (selected_count > full_count) { return NAN; }
 
 		double sum = 0.0;
-		size_t current_end = start + selected_count;
 
-		while (current_end > start) {
+		for(size_t current_end = start + selected_count; current_end > start; ) {
 			size_t n = current_end - start;
-			if (n > IAU_CHUNK_SIZE) {
-				n = IAU_CHUNK_SIZE;
-			}
+			if (n > IAU_CHUNK_SIZE) { n = IAU_CHUNK_SIZE; }
 
 			double angles[IAU_CHUNK_SIZE];
 			double sines[IAU_CHUNK_SIZE];
@@ -71,9 +65,11 @@ double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series
 			}
 
 #if defined(__APPLE__)
+			// Evaluate the batch of sine and cosine values
 			const int vector_count = (int)n;
 			vvsincos(sines, cosines, angles, &vector_count);
 #else
+			// Portable scalar fallback
 			for (size_t j = 0; j < n; ++j) {
 				const struct astronomia_sincos_result sc = astronomia_sincos(angles[j]);
 				sines[j] = sc.sin;
@@ -90,11 +86,6 @@ double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series
 		}
 
 		const double power = astronomia_pow(t, header->power);
-//		double power = 1.0;
-//		for (int32_t p = 0; p < header->power; ++p) {
-//			power = power * t;
-//		}
-
 		total = total + sum * power;
 
 		// Advance over the complete series, not just its prefix
