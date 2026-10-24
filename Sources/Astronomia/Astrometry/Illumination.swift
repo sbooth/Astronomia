@@ -41,28 +41,28 @@
 /// as much, and so its illuminated fraction by up to about 0.009.
 public struct Illumination: Hashable, Sendable {
 	/// The angle at the body between the Sun and the observer, in the closed interval
-	/// [0°, 180°].
+	/// [0, 180]°.
 	public let phaseAngle: Angle
 	/// The illuminated fraction of the body's disk, in the closed interval [0, 1].
 	public let illuminatedFraction: Double
 	/// The angle between the body and the Sun seen by the observer, in the closed interval
-	/// [0°, 180°].
+	/// [0, 180]°.
 	public let elongation: Angle
 	/// The excess of the body's apparent ecliptic longitude over the Sun's, in the true ecliptic
-	/// and equinox of date, in the right-open interval [0°, 360°).
+	/// and equinox of date, in the right-open interval [0, 360)°.
 	public let excessEclipticLongitude: Angle
 	/// Whether the body is east of the Sun: whether its apparent ecliptic longitude exceeds the
-	/// Sun's by an angle in the open interval (0°, 180°).
+	/// Sun's by an angle in the open interval (0, 180)°.
 	public var isEastOfSun: Bool {
 		excessEclipticLongitude.radians > 0 && excessEclipticLongitude.radians < .pi
 	}
 	/// The position angle of the midpoint of the bright limb, measured from the north point of
 	/// the body's disk through east, in the true equator and equinox of date, in the right-open
-	/// interval [0°, 360°).
+	/// interval [0, 360)°.
 	public let brightLimbPositionAngle: Angle
 	/// The position angle of the midpoint of the bright limb measured from the top of the
 	/// body's disk as a site sees it, the zenith side, in the same sense as
-	/// ``brightLimbPositionAngle``, in the right-open interval [0°, 360°), or `nil` for an
+	/// ``brightLimbPositionAngle``, in the right-open interval [0, 360)°, or `nil` for an
 	/// observer at the center of the Earth, which has no zenith.
 	///
 	/// It is the Sun's position angle from the body measured from the zenith's direction on
@@ -118,10 +118,10 @@ extension Illumination {
 	/// Returns the phase of the Moon this illumination names.
 	///
 	/// - Parameter principalHalfWidth: The half-width of a principal phase, in excess of the
-	///   ecliptic longitude, in the closed interval [0°, 45°].
+	///   ecliptic longitude, in the closed interval [0, 45]°.
 	/// - Returns: The phase.
 	/// - Throws: ``MoonPhaseNameError/invalidHalfWidth`` if `principalHalfWidth` is NaN, infinite,
-	///   or outside the closed interval [0°, 45°].
+	///   or outside the closed interval [0, 45]°.
 	public func moonPhaseName(principalHalfWidth: Angle) throws(MoonPhaseNameError) -> MoonPhaseName {
 		try MoonPhaseName(excessEclipticLongitude: excessEclipticLongitude, principalHalfWidth: principalHalfWidth)
 	}

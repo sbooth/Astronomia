@@ -9,7 +9,7 @@
 public enum EventAltitudeError: Error, Hashable, Sendable {
 	/// A value is NaN or infinite.
 	case nonFiniteValue
-	/// The altitude is outside the closed interval [-90°, 90°].
+	/// The altitude is outside the closed interval [-90, 90]°.
 	case invalidAltitude
 	/// The radius is negative.
 	case invalidRadius

@@ -88,7 +88,7 @@ extension EventAltitude {
 	/// - Throws:
 	///   - ``EventAltitudeError/nonFiniteValue`` if the altitude is NaN or infinite.
 	///   - ``EventAltitudeError/invalidAltitude`` if the altitude is outside the closed
-	///     interval [-90°, 90°].
+	///     interval [-90, 90]°.
 	public static func center(altitude: Angle) throws(EventAltitudeError) -> EventAltitude {
 		guard altitude.radians.isFinite else {
 			throw .nonFiniteValue

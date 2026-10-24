@@ -10,6 +10,6 @@ public enum MoonPhaseNameError: Error, Hashable, Sendable {
 	/// The excess of the ecliptic longitude is NaN or infinite.
 	case nonFiniteValue
 	/// The half-width of a principal phase is NaN, infinite, or outside the closed interval
-	/// [0°, 45°].
+	/// [0, 45]°.
 	case invalidHalfWidth
 }
