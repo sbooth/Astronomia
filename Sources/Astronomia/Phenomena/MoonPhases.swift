@@ -18,6 +18,9 @@
 /// let phases = try MoonPhases.events(from: start, to: end)
 /// ```
 ///
+/// These are the instants of the principal phases. For the phase the Moon is in at any
+/// instant, one of eight, as "Waxing Gibbous", see ``MoonPhaseName``.
+///
 /// The excess of the Moon's longitude over the Sun's grows about 0.5" a second, so an error of
 /// 1" in either
 /// place moves a phase by about 2 s. The methods taking the built-in ephemeris default to its
