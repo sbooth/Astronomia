@@ -329,7 +329,7 @@ extension JulianDate {
 	///
 	/// ``SplitMethod/julianDate``, ``SplitMethod/j2000`` and ``SplitMethod/mjd`` hold a single
 	/// value, limited by the precision of one `Double`.
-	public enum SplitMethod: Sendable {
+	public enum SplitMethod: Hashable, Sendable, CaseIterable {
 		/// SOFA JD method: `jd1` holds the whole JD, `jd2` is zero.
 		case julianDate
 		/// SOFA J2000 method: `jd1` is J2000.0 (2451545.0), `jd2` is days from J2000.0.
