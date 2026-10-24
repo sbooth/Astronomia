@@ -19,7 +19,6 @@ extension Instant where Scale == UTC {
 	/// 23:59:59, and a clock synchronized to a smearing time server spreads the second over
 	/// hours. The result can then be off by up to one second.
 	///
-	/// - Precondition: The system clock can be read.
 	/// - Throws:
 	///   - ``TimescaleConversionError/invalidTimeOfDay`` if the system clock could not be read.
 	///   - ``TimescaleConversionError/unsupported`` if the clock reads before
