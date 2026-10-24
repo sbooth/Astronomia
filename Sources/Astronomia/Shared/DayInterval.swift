@@ -26,7 +26,7 @@ public struct DayInterval: Hashable, Sendable {
 	/// - Precondition: `fractionalDay` is finite and in the right-open interval [-0.5, 0.5).
 	init(uncheckedDays days: Int, fractionalDay: Double) {
 		assert(fractionalDay.isFinite, "Fractional day must be finite")
-		assert(fractionalDay >= -0.5 && fractionalDay < 0.5, "Fractional day is outside the right-open interval [-0.5, 0.5)")
+		assert(fractionalDay >= -0.5 && fractionalDay < 0.5, "Fractional day must be in the right-open interval [-0.5, 0.5)")
 		self.days = days
 		self.fractionalDay = fractionalDay
 	}

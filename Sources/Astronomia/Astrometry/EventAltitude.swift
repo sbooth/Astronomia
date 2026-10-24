@@ -40,7 +40,7 @@ public struct EventAltitude: Hashable, Sendable {
 
 	/// Creates an event altitude from values already known to be valid.
 	init(uncheckedAltitude altitude: Angle, reference: Reference) {
-		assert(altitude.radians.isFinite && abs(altitude.radians) <= halfPi, "Invalid altitude")
+		assert(altitude.radians.isFinite && abs(altitude.radians) <= halfPi, "Altitude must be in the closed interval [-π/2, π/2]")
 		self.altitude = altitude
 		self.reference = reference
 	}

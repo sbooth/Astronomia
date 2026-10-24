@@ -93,11 +93,11 @@ public struct Illumination: Hashable, Sendable {
 	///     interval [0, 2π), or `nil` from the center of the Earth.
 	///   - instant: The instant of observation.
 	init(phaseAngle: Angle, elongation: Angle, excessEclipticLongitude: Angle, brightLimbPositionAngle: Angle, brightLimbZenithAngle: Angle?, instant: Instant<TT>) {
-		assert(phaseAngle.radians >= 0 && phaseAngle.radians <= .pi, "The phase angle must be in [0, π]")
-		assert(elongation.radians >= 0 && elongation.radians <= .pi, "The elongation must be in [0, π]")
-		assert(excessEclipticLongitude.radians >= 0 && excessEclipticLongitude.radians < twoPi, "The excess of the ecliptic longitude must be in [0, 2π)")
-		assert(brightLimbPositionAngle.radians >= 0 && brightLimbPositionAngle.radians < twoPi, "The position angle of the bright limb must be in [0, 2π)")
-		assert(brightLimbZenithAngle.map { $0.radians >= 0 && $0.radians < twoPi } ?? true, "The bright limb's angle from the zenith must be in [0, 2π)")
+		assert(phaseAngle.radians >= 0 && phaseAngle.radians <= .pi, "Phase angle must be in the closed interval [0, π]")
+		assert(elongation.radians >= 0 && elongation.radians <= .pi, "Elongation must be in the closed interval [0, π]")
+		assert(excessEclipticLongitude.radians >= 0 && excessEclipticLongitude.radians < twoPi, "Excess ecliptic longitude must be in the right-open interval [0, 2π)")
+		assert(brightLimbPositionAngle.radians >= 0 && brightLimbPositionAngle.radians < twoPi, "Position angle of the bright limb must be in the right-open interval [0, 2π)")
+		assert(brightLimbZenithAngle.map { $0.radians >= 0 && $0.radians < twoPi } ?? true, "Bright limb's angle from the zenith must be in the right-open interval [0, 2π)")
 		self.phaseAngle = phaseAngle
 		self.illuminatedFraction = (1 + Math.cos(phaseAngle.radians)) / 2
 		self.elongation = elongation

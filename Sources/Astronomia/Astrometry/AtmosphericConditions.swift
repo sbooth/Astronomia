@@ -78,7 +78,7 @@ public struct AtmosphericConditions: Hashable, Sendable {
 		guard Self.temperatureRange.contains(temperature.degreesCelsius) else {
 			throw .invalidTemperature
 		}
-		guard (0 ... 1).contains(relativeHumidity) else {
+		guard relativeHumidity >= 0 && relativeHumidity <= 1 else {
 			throw .invalidRelativeHumidity
 		}
 		guard Self.wavelengthRange.contains(wavelength.micrometers) else {
@@ -140,10 +140,10 @@ public struct AtmosphericConditions: Hashable, Sendable {
 	/// - Precondition: The values satisfy the requirements of the public initializer.
 	init(uncheckedPressure pressure: Pressure, temperature: Temperature, relativeHumidity: Double, wavelength: Distance) {
 		assert(pressure.pascals.isFinite && temperature.kelvins.isFinite && relativeHumidity.isFinite && wavelength.astronomicalUnits.isFinite, "Non-finite value")
-		assert(Self.pressureRange.contains(pressure.hectopascals), "Invalid pressure")
-		assert(Self.temperatureRange.contains(temperature.degreesCelsius), "Invalid temperature")
-		assert((0 ... 1).contains(relativeHumidity), "Invalid relative humidity")
-		assert(Self.wavelengthRange.contains(wavelength.micrometers), "Invalid wavelength")
+		assert(Self.pressureRange.contains(pressure.hectopascals), "Pressure must be in the closed interval [0, 10,000] hPa")
+		assert(Self.temperatureRange.contains(temperature.degreesCelsius), "Temperature must be in the closed interval [-150, 200] °C")
+		assert(relativeHumidity >= 0 && relativeHumidity <= 1, "Relative humidity must be in the closed interval [0, 1]")
+		assert(Self.wavelengthRange.contains(wavelength.micrometers), "Wavelength must be in the closed interval [0.1, 1,000,000] µm")
 		assert(relativeHumidity == 0 || pressure.hectopascals == 0 || Self.saturationVaporPressure(pressure: pressure.hectopascals, temperature: temperature.degreesCelsius) < pressure.hectopascals, "Invalid vapor pressure")
 		self.pressure = pressure
 		self.temperature = temperature
@@ -196,7 +196,7 @@ extension AtmosphericConditions {
 			throw .nonFiniteValue
 		}
 		// A micrometer's allowance for the rounding of a height in meters stored in au
-		guard (standardMinimumHeight - 1e-6 ... standardMaximumHeight + 1e-6).contains(height.meters) else {
+		guard height.meters >= standardMinimumHeight - 1e-6 && height.meters <= standardMaximumHeight + 1e-6 else {
 			throw .invalidHeight
 		}
 		let temperature = standardSeaLevelTemperature - standardLapseRate * height.meters

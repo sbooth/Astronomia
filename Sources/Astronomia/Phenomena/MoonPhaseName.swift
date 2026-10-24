@@ -79,8 +79,8 @@ public enum MoonPhaseName: Hashable, Sendable, CaseIterable {
 	/// - Precondition: `excessEclipticLongitude` is finite, and `principalHalfWidth` is in the
 	///   closed interval [0°, 45°].
 	init(uncheckedExcessEclipticLongitude excessEclipticLongitude: Angle, principalHalfWidth: Angle = MoonPhaseName.defaultPrincipalHalfWidth) {
-		assert(excessEclipticLongitude.radians.isFinite, "The excess must be finite")
-		assert(principalHalfWidth.degrees >= 0 && principalHalfWidth.degrees <= 45, "The half-width must be in [0°, 45°]")
+		assert(excessEclipticLongitude.radians.isFinite, "Excess ecliptic longitude must be finite")
+		assert(principalHalfWidth.degrees >= 0 && principalHalfWidth.degrees <= 45, "Half-width must be in the closed interval [0°, 45°]")
 		let excess = excessEclipticLongitude.normalized().radians
 		// The nearest principal phase, from 0 for new Moon to 4 for the next new Moon, and the
 		// excess's distance from it. Reducing an angle to a turn and converting it between

@@ -161,7 +161,7 @@ extension UTCDay {
 	///   [0, 1].
 	func tai(fractionSinceMidnight fraction: Double) throws(TimescaleConversionError) -> JulianDate {
 		assert(fraction.isFinite, "Fraction since midnight must be finite")
-		assert(fraction >= 0 && fraction <= 1, "Fraction since midnight is outside the closed interval [0, 1]")
+		assert(fraction >= 0 && fraction <= 1, "Fraction since midnight must be in the closed interval [0, 1]")
 		let correction = (offsetAtStart + fraction * offsetChange) / secondsPerDay
 		do throws(JulianDateError) {
 			return try start.adding(days1: fraction, days2: correction)

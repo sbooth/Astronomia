@@ -38,7 +38,7 @@ public struct JulianDate: Hashable, Sendable {
 	///   [-0.5, 0.5).
 	init(uncheckedJulianDayNumber julianDayNumber: JulianDayNumber, fractionFromNoon: Double) {
 		assert(fractionFromNoon.isFinite, "Fraction from noon must be finite")
-		assert(fractionFromNoon >= -0.5 && fractionFromNoon < 0.5, "Fraction from noon is outside the right-open interval [-0.5, 0.5)")
+		assert(fractionFromNoon >= -0.5 && fractionFromNoon < 0.5, "Fraction from noon must be in the right-open interval [-0.5, 0.5)")
 		self.julianDayNumber = julianDayNumber
 		self.fractionFromNoon = fractionFromNoon
 	}

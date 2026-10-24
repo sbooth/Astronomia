@@ -76,8 +76,8 @@ extension JulianAndGregorianArithmetic.EraLayout {
 	/// - Throws: ``CalendarError/julianDayNumberNotRepresentable`` if the Julian day number
 	///   cannot be represented as a ``JulianDayNumber``.
 	static func julianDayNumber(era: Int, dayOfEra doe: Int, day: Int) throws(CalendarError) -> JulianDayNumber {
-		assert(era >= Int.min / years - 1 && era <= Int.max / years, "Era outside the range of a floored quotient by \(years)")
-		assert(doe >= 0 && doe < days, "Day of era outside the right-open interval [0, \(days))")
+		assert(era >= Int.min / years - 1 && era <= Int.max / years, "Era must be in the range of a floored quotient by \(years)")
+		assert(doe >= 0 && doe < days, "Day of era must be in the right-open interval [0, \(days))")
 
 		// `day` as whole blocks plus remaining days in [0, days)
 		let (dayBlocks, dayRem) = day.flooredQuotientAndRemainder(dividingBy: days)
@@ -132,8 +132,8 @@ extension JulianAndGregorianArithmetic.EraLayout {
 	///     with March 1 = 0.
 	/// - Returns: The year, month, and day.
 	static func date(era: Int, yearOfEra yoe: Int, dayOfYear doy: Int) -> YearMonthDay {
-		assert(yoe >= 0 && yoe < years, "Year of era outside the right-open interval [0, \(years))")
-		assert(doy >= 0 && doy < 366, "Day of year outside the right-open interval [0, 366)")
+		assert(yoe >= 0 && yoe < years, "Year of era must be in the right-open interval [0, \(years))")
+		assert(doy >= 0 && doy < 366, "Day of year must be in the right-open interval [0, 366)")
 		// Month in [0, 12) with March = 0
 		let mp = (5 * doy + 2) / 153
 

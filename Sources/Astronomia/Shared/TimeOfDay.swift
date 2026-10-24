@@ -60,7 +60,7 @@ extension TimeOfDay {
 	///
 	/// - Precondition: `seconds` is finite and in the right-open interval [0, 86,401).
 	init(uncheckedSecondsSinceMidnight seconds: Double) {
-		assert(seconds.isFinite && seconds >= 0 && seconds < 86_401, "Seconds since midnight is outside the right-open interval [0, 86,401)")
+		assert(seconds.isFinite && seconds >= 0 && seconds < 86_401, "Seconds since midnight must be in the right-open interval [0, 86,401)")
 		let hour = min(Int(seconds / 3_600), 23)
 		let minute = min(Int((seconds - Double(hour * 3_600)) / 60), 59)
 		self.hour = hour
