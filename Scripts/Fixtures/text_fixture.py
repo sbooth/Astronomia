@@ -61,5 +61,6 @@ def write(swift_path, name, script, columns, rows):
 		f"# The rows of `{name}` in {os.path.basename(swift_path)}, which describes them:",
 		"# " + columns,
 	] + [" ".join(fields(row)) for row in rows]
-	with open(os.path.join(directory, name[0].upper() + name[1:] + ".txt"), "w") as file:
+	# Line feeds on every platform, not the platform's newline
+	with open(os.path.join(directory, name[0].upper() + name[1:] + ".txt"), "w", newline="\n") as file:
 		file.write("\n".join(lines) + "\n")

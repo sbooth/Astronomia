@@ -14,8 +14,9 @@ import Foundation
 /// when first used, because the compiler takes minutes and gigabytes to type-check the same
 /// rows as Swift literals.
 ///
-/// A missing file, or a row with a field that doesn't parse, too few fields, or too many, stops
-/// the tests with the file and line.
+/// A missing file, a file without rows, or a row with a field that doesn't parse, too few
+/// fields, or too many, stops the tests with the file and line, so that a fixture can't be
+/// read as empty and pass the checks that loop over its rows.
 ///
 /// - Parameters:
 ///   - name: The name of the file, without the `.txt` extension.
@@ -31,8 +32,27 @@ func textFixture<Row>(_ name: String, _ parse: (inout TextFixtureRow) -> Row) ->
 	} catch {
 		fatalError("Can't read Fixtures/\(name).txt: \(error)")
 	}
+	let rows = textFixture(name, text: text, parse)
+	if rows.isEmpty {
+		fatalError("Fixtures/\(name).txt has no rows")
+	}
+	return rows
+}
+
+/// Returns the rows of the text of a text fixture, each parsed by a closure.
+///
+/// Lines end with any newline, as a line feed, or a carriage return and a line feed where Git
+/// or Python on Windows writes them: in Swift a carriage return and a line feed are one
+/// `Character`, which a split on `"\n"` wouldn't match.
+///
+/// - Parameters:
+///   - name: The name of the file, for messages.
+///   - text: The text of the file.
+///   - parse: Returns a row from its fields, read in order.
+/// - Returns: The rows, in the order of the text.
+func textFixture<Row>(_ name: String, text: String, _ parse: (inout TextFixtureRow) -> Row) -> [Row] {
 	var rows: [Row] = []
-	for (index, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+	for (index, line) in text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).enumerated() {
 		guard !line.isEmpty, !line.hasPrefix("#") else { continue }
 		var row = TextFixtureRow(name: name, line: index + 1, fields: line.split(separator: " "))
 		rows.append(parse(&row))
