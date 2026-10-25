@@ -80,6 +80,26 @@ import Testing
 		#expect(days > 50 && days < 75, "\(days)")
 	}
 
+	@Test func eventsBeforeTheEndOfTheCoverage() throws {
+		// A transit 30 minutes after the instant is found though the coverage ends two hours
+		// later, within the default limit, and a rise 15 minutes before the end, though the
+		// next hourly sample is past it.
+		let greenwich = try Fixtures.site(0)
+		let start = try Fixtures.instant(2_461_041.5)
+		let ephemeris = BuiltInEphemeris(precision: .arcsecond)
+		for kind in [RiseTransitSetEvent.Kind.upperTransit, .rise] {
+			let event = try greenwich.nextRiseTransitSetEvent(kind, of: .sun, after: start, earthOrientation: Fixtures.earthOrientation, ephemeris: ephemeris)
+			let (before, after) = kind == .upperTransit ? (1_800.0, 7_200.0) : (5_400, 900)
+			let truncated = try TruncatedEphemeris(ephemeris, endingAt: Self.adding(seconds: after, to: event.instant))
+			let found = try greenwich.nextRiseTransitSetEvent(kind, of: .sun, after: Self.adding(seconds: -before, to: event.instant), earthOrientation: Fixtures.earthOrientation, ephemeris: truncated)
+			#expect(abs(Self.seconds(from: event.instant, to: found.instant)) < 0.1, "\(kind)")
+			// The next of the kind, past the end, isn't found.
+			#expect(throws: RiseTransitSetError.ephemeris(.outsideCoverage)) {
+				try greenwich.nextRiseTransitSetEvent(kind, of: .sun, after: event.instant, earthOrientation: Fixtures.earthOrientation, ephemeris: truncated)
+			}
+		}
+	}
+
 	@Test func errors() throws {
 		let start = try Fixtures.instant(2_461_041.5)
 		#expect(throws: RiseTransitSetError.noHorizon) {

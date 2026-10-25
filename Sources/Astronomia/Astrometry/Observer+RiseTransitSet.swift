@@ -135,7 +135,9 @@ extension Observer {
 	///   - earthOrientation: Observed Earth orientation.
 	///   - ephemeris: The ephemeris.
 	///   - place: Returns the target's apparent place from an observation.
-	func riseTransitSetEvents<E: GeocentricEphemeris, Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, altitude: EventAltitude, radius: Distance?, earthOrientation: EarthOrientation, ephemeris: E, place: @escaping (Observation<E>) throws(RiseTransitSetError) -> ApparentPlace<ICRS>) throws(RiseTransitSetError) -> [RiseTransitSetEvent] {
+	///   - accept: Whether an event ends the search, for the first event it accepts, or `nil`
+	///     for every event.
+	func riseTransitSetEvents<E: GeocentricEphemeris, Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, altitude: EventAltitude, radius: Distance?, earthOrientation: EarthOrientation, ephemeris: E, place: @escaping (Observation<E>) throws(RiseTransitSetError) -> ApparentPlace<ICRS>, stoppingAt accept: ((RiseTransitSetEvent) -> Bool)? = nil) throws(RiseTransitSetError) -> [RiseTransitSetEvent] {
 		guard case .site = location else {
 			throw .noHorizon
 		}
@@ -188,7 +190,7 @@ extension Observer {
 			}
 			return RiseTransitSetSearch.Sample(time: days, instant: tt, hourAngle: observed.hourAngle.radians, height: reference - altitude.altitude.radians, place: observed)
 		})
-		return try search.events()
+		return try search.events(stoppingAt: accept)
 	}
 }
 
@@ -199,10 +201,11 @@ extension Observer {
 	/// let sunrise = try site.nextRiseTransitSetEvent(.rise, of: .sun, after: instant)
 	/// ```
 	///
-	/// The search covers half a day at a time, as `riseTransitSetEvents(of:from:to:)` does, and
-	/// stops at the first event of the kind, so it evaluates the ephemeris no further than it
-	/// needs to. An event within 0.5 s of the instant, as when the instant is an event
-	/// found earlier, is taken as at it, not after it.
+	/// The search samples the body's place as `riseTransitSetEvents(of:from:to:)` does, in order,
+	/// and stops at the first event of the kind, so it evaluates the ephemeris no further than
+	/// the hour after it, and finds an event before the end of the ephemeris's coverage. An event
+	/// within 0.5 s of the instant, as when the instant is an event found earlier, is taken as at
+	/// it, not after it.
 	///
 	/// - Parameters:
 	///   - kind: The kind of event.
@@ -310,9 +313,6 @@ extension Observer {
 }
 
 extension Observer {
-	/// The span of each search for the next event, half a day, in days.
-	static var nextEventSpan: Double { 0.5 }
-
 	/// Returns the first event of a kind of a target after an instant.
 	///
 	/// - Parameters:
@@ -345,23 +345,13 @@ extension Observer {
 		} catch {
 			throw .invalidInterval
 		}
-		// Half a day at a time, so the search stops soon after the event
-		var from = start
-		while from < end {
-			var to = end
-			do throws(JulianDateError) {
-				let next = Instant<TT>(try from.julianDate.adding(days: Self.nextEventSpan))
-				to = min(next, end)
-			} catch {
-				throw .invalidInterval
-			}
-			let events = try riseTransitSetEvents(from: from, to: to, context: TT.defaultContext, altitude: altitude, radius: radius, earthOrientation: earthOrientation, ephemeris: ephemeris, place: place)
-			// An event within 0.5 s of the instant, as when the instant is an event found
-			// earlier and found again a little after it, is taken as at it.
-			if let event = events.first(where: { $0.kind == kind && ($0.instant.julianDate.daysSinceJ2000 - start.julianDate.daysSinceJ2000) * secondsPerDay > 0.5 }) {
-				return event
-			}
-			from = to
+		// An event within 0.5 s of the instant, as when the instant is an event found earlier
+		// and found again a little after it, is taken as at it.
+		let found = try riseTransitSetEvents(from: start, to: end, context: TT.defaultContext, altitude: altitude, radius: radius, earthOrientation: earthOrientation, ephemeris: ephemeris, place: place) { event in
+			event.kind == kind && (event.instant.julianDate.daysSinceJ2000 - start.julianDate.daysSinceJ2000) * secondsPerDay > 0.5
+		}
+		if let event = found.first {
+			return event
 		}
 		throw .eventNotFound
 	}
