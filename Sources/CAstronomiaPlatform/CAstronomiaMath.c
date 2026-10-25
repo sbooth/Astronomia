@@ -20,7 +20,7 @@ __attribute__((target("avx2"))) __m256d _ZGVdN4v_sin(__m256d);
 __attribute__((target("avx2"))) __m256d _ZGVdN4v_cos(__m256d);
 
 __attribute__((target("avx2")))
-static inline void astronomia_sincos_batch_avx2(const double *angles, double *sines, double *cosines, size_t count) {
+static void astronomia_sincos_batch_avx2(const double *angles, double *sines, double *cosines, size_t count) {
 	size_t j = 0;
 	for (; j + 4 <= count; j += 4) {
 		__m256d x = _mm256_loadu_pd(angles + j);
@@ -34,7 +34,7 @@ __attribute__((target("avx512f"))) __m512d _ZGVeN8v_sin(__m512d);
 __attribute__((target("avx512f"))) __m512d _ZGVeN8v_cos(__m512d);
 
 __attribute__((target("avx512f")))
-static inline void astronomia_sincos_batch_avx512(const double *angles, double *sines, double *cosines, size_t count) {
+static void astronomia_sincos_batch_avx512(const double *angles, double *sines, double *cosines, size_t count) {
 	size_t j = 0;
 	for (; j + 8 <= count; j += 8) {
 		__m512d x = _mm512_loadu_pd(angles + j);
@@ -52,7 +52,7 @@ static inline void astronomia_sincos_batch_avx512(const double *angles, double *
 #endif
 
 // Portable scalar fallback
-static inline void astronomia_sincos_batch_scalar(const double *angles, double *sines, double *cosines, size_t count) {
+static void astronomia_sincos_batch_scalar(const double *angles, double *sines, double *cosines, size_t count) {
 	for (size_t j = 0; j < count; ++j) {
 		const struct astronomia_sincos_result sc = astronomia_sincos(angles[j]);
 		sines[j] = sc.sin;
