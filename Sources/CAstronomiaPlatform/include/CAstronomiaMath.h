@@ -148,7 +148,6 @@ static inline void astronomia_sincos_batch_avx512(const double *angles, double *
 		_mm512_mask_storeu_pd(cosines + j, m, _ZGVeN8v_cos(x));
 	}
 }
-
 #endif
 
 // Portable scalar fallback
