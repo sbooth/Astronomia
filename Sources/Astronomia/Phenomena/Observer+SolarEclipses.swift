@@ -7,7 +7,8 @@
 
 /// The Sun and the Moon seen from a site at a time, during an eclipse of the Sun.
 struct LocalSolarEclipseSample {
-	/// The time, in days after the start of the eclipse's partial phase on the Earth.
+	/// The time, in days after the start of the samples, a step before the eclipse's partial
+	/// phase on the Earth.
 	let time: Double
 	/// The angle between the centers of the Sun and the Moon, in radians.
 	let separation: Double
@@ -29,10 +30,21 @@ struct LocalSolarEclipseSample {
 		separation - abs(sun - umbralMoon)
 	}
 
-	/// The fraction of the Sun's diameter the Moon covers, which exceeds 1 within the umbra, as
-	/// the magnitude of an ``Sun/Eclipse`` from the radii of the shadow's cones.
+	/// The magnitude, as that of an ``Sun/Eclipse`` from the radii of the shadow's cones: while
+	/// the Moon covers part of the Sun, the fraction of the Sun's diameter it covers, and while
+	/// one disk is within the other, the ratio of the Moon's diameter to the Sun's.
+	///
+	/// On the fundamental plane the radii of the penumbra and the umbra at the site are those
+	/// of circles of the sum of the Sun's and the Moon's semidiameters, L₁, and of their
+	/// difference, L₂, with the Moon's radius for each, and the axis is the separation from the
+	/// site, Δ, so the magnitude is (L₁ - Δ) / (L₁ + L₂) in the partial phase, and
+	/// (L₁ - L₂) / (L₁ + L₂) in the central phase.
 	var magnitude: Double {
-		(sun + penumbralMoon - separation) / (2 * sun + penumbralMoon - umbralMoon)
+		let total = 2 * sun + penumbralMoon - umbralMoon
+		if centralDistance < 0 {
+			return (penumbralMoon + umbralMoon) / total
+		}
+		return (sun + penumbralMoon - separation) / total
 	}
 
 	/// The fraction of the Sun's area the Moon's disk covers, of its radius for the total or
@@ -53,17 +65,37 @@ struct LocalSolarEclipseSample {
 	}
 }
 
+extension LocalSolarEclipseSample {
+	/// Creates the sample of the Sun's and the Moon's apparent places from a site.
+	///
+	/// - Parameters:
+	///   - time: The time, in days after the start of the samples.
+	///   - sun: The Sun's apparent position from the site, in au.
+	///   - moon: The Moon's apparent position from the site, in au.
+	///   - radii: The radii of the Moon and the Sun.
+	init(time: Double, sun: Vector3, moon: Vector3, radii: Sun.Eclipse.Radii) throws(Sun.EclipseError) {
+		let (sunDistance, moonDistance) = (sun.length, moon.length)
+		guard sunDistance > 0, moonDistance > 0 else {
+			throw .ephemeris(.invalidState)
+		}
+		let earthRadius = earthEquatorialRadius.astronomicalUnits
+		self.init(time: time, separation: Math.atan2(sun.cross(moon).length, sun.dot(moon)), sun: Math.asin(min(1, Math.sin(radii.sun.radians) / sunDistance)), penumbralMoon: Math.asin(min(1, radii.penumbralMoon * earthRadius / moonDistance)), umbralMoon: Math.asin(min(1, radii.umbralMoon * earthRadius / moonDistance)))
+	}
+}
+
 extension Observer {
 	/// Returns the local circumstances of an eclipse of the Sun at this site: how it is seen,
 	/// its contacts there, the Sun's place at each, its rises and sets during the eclipse, and
 	/// when it is up; or `nil` if the Moon doesn't cover the Sun from this site.
 	///
 	/// The Sun's and the Moon's places are their apparent places seen from the site, without
-	/// refraction, and their radii those of the eclipse's ``Sun/Eclipse/Radii``. The magnitude
-	/// is greatest at maximum, found from samples 10 minutes apart over the eclipse's partial
-	/// phase on the Earth, then by parabolas through closer samples, to about 0.01 s; each
-	/// contact, where the separation of the centers equals the sum or the difference of the
-	/// radii, is found to 0.01 s.
+	/// refraction, and their radii those of the eclipse's ``Sun/Eclipse/Radii``. Maximum is
+	/// found from samples 10 minutes apart over the eclipse's partial phase on the Earth's
+	/// surface, and a step either side, then by parabolas through closer samples, to about
+	/// 0.01 s: the least separation of the centers within the central phase, and the greatest
+	/// magnitude otherwise. Each contact, where the separation equals the sum or the difference
+	/// of the radii, is found to 0.01 s, bracketed by samples beyond the partial phase on the
+	/// Earth's surface for a site high enough above it to see the eclipse sooner or longer.
 	///
 	/// With NASA's ΔT, the circumstances of the total eclipse of 2001 June 21 match NASA's
 	/// bulletin and path for it, computed with the VSOP87 and ELP2000-85 theories: on the
@@ -73,8 +105,9 @@ extension Observer {
 	/// places. At the place of greatest eclipse the central phase is that the search for
 	/// eclipses finds from the shadow's geometry, within 0.05 s.
 	///
-	/// NASA's tables give the magnitude of an eclipse in progress at sunrise or sunset at the
-	/// horizon; ``Sun/LocalEclipse/magnitude`` is at maximum, which may be below it.
+	/// ``Sun/LocalEclipse/magnitude`` is at maximum, which may be below the horizon, as for an
+	/// eclipse in progress at sunrise or sunset; NASA's tables give the magnitude at the horizon,
+	/// the greatest while the Sun is up, ``Sun/LocalEclipse/visibleMagnitude``.
 	///
 	/// - Parameters:
 	///   - eclipse: The eclipse.
@@ -94,11 +127,17 @@ extension Observer {
 		guard case let .site(_, latitude: latitude, longitude: _) = location else {
 			throw .noHorizon
 		}
-		let origin = eclipse.partialPhase.lowerBound
-		let length = Astrometry.days(from: Instant<TDB>(origin.julianDate), to: Instant<TDB>(eclipse.partialPhase.upperBound.julianDate))
-		let earthRadius = earthEquatorialRadius.astronomicalUnits
-		let sunRadius = Math.sin(eclipse.radii.sun.radians)
-		/// Returns the instant some days after the start of the partial phase.
+		// The partial phase on the Earth's surface, and the grid's step either side of it, which
+		// a site above the surface may see in the shadow sooner or longer
+		let grid = 10.0 / 1440
+		let origin: Instant<TT>
+		do throws(JulianDateError) {
+			origin = Instant(try eclipse.partialPhase.lowerBound.julianDate.adding(days: -grid))
+		} catch {
+			throw .invalidInterval
+		}
+		let length = Astrometry.days(from: Instant<TDB>(origin.julianDate), to: Instant<TDB>(eclipse.partialPhase.upperBound.julianDate)) + grid
+		/// Returns the instant some days after the start of the samples.
 		func instant(_ days: Double) throws(Sun.EclipseError) -> Instant<TT> {
 			do throws(JulianDateError) {
 				return Instant(try origin.julianDate.adding(days: days))
@@ -119,13 +158,7 @@ extension Observer {
 		/// Returns the Sun and the Moon seen from the site at a time.
 		func sample(_ days: Double) throws(Sun.EclipseError) -> LocalSolarEclipseSample {
 			let (_, sun, moon) = try places(days)
-			let (s, m) = (sun.position.vector, moon.position.vector)
-			let (sunDistance, moonDistance) = (s.length, m.length)
-			guard sunDistance > 0, moonDistance > 0 else {
-				throw .ephemeris(.invalidState)
-			}
-			let separation = Math.atan2(s.cross(m).length, s.dot(m))
-			return LocalSolarEclipseSample(time: days, separation: separation, sun: Math.asin(min(1, sunRadius / sunDistance)), penumbralMoon: Math.asin(min(1, eclipse.radii.penumbralMoon * earthRadius / moonDistance)), umbralMoon: Math.asin(min(1, eclipse.radii.umbralMoon * earthRadius / moonDistance)))
+			return try LocalSolarEclipseSample(time: days, sun: sun.position.vector, moon: moon.position.vector, radii: eclipse.radii)
 		}
 
 		// Maximum: the least separation among samples 10 minutes apart, then the vertex of
@@ -134,7 +167,6 @@ extension Observer {
 		// Moon's apparent radius changes as it rises or sets, and the vertex of parabolas
 		// through the magnitude finds it; within the central phase the magnitude peaks sharply
 		// at the least separation.
-		let grid = 10.0 / 1440
 		let count = max(2, Int((length / grid).rounded(.up)))
 		var samples: [LocalSolarEclipseSample] = []
 		for index in 0 ... count {
@@ -174,19 +206,32 @@ extension Observer {
 		}
 
 		/// Returns the sample where a function of the samples, negative at maximum, crosses zero
-		/// before or after it, bracketed by the grid's samples.
+		/// before or after it, bracketed by the grid's samples, or past the grid by samples a
+		/// step apart, as for a site far above the Earth's surface.
 		func contact(before: Bool, function: (LocalSolarEclipseSample) -> Double) throws(Sun.EclipseError) -> LocalSolarEclipseSample {
-			let outside = before ? samples.last { $0.time < best.time && function($0) >= 0 } : samples.first { $0.time > best.time && function($0) >= 0 }
-			// At the ends of the partial phase on the Earth, the penumbra only touches it, so a
-			// site within the penumbra is outside it a moment later.
-			let far: LocalSolarEclipseSample
-			if let outside {
-				far = outside
-			} else {
-				far = try sample(before ? 0 : length)
+			let outward = before ? Array(samples.filter { $0.time < best.time }.reversed()) : samples.filter { $0.time > best.time }
+			var near = best
+			var far: LocalSolarEclipseSample? = nil
+			for candidate in outward {
+				if function(candidate) >= 0 {
+					far = candidate
+					break
+				}
+				near = candidate
 			}
-			let near = before ? (samples.last { $0.time > far.time && $0.time < best.time && function($0) < 0 } ?? best) : (samples.first { $0.time < far.time && $0.time > best.time && function($0) < 0 } ?? best)
-			let (lower, upper) = before ? (far, near) : (near, far)
+			while far == nil {
+				let time = near.time + (before ? -grid : grid)
+				guard abs(time - best.time) < Sun.Eclipses.contactSpan * 2 else {
+					throw .eclipseNotFound
+				}
+				let candidate = try sample(time)
+				if function(candidate) >= 0 {
+					far = candidate
+				} else {
+					near = candidate
+				}
+			}
+			let (lower, upper) = before ? (far!, near) : (near, far!)
 			return try RootFinder.refine(lower, upper, time: \.time, tolerance: 0.01 / secondsPerDay, maximumIterations: 100, evaluate: sample, function: function)
 		}
 		let first = try contact(before: true) { $0.partialDistance }
@@ -281,7 +326,70 @@ extension Observer {
 			intervals.append(start ... partialPhase.upperBound)
 		}
 		let centralPhase = central == nil ? nil : contacts.first { $0.contact == .centralBegins }!.instant ... contacts.first { $0.contact == .centralEnds }!.instant
-		return Sun.LocalEclipse(eclipse: eclipse, observer: self, kind: kind, magnitude: best.magnitude, obscuration: best.obscuration, partialPhase: partialPhase, centralPhase: centralPhase, contacts: contacts, sunrisesAndSunsets: events, visibleIntervals: intervals)
+		// The greatest magnitude while the Sun is up: at maximum, or the nearest end to it of a
+		// part of the eclipse when the Sun is up, as the magnitude falls away from maximum
+		var visible: LocalSolarEclipseSample? = nil
+		for interval in intervals {
+			let (lower, upper) = (Astrometry.days(from: Instant<TDB>(origin.julianDate), to: Instant<TDB>(interval.lowerBound.julianDate)), Astrometry.days(from: Instant<TDB>(origin.julianDate), to: Instant<TDB>(interval.upperBound.julianDate)))
+			let candidate = best.time >= lower && best.time <= upper ? best : try sample(best.time < lower ? lower : upper)
+			if candidate.magnitude > visible?.magnitude ?? -.infinity {
+				visible = candidate
+			}
+		}
+		return Sun.LocalEclipse(eclipse: eclipse, observer: self, kind: kind, magnitude: best.magnitude, obscuration: best.obscuration, visibleMagnitude: visible.map { max(0, $0.magnitude) }, visibleObscuration: visible.map(\.obscuration), partialPhase: partialPhase, centralPhase: centralPhase, contacts: contacts, sunrisesAndSunsets: events, visibleIntervals: intervals)
+	}
+
+	/// Returns the magnitude of an eclipse of the Sun at this site at an instant, as
+	/// ``Sun/LocalEclipse/magnitude``: the fraction of the Sun's diameter the Moon covers, 0 if
+	/// it covers none, or while one disk is within the other, the ratio of the Moon's apparent
+	/// diameter to the Sun's, from their apparent places from the site and the eclipse's radii.
+	///
+	/// - Parameters:
+	///   - eclipse: The eclipse, whose radii of the Moon and the Sun are used.
+	///   - moon: The Moon.
+	///   - instant: The instant.
+	///   - context: Observational data for converting `instant` to TT.
+	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site.
+	///   - ephemeris: The ephemeris of the Sun, the Earth, and the Moon.
+	/// - Returns: The magnitude.
+	/// - Throws:
+	///   - ``Sun/EclipseError/noHorizon`` if the observer is the center of the Earth.
+	///   - ``Sun/EclipseError/timescaleConversion(_:)`` if `instant` can't be converted to TT.
+	///   - ``Sun/EclipseError/ephemeris(_:)`` if a place of the Sun or the Moon fails, as for
+	///     an ``Observation``, or UT1 can't be found.
+	public func magnitude<E: GeocentricEphemeris, Scale: Timescale>(of eclipse: Sun.Eclipse, moon: E.Body, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(Sun.EclipseError) -> Double {
+		guard case .site = location else {
+			throw .noHorizon
+		}
+		let tt: Instant<TT>
+		do throws(TimescaleConversionError) {
+			tt = try instant.converted(to: TT.self, sourceContext: context)
+		} catch {
+			throw .timescaleConversion(error)
+		}
+		let (sun, moonPosition): (Vector3, Vector3)
+		do throws(EphemerisError) {
+			let observation = try Observation(observer: self, instant: tt, context: TT.defaultContext, earthOrientation: earthOrientation, ephemeris: ephemeris)
+			(sun, moonPosition) = (try observation.apparentPlace(of: E.sun).position.vector, try observation.apparentPlace(of: moon).position.vector)
+		} catch {
+			throw .ephemeris(error)
+		}
+		return max(0, try LocalSolarEclipseSample(time: 0, sun: sun, moon: moonPosition, radii: eclipse.radii).magnitude)
+	}
+
+	/// Returns the magnitude of an eclipse of the Sun at this site at an instant, with the
+	/// built-in ephemeris.
+	///
+	/// - Parameters:
+	///   - eclipse: The eclipse, whose radii of the Moon and the Sun are used.
+	///   - instant: The instant.
+	///   - context: Observational data for converting `instant` to TT.
+	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site.
+	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	/// - Returns: The magnitude.
+	/// - Throws: A ``Sun/EclipseError``, as the method taking an ephemeris does.
+	public func magnitude<Scale: Timescale>(of eclipse: Sun.Eclipse, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Sun.EclipseError) -> Double {
+		try magnitude(of: eclipse, moon: BuiltInEphemeris.Body.moon, at: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
 	/// Returns an angle in radians reduced to the right-open interval [0, 2π).

@@ -149,6 +149,8 @@ import Testing
 				#expect(local.kind == .partial && abs(local.magnitude - eclipse.magnitude) < 0.001 && abs(maximum.place.altitude.degrees) < 0.2, "\(date)")
 			case .total, .annular, .hybrid:
 				#expect(local.kind == (eclipse.kind == .annular ? .annular : .total), "\(date)")
+				// The ratio of the Moon's apparent diameter to the Sun's, as the eclipse's
+				#expect(abs(local.magnitude - eclipse.magnitude) < 0.0002 && (local.magnitude > 1) == (local.kind == .total), "\(date)")
 				let central = try #require(local.centralPhase)
 				let expected = try #require(greatest.centralPhase)
 				#expect(abs(try Self.seconds(from: central.lowerBound, to: central.upperBound) - Self.seconds(from: expected.lowerBound, to: expected.upperBound)) < 0.05, "\(date)")
@@ -173,6 +175,75 @@ import Testing
 		#expect(rise.kind == .rise && local.sunrisesAndSunsets.count == 1)
 		#expect(local.visibleIntervals == [rise.instant ... last.instant] && local.isVisible)
 		#expect(local.circumstance(at: .maximum)?.isSunUp == false && local.magnitude > 0.8)
+		// While the Sun is up the eclipse is deepest at sunrise, as NASA gives it for the city,
+		// whose coordinates it doesn't give, when the magnitude falls by 0.004 a minute.
+		#expect(abs(try #require(local.visibleMagnitude) - 0.537) < 0.01 && abs(try #require(local.visibleObscuration) - 0.437) < 0.01)
+		#expect(abs(try site.magnitude(of: local.eclipse, at: rise.instant, precision: .tenthArcsecond) - local.visibleMagnitude!) < 1e-6)
+	}
+
+	@Test func centralMagnitude() throws {
+		// Within the central phase the magnitude is the ratio of the diameters, the same
+		// wherever the Moon is within the Sun, or the Sun within the Moon.
+		let sample = LocalSolarEclipseSample(time: 0, separation: 0, sun: 0.0045, penumbralMoon: 0.0045 * 1.1, umbralMoon: 0.0045 * 1.1)
+		#expect(abs(sample.magnitude - 1.1) < 1e-12 && sample.obscuration == 1)
+		let annular = LocalSolarEclipseSample(time: 0, separation: 0.0001, sun: 0.0045, penumbralMoon: 0.0045 * 0.9, umbralMoon: 0.0045 * 0.9)
+		#expect(abs(annular.magnitude - 0.9) < 1e-12 && abs(annular.obscuration - 0.81) < 1e-12)
+		// In the partial phase, the fraction of the Sun's diameter covered, which at the
+		// internal contact of an annular eclipse is the ratio
+		let contact = LocalSolarEclipseSample(time: 0, separation: 0.0045 * 0.1, sun: 0.0045, penumbralMoon: 0.0045 * 0.9, umbralMoon: 0.0045 * 0.9)
+		let partial = LocalSolarEclipseSample(time: 0, separation: 0.0045, sun: 0.0045, penumbralMoon: 0.0045 * 0.9, umbralMoon: 0.0045 * 0.9)
+		#expect(abs(contact.magnitude - 0.9) < 1e-9 && abs(partial.magnitude - 0.45) < 1e-12)
+	}
+
+	@Test func elevatedSite() throws {
+		// Above the point where the penumbra first touches the Earth's surface, at P1, a site
+		// 10 km high sees the eclipse about 11 s sooner: its first contact is before P1, and is a
+		// contact, with the disks apart a minute before and overlapping a minute after.
+		let eclipse = try Self.eclipse()
+		let search = SolarEclipseSearch(origin: eclipse.partialPhase.lowerBound.julianDate, moon: BuiltInEphemeris.Body.moon, earthOrientation: .model, ephemeris: BuiltInEphemeris(precision: .tenthArcsecond), radii: eclipse.radii)
+		let first = try search.site(search.sample(0))
+		let site = try Observer.site(latitude: first.latitude, longitude: first.longitude, height: .kilometers(10))
+		let local = try #require(try site.localCircumstances(of: eclipse, precision: .tenthArcsecond))
+		let begins = local.partialPhase.lowerBound
+		#expect(try Self.seconds(from: begins, to: eclipse.partialPhase.lowerBound) > 5)
+		#expect(try site.magnitude(of: eclipse, at: Instant<TT>(begins.julianDate.adding(seconds: -60)), precision: .tenthArcsecond) == 0)
+		#expect(try site.magnitude(of: eclipse, at: Instant<TT>(begins.julianDate.adding(seconds: 60)), precision: .tenthArcsecond) > 0)
+		#expect(try site.magnitude(of: eclipse, at: begins, precision: .tenthArcsecond) < 1e-6)
+		#expect(zip(local.contacts, local.contacts.dropFirst()).allSatisfy { $0.instant < $1.instant })
+	}
+
+	@Test func sunset() throws {
+		// East of Mauritius the eclipse was visible until sunset, deepest then, and farther east
+		// it was wholly after sunset, so not visible.
+		let eclipse = try Self.eclipse()
+		let west = try #require(try Observer.site(latitude: .degrees(-20), longitude: .degrees(70)).localCircumstances(of: eclipse, precision: .tenthArcsecond))
+		let set = try #require(west.sunrisesAndSunsets.first)
+		#expect(set.kind == .set && west.isVisible && west.visibleIntervals == [west.partialPhase.lowerBound ... set.instant])
+		#expect(try #require(west.visibleMagnitude) < west.magnitude && west.visibleObscuration! < west.obscuration)
+		let east = try #require(try Observer.site(latitude: .degrees(-20), longitude: .degrees(75)).localCircumstances(of: eclipse, precision: .tenthArcsecond))
+		#expect(!east.isVisible && east.visibleIntervals.isEmpty && east.visibleMagnitude == nil && east.visibleObscuration == nil)
+		#expect(east.contacts.allSatisfy { !$0.isSunUp } && east.magnitude > 0.5)
+	}
+
+	@Test func magnitudeAtAnInstant() throws {
+		// The magnitude from a site at an instant: at maximum that of the local circumstances,
+		// at the contacts of the partial phase 0, and outside it 0; in UTC as in TT.
+		let eclipse = try Self.eclipse()
+		let site = try Observer.site(latitude: .degrees(-(11 + 41 / 60.0)), longitude: .degrees(43 + 16 / 60.0))
+		let local = try #require(try site.localCircumstances(of: eclipse, precision: .tenthArcsecond))
+		#expect(local.visibleMagnitude == local.magnitude && local.visibleObscuration == local.obscuration)
+		let maximum = try #require(local.circumstance(at: .maximum))
+		#expect(abs(try site.magnitude(of: eclipse, at: maximum.instant, precision: .tenthArcsecond) - local.magnitude) < 1e-9)
+		for contact in [local.partialPhase.lowerBound, local.partialPhase.upperBound] {
+			#expect(try site.magnitude(of: eclipse, at: contact, precision: .tenthArcsecond) < 1e-6)
+		}
+		let before = Instant<TT>(try local.partialPhase.lowerBound.julianDate.adding(seconds: -600))
+		#expect(try site.magnitude(of: eclipse, at: before, precision: .tenthArcsecond) == 0)
+		let during = Instant<TT>(try maximum.instant.julianDate.adding(seconds: -1800))
+		let magnitude = try site.magnitude(of: eclipse, at: during, precision: .tenthArcsecond)
+		#expect(magnitude > 0 && magnitude < local.magnitude)
+		#expect(abs(try site.magnitude(of: eclipse, at: during.converted(to: UTC.self), precision: .tenthArcsecond) - magnitude) < 1e-9)
+		#expect(throws: Sun.EclipseError.noHorizon) { try Observer.geocenter.magnitude(of: eclipse, at: during) }
 	}
 
 	@Test func visibleEclipses() throws {

@@ -81,12 +81,20 @@ extension Sun {
 		public let observer: Observer
 		/// How the eclipse is seen from the site.
 		public let kind: Kind
-		/// The fraction of the Sun's diameter the Moon covers at maximum, which exceeds 1 for a
-		/// total eclipse.
+		/// The magnitude at maximum, as that of the ``Eclipse``: for a partial eclipse, the
+		/// fraction of the Sun's diameter the Moon covers, and for an annular or total eclipse,
+		/// the ratio of the Moon's apparent diameter to the Sun's.
 		public let magnitude: Double
 		/// The fraction of the Sun's area the Moon covers at maximum, with the Moon's radius for
 		/// the total or annular phase, as NASA's catalogs give it.
 		public let obscuration: Double
+		/// The greatest magnitude while the Sun is up: at maximum, if the Sun is up then, or else
+		/// at the sunrise or sunset nearest it, as NASA's tables give it for an eclipse in
+		/// progress at sunrise or sunset; or `nil` if the Sun isn't up during the eclipse.
+		public let visibleMagnitude: Double?
+		/// The obscuration when the magnitude while the Sun is up is greatest, or `nil` if the
+		/// Sun isn't up during the eclipse.
+		public let visibleObscuration: Double?
 		/// From when the partial eclipse begins (C1) to when it ends (C4).
 		public let partialPhase: ClosedRange<Instant<TT>>
 		/// From when the annular or total eclipse begins (C2) to when it ends (C3), or `nil` for a
