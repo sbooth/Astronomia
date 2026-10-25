@@ -12,7 +12,7 @@
 /// The Moon's greatest declinations from 2000 to 2049 from Skyfield 1.55 with DE421: the TT
 /// Julian Date, as a whole and a fraction, the kind, and the size of the apparent declination, in
 /// radians, north or south by the kind.
-let skyfieldLunarGreatestDeclinations: [(whole: Double, fraction: Double, kind: LunarGreatestDeclinationEvent.Kind, size: Double)] = [
+let skyfieldLunarGreatestDeclinations: [(whole: Double, fraction: Double, kind: Moon.GreatestDeclinationEvent.Kind, size: Double)] = [
 	(2451549.0, 0.9042673939839005, .south, 0.36575279495682456),
 	(2451563.0, 0.4384359819814563, .north, 0.3655232258396899),
 	(2451577.0, 0.1921888766810298, .south, 0.36547347849519346),

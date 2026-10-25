@@ -11,7 +11,7 @@
 
 /// The phases of the Moon from 2000 to 2049 from Skyfield 1.55's almanac with DE421: the TT
 /// Julian Date, as a whole and a fraction, and the phase.
-let skyfieldMoonPhases: [(whole: Double, fraction: Double, kind: MoonPhaseEvent.Kind)] = [
+let skyfieldMoonPhases: [(whole: Double, fraction: Double, kind: Moon.PhaseEvent.Kind)] = [
 	(2451550.0, 0.26021179277449846, .newMoon),
 	(2451558.0, 0.06614630995318294, .firstQuarter),
 	(2451564.0, 0.6954919397830963, .fullMoon),

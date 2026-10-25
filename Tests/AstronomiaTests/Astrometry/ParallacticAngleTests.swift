@@ -82,7 +82,7 @@ import Testing
 		}
 		// A crescent Moon low in the west after sunset, and in the east before sunrise, is lit
 		// from below, toward the Sun under the horizon.
-		let new = try MoonPhases.next(.newMoon, after: start, precision: .arcsecond)
+		let new = try Moon.nextPhase(.newMoon, after: start, precision: .arcsecond).instant
 		for days in [2.5, -2.5] {
 			let near = Instant<TT>(try new.julianDate.adding(days: days))
 			let sunEvents = try site.riseTransitSetEvents(of: .sun, from: near, to: Instant<TT>(try near.julianDate.adding(days: 1)))

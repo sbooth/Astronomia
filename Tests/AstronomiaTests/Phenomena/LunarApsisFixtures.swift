@@ -11,7 +11,7 @@
 
 /// The Moon's perigees and apogees from 2000 to 2049 from Skyfield 1.55 with DE421: the TT Julian
 /// Date, as a whole and a fraction, the kind, and the geometric geocentric distance, in km.
-let skyfieldLunarApsides: [(whole: Double, fraction: Double, kind: LunarApsisEvent.Kind, distance: Double)] = skyfieldLunarApsisRows
+let skyfieldLunarApsides: [(whole: Double, fraction: Double, kind: Moon.ApsisEvent.Kind, distance: Double)] = skyfieldLunarApsisRows
 	.split(separator: "\n")
 	.map { row in
 		let fields = row.split(separator: " ")

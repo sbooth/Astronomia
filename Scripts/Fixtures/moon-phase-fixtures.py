@@ -43,6 +43,6 @@ out = [
 	"@testable import Astronomia", "",
 	f"/// The phases of the Moon from 2000 to 2049 from Skyfield {skyfield.__version__}'s almanac with DE421: the TT",
 	"/// Julian Date, as a whole and a fraction, and the phase.",
-	"let skyfieldMoonPhases: [(whole: Double, fraction: Double, kind: MoonPhaseEvent.Kind)] = [",
+	"let skyfieldMoonPhases: [(whole: Double, fraction: Double, kind: Moon.PhaseEvent.Kind)] = [",
 ] + rows + ["]", ""]
 open(sys.argv[2], "w").write("\n".join(out))

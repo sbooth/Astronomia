@@ -14,7 +14,7 @@
 /// total phases, in minutes, from https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html.
 ///
 /// Eclipse Predictions by Fred Espenak, NASA's GSFC.
-let nasaLunarEclipses: [(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int, kind: LunarEclipse.Kind, gamma: Double, penumbralMagnitude: Double, umbralMagnitude: Double, penumbral: Double, partial: Double?, total: Double?)] = [
+let nasaLunarEclipses: [(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int, kind: Moon.Eclipse.Kind, gamma: Double, penumbralMagnitude: Double, umbralMagnitude: Double, penumbral: Double, partial: Double?, total: Double?)] = [
 	(2001, 1, 9, 20, 21, 40, .total, 0.3720, 2.1618, 1.1889, 311.0, 196.3, 61.0),
 	(2001, 7, 5, 14, 56, 23, .partial, -0.7287, 1.5475, 0.4947, 325.1, 159.3, nil),
 	(2001, 12, 30, 10, 30, 22, .penumbral, 1.0731, 0.8933, -0.1155, 243.5, nil, nil),

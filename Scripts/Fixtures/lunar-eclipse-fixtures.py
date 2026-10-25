@@ -50,6 +50,6 @@ out = [
 	"/// Julian Date of greatest eclipse, as a whole and a fraction, the kind, the umbral and penumbral",
 	"/// magnitudes, and in radians the closest approach and the radii of the penumbra, the umbra,",
 	"/// and the Moon.",
-	"let skyfieldLunarEclipses: [(whole: Double, fraction: Double, kind: LunarEclipse.Kind, umbralMagnitude: Double, penumbralMagnitude: Double, separation: Double, penumbra: Double, umbra: Double, moon: Double)] = [",
+	"let skyfieldLunarEclipses: [(whole: Double, fraction: Double, kind: Moon.Eclipse.Kind, umbralMagnitude: Double, penumbralMagnitude: Double, separation: Double, penumbra: Double, umbra: Double, moon: Double)] = [",
 ] + rows + ["]", ""]
 open(sys.argv[2], "w").write("\n".join(out))

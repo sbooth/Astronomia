@@ -75,7 +75,7 @@ out = [
 	"@testable import Astronomia", "",
 	f"/// The Moon's perigees and apogees from 2000 to 2049 from Skyfield {skyfield.__version__} with DE421: the TT Julian",
 	"/// Date, as a whole and a fraction, the kind, and the geometric geocentric distance, in km.",
-	"let skyfieldLunarApsides: [(whole: Double, fraction: Double, kind: LunarApsisEvent.Kind, distance: Double)] = skyfieldLunarApsisRows",
+	"let skyfieldLunarApsides: [(whole: Double, fraction: Double, kind: Moon.ApsisEvent.Kind, distance: Double)] = skyfieldLunarApsisRows",
 	"\t.split(separator: \"\\n\")",
 	"\t.map { row in",
 	"\t\tlet fields = row.split(separator: \" \")",

@@ -75,6 +75,6 @@ out = [
 	f"/// The Moon's greatest declinations from 2000 to 2049 from Skyfield {skyfield.__version__} with DE421: the TT",
 	"/// Julian Date, as a whole and a fraction, the kind, and the size of the apparent declination, in",
 	"/// radians, north or south by the kind.",
-	"let skyfieldLunarGreatestDeclinations: [(whole: Double, fraction: Double, kind: LunarGreatestDeclinationEvent.Kind, size: Double)] = [",
+	"let skyfieldLunarGreatestDeclinations: [(whole: Double, fraction: Double, kind: Moon.GreatestDeclinationEvent.Kind, size: Double)] = [",
 ] + rows + ["]", ""]
 open(sys.argv[2], "w").write("\n".join(out))

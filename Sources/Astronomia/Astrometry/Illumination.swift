@@ -111,8 +111,8 @@ public struct Illumination: Hashable, Sendable {
 extension Illumination {
 	/// The phase of the Moon this illumination names, with a principal phase within 5° of the
 	/// excess of the ecliptic longitude at it, about 10 hours.
-	public var moonPhaseName: MoonPhaseName {
-		MoonPhaseName(uncheckedExcessEclipticLongitude: excessEclipticLongitude)
+	public var moonPhaseName: Moon.PhaseName {
+		Moon.PhaseName(uncheckedExcessEclipticLongitude: excessEclipticLongitude)
 	}
 
 	/// Returns the phase of the Moon this illumination names.
@@ -120,9 +120,9 @@ extension Illumination {
 	/// - Parameter principalHalfWidth: The half-width of a principal phase, in excess of the
 	///   ecliptic longitude, in the closed interval [0, 45]°.
 	/// - Returns: The phase.
-	/// - Throws: ``MoonPhaseNameError/invalidHalfWidth`` if `principalHalfWidth` is NaN, infinite,
+	/// - Throws: ``Moon/PhaseNameError/invalidHalfWidth`` if `principalHalfWidth` is NaN, infinite,
 	///   or outside the closed interval [0, 45]°.
-	public func moonPhaseName(principalHalfWidth: Angle) throws(MoonPhaseNameError) -> MoonPhaseName {
-		try MoonPhaseName(excessEclipticLongitude: excessEclipticLongitude, principalHalfWidth: principalHalfWidth)
+	public func moonPhaseName(principalHalfWidth: Angle) throws(Moon.PhaseNameError) -> Moon.PhaseName {
+		try Moon.PhaseName(excessEclipticLongitude: excessEclipticLongitude, principalHalfWidth: principalHalfWidth)
 	}
 }
