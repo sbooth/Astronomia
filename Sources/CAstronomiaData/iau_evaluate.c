@@ -8,10 +8,6 @@
 #include "CAstronomiaData.h"
 #include "CAstronomiaMath.h"
 
-#if defined(__APPLE__)
-#include <vecLib/vForce.h>
-#endif
-
 // The number of terms whose sines and cosines are computed at once
 #define IAU_CHUNK_SIZE 128
 
@@ -53,18 +49,7 @@ double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series
 				angles[j] = argument;
 			}
 
-#if defined(__APPLE__)
-			// Evaluate the batch of sine and cosine values
-			const int vector_count = (int)n;
-			vvsincos(sines, cosines, angles, &vector_count);
-#else
-			// Portable scalar fallback
-			for (size_t j = 0; j < n; ++j) {
-				const struct astronomia_sincos_result sc = astronomia_sincos(angles[j]);
-				sines[j] = sc.sin;
-				cosines[j] = sc.cos;
-			}
-#endif
+			astronomia_sincos_batch(angles, sines, cosines, n);
 
 			// Add the terms in the order of their angles
 			for (size_t j = 0; j < n; ++j) {

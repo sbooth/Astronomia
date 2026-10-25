@@ -8,10 +8,6 @@
 #include "CAstronomiaData.h"
 #include "CAstronomiaMath.h"
 
-#if defined(__APPLE__)
-#include <vecLib/vForce.h>
-#endif
-
 // The number of terms whose sines and cosines are computed at once
 #define VSOP_CHUNK_SIZE 128
 
@@ -32,18 +28,7 @@ double astronomia_vsop_evaluate_series(const struct astronomia_vsop_term *terms,
 			phases[j] = term->phase + term->frequency * t;
 		}
 
-#if defined(__APPLE__)
-		// Evaluate the batch of sine and cosine values
-		const int vector_count = (int)n;
-		vvsincos(sines, cosines, phases, &vector_count);
-#else
-		// Portable scalar fallback
-		for (size_t j = 0; j < n; ++j) {
-			struct astronomia_sincos_result sc = astronomia_sincos(phases[j]);
-			sines[j] = sc.sin;
-			cosines[j] = sc.cos;
-		}
-#endif
+		astronomia_sincos_batch(phases, sines, cosines, n);
 
 		// Add the terms in their order
 		for (size_t j = 0; j < n; ++j) {
