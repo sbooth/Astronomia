@@ -107,7 +107,21 @@ static inline double astronomia_pow(double x, double y)
 	return pow(x, y);
 }
 
-/// Computes the sines and cosines of `count` angles
+/// Computes the sines and cosines of angles.
+///
+/// Where the platform provides vectorized sines and cosines, several angles are computed at a
+/// time: on Apple platforms with vForce's `vvsincos`, and on x86-64 Linux with glibc with
+/// libmvec's AVX-512 or AVX2 functions, chosen for the processor at run time, which give the
+/// same results as each other. Elsewhere each angle is computed with `astronomia_sincos`. The
+/// vectorized results can differ from `astronomia_sincos`'s in the last bits: libmvec's are
+/// documented as within 4 units in the last place.
+///
+/// - Parameters:
+///   - angles: The angles, in radians, `count` of them.
+///   - sines: The sines of the angles, written, `count` of them.
+///   - cosines: The cosines of the angles, written, `count` of them.
+///   - count: The number of angles, which may be 0, and on Apple platforms at most `INT_MAX`.
+/// - Precondition: The arrays don't overlap.
 void astronomia_sincos_batch(const double *angles, double *sines, double *cosines, size_t count);
 
 #endif
