@@ -10,11 +10,11 @@
 ///
 /// The quantity is sampled a step apart, and two samples on either side of zero bracket a
 /// crossing, which ``RootFinder`` finds to 0.1 s. The interval is closed: a crossing where the
-/// quantity is zero at its start or end is found, rising or falling. After a crossing the search skips ahead by
-/// the least time to the next. The quantity is evaluated only within the interval, and the
-/// search assumes nothing of the span over which it can be: where it can't be at the next
-/// sample, as past the end of an ephemeris's coverage, the step halves toward the last sample,
-/// so a crossing before the end is still bracketed.
+/// quantity is zero at its start or end is found, rising or falling. After a crossing the
+/// search skips ahead by the least time to the next. The quantity is evaluated only within the
+/// interval, and the search assumes nothing of the span over which it can be: where it can't be
+/// at the next sample, as past the end of an ephemeris's coverage, the step halves toward the
+/// last sample, so a crossing before the end is still bracketed.
 struct CrossingSearch<Failure: Error> {
 	/// The quantity at a time.
 	struct Sample {
