@@ -27,7 +27,22 @@ static void astronomia_sincos_batch_avx2(const double *angles, double *sines, do
 		_mm256_storeu_pd(sines + j, _ZGVdN4v_sin(x));
 		_mm256_storeu_pd(cosines + j, _ZGVdN4v_cos(x));
 	}
-	for (; j < count; ++j) { sines[j] = sin(angles[j]); cosines[j] = cos(angles[j]); }
+	if (j < count) {
+		// Process the remaining 1-3 angles using the same functions
+		double padded[4] = { 0, 0, 0, 0 };
+		double paddedSines[4];
+		double paddedCosines[4];
+		for (size_t k = 0; k < count - j; ++k) {
+			padded[k] = angles[j + k];
+		}
+		__m256d x = _mm256_loadu_pd(padded);
+		_mm256_storeu_pd(paddedSines, _ZGVdN4v_sin(x));
+		_mm256_storeu_pd(paddedCosines, _ZGVdN4v_cos(x));
+		for (size_t k = 0; k < count - j; ++k) {
+			sines[j + k] = paddedSines[k];
+			cosines[j + k] = paddedCosines[k];
+		}
+	}
 }
 
 __attribute__((target("avx512f"))) __m512d _ZGVeN8v_sin(__m512d);
