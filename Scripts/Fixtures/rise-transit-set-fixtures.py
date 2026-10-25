@@ -21,9 +21,13 @@ Requires:
 Usage:
   Scripts/Fixtures/rise-transit-set-fixtures.py de421.bsp \\
       Tests/AstronomiaTests/Astrometry/RiseTransitSetFixtures.swift
+
+The large tables are written as text fixtures in Tests/AstronomiaTests/Fixtures, which the
+Swift fixture reads when first used; see text_fixture.py.
 """
 
 import sys
+import text_fixture
 import skyfield
 from skyfield import almanac
 from skyfield.api import Star, load, load_file, wgs84
@@ -49,20 +53,21 @@ stars = [
 	("capella", 79.17232794, 45.99799147, 75.52, -427.13, 77.29, 29.19, 1991.25),
 ]
 
-# Targets: Swift name, Skyfield target, horizon (degrees, or None for Skyfield's default), and
-# the altitude of the center that matches it, in arcminutes, or nil for the standard upper limb
+# Targets: the fields of the target, a body of the built-in ephemeris or a star's index, the
+# Skyfield target, the horizon (degrees, or None for Skyfield's default), and the altitude of
+# the center that matches it, in arcminutes, or None for the standard upper limb
 targets = [
-	(".body(.sun)", eph["sun"], None, "-50.0"),
-	(".body(.moon)", eph["moon"], None, "nil"),
-	(".body(.mars)", eph["mars"], None, "-34.0"),
-	(".body(.jupiterBarycenter)", eph["jupiter barycenter"], None, "-34.0"),
-	(".body(.sun)", eph["sun"], -6.0, "-360.0"),
-	(".body(.sun)", eph["sun"], -12.0, "-720.0"),
-	(".body(.sun)", eph["sun"], -18.0, "-1080.0"),
+	("body sun", eph["sun"], None, -50.0),
+	("body moon", eph["moon"], None, None),
+	("body mars", eph["mars"], None, -34.0),
+	("body jupiterBarycenter", eph["jupiter barycenter"], None, -34.0),
+	("body sun", eph["sun"], -6.0, -360.0),
+	("body sun", eph["sun"], -12.0, -720.0),
+	("body sun", eph["sun"], -18.0, -1080.0),
 ]
 for index, (_, ra, dec, pmra, pmdec, px, rv, epoch) in enumerate(stars):
 	star = Star(ra_hours=ra / 15, dec_degrees=dec, ra_mas_per_year=pmra, dec_mas_per_year=pmdec, parallax_mas=px, radial_km_per_s=rv, epoch=ts.J(epoch))
-	targets.append((f".star({index})", star, None, "-34.0"))
+	targets.append((f"star {index}", star, None, -34.0))
 
 # TT Julian Dates of the start of each interval, which is three days long
 starts = [2461119.5, 2461211.5, 2461395.5]
@@ -82,8 +87,7 @@ for site_index, (_, lat, lon, h) in enumerate(sites):
 				t = almanac.find_transits(observer, target, t0, t1)
 				events += [(float(tt), "upperTransit") for tt in t.tt]
 			events.sort()
-			listed = ", ".join(f"({tt!r}, .{kind})" for tt, kind in events)
-			rows.append(f"\t({site_index}, {start!r}, {name}, {altitude}, {'true' if horizon is None else 'false'}, [{listed}]),")
+			rows.append((site_index, start, name, altitude, horizon is None, events))
 
 names = "\n".join(f"\t(\"{n}\", {lat!r}, {lon!r}, {h!r})," for n, lat, lon, h in sites)
 star_rows = "\n".join(f"\t(\"{n}\", {ra!r}, {dec!r}, {pmra!r}, {pmdec!r}, {px!r}, {rv!r}, {epoch!r})," for n, ra, dec, pmra, pmdec, px, rv, epoch in stars)
@@ -109,6 +113,18 @@ out = [
 	"/// Julian Date: the site, the start, the target, the altitude of its center that matches",
 	"/// Skyfield's horizon, in arcminutes, or `nil` for the standard upper limb, whether transits",
 	"/// were found, and each event's TT Julian Date and kind.",
-	"let skyfieldRiseTransitSetEvents: [(site: Int, start: Double, target: RiseTransitSetTarget, centerAltitude: Double?, hasTransits: Bool, events: [(julianDate: Double, kind: RiseTransitSetEvent.Kind)])] = [",
-] + rows + ["]", ""]
+	"let skyfieldRiseTransitSetEvents: [(site: Int, start: Double, target: RiseTransitSetTarget, centerAltitude: Double?, hasTransits: Bool, events: [(julianDate: Double, kind: RiseTransitSetEvent.Kind)])] = textFixture(\"SkyfieldRiseTransitSetEvents\") { row in",
+	"\tlet site = row.int()",
+	"\tlet start = row.double()",
+	"\tlet target: RiseTransitSetTarget = row.field() == \"star\" ? .star(row.int()) : .body(row.value())",
+	"\tlet centerAltitude = row.optionalDouble()",
+	"\tlet hasTransits = row.bool()",
+	"\tvar events: [(julianDate: Double, kind: RiseTransitSetEvent.Kind)] = []",
+	"\twhile !row.isAtEnd {",
+	"\t\tevents.append((row.double(), row.value()))",
+	"\t}",
+	"\treturn (site, start, target, centerAltitude, hasTransits, events)",
+	"}", "",
+]
 open(sys.argv[2], "w").write("\n".join(out))
+text_fixture.write(sys.argv[2], "skyfieldRiseTransitSetEvents", "Scripts/Fixtures/rise-transit-set-fixtures.py", "site start target(body NAME or star INDEX) centerAltitude hasTransits events(julianDate kind)...", rows)

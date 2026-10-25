@@ -43,6 +43,9 @@ let package = Package(
 			name: "AstronomiaTests",
 			dependencies: [
 				"Astronomia",
+			],
+			resources: [
+				.copy("Fixtures"),
 			]
 		),
 	]
