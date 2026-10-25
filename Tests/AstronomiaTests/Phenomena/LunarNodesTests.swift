@@ -177,4 +177,16 @@ import Testing
 			#expect(CrossingSearch<Never>(length: length, step: 1, skip: 10) { Self.sinusoid(start + $0) }.crossings().isEmpty)
 		}
 	}
+
+	@Test func crossingsExactlyAtTheEnds() {
+		// The interval is closed: a quantity zero at the start or the end crosses there, rising
+		// or falling.
+		for step in [1.0, 0.25] {
+			for (function, isRising, time) in [({ (t: Double) in t - 1 }, true, 1.0), ({ 1 - $0 }, false, 1), ({ $0 }, true, 0), ({ -$0 }, false, 0)] {
+				let crossings = CrossingSearch<Never>(length: 1, step: step, skip: 10, evaluate: function).crossings()
+				#expect(crossings.map(\.isRising) == [isRising], "\(isRising) \(time) \(step)")
+				#expect(crossings.first?.time == time)
+			}
+		}
+	}
 }

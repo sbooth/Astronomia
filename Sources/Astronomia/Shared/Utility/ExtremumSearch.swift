@@ -93,13 +93,17 @@ struct ExtremumSearch<Failure: Error> {
 		}
 		var extremes: [Extreme] = []
 		// The earliest time a rise couldn't be evaluated, as past the end of an ephemeris's
-		// coverage
-		var failedTime: Double? = nil
+		// coverage, and the error
+		var failed: (time: Double, error: Failure)? = nil
 		while previous.time < last {
 			var next = min(previous.time + step, last)
-			// Halfway to a time that failed, so an extreme before it is bracketed
-			if let failedTime, next >= failedTime {
-				next = (previous.time + failedTime) / 2
+			// Halfway to a time that failed, so an extreme before it is bracketed, until there is
+			// no time between them to tell
+			if let failed, next >= failed.time {
+				next = (previous.time + failed.time) / 2
+				guard failed.time - previous.time > Self.tolerance, next > previous.time else {
+					throw failed.error
+				}
 			}
 			let current: Rise
 			do throws(Failure) {
@@ -110,10 +114,7 @@ struct ExtremumSearch<Failure: Error> {
 					last = max(length - Self.interval, previous.time)
 					continue
 				}
-				guard next - previous.time > Self.tolerance else {
-					throw error
-				}
-				failedTime = next
+				failed = (next, error)
 				continue
 			}
 			guard (previous.rise > 0) != (current.rise > 0) else {

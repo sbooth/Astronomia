@@ -9,7 +9,8 @@
 /// the Moon's ecliptic latitude, crosses zero, upward and downward in turn.
 ///
 /// The quantity is sampled a step apart, and two samples on either side of zero bracket a
-/// crossing, which ``RootFinder`` finds to 0.1 s. After a crossing the search skips ahead by
+/// crossing, which ``RootFinder`` finds to 0.1 s. The interval is closed: a crossing where the
+/// quantity is zero at its start or end is found, rising or falling. After a crossing the search skips ahead by
 /// the least time to the next. The quantity is evaluated only within the interval, and the
 /// search assumes nothing of the span over which it can be: where it can't be at the next
 /// sample, as past the end of an ephemeris's coverage, the step halves toward the last sample,
@@ -61,31 +62,38 @@ struct CrossingSearch<Failure: Error> {
 		var crossings: [Crossing] = []
 		var previous = try sample(at: 0)
 		// The earliest time the quantity couldn't be evaluated, as past the end of an
-		// ephemeris's coverage
-		var failedTime: Double? = nil
+		// ephemeris's coverage, and the error
+		var failed: (time: Double, error: Failure)? = nil
 		while previous.time < length {
 			var next = min(previous.time + step, length)
-			// Halfway to a time that failed, so a crossing before it is bracketed
-			if let failedTime, next >= failedTime {
-				next = (previous.time + failedTime) / 2
+			// Halfway to a time that failed, so a crossing before it is bracketed, until there is
+			// no time between them to tell
+			if let failed, next >= failed.time {
+				next = (previous.time + failed.time) / 2
+				guard failed.time - previous.time > Self.tolerance, next > previous.time else {
+					throw failed.error
+				}
 			}
 			let current: Sample
 			do throws(Failure) {
 				current = try sample(at: next)
 			} catch {
-				guard next - previous.time > Self.tolerance else {
-					throw error
-				}
-				failedTime = next
+				failed = (next, error)
 				continue
 			}
-			guard (previous.value < 0) != (current.value < 0) else {
+			// A change of sign brackets a crossing, where zero counts as nonnegative, so a
+			// rising crossing at the start, and a falling one at the end, are their own: the
+			// quantity is zero there and on the same side as the sample next to it.
+			let crosses = (previous.value < 0) != (current.value < 0)
+			let risingAtStart = previous.time == 0 && previous.value == 0 && current.value > 0
+			let fallingAtEnd = current.time == length && current.value == 0 && previous.value > 0
+			guard crosses || risingAtStart || fallingAtEnd else {
 				previous = current
 				continue
 			}
 			// The crossing is after the previous sample, so the next is at least the skip and a
 			// step after it.
-			let isRising = previous.value < 0
+			let isRising = current.value > previous.value
 			var resume = previous.time + skip
 			if rising == nil || rising == isRising {
 				let found = try RootFinder.refine(previous, current, time: \.time, tolerance: Self.tolerance, maximumIterations: Self.maximumIterations, evaluate: sample, function: \.value)

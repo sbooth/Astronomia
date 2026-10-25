@@ -118,22 +118,25 @@ struct QuarterSearch<Failure: Error> {
 	func sampleAfter(_ lower: Sample, past: (Sample) -> Double, at time: Double) throws(Failure) -> Sample {
 		var lower = lower
 		var time = time
-		var failedTime: Double? = nil
+		// The earliest time the angle couldn't be evaluated, and the error
+		var failed: (time: Double, error: Failure)? = nil
 		while true {
 			do throws(Failure) {
 				let sample = try evaluate(time)
-				guard let failedTime, past(sample) < 0 else {
+				guard failed != nil, past(sample) < 0 else {
 					return sample
 				}
 				// The target is between this sample and a time that failed.
 				lower = sample
-				time = (lower.time + failedTime) / 2
 			} catch {
-				guard time - lower.time > Self.tolerance else {
-					throw error
+				failed = (time, error)
+			}
+			// Halfway to the time that failed, until there is no time between them to tell
+			if let failed {
+				time = (lower.time + failed.time) / 2
+				guard failed.time - lower.time > Self.tolerance, time > lower.time else {
+					throw failed.error
 				}
-				failedTime = time
-				time = (lower.time + time) / 2
 			}
 		}
 	}

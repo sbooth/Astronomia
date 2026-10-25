@@ -59,22 +59,23 @@ struct RiseTransitSetSearch {
 		var events: [RiseTransitSetEvent] = []
 		var a = try evaluate(0)
 		// The earliest time the place couldn't be evaluated, as past the end of an ephemeris's
-		// coverage
-		var failedTime: Double? = nil
+		// coverage, and the error
+		var failed: (time: Double, error: RiseTransitSetError)? = nil
 		while a.time < length {
 			var time = min(a.time + Self.step, length)
-			// Halfway to a time that failed, so an event before it is bracketed
-			if let failedTime, time >= failedTime {
-				time = (a.time + failedTime) / 2
+			// Halfway to a time that failed, so an event before it is bracketed, until there is
+			// no time between them to tell
+			if let failed, time >= failed.time {
+				time = (a.time + failed.time) / 2
+				guard failed.time - a.time > Self.tolerance, time > a.time else {
+					throw failed.error
+				}
 			}
 			let b: Sample
 			do throws(RiseTransitSetError) {
 				b = try evaluate(time)
 			} catch {
-				guard time - a.time > Self.tolerance else {
-					throw error
-				}
-				failedTime = time
+				failed = (time, error)
 				continue
 			}
 
