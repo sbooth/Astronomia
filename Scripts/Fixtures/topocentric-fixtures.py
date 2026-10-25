@@ -35,9 +35,13 @@ Requires:
 Usage:
   Scripts/Fixtures/topocentric-fixtures.py de421.bsp \\
       Tests/AstronomiaTests/Astrometry/TopocentricFixtures.swift
+
+The large tables are written as text fixtures in Tests/AstronomiaTests/Fixtures, which the
+Swift fixture reads when first used; see text_fixture.py.
 """
 
 import math, sys
+import text_fixture
 import numpy as np
 import erfa
 import skyfield
@@ -158,13 +162,13 @@ for jd in dates:
 			above = float(np.dot(astrometric, up)) >= 0
 			ri, di = erfa.atciqn(ra2, dec2, pmr2, pmd2, pxo, rv2, astrom, deflectors if above else deflectors[:3])
 			apparent = bpn.T @ s2c(float(ri), float(di))
-			star_places.append(f"\t({i}, {jd!r}, {j}, {f(astrometric)}, {f(apparent)}),")
+			star_places.append((i, jd, j, astrometric, apparent))
 		site = wgs84.latlon(lat, lon, elevation_m=h)
 		topocentric = eph["earth"] + site
 		for name, key in bodies:
 			geo = e.observe(eph[key]).apparent().position.au
 			topo = topocentric.at(t).observe(eph[key]).apparent().position.au
-			body_places.append(f"\t({i}, {jd!r}, .{name}, {f(geo)}, {f(topo)}),")
+			body_places.append((i, jd, name, geo, topo))
 
 names = "\n".join(f"\t(\"{n}\", {lat!r}, {lon!r}, {h!r}, .{ell})," for n, lat, lon, h, ell in sites)
 out = [
@@ -188,10 +192,15 @@ out = [
 	"/// Places of the fixture stars seen from the WGS84 sites at TT Julian Dates: the astrometric",
 	"/// direction from pmpx and the apparent direction from atciqn, with the Sun, Jupiter, Saturn,",
 	"/// and the Earth of DE421 deflecting, rotated back to the GCRS, after starpm to the date.",
-	"let erfaTopocentricStarPlaces: [(site: Int, julianDate: Double, star: Int, astrometric: [Double], apparent: [Double])] = [",
-] + star_places + ["]", "",
+	"let erfaTopocentricStarPlaces: [(site: Int, julianDate: Double, star: Int, astrometric: [Double], apparent: [Double])] = textFixture(\"ErfaTopocentricStarPlaces\") { row in",
+	"\t(row.int(), row.double(), row.int(), row.vector(), row.vector())",
+	"}", "",
 	f"/// Apparent places of bodies from Skyfield {skyfield.__version__} and DE421 at TT Julian Dates, with ΔT = {DELTA_T} s:",
 	"/// the geocentric position and the position seen from the WGS84 site, in au in the GCRS.",
-	"let skyfieldTopocentricPlaces: [(site: Int, julianDate: Double, body: BuiltInEphemeris.Body, geocentric: [Double], topocentric: [Double])] = [",
-] + body_places + ["]", ""]
+	"let skyfieldTopocentricPlaces: [(site: Int, julianDate: Double, body: BuiltInEphemeris.Body, geocentric: [Double], topocentric: [Double])] = textFixture(\"SkyfieldTopocentricPlaces\") { row in",
+	"\t(row.int(), row.double(), row.value(), row.vector(), row.vector())",
+	"}", ""
+]
 open(sys.argv[2], "w").write("\n".join(out))
+text_fixture.write(sys.argv[2], "erfaTopocentricStarPlaces", "Scripts/Fixtures/topocentric-fixtures.py", "site julianDate star astrometric.x astrometric.y astrometric.z apparent.x apparent.y apparent.z", star_places)
+text_fixture.write(sys.argv[2], "skyfieldTopocentricPlaces", "Scripts/Fixtures/topocentric-fixtures.py", "site julianDate body geocentric.x geocentric.y geocentric.z topocentric.x topocentric.y topocentric.z", body_places)

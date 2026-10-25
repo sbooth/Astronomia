@@ -25,9 +25,13 @@ Requires:
 Usage:
   Scripts/Fixtures/illumination-fixtures.py de421.bsp \\
       Tests/AstronomiaTests/Astrometry/IlluminationFixtures.swift
+
+The large tables are written as text fixtures in Tests/AstronomiaTests/Fixtures, which the
+Swift fixture reads when first used; see text_fixture.py.
 """
 
 import sys
+import text_fixture
 import skyfield
 from skyfield.api import load, load_file, wgs84
 from skyfield.trigonometry import position_angle_of
@@ -69,7 +73,7 @@ def row(body, site, tt):
 	ra, dec, _ = target.radec(epoch="date")
 	sra, sdec, _ = light.radec(epoch="date")
 	limb = position_angle_of((dec, ra), (sdec, sra))
-	return f"\t({body}, {site[0]}, {tt!r}, {float(phase.degrees)!r}, {float(fraction)!r}, {float(elongation.degrees)!r}, {float(limb.degrees)!r}),"
+	return (body[1:], site[0], tt, float(phase.degrees), float(fraction), float(elongation.degrees), float(limb.degrees))
 
 rows = []
 # The Moon from the geocenter through two synodic months, every 1.5 days, and every 97 days
@@ -97,6 +101,9 @@ out = [
 	"/// site's index in the sites of `IlluminationTests`, -1 for the geocenter, the TT Julian Date, and",
 	"/// the phase angle, the illuminated fraction, the elongation, and the position angle of the",
 	"/// bright limb, in degrees but for the fraction.",
-	"let skyfieldIllumination: [(body: BuiltInEphemeris.Body, site: Int, julianDate: Double, phaseAngle: Double, fraction: Double, elongation: Double, brightLimb: Double)] = [",
-] + rows + ["]", ""]
+	"let skyfieldIllumination: [(body: BuiltInEphemeris.Body, site: Int, julianDate: Double, phaseAngle: Double, fraction: Double, elongation: Double, brightLimb: Double)] = textFixture(\"SkyfieldIllumination\") { row in",
+	"\t(row.value(), row.int(), row.double(), row.double(), row.double(), row.double(), row.double())",
+	"}", "",
+]
 open(sys.argv[2], "w").write("\n".join(out))
+text_fixture.write(sys.argv[2], "skyfieldIllumination", "Scripts/Fixtures/illumination-fixtures.py", "body site julianDate phaseAngle fraction elongation brightLimb", rows)

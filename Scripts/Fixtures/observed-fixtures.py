@@ -30,9 +30,13 @@ Requires:
 Usage:
   Scripts/Fixtures/observed-fixtures.py de421.bsp \\
       Tests/AstronomiaTests/Astrometry/ObservedFixtures.swift
+
+The large tables are written as text fixtures in Tests/AstronomiaTests/Fixtures, which the
+Swift fixture reads when first used; see text_fixture.py.
 """
 
 import math, sys
+import text_fixture
 import numpy as np
 import erfa
 import skyfield
@@ -98,9 +102,6 @@ refco_inputs = [c for c in conditions if c] + [
 # TT Julian Dates
 dates = [2451545.0, 2460967.25, 2461334.75, 2469807.5]
 
-def f(v):
-	return "[" + ", ".join(repr(float(x)) for x in v) + "]"
-
 def pv(p, v):
 	result = np.zeros((), dtype=erfa.dt_pv)
 	result["p"] = p
@@ -162,14 +163,14 @@ for jd in dates:
 				above = float(np.dot(astrometric, eb - deflectors[3]["pv"]["p"])) >= 0
 				ri, di = erfa.atciqn(ra2, dec2, pmr2, pmd2, pxo, rv2, astrom, deflectors if above else deflectors[:3])
 				aob, zob, hob, dob, rob = erfa.atioq(ri, di, astrom)
-				star_places.append(f"\t({i}, {jd!r}, {j}, {k}, {float(aob)!r}, {float(zob)!r}, {float(hob)!r}, {float(dob)!r}),")
+				star_places.append((i, jd, j, k, float(aob), float(zob), float(hob), float(dob)))
 		site = wgs84.latlon(lat, lon, elevation_m=h)
 		topocentric = eph["earth"] + site
 		for name, key in bodies:
 			apparent = topocentric.at(t).observe(eph[key]).apparent()
 			alt, az, distance = apparent.altaz()
 			ha, dec, _ = apparent.hadec()
-			body_places.append(f"\t({i}, {jd!r}, .{name}, {f(apparent.position.au)}, {float(alt.radians)!r}, {float(az.radians)!r}, {float(ha.radians)!r}, {float(dec.radians)!r}),")
+			body_places.append((i, jd, name, apparent.position.au, float(alt.radians), float(az.radians), float(ha.radians), float(dec.radians)))
 
 out = [
 	"//", "// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>", "// SPDX-License-Identifier: MIT", "//",
@@ -188,11 +189,16 @@ out = [
 	"/// the fixture conditions, from ERFA's atioq after apco and atciqn, with UT1 = TT - 69.2 s and",
 	"/// polar motion of 0.12\" and 0.34\": the azimuth, zenith distance, hour angle, and",
 	"/// declination, in radians.",
-	"let erfaObservedStarPlaces: [(site: Int, julianDate: Double, star: Int, conditions: Int, azimuth: Double, zenithDistance: Double, hourAngle: Double, declination: Double)] = [",
-] + star_places + ["]", "",
+	"let erfaObservedStarPlaces: [(site: Int, julianDate: Double, star: Int, conditions: Int, azimuth: Double, zenithDistance: Double, hourAngle: Double, declination: Double)] = textFixture(\"ErfaObservedStarPlaces\") { row in",
+	"\t(row.int(), row.double(), row.int(), row.int(), row.double(), row.double(), row.double(), row.double())",
+	"}", "",
 	f"/// Places of bodies from Skyfield {skyfield.__version__} and DE421 seen from the WGS84 sites at TT Julian",
 	f"/// Dates, with ΔT = {DELTA_T} s and no polar motion: the apparent position, in au in the GCRS, and",
 	"/// the altitude, azimuth, hour angle, and declination, in radians, without refraction.",
-	"let skyfieldObservedPlaces: [(site: Int, julianDate: Double, body: BuiltInEphemeris.Body, apparent: [Double], altitude: Double, azimuth: Double, hourAngle: Double, declination: Double)] = [",
-] + body_places + ["]", ""]
+	"let skyfieldObservedPlaces: [(site: Int, julianDate: Double, body: BuiltInEphemeris.Body, apparent: [Double], altitude: Double, azimuth: Double, hourAngle: Double, declination: Double)] = textFixture(\"SkyfieldObservedPlaces\") { row in",
+	"\t(row.int(), row.double(), row.value(), row.vector(), row.double(), row.double(), row.double(), row.double())",
+	"}", ""
+]
 open(sys.argv[2], "w").write("\n".join(out))
+text_fixture.write(sys.argv[2], "erfaObservedStarPlaces", "Scripts/Fixtures/observed-fixtures.py", "site julianDate star conditions azimuth zenithDistance hourAngle declination", star_places)
+text_fixture.write(sys.argv[2], "skyfieldObservedPlaces", "Scripts/Fixtures/observed-fixtures.py", "site julianDate body apparent.x apparent.y apparent.z altitude azimuth hourAngle declination", body_places)

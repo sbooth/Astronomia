@@ -19,9 +19,13 @@ Requires:
 Usage:
   Scripts/Fixtures/lunar-apsis-fixtures.py de421.bsp \\
       Tests/AstronomiaTests/Phenomena/LunarApsisFixtures.swift
+
+The large tables are written as text fixtures in Tests/AstronomiaTests/Fixtures, which the
+Swift fixture reads when first used; see text_fixture.py.
 """
 
 import sys
+import text_fixture
 import skyfield
 from skyfield.api import load, load_file
 from skyfield.searchlib import find_maxima
@@ -64,9 +68,7 @@ for event in events:
 	else:
 		clusters.append([event])
 events = [(min if cluster[0][2] == ".perigee" else max)(cluster, key=lambda event: event[3]) for cluster in clusters]
-# The rows are text, parsed when first used: a literal array of so many tuples is slow and
-# memory-hungry to type-check, and repr round-trips each value exactly.
-rows = [f"{whole!r} {fraction!r} {kind[1:]} {value!r}" for whole, fraction, kind, value in events]
+rows = [(whole, fraction, kind[1:], value) for whole, fraction, kind, value in events]
 
 out = [
 	"//", "// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>", "// SPDX-License-Identifier: MIT", "//",
@@ -75,14 +77,9 @@ out = [
 	"@testable import Astronomia", "",
 	f"/// The Moon's perigees and apogees from 2000 to 2049 from Skyfield {skyfield.__version__} with DE421: the TT Julian",
 	"/// Date, as a whole and a fraction, the kind, and the geometric geocentric distance, in km.",
-	"let skyfieldLunarApsides: [(whole: Double, fraction: Double, kind: Moon.ApsisEvent.Kind, distance: Double)] = skyfieldLunarApsisRows",
-	"\t.split(separator: \"\\n\")",
-	"\t.map { row in",
-	"\t\tlet fields = row.split(separator: \" \")",
-	"\t\treturn (Double(fields[0])!, Double(fields[1])!, fields[2] == \"perigee\" ? .perigee : .apogee, Double(fields[3])!)",
-	"\t}",
-	"",
-	"/// The rows of `skyfieldLunarApsides`, as text, which is quick to compile.",
-	"private let skyfieldLunarApsisRows = \"\"\"",
-] + rows + ['"""', ""]
+	"let skyfieldLunarApsides: [(whole: Double, fraction: Double, kind: Moon.ApsisEvent.Kind, distance: Double)] = textFixture(\"SkyfieldLunarApsides\") { row in",
+	"\t(row.double(), row.double(), row.value(), row.double())",
+	"}", "",
+]
 open(sys.argv[2], "w").write("\n".join(out))
+text_fixture.write(sys.argv[2], "skyfieldLunarApsides", "Scripts/Fixtures/lunar-apsis-fixtures.py", "whole fraction kind distance", rows)

@@ -20,9 +20,13 @@ Requires:
 Usage:
   Scripts/Fixtures/lunar-greatest-declination-fixtures.py de421.bsp \\
       Tests/AstronomiaTests/Phenomena/LunarGreatestDeclinationFixtures.swift
+
+The large tables are written as text fixtures in Tests/AstronomiaTests/Fixtures, which the
+Swift fixture reads when first used; see text_fixture.py.
 """
 
 import sys
+import text_fixture
 import skyfield
 from skyfield.api import load, load_file
 from skyfield.searchlib import find_maxima, find_minima
@@ -63,9 +67,8 @@ for event in events:
 	else:
 		clusters.append([event])
 events = [max(cluster, key=lambda event: abs(event[3])) for cluster in clusters]
-# The declination is given by its size, which the kind signs: a negative literal is an operator
-# applied to it, which makes an array of them slow to type-check.
-rows = [f"\t({whole!r}, {fraction!r}, {kind}, {abs(value)!r})," for whole, fraction, kind, value in events]
+# The declination is given by its size, which the kind signs.
+rows = [(whole, fraction, kind[1:], abs(value)) for whole, fraction, kind, value in events]
 
 out = [
 	"//", "// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>", "// SPDX-License-Identifier: MIT", "//",
@@ -75,6 +78,9 @@ out = [
 	f"/// The Moon's greatest declinations from 2000 to 2049 from Skyfield {skyfield.__version__} with DE421: the TT",
 	"/// Julian Date, as a whole and a fraction, the kind, and the size of the apparent declination, in",
 	"/// radians, north or south by the kind.",
-	"let skyfieldLunarGreatestDeclinations: [(whole: Double, fraction: Double, kind: Moon.GreatestDeclinationEvent.Kind, size: Double)] = [",
-] + rows + ["]", ""]
+	"let skyfieldLunarGreatestDeclinations: [(whole: Double, fraction: Double, kind: Moon.GreatestDeclinationEvent.Kind, size: Double)] = textFixture(\"SkyfieldLunarGreatestDeclinations\") { row in",
+	"\t(row.double(), row.double(), row.value(), row.double())",
+	"}", "",
+]
 open(sys.argv[2], "w").write("\n".join(out))
+text_fixture.write(sys.argv[2], "skyfieldLunarGreatestDeclinations", "Scripts/Fixtures/lunar-greatest-declination-fixtures.py", "whole fraction kind size", rows)
