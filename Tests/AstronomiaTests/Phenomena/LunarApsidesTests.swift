@@ -136,6 +136,45 @@ import Testing
 	}
 }
 
+/// An ephemeris whose Moon is at a non-finite position.
+struct NonFiniteMoonEphemeris: GeocentricEphemeris {
+	typealias Body = BuiltInEphemeris.Body
+	typealias Frame = BuiltInEphemeris.Frame
+
+	static var defaultOrigin: Body { BuiltInEphemeris.defaultOrigin }
+	static var earth: Body { BuiltInEphemeris.earth }
+	static var sun: Body { BuiltInEphemeris.sun }
+	static var solarSystemBarycenter: Body { BuiltInEphemeris.solarSystemBarycenter }
+	static var lightDeflectingBodies: [LightDeflectingBody<Body>] { BuiltInEphemeris.lightDeflectingBodies }
+
+	let base = BuiltInEphemeris()
+	/// The value of each coordinate of the Moon's position.
+	let value: Double
+
+	var coverage: ClosedRange<Instant<TDB>> { base.coverage }
+
+	func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<Frame> {
+		guard body == .moon else { return try base.state(of: body, relativeTo: origin, at: tdb) }
+		return StateVector(Vector3(value, value, value), .zero)
+	}
+}
+
+extension LunarApsidesTests {
+	@Test func nonFiniteDistances() throws {
+		// A Moon at NaN or infinity throws, rather than finding no apsis.
+		let start = try Self.instant(2_461_041.5)
+		for value in [Double.nan, .infinity] {
+			let ephemeris = NonFiniteMoonEphemeris(value: value)
+			#expect(throws: LunarApsisError.ephemeris(.invalidState)) {
+				try LunarApsides.events(of: .moon, from: start, to: Self.instant(2_461_071.5), ephemeris: ephemeris)
+			}
+			#expect(throws: LunarApsisError.ephemeris(.invalidState)) {
+				try LunarApsides.next(.perigee, of: .moon, after: start, ephemeris: ephemeris)
+			}
+		}
+	}
+}
+
 @Suite struct SemidiameterTests {
 	@Test func moonAndSun() throws {
 		// From the center of the Earth at a perigee, the Moon's semidiameter is asin(R / d), and

@@ -65,7 +65,8 @@ extension LunarApsides {
 	///   - ``LunarApsisError/invalidInterval`` if `end` is before `start`.
 	///   - ``LunarApsisError/timescaleConversion(_:)`` if the interval can't be converted to TT.
 	///   - ``LunarApsisError/ephemeris(_:)`` if the Moon's state in the interval fails, such as
-	///     outside the ephemeris's coverage.
+	///     outside the ephemeris's coverage, or with ``EphemerisError/invalidState`` if its
+	///     distance is NaN or infinite.
 	public static func events<E: GeocentricEphemeris, Scale: Timescale>(of moon: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, ephemeris: E) throws(LunarApsisError) -> [LunarApsisEvent] {
 		try events(of: moon, from: start, to: end, context: context, ephemeris: ephemeris, only: nil, stoppingAfterFirst: false)
 	}
@@ -102,7 +103,10 @@ extension LunarApsides {
 				throw .invalidInterval
 			}
 			do throws(EphemerisError) {
-				return try ephemeris.state(of: moon, relativeTo: E.earth, at: instant).position.distance.kilometers
+				let distance = try ephemeris.state(of: moon, relativeTo: E.earth, at: instant).position.distance.kilometers
+				// A non-finite distance would bracket no apsis, hiding the invalid state.
+				guard distance.isFinite else { throw .invalidState }
+				return distance
 			} catch {
 				throw .ephemeris(error)
 			}
@@ -151,7 +155,8 @@ extension LunarApsides {
 	///   - ``LunarApsisError/timescaleConversion(_:)`` if `instant` can't be converted to TT.
 	///   - ``LunarApsisError/invalidInterval`` if the end of the search can't be represented.
 	///   - ``LunarApsisError/ephemeris(_:)`` if the Moon's state fails, such as past the
-	///     ephemeris's coverage.
+	///     ephemeris's coverage, or with ``EphemerisError/invalidState`` if its distance is NaN
+	///     or infinite.
 	///   - ``LunarApsisError/apsisNotFound`` if there is none within the search, as for an
 	///     ephemeris whose Moon doesn't move as the Moon does.
 	public static func next<E: GeocentricEphemeris, Scale: Timescale>(_ kind: LunarApsisEvent.Kind, of moon: E.Body, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, ephemeris: E) throws(LunarApsisError) -> LunarApsisEvent {
