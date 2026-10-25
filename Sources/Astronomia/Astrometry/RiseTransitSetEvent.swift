@@ -10,7 +10,7 @@
 ///
 /// ```swift
 /// let events = try site.riseTransitSetEvents(of: .sun, from: start, to: end)
-/// for event in events where event.kind == .rising {
+/// for event in events where event.kind == .rise {
 /// 	print(event.instant, event.place.azimuth.degrees)
 /// }
 /// ```
@@ -18,9 +18,9 @@ public struct RiseTransitSetEvent: Hashable, Sendable {
 	/// A kind of event.
 	public enum Kind: Hashable, Sendable, CaseIterable {
 		/// The target rises through the event altitude.
-		case rising
+		case rise
 		/// The target sets through the event altitude.
-		case setting
+		case set
 		/// The target crosses the meridian above the pole, at hour angle 0°, near its highest.
 		case upperTransit
 		/// The target crosses the meridian below the pole, at hour angle 180°, near its lowest.

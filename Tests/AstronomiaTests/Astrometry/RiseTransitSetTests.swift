@@ -96,7 +96,7 @@ import Testing
 			let crossing = try search.refine(search.evaluate(0), search.evaluate(1.0 / 24)) { $0.height }
 			#expect(abs(crossing.time * secondsPerDay - seconds) <= 0.1, "\(seconds) s")
 			// The full search finds the setting there too.
-			let setting = try #require(try search.events().first { $0.kind == .setting })
+			let setting = try #require(try search.events().first { $0.kind == .set })
 			#expect(abs(setting.place.altitude.radians - crossing.place.altitude.radians) <= 1e-9)
 		}
 	}
@@ -114,11 +114,11 @@ import Testing
 			let place = event.place
 			#expect(place.instant == event.instant)
 			switch event.kind {
-			case .rising, .setting:
+			case .rise, .set:
 				let semidiameter = Math.asin(lunarMeanRadius.astronomicalUnits / place.distance.astronomicalUnits)
 				#expect(abs(place.altitude.radians + semidiameter + Angle(arcminutes: 34).radians) <= tolerance)
 				// Rising in the east, setting in the west
-				#expect((event.kind == .rising) == (place.azimuth.degrees < 180))
+				#expect((event.kind == .rise) == (place.azimuth.degrees < 180))
 			case .upperTransit:
 				#expect(abs(place.hourAngle.radians) <= tolerance)
 			case .lowerTransit:
@@ -126,7 +126,7 @@ import Testing
 			}
 		}
 		// Risings and settings alternate, as do upper and lower transits.
-		let crossings = events.filter { $0.kind == .rising || $0.kind == .setting }.map(\.kind)
+		let crossings = events.filter { $0.kind == .rise || $0.kind == .set }.map(\.kind)
 		#expect(zip(crossings, crossings.dropFirst()).allSatisfy { $0 != $1 })
 		let transits = events.filter { $0.kind == .upperTransit || $0.kind == .lowerTransit }.map(\.kind)
 		#expect(zip(transits, transits.dropFirst()).allSatisfy { $0 != $1 })
@@ -155,12 +155,12 @@ import Testing
 		let end = try Self.instant(2_461_120.5)
 		// The standard altitude takes the Sun's upper limb from its radius, about 16', so it
 		// rises about a minute and a half earlier than its center at -34'.
-		let standard = try site.riseTransitSetEvents(of: .sun, from: start, to: end, earthOrientation: Self.earthOrientation).filter { $0.kind == .rising }
-		let center = try site.riseTransitSetEvents(of: .sun, from: start, to: end, altitude: .center(altitude: .arcminutes(-34)), earthOrientation: Self.earthOrientation).filter { $0.kind == .rising }
+		let standard = try site.riseTransitSetEvents(of: .sun, from: start, to: end, earthOrientation: Self.earthOrientation).filter { $0.kind == .rise }
+		let center = try site.riseTransitSetEvents(of: .sun, from: start, to: end, altitude: .center(altitude: .arcminutes(-34)), earthOrientation: Self.earthOrientation).filter { $0.kind == .rise }
 		let difference = (Self.julianDate(center[0].instant) - Self.julianDate(standard[0].instant)) * secondsPerDay
 		#expect(difference > 80 && difference < 120)
 		// A radius of zero is the center at -34'.
-		let point = try site.riseTransitSetEvents(of: .sun, from: start, to: end, altitude: .standard(radius: .zero), earthOrientation: Self.earthOrientation).filter { $0.kind == .rising }
+		let point = try site.riseTransitSetEvents(of: .sun, from: start, to: end, altitude: .standard(radius: .zero), earthOrientation: Self.earthOrientation).filter { $0.kind == .rise }
 		#expect(abs(Self.julianDate(point[0].instant) - Self.julianDate(center[0].instant)) * secondsPerDay < 0.2)
 		// The built-in radii, and none by default for another ephemeris
 		#expect(BuiltInEphemeris.radius(of: .sun) == .kilometers(695_700))
@@ -170,7 +170,7 @@ import Testing
 		#expect(BuiltInEphemeris.Body.allCases.filter { BuiltInEphemeris.radius(of: $0) != nil }.count == 11)
 		#expect(AlteredEphemeris.radius(of: .sun) == nil)
 		// With no radius, the Sun is a point.
-		let altered = try site.riseTransitSetEvents(of: .sun, from: start, to: end, earthOrientation: Self.earthOrientation, ephemeris: AlteredEphemeris()).filter { $0.kind == .rising }
+		let altered = try site.riseTransitSetEvents(of: .sun, from: start, to: end, earthOrientation: Self.earthOrientation, ephemeris: AlteredEphemeris()).filter { $0.kind == .rise }
 		#expect(abs(Self.julianDate(altered[0].instant) - Self.julianDate(center[0].instant)) * secondsPerDay < 0.2)
 	}
 

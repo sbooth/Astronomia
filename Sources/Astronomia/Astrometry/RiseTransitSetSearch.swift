@@ -76,7 +76,7 @@ struct RiseTransitSetSearch {
 
 		for (a, b) in zip(points, points.dropFirst()) where (a.height < 0) != (b.height < 0) {
 			let crossing = try refine(a, b) { $0.height }
-			events.append((b.height >= 0 ? .rising : .setting, crossing))
+			events.append((b.height >= 0 ? .rise : .set, crossing))
 		}
 
 		return events

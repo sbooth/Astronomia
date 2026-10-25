@@ -17,4 +17,7 @@ public enum RiseTransitSetError: Error, Hashable, Sendable {
 	case ephemeris(EphemerisError)
 	/// The star can't be observed at an instant in the interval.
 	case star(StarError)
+	/// The event wasn't found within the limit of the search, as for a target that doesn't
+	/// rise or set at the site in that time.
+	case eventNotFound
 }

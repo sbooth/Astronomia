@@ -39,8 +39,9 @@ extension LunarEclipseError {
 		case .invalidInterval: self = .invalidInterval
 		case let .timescaleConversion(error): self = .timescaleConversion(error)
 		case let .ephemeris(error): self = .ephemeris(error)
-		// Only a star's place fails with a star error.
-		case .star: self = .ephemeris(.invalidState)
+		// Only a star's place fails with a star error, and only a search for the next event
+		// fails to find one; the risings and settings of an eclipse are found in an interval.
+		case .star, .eventNotFound: self = .ephemeris(.invalidState)
 		}
 	}
 }

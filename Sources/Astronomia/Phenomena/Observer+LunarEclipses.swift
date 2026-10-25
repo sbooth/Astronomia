@@ -84,7 +84,7 @@ extension Observer {
 				} catch {
 					throw .ephemeris(error)
 				}
-			}.filter { $0.kind == .rising || $0.kind == .setting }
+			}.filter { $0.kind == .rise || $0.kind == .set }
 		} catch {
 			throw LunarEclipseError(error)
 		}
@@ -95,11 +95,11 @@ extension Observer {
 		var risen: Instant<TT>? = contacts[0].isMoonUp ? eclipse.penumbralPhase.lowerBound : nil
 		for event in events {
 			switch event.kind {
-			case .rising:
+			case .rise:
 				if risen == nil {
 					risen = event.instant
 				}
-			case .setting:
+			case .set:
 				if let start = risen {
 					intervals.append(start ... event.instant)
 					risen = nil

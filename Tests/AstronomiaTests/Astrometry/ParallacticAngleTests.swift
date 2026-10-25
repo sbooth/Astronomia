@@ -88,8 +88,8 @@ import Testing
 			let sunEvents = try site.riseTransitSetEvents(of: .sun, from: near, to: Instant<TT>(try near.julianDate.adding(days: 1)))
 			// An hour after sunset, or before sunrise
 			let twilight = days > 0
-				? try #require(sunEvents.first { $0.kind == .setting }).instant.julianDate.adding(days: 1.0 / 24)
-				: try #require(sunEvents.first { $0.kind == .rising }).instant.julianDate.adding(days: -1.0 / 24)
+				? try #require(sunEvents.first { $0.kind == .set }).instant.julianDate.adding(days: 1.0 / 24)
+				: try #require(sunEvents.first { $0.kind == .rise }).instant.julianDate.adding(days: -1.0 / 24)
 			let sky = try site.observation(at: Instant<TT>(twilight), ephemeris: ephemeris)
 			let illumination = try sky.illumination(of: .moon)
 			let place = try sky.observedPlace(of: sky.apparentPlace(of: .moon))
