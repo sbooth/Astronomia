@@ -13,7 +13,7 @@
 /// Julian Date of greatest eclipse, as a whole and a fraction, the kind, the umbral and penumbral
 /// magnitudes, and in radians the closest approach and the radii of the penumbra, the umbra,
 /// and the Moon.
-let skyfieldLunarEclipses: [(whole: Double, fraction: Double, kind: LunarEclipse.Kind, umbralMagnitude: Double, penumbralMagnitude: Double, separation: Double, penumbra: Double, umbra: Double, moon: Double)] = [
+let skyfieldLunarEclipses: [(whole: Double, fraction: Double, kind: Moon.Eclipse.Kind, umbralMagnitude: Double, penumbralMagnitude: Double, separation: Double, penumbra: Double, umbra: Double, moon: Double)] = [
 	(2415183.0, 0.6441699089482427, .penumbral, -0.005771955122161598, 1.0002407401032973, 0.01695984366030876, 0.0215172585613564, 0.012352036938429688, 0.004555221651985555),
 	(2415359.0, 0.9350433745421469, .penumbral, -0.1870116920009052, 0.8173708362228375, 0.01923071201456095, 0.02221719599904126, 0.012765879140406076, 0.0047050384654489675),
 	(2415508.0, 0.27125123981386423, .penumbral, -0.03294929672155397, 1.0446281527130596, 0.015876037189874743, 0.02054150315569464, 0.01131061619028851, 0.004283166360918847),

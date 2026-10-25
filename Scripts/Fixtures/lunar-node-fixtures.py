@@ -69,7 +69,7 @@ out = [
 	"@testable import Astronomia", "",
 	f"/// The Moon's passages through its nodes from 2000 to 2049 from Skyfield {skyfield.__version__} with DE421: the TT",
 	"/// Julian Date, as a whole and a fraction, the node, and the apparent ecliptic longitude, in radians.",
-	"let skyfieldLunarNodes: [(whole: Double, fraction: Double, kind: LunarNodeEvent.Kind, longitude: Double)] = skyfieldLunarNodeRows",
+	"let skyfieldLunarNodes: [(whole: Double, fraction: Double, kind: Moon.NodeEvent.Kind, longitude: Double)] = skyfieldLunarNodeRows",
 	"\t.split(separator: \"\\n\")",
 	"\t.map { row in",
 	"\t\tlet fields = row.split(separator: \" \")",

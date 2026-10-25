@@ -10,8 +10,9 @@
 @testable import Astronomia
 
 /// The Moon's passages through its nodes from 2000 to 2049 from Skyfield 1.55 with DE421: the TT
-/// Julian Date, as a whole and a fraction, the node, and the apparent ecliptic longitude, in radians.
-let skyfieldLunarNodes: [(whole: Double, fraction: Double, kind: LunarNodeEvent.Kind, longitude: Double)] = skyfieldLunarNodeRows
+/// Julian Date, as a whole and a fraction, the node, and the apparent ecliptic longitude, in
+/// radians.
+let skyfieldLunarNodes: [(whole: Double, fraction: Double, kind: Moon.NodeEvent.Kind, longitude: Double)] = skyfieldLunarNodeRows
 	.split(separator: "\n")
 	.map { row in
 		let fields = row.split(separator: " ")

@@ -5,44 +5,44 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// The principal phases of the Moon: the instants when the Moon's apparent geocentric ecliptic
-/// longitude, in the true ecliptic and equinox of date, exceeds the Sun's by 0°, 90°, 180°, or
-/// 270°.
-///
-/// The Moon's and the Sun's places are their apparent places seen from the center of the
-/// Earth, with light time, aberration, and the gravitational deflection of light, converted to
-/// ``TrueEclipticOfDate``. Each phase is found to 0.1 s.
-///
-/// ```swift
-/// let full = try MoonPhases.next(.fullMoon, after: instant)
-/// let phases = try MoonPhases.events(from: start, to: end)
-/// ```
-///
-/// These are the instants of the principal phases. For the phase the Moon is in at any
-/// instant, one of eight, as "Waxing Gibbous", see ``MoonPhaseName``.
-///
-/// The excess of the Moon's longitude over the Sun's grows about 0.5" a second, so an error of
-/// 1" in either
-/// place moves a phase by about 2 s. The methods taking the built-in ephemeris default to its
-/// full precision, at about 0.3 s for each phase in a release build. The phases from 2000 to
-/// 2049 are within 0.03 s of Skyfield's with DE421; at ``Precision/tenthArcsecond`` they are
-/// within 0.11 s, at about 45 ms each, and at ``Precision/arcsecond`` within 1 s, at about
-/// 12 ms each.
-public enum MoonPhases {
-	/// The mean motion of the excess of the Moon's ecliptic longitude over the Sun's, a turn per
-	/// synodic month, in radians per day, which predicts the next phase.
-	static let meanMotion: Double = twoPi / 29.530_589
-	/// The half-width of the bracket around a predicted phase, in days.
-	///
-	/// The excess grows by between about 10.8° and 14.4° a day, so a prediction across at
-	/// most a quarter of a turn is within about 1.2 days.
-	static let margin: Double = 3.0
-	/// The longest interval holding every phase, a synodic month and the margin, in days.
-	static let month: Double = 29.530_589 + margin
+extension Moon {
+	/// The constants of the search for the phases of the Moon.
+	enum Phases {
+		/// The mean motion of the excess of the Moon's ecliptic longitude over the Sun's, a turn
+		/// per synodic month, in radians per day, which predicts the next phase.
+		static let meanMotion: Double = twoPi / 29.530_589
+		/// The half-width of the bracket around a predicted phase, in days.
+		///
+		/// The excess grows by between about 10.8° and 14.4° a day, so a prediction across at
+		/// most a quarter of a turn is within about 1.2 days.
+		static let margin: Double = 3.0
+		/// The longest interval holding every phase, a synodic month and the margin, in days.
+		static let month: Double = 29.530_589 + margin
+	}
 }
 
-extension MoonPhases {
+extension Moon {
 	/// Returns the phases of the Moon in an interval, in order.
+	///
+	/// The Moon's and the Sun's places are their apparent places seen from the center of the
+	/// Earth, with light time, aberration, and the gravitational deflection of light, converted to
+	/// ``TrueEclipticOfDate``. Each phase is found to 0.1 s.
+	///
+	/// ```swift
+	/// let full = try Moon.nextPhase(.fullMoon, after: instant)
+	/// let phases = try Moon.phases(from: start, to: end)
+	/// ```
+	///
+	/// These are the instants of the principal phases. For the phase the Moon is in at any
+	/// instant, one of eight, as "Waxing Gibbous", see ``Moon/PhaseName``.
+	///
+	/// The excess of the Moon's longitude over the Sun's grows about 0.5" a second, so an error of
+	/// 1" in either
+	/// place moves a phase by about 2 s. The methods taking the built-in ephemeris default to its
+	/// full precision, at about 0.3 s for each phase in a release build. The phases from 2000 to
+	/// 2049 are within 0.03 s of Skyfield's with DE421; at ``Precision/tenthArcsecond`` they are
+	/// within 0.11 s, at about 45 ms each, and at ``Precision/arcsecond`` within 1 s, at about
+	/// 12 ms each.
 	///
 	/// - Parameters:
 	///   - moon: The Moon.
@@ -54,12 +54,12 @@ extension MoonPhases {
 	///   - ephemeris: The ephemeris of the Sun, the Earth, and the Moon.
 	/// - Returns: The phases, in order of their instants.
 	/// - Throws:
-	///   - ``MoonPhaseError/invalidInterval`` if `end` is before `start`.
-	///   - ``MoonPhaseError/timescaleConversion(_:)`` if the interval can't be converted to TT.
-	///   - ``MoonPhaseError/ephemeris(_:)`` if a place of the Sun or the Moon in the interval
+	///   - ``Moon/PhaseError/invalidInterval`` if `end` is before `start`.
+	///   - ``Moon/PhaseError/timescaleConversion(_:)`` if the interval can't be converted to TT.
+	///   - ``Moon/PhaseError/ephemeris(_:)`` if a place of the Sun or the Moon in the interval
 	///     fails, as for an ``Observation``, such as outside the ephemeris's coverage.
-	public static func events<E: GeocentricEphemeris, Scale: Timescale>(of moon: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(MoonPhaseError) -> [MoonPhaseEvent] {
-		try events(of: moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: ephemeris, only: nil, stoppingAfterFirst: false)
+	public static func phases<E: GeocentricEphemeris, Scale: Timescale>(of moon: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(Moon.PhaseError) -> [Moon.PhaseEvent] {
+		try phases(of: moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: ephemeris, only: nil, stoppingAfterFirst: false)
 	}
 
 	/// Returns the phases of the Moon of one kind or every kind in an interval, in order.
@@ -76,20 +76,20 @@ extension MoonPhases {
 	///   - stoppingAfterFirst: Whether to stop at the first phase found, without evaluating the
 	///     ephemeris for the rest of the interval.
 	/// - Returns: The phases, in order of their instants.
-	/// - Throws: A ``MoonPhaseError``, as the public method does.
-	static func events<E: GeocentricEphemeris, Scale: Timescale>(of moon: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, earthOrientation: EarthOrientation, ephemeris: E, only kind: MoonPhaseEvent.Kind?, stoppingAfterFirst: Bool) throws(MoonPhaseError) -> [MoonPhaseEvent] {
+	/// - Throws: A ``Moon/PhaseError``, as the public method does.
+	static func phases<E: GeocentricEphemeris, Scale: Timescale>(of moon: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, earthOrientation: EarthOrientation, ephemeris: E, only kind: Moon.PhaseEvent.Kind?, stoppingAfterFirst: Bool) throws(Moon.PhaseError) -> [Moon.PhaseEvent] {
 		let interval: SearchInterval
 		do throws(SearchInterval.Failure) {
 			interval = try SearchInterval(from: start, to: end, context: context)
 		} catch {
-			throw MoonPhaseError(error)
+			throw Moon.PhaseError(error)
 		}
-		let search = QuarterSearch(length: interval.length, meanMotion: meanMotion, margin: margin) { (days: Double) throws(MoonPhaseError) -> QuarterSearch<MoonPhaseError>.Sample in
+		let search = QuarterSearch(length: interval.length, meanMotion: Phases.meanMotion, margin: Phases.margin) { (days: Double) throws(Moon.PhaseError) -> QuarterSearch<Moon.PhaseError>.Sample in
 			let instant: Instant<TT>
 			do throws(SearchInterval.Failure) {
 				instant = try interval.instant(days)
 			} catch {
-				throw MoonPhaseError(error)
+				throw Moon.PhaseError(error)
 			}
 			let sun: ApparentPlace<ICRS>
 			let moonPlace: ApparentPlace<ICRS>
@@ -110,7 +110,7 @@ extension MoonPhases {
 			}
 			return QuarterSearch.Sample(time: min(days, interval.length), instant: instant, angle: excess < twoPi ? excess : 0)
 		}
-		return try search.events(only: kind?.index, stoppingAfterFirst: stoppingAfterFirst).map { MoonPhaseEvent(kind: MoonPhaseEvent.Kind.allCases[$0.quarter], instant: $0.instant) }
+		return try search.events(only: kind?.index, stoppingAfterFirst: stoppingAfterFirst).map { Moon.PhaseEvent(kind: Moon.PhaseEvent.Kind.allCases[$0.quarter], instant: $0.instant) }
 	}
 
 	/// Returns the phases of the Moon in an interval, in order, with the built-in ephemeris.
@@ -123,12 +123,12 @@ extension MoonPhases {
 	///     precision apply to the nutation.
 	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
 	/// - Returns: The phases, in order of their instants.
-	/// - Throws: A ``MoonPhaseError``, as the method taking an ephemeris does.
-	public static func events<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(MoonPhaseError) -> [MoonPhaseEvent] {
-		try events(of: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
+	/// - Throws: A ``Moon/PhaseError``, as the method taking an ephemeris does.
+	public static func phases<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Moon.PhaseError) -> [Moon.PhaseEvent] {
+		try phases(of: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
-	/// Returns the first instant of a phase after an instant.
+	/// Returns the first phase of a kind after an instant.
 	///
 	/// The search covers at most a synodic month from the instant, stepping past other phases
 	/// with a couple of places of the Sun and the Moon each, refining only the requested phase,
@@ -144,16 +144,16 @@ extension MoonPhases {
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
 	///   - ephemeris: The ephemeris of the Sun, the Earth, and the Moon.
-	/// - Returns: The instant of the phase.
+	/// - Returns: The phase.
 	/// - Throws:
-	///   - ``MoonPhaseError/timescaleConversion(_:)`` if `instant` can't be converted to TT.
-	///   - ``MoonPhaseError/invalidInterval`` if a synodic month after `instant` can't be
+	///   - ``Moon/PhaseError/timescaleConversion(_:)`` if `instant` can't be converted to TT.
+	///   - ``Moon/PhaseError/invalidInterval`` if a synodic month after `instant` can't be
 	///     represented.
-	///   - ``MoonPhaseError/ephemeris(_:)`` if a place of the Sun or the Moon fails, as for an
+	///   - ``Moon/PhaseError/ephemeris(_:)`` if a place of the Sun or the Moon fails, as for an
 	///     ``Observation``, such as for a phase past the ephemeris's coverage.
-	///   - ``MoonPhaseError/phaseNotFound`` if the phase isn't within a synodic month after
+	///   - ``Moon/PhaseError/phaseNotFound`` if the phase isn't within a synodic month after
 	///     `instant`, as for an ephemeris whose Moon doesn't move as the Moon does.
-	public static func next<E: GeocentricEphemeris, Scale: Timescale>(_ kind: MoonPhaseEvent.Kind, of moon: E.Body, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(MoonPhaseError) -> Instant<TT> {
+	public static func nextPhase<E: GeocentricEphemeris, Scale: Timescale>(_ kind: Moon.PhaseEvent.Kind, of moon: E.Body, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(Moon.PhaseError) -> Moon.PhaseEvent {
 		let start: Instant<TT>
 		do throws(TimescaleConversionError) {
 			start = try instant.converted(to: TT.self, sourceContext: context)
@@ -167,14 +167,14 @@ extension MoonPhases {
 		for _ in 0 ..< 2 {
 			let end: Instant<TT>
 			do throws(JulianDateError) {
-				end = Instant(try from.julianDate.adding(days: month))
+				end = Instant(try from.julianDate.adding(days: Phases.month))
 			} catch {
 				throw .invalidInterval
 			}
-			let found = try events(of: moon, from: from, to: end, context: TT.defaultContext, earthOrientation: earthOrientation, ephemeris: ephemeris, only: kind, stoppingAfterFirst: true).first
+			let found = try phases(of: moon, from: from, to: end, context: TT.defaultContext, earthOrientation: earthOrientation, ephemeris: ephemeris, only: kind, stoppingAfterFirst: true).first
 			guard let found else { break }
 			if (found.instant.julianDate.daysSinceJ2000 - start.julianDate.daysSinceJ2000) * secondsPerDay > 0.5 {
-				return found.instant
+				return found
 			}
 			do throws(JulianDateError) {
 				from = Instant(try found.instant.julianDate.adding(days: 1))
@@ -187,7 +187,7 @@ extension MoonPhases {
 		throw .phaseNotFound
 	}
 
-	/// Returns the first instant of a phase after an instant, with the built-in ephemeris.
+	/// Returns the first phase of a kind after an instant, with the built-in ephemeris.
 	///
 	/// - Parameters:
 	///   - kind: The phase.
@@ -196,14 +196,14 @@ extension MoonPhases {
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
 	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
-	/// - Returns: The instant of the phase.
-	/// - Throws: A ``MoonPhaseError``, as the method taking an ephemeris does.
-	public static func next<Scale: Timescale>(_ kind: MoonPhaseEvent.Kind, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(MoonPhaseError) -> Instant<TT> {
-		try next(kind, of: BuiltInEphemeris.Body.moon, after: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
+	/// - Returns: The phase.
+	/// - Throws: A ``Moon/PhaseError``, as the method taking an ephemeris does.
+	public static func nextPhase<Scale: Timescale>(_ kind: Moon.PhaseEvent.Kind, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Moon.PhaseError) -> Moon.PhaseEvent {
+		try nextPhase(kind, of: BuiltInEphemeris.Body.moon, after: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 }
 
-extension MoonPhases {
+extension Moon {
 	/// Returns how the Moon is lit by the Sun at an instant, with the built-in ephemeris.
 	///
 	/// This is the ``Observation/illumination(of:)`` of the Moon in an observation at the

@@ -20,10 +20,10 @@ extension Observer {
 	///   - ephemeris: The ephemeris of the Sun, the Earth, and the Moon.
 	/// - Returns: The local circumstances.
 	/// - Throws:
-	///   - ``LunarEclipseError/noHorizon`` if the observer is the center of the Earth.
-	///   - ``LunarEclipseError/ephemeris(_:)`` if a place of the Moon fails, as for an
+	///   - ``Moon/EclipseError/noHorizon`` if the observer is the center of the Earth.
+	///   - ``Moon/EclipseError/ephemeris(_:)`` if a place of the Moon fails, as for an
 	///     ``Observation``, or UT1 can't be found.
-	public func localCircumstances<E: GeocentricEphemeris>(of eclipse: LunarEclipse, moon: E.Body, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(LunarEclipseError) -> LocalLunarEclipse {
+	public func localCircumstances<E: GeocentricEphemeris>(of eclipse: Moon.Eclipse, moon: E.Body, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(Moon.EclipseError) -> Moon.LocalEclipse {
 		guard case .site = location else {
 			throw .noHorizon
 		}
@@ -40,7 +40,7 @@ extension Observer {
 			return reference >= altitude.altitude.radians
 		}
 
-		var instants: [(LocalLunarEclipse.Contact, Instant<TT>)] = [(.penumbralBegins, eclipse.penumbralPhase.lowerBound)]
+		var instants: [(Moon.LocalEclipse.Contact, Instant<TT>)] = [(.penumbralBegins, eclipse.penumbralPhase.lowerBound)]
 		if let partial = eclipse.partialPhase {
 			instants.append((.partialBegins, partial.lowerBound))
 		}
@@ -56,7 +56,7 @@ extension Observer {
 		}
 		instants.append((.penumbralEnds, eclipse.penumbralPhase.upperBound))
 
-		var contacts: [LocalLunarEclipse.Circumstance] = []
+		var contacts: [Moon.LocalEclipse.Circumstance] = []
 		for (contact, instant) in instants {
 			do throws(EphemerisError) {
 				let observation = try Observation(observer: self, instant: instant, context: TT.defaultContext, earthOrientation: earthOrientation, ephemeris: ephemeris)
@@ -70,7 +70,7 @@ extension Observer {
 					// The observer is a site, and the Moon is never at its origin.
 					throw .invalidState
 				}
-				contacts.append(LocalLunarEclipse.Circumstance(contact: contact, instant: instant, place: place, isMoonUp: isUp(unrefracted)))
+				contacts.append(Moon.LocalEclipse.Circumstance(contact: contact, instant: instant, place: place, isMoonUp: isUp(unrefracted)))
 			} catch {
 				throw .ephemeris(error)
 			}
@@ -86,7 +86,7 @@ extension Observer {
 				}
 			}.filter { $0.kind == .rise || $0.kind == .set }
 		} catch {
-			throw LunarEclipseError(error)
+			throw Moon.EclipseError(error)
 		}
 
 		// The Moon is up from the first contact, or from a rise, until a set, or the last
@@ -111,7 +111,7 @@ extension Observer {
 		if let start = risen {
 			intervals.append(start ... eclipse.penumbralPhase.upperBound)
 		}
-		return LocalLunarEclipse(eclipse: eclipse, observer: self, contacts: contacts, moonrisesAndMoonsets: events, visibleIntervals: intervals)
+		return Moon.LocalEclipse(eclipse: eclipse, observer: self, contacts: contacts, moonrisesAndMoonsets: events, visibleIntervals: intervals)
 	}
 
 	/// Returns the local circumstances of an eclipse of the Moon at this site, with the
@@ -127,8 +127,8 @@ extension Observer {
 	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``, which
 	///     places the Moon within about 1".
 	/// - Returns: The local circumstances.
-	/// - Throws: A ``LunarEclipseError``, as the method taking an ephemeris does.
-	public func localCircumstances(of eclipse: LunarEclipse, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .arcsecond) throws(LunarEclipseError) -> LocalLunarEclipse {
+	/// - Throws: A ``Moon/EclipseError``, as the method taking an ephemeris does.
+	public func localCircumstances(of eclipse: Moon.Eclipse, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .arcsecond) throws(Moon.EclipseError) -> Moon.LocalEclipse {
 		try localCircumstances(of: eclipse, moon: BuiltInEphemeris.Body.moon, conditions: conditions, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -152,15 +152,15 @@ extension Observer {
 	///   - ephemeris: The ephemeris of the Sun, the Earth, and the Moon.
 	///   - shadowModel: The model of the Earth's shadow, by default Danjon's.
 	/// - Returns: The visible eclipses' local circumstances, in order of greatest eclipse.
-	/// - Throws: ``LunarEclipseError/noHorizon`` if the observer is the center of the Earth,
-	///   or a ``LunarEclipseError`` as for
-	///   ``LunarEclipses/events(of:from:to:context:earthOrientation:ephemeris:shadowModel:)``.
-	public func visibleLunarEclipses<E: GeocentricEphemeris, Scale: Timescale>(of moon: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, ephemeris: E, shadowModel: LunarEclipse.ShadowModel = .danjon) throws(LunarEclipseError) -> [LocalLunarEclipse] {
+	/// - Throws: ``Moon/EclipseError/noHorizon`` if the observer is the center of the Earth,
+	///   or a ``Moon/EclipseError`` as for
+	///   ``Moon/eclipses(of:from:to:context:earthOrientation:ephemeris:shadowModel:)``.
+	public func visibleLunarEclipses<E: GeocentricEphemeris, Scale: Timescale>(of moon: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, ephemeris: E, shadowModel: Moon.Eclipse.ShadowModel = .danjon) throws(Moon.EclipseError) -> [Moon.LocalEclipse] {
 		guard case .site = location else {
 			throw .noHorizon
 		}
-		let eclipses = try LunarEclipses.events(of: moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: ephemeris, shadowModel: shadowModel)
-		var visible: [LocalLunarEclipse] = []
+		let eclipses = try Moon.eclipses(of: moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: ephemeris, shadowModel: shadowModel)
+		var visible: [Moon.LocalEclipse] = []
 		for eclipse in eclipses {
 			let local = try localCircumstances(of: eclipse, moon: moon, conditions: conditions, altitude: altitude, earthOrientation: earthOrientation, ephemeris: ephemeris)
 			if local.isVisible {
@@ -184,11 +184,11 @@ extension Observer {
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site, and whose
 	///     celestial pole offsets and precision apply to the nutation.
 	///   - precision: The precision of the ephemeris, by default ``Precision/full``, as for
-	///     ``LunarEclipses``.
+	///     `Moon.eclipses(from:to:)`.
 	///   - shadowModel: The model of the Earth's shadow, by default Danjon's.
 	/// - Returns: The visible eclipses' local circumstances, in order of greatest eclipse.
-	/// - Throws: A ``LunarEclipseError``, as the method taking an ephemeris does.
-	public func visibleLunarEclipses<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .full, shadowModel: LunarEclipse.ShadowModel = .danjon) throws(LunarEclipseError) -> [LocalLunarEclipse] {
+	/// - Throws: A ``Moon/EclipseError``, as the method taking an ephemeris does.
+	public func visibleLunarEclipses<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .full, shadowModel: Moon.Eclipse.ShadowModel = .danjon) throws(Moon.EclipseError) -> [Moon.LocalEclipse] {
 		try visibleLunarEclipses(of: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, conditions: conditions, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision), shadowModel: shadowModel)
 	}
 }
