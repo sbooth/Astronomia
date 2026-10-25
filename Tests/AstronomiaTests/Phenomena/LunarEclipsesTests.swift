@@ -141,6 +141,23 @@ import Testing
 		#expect(Self.same(next, eclipse))
 	}
 
+	@Test func seedsHoursBeforeGreatestEclipse() throws {
+		// Where an interval starts, or a search for the next eclipse starts, hours before
+		// greatest eclipse with the Moon already near the axis, the eclipse found from there is
+		// greatest where the Moon is nearest the axis.
+		let eclipse = try Moon.nextEclipse(after: Instant<TT>(try JulianDate(year: 2025, month: 3, day: 1)), precision: .arcsecond)
+		let greatest = eclipse.greatestEclipse
+		for hours in [2.0, 3.5, 4.5] {
+			let start = Instant<TT>(try greatest.julianDate.adding(seconds: -hours * 3600))
+			let search = LunarEclipseSearch(origin: start.julianDate, moon: BuiltInEphemeris.Body.moon, earthOrientation: .model, ephemeris: BuiltInEphemeris(precision: .arcsecond), shadowModel: .danjon)
+			#expect(try search.sample(0).separation < Moon.Eclipses.nearAxis, "\(hours)")
+			#expect(abs(try search.greatest(near: 0).sample.time * secondsPerDay - hours * 3600) < 0.1, "\(hours)")
+			let found = try Moon.eclipses(from: start, to: Instant<TT>(try greatest.julianDate.adding(seconds: 2)), precision: .arcsecond)
+			#expect(found.count == 1 && Self.same(found[0], eclipse), "\(hours)")
+			#expect(Self.same(try Moon.nextEclipse(after: start, precision: .arcsecond), eclipse), "\(hours)")
+		}
+	}
+
 	@Test func shadowModels() throws {
 		// Chauvenet's shadow is larger: umbral magnitudes about 0.005 larger and penumbral about
 		// 0.026.
