@@ -95,14 +95,14 @@ import Testing
 			let search = Self.constantDeclinationSearch(declination: declination, latitude: latitude, secondsAfterTransit: seconds, length: 1)
 			let crossing = try search.refine(search.evaluate(0), search.evaluate(1.0 / 24)) { $0.height }
 			#expect(abs(crossing.time * secondsPerDay - seconds) <= 0.1, "\(seconds) s")
-			// The full search finds the setting there too.
-			let setting = try #require(try search.events().first { $0.kind == .set })
-			#expect(abs(setting.place.altitude.radians - crossing.place.altitude.radians) <= 1e-9)
+			// The full search finds the set there too.
+			let setEvent = try #require(try search.events().first { $0.kind == .set })
+			#expect(abs(setEvent.place.altitude.radians - crossing.place.altitude.radians) <= 1e-9)
 		}
 	}
 
 	@Test func eventsAreWhereTheyShouldBe() throws {
-		// At each rising and setting the upper limb is at -34', and at each transit the hour
+		// At each rise and set the upper limb is at -34', and at each transit the hour
 		// angle is 0° or 180°, within the motion of 0.1 s, about 1.5".
 		let site = try Self.site(0)
 		let start = try Self.instant(2_461_211.5)
@@ -125,7 +125,7 @@ import Testing
 				#expect(abs(abs(place.hourAngle.radians) - .pi) <= tolerance)
 			}
 		}
-		// Risings and settings alternate, as do upper and lower transits.
+		// Rises and sets alternate, as do upper and lower transits.
 		let crossings = events.filter { $0.kind == .rise || $0.kind == .set }.map(\.kind)
 		#expect(zip(crossings, crossings.dropFirst()).allSatisfy { $0 != $1 })
 		let transits = events.filter { $0.kind == .upperTransit || $0.kind == .lowerTransit }.map(\.kind)

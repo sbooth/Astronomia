@@ -32,7 +32,7 @@
 /// let sirius = try sky.apparentPlace(of: star)
 /// ```
 ///
-/// From a site, `riseTransitSetEvents(of:from:to:)` finds the risings, settings, and transits
+/// From a site, `riseTransitSetEvents(of:from:to:)` finds the rises, sets, and transits
 /// of a body or a star in an interval, as ``RiseTransitSetEvent`` values.
 public struct Observer: Hashable, Sendable {
 	/// Where the observer is.

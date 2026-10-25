@@ -5,11 +5,11 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// A search of an interval for a target's risings, settings, and transits.
+/// A search of an interval for a target's rises, sets, and transits.
 ///
 /// The target's place is sampled every hour, and at the ends of the interval. Its hour angle
 /// increases by about 15° an hour, so a transit falls between two samples whose hour angles
-/// straddle 0° or 180°. A rising or setting falls between two samples, or a sample and a
+/// straddle 0° or 180°. A rise or set falls between two samples, or a sample and a
 /// transit, on either side of the event altitude. Each is then found to 0.1 s by the Illinois
 /// variant of the method of false position, safeguarded by bisection.
 ///

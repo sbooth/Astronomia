@@ -6,10 +6,10 @@
 //
 
 extension Observer {
-	/// Returns the risings, settings, and transits of a body in an interval, in order.
+	/// Returns the rises, sets, and transits of a body in an interval, in order.
 	///
 	/// Each event's instant is found to 0.1 s from the body's apparent place seen from the site:
-	/// rising and setting when it crosses the event altitude, upper and lower transit when its
+	/// rise and set when it crosses the event altitude, upper and lower transit when its
 	/// hour angle is 0° and 180°. A body that never rises or never sets in the interval has only
 	/// transits.
 	///
@@ -31,7 +31,7 @@ extension Observer {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``,
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``,
 	///     which takes the upper limb of a body with a radius in the ephemeris.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - ephemeris: The ephemeris of the body, the Earth, and the light-deflecting bodies.
@@ -57,7 +57,7 @@ extension Observer {
 		}
 	}
 
-	/// Returns the risings, settings, and transits of a body of the built-in ephemeris in an
+	/// Returns the rises, sets, and transits of a body of the built-in ephemeris in an
 	/// interval, in order.
 	///
 	/// - Parameters:
@@ -65,7 +65,7 @@ extension Observer {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
 	/// - Returns: The events, in order of their instants.
@@ -74,7 +74,7 @@ extension Observer {
 		try riseTransitSetEvents(of: body, from: start, to: end, context: context, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
-	/// Returns the risings, settings, and transits of a star in an interval, in order.
+	/// Returns the rises, sets, and transits of a star in an interval, in order.
 	///
 	/// The star is a point: ``EventAltitude/standard`` takes it at -34'.
 	///
@@ -83,7 +83,7 @@ extension Observer {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - ephemeris: The ephemeris of the Earth and the light-deflecting bodies.
 	/// - Returns: The events, in order of their instants.
@@ -104,7 +104,7 @@ extension Observer {
 		}
 	}
 
-	/// Returns the risings, settings, and transits of a star in an interval, in order, with the
+	/// Returns the rises, sets, and transits of a star in an interval, in order, with the
 	/// built-in ephemeris.
 	///
 	/// - Parameters:
@@ -112,7 +112,7 @@ extension Observer {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
 	/// - Returns: The events, in order of their instants.
@@ -129,7 +129,7 @@ extension Observer {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - altitude: The altitude of rising and setting.
+	///   - altitude: The altitude of rise and set.
 	///   - radius: The radius of the target whose upper limb rises and sets, or `nil` for its
 	///     center.
 	///   - earthOrientation: Observed Earth orientation.
@@ -193,7 +193,7 @@ extension Observer {
 }
 
 extension Observer {
-	/// Returns the first rising, setting, or transit of a body after an instant.
+	/// Returns the first rise, set, or transit of a body after an instant.
 	///
 	/// ```swift
 	/// let sunrise = try site.nextRiseTransitSetEvent(.rise, of: .sun, after: instant)
@@ -212,7 +212,7 @@ extension Observer {
 	///     event of each kind at an ordinary latitude. Near the poles, where a body can stay up
 	///     or down for months, a longer limit finds it.
 	///   - context: Observational data for converting `instant` to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``,
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``,
 	///     which takes the upper limb of a body with a radius in the ephemeris.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - ephemeris: The ephemeris of the body, the Earth, and the light-deflecting bodies.
@@ -241,7 +241,7 @@ extension Observer {
 		}
 	}
 
-	/// Returns the first rising, setting, or transit of a body of the built-in ephemeris after
+	/// Returns the first rise, set, or transit of a body of the built-in ephemeris after
 	/// an instant.
 	///
 	/// - Parameters:
@@ -250,7 +250,7 @@ extension Observer {
 	///   - instant: The instant to search from.
 	///   - limit: How far after `instant` to search, by default 2 days.
 	///   - context: Observational data for converting `instant` to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
 	/// - Returns: The event.
@@ -259,7 +259,7 @@ extension Observer {
 		try nextRiseTransitSetEvent(kind, of: body, after: instant, within: limit, context: context, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
-	/// Returns the first rising, setting, or transit of a star after an instant.
+	/// Returns the first rise, set, or transit of a star after an instant.
 	///
 	/// The star is a point: ``EventAltitude/standard`` takes it at -34'.
 	///
@@ -270,7 +270,7 @@ extension Observer {
 	///   - limit: How far after `instant` to search, by default 2 days. A star that never rises
 	///     or sets at the site still transits each day.
 	///   - context: Observational data for converting `instant` to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - ephemeris: The ephemeris of the Earth and the light-deflecting bodies.
 	/// - Returns: The event.
@@ -290,7 +290,7 @@ extension Observer {
 		}
 	}
 
-	/// Returns the first rising, setting, or transit of a star after an instant, with the
+	/// Returns the first rise, set, or transit of a star after an instant, with the
 	/// built-in ephemeris.
 	///
 	/// - Parameters:
@@ -299,7 +299,7 @@ extension Observer {
 	///   - instant: The instant to search from.
 	///   - limit: How far after `instant` to search, by default 2 days.
 	///   - context: Observational data for converting `instant` to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
 	/// - Returns: The event.
@@ -320,7 +320,7 @@ extension Observer {
 	///   - instant: The instant to search from.
 	///   - limit: How far after `instant` to search.
 	///   - context: Observational data for converting `instant` to TT.
-	///   - altitude: The altitude of rising and setting.
+	///   - altitude: The altitude of rise and set.
 	///   - radius: The radius of the target whose upper limb rises and sets, or `nil` for its
 	///     center.
 	///   - earthOrientation: Observed Earth orientation.

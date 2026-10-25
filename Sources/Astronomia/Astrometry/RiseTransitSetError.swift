@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// Errors that can occur when finding the risings, settings, and transits of a target.
+/// Errors that can occur when finding the rises, sets, and transits of a target.
 public enum RiseTransitSetError: Error, Hashable, Sendable {
 	/// The observer is at the center of the Earth, which has no horizon.
 	case noHorizon

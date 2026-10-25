@@ -42,7 +42,7 @@ import Testing
 	}
 
 	@Test func stars() throws {
-		// A star's next rising is a sidereal day after the last, and one that never sets still
+		// A star's next rise is a sidereal day after the last, and one that never sets still
 		// transits.
 		let greenwich = try Fixtures.site(0)
 		let tromso = try Fixtures.site(2)

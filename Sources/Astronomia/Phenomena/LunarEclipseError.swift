@@ -32,7 +32,7 @@ extension LunarEclipseError {
 }
 
 extension LunarEclipseError {
-	/// Creates the error for a failure finding risings and settings.
+	/// Creates the error for a failure finding rises and sets.
 	init(_ error: RiseTransitSetError) {
 		switch error {
 		case .noHorizon: self = .noHorizon
@@ -40,7 +40,7 @@ extension LunarEclipseError {
 		case let .timescaleConversion(error): self = .timescaleConversion(error)
 		case let .ephemeris(error): self = .ephemeris(error)
 		// Only a star's place fails with a star error, and only a search for the next event
-		// fails to find one; the risings and settings of an eclipse are found in an interval.
+		// fails to find one; the rises and sets of an eclipse are found in an interval.
 		case .star, .eventNotFound: self = .ephemeris(.invalidState)
 		}
 	}

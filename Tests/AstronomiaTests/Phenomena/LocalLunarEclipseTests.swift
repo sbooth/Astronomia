@@ -57,7 +57,7 @@ import Testing
 			#expect(circumstance.isMoonUp == (circumstance.instant < moonset), "\(circumstance.contact)")
 			#expect(circumstance.isMoonUp == (circumstance.place.altitude.degrees > -1), "\(circumstance.contact)")
 		}
-		// The setting matches the rise and set search over the eclipse.
+		// The set matches the rise and set search over the eclipse.
 		let events = try Self.greenwich.riseTransitSetEvents(of: .moon, from: eclipse.penumbralPhase.lowerBound, to: eclipse.penumbralPhase.upperBound)
 		#expect(events.filter { $0.kind == .set }.map(\.instant) == [moonset])
 		#expect(local.isVisible)

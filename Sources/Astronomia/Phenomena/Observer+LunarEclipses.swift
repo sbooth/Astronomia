@@ -7,14 +7,14 @@
 
 extension Observer {
 	/// Returns the local circumstances of an eclipse of the Moon at this site: the Moon's place
-	/// at each contact, its risings and settings during the eclipse, and when it is up.
+	/// at each contact, its rises and sets during the eclipse, and when it is up.
 	///
 	/// - Parameters:
 	///   - eclipse: The eclipse.
 	///   - moon: The Moon.
 	///   - conditions: The atmosphere at the site, which refracts the places at the contacts,
 	///     or `nil` for no refraction. Whether the Moon is up is decided by `altitude` alone.
-	///   - altitude: The altitude of rising and setting, by default the standard -34' of the
+	///   - altitude: The altitude of rise and set, by default the standard -34' of the
 	///     upper limb.
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site.
 	///   - ephemeris: The ephemeris of the Sun, the Earth, and the Moon.
@@ -89,7 +89,7 @@ extension Observer {
 			throw LunarEclipseError(error)
 		}
 
-		// The Moon is up from the first contact, or from a rising, until a setting, or the last
+		// The Moon is up from the first contact, or from a rise, until a set, or the last
 		// contact.
 		var intervals: [ClosedRange<Instant<TT>>] = []
 		var risen: Instant<TT>? = contacts[0].isMoonUp ? eclipse.penumbralPhase.lowerBound : nil
@@ -121,7 +121,7 @@ extension Observer {
 	///   - eclipse: The eclipse.
 	///   - conditions: The atmosphere at the site, which refracts the places at the contacts,
 	///     or `nil` for no refraction.
-	///   - altitude: The altitude of rising and setting, by default the standard -34' of the
+	///   - altitude: The altitude of rise and set, by default the standard -34' of the
 	///     upper limb.
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site.
 	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``, which
@@ -145,7 +145,7 @@ extension Observer {
 	///   - context: Observational data for converting the interval to TT.
 	///   - conditions: The atmosphere at the site, which refracts the places at the contacts,
 	///     or `nil` for no refraction.
-	///   - altitude: The altitude of rising and setting, by default the standard -34' of the
+	///   - altitude: The altitude of rise and set, by default the standard -34' of the
 	///     upper limb.
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site, and whose
 	///     celestial pole offsets and precision apply to the nutation.
@@ -179,7 +179,7 @@ extension Observer {
 	///   - context: Observational data for converting the interval to TT.
 	///   - conditions: The atmosphere at the site, which refracts the places at the contacts,
 	///     or `nil` for no refraction.
-	///   - altitude: The altitude of rising and setting, by default the standard -34' of the
+	///   - altitude: The altitude of rise and set, by default the standard -34' of the
 	///     upper limb.
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site, and whose
 	///     celestial pole offsets and precision apply to the nutation.
