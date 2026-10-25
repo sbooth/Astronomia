@@ -14,7 +14,8 @@
 /// UTC and GLONASS are not: a day ending in a leap second lasts 86,401 or 86,399 seconds, so
 /// the difference between two Julian Dates spanning it is off by a second. UT1 is not either:
 /// its days follow Earth's rotation, so its seconds vary in length. To measure elapsed time
-/// between instants in those timescales, convert them to TAI first.
+/// between instants in those timescales, convert them to TAI first, or in UTC use
+/// ``Instant/elapsed(to:context:)``.
 ///
 /// The seconds of different uniform timescales need not agree. A TCB second is shorter than a
 /// TDB second by a factor of 1 - L_B, and TDB runs ahead of and behind TT by up to about
