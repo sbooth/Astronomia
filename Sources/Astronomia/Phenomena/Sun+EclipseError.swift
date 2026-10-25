@@ -17,6 +17,8 @@ extension Sun {
 		/// No eclipse was found within the search's span after the instant, as for an ephemeris
 		/// whose Moon doesn't move as the Moon does.
 		case eclipseNotFound
+		/// The observer is at the center of the Earth, which has no horizon.
+		case noHorizon
 	}
 
 	/// Errors that can occur when creating the radii of an eclipse of the Sun.
@@ -35,6 +37,21 @@ extension Sun.EclipseError {
 		case .invalidInterval, .phaseNotFound: self = .invalidInterval
 		case let .timescaleConversion(error): self = .timescaleConversion(error)
 		case let .ephemeris(error): self = .ephemeris(error)
+		}
+	}
+}
+
+extension Sun.EclipseError {
+	/// Creates the error for a failure finding rises and sets.
+	init(_ error: RiseTransitSetError) {
+		switch error {
+		case .noHorizon: self = .noHorizon
+		case .invalidInterval: self = .invalidInterval
+		case let .timescaleConversion(error): self = .timescaleConversion(error)
+		case let .ephemeris(error): self = .ephemeris(error)
+		// Only a star's place fails with a star error, and only a search for the next event
+		// fails to find one; the rises and sets of an eclipse are found in an interval.
+		case .star, .eventNotFound: self = .ephemeris(.invalidState)
 		}
 	}
 }
