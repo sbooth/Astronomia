@@ -29,15 +29,18 @@ let package = Package(
 			name: "CAstronomiaData",
 			dependencies: [
 				"CAstronomiaPlatform",
-			],
-			linkerSettings: [
-				.linkedFramework(
-					"Accelerate", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])
-				)
 			]
 		),
 		.target(
-			name: "CAstronomiaPlatform"
+			name: "CAstronomiaPlatform",
+			linkerSettings: [
+				.linkedFramework(
+					"Accelerate", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])
+				),
+				.linkedLibrary(
+					"mvec", .when(platforms: [.linux])
+				)
+			]
 		),
 		.testTarget(
 			name: "AstronomiaTests",
