@@ -30,6 +30,10 @@ extension Sun {
 		/// The number of spans of the central line between its ends at which the kind of a
 		/// central eclipse is found, besides greatest eclipse and the ends.
 		static let centralSpans: Int = 8
+		/// The most parabolas fit at each step to find greatest eclipse, each moving the time at
+		/// most two steps, so a time up to 4 days from it, of the first step of 0.05 days, comes
+		/// within a step of it.
+		static let maximumFits: Int = 40
 	}
 }
 
@@ -44,6 +48,9 @@ struct SolarEclipseSample {
 	let x: Double
 	/// The coordinate of the axis toward the north.
 	let y: Double
+	/// The Moon's coordinate along the axis, positive toward the Sun, where the Moon is between
+	/// the Earth and the Sun, and negative where it is beyond the Earth, as at full Moon.
+	let z: Double
 	/// The declination of the axis, toward the Sun, in the true equator of date, in radians.
 	let declination: Double
 	/// The radius of the penumbra.
@@ -197,7 +204,7 @@ struct SolarEclipseSearch<E: GeocentricEphemeris> {
 				zeta = (-b + discriminant.squareRoot()) / a
 			}
 		}
-		return SolarEclipseSample(time: days, instant: instant, x: x, y: y, declination: Math.asin(g.z), l1: l1, l2: l2, tanF1: tanF1, tanF2: tanF2, edge: edge, zeta: zeta)
+		return SolarEclipseSample(time: days, instant: instant, x: x, y: y, z: z, declination: Math.asin(g.z), l1: l1, l2: l2, tanF1: tanF1, tanF2: tanF2, edge: edge, zeta: zeta)
 	}
 
 	/// Returns the new Moons from some days after the origin to others, in days after it.
@@ -222,34 +229,45 @@ struct SolarEclipseSearch<E: GeocentricEphemeris> {
 	/// Near its least, the squared distance of the axis from the center changes nearly as a
 	/// parabola in time, exactly so for motion in a straight line, so the vertex of the parabola
 	/// through three samples, each set closer around the last vertex, finds it to well under
-	/// 0.1 s. The parabola's curvature, twice the square of the speed, gives the speed. A step
-	/// whose samples the ephemeris doesn't cover is halved until they are.
+	/// 0.1 s. At each step the parabolas are fit again until the vertex is within the step,
+	/// before the step shrinks, so a time hours from greatest eclipse, as at the end of an
+	/// interval, converges on it. The parabola's curvature, twice the square of the speed, gives
+	/// the speed. A step whose samples the ephemeris doesn't cover is halved until they are.
 	func greatest(near time: Double) throws(Sun.EclipseError) -> (sample: SolarEclipseSample, speed: Double) {
 		var center = time
 		var speed = 0.0
 		let smallest = 0.000_07
 		for nominal in [0.05, 0.007, 0.000_7, smallest] {
 			var step = nominal
-			var samples: (before: SolarEclipseSample, at: SolarEclipseSample, after: SolarEclipseSample)
-			while true {
-				do throws(Sun.EclipseError) {
-					samples = (try sample(center - step), try sample(center), try sample(center + step))
-					break
-				} catch {
-					// Where the ephemeris doesn't cover the samples of a step, as for an eclipse
-					// just within the end of its coverage, a closer step may be.
-					guard step > smallest else {
-						throw error
+			for _ in 0 ..< Sun.Eclipses.maximumFits {
+				var samples: (before: SolarEclipseSample, at: SolarEclipseSample, after: SolarEclipseSample)
+				while true {
+					do throws(Sun.EclipseError) {
+						samples = (try sample(center - step), try sample(center), try sample(center + step))
+						break
+					} catch {
+						// Where the ephemeris doesn't cover the samples of a step, as for an
+						// eclipse just within the end of its coverage, a closer step may be.
+						guard step > smallest else {
+							throw error
+						}
+						step /= 2
 					}
-					step /= 2
+				}
+				let (before, at, after) = samples
+				let curvature = before.centerSquared - 2 * at.centerSquared + after.centerSquared
+				guard curvature > 0 else {
+					// Not near a least, which a straight path always is: move downhill.
+					center += before.centerSquared < after.centerSquared ? -2 * step : 2 * step
+					continue
+				}
+				speed = (curvature / 2).squareRoot() / step
+				let offset = step * (before.centerSquared - after.centerSquared) / (2 * curvature)
+				center += max(-2 * step, min(2 * step, offset))
+				if abs(offset) <= step {
+					break
 				}
 			}
-			let (before, at, after) = samples
-			let curvature = before.centerSquared - 2 * at.centerSquared + after.centerSquared
-			guard curvature > 0 else { break }
-			speed = (curvature / 2).squareRoot() / step
-			let offset = step * (before.centerSquared - after.centerSquared) / (2 * curvature)
-			center += max(-2 * step, min(2 * step, offset))
 		}
 		return (try sample(center), speed)
 	}
@@ -333,7 +351,9 @@ struct SolarEclipseSearch<E: GeocentricEphemeris> {
 			}
 		}
 		let (greatest, speed) = try greatest(near: time)
-		guard greatest.edge < greatest.l1 else {
+		// Near full Moon the axis from the Moon toward the Sun also passes near the Earth, but
+		// the Moon is beyond the Earth, where it casts no shadow on it.
+		guard greatest.z > 0, greatest.edge < greatest.l1 else {
 			return nil
 		}
 		let (l1, l2) = (greatest.l1, abs(greatest.l2))

@@ -156,6 +156,39 @@ import Testing
 		#expect(try Sun.eclipses(from: Instant<TT>(try greatest.julianDate.adding(seconds: 2)), to: Instant<TT>(try greatest.julianDate.adding(seconds: 3600)), precision: .arcsecond).isEmpty)
 	}
 
+	@Test func seedsHoursBeforeGreatestEclipse() throws {
+		// Where an interval starts, or a search for the next eclipse starts, hours before
+		// greatest eclipse with the axis already near the Earth, the eclipse found from there is
+		// greatest where the axis is nearest the Earth's center.
+		let eclipse = try Sun.nextEclipse(after: Instant<TT>(try JulianDate(year: 2026, month: 2, day: 1)), precision: .arcsecond)
+		let greatest = eclipse.greatestEclipse
+		for hours in [2.0, 3.5, 4.5] {
+			let start = Instant<TT>(try greatest.julianDate.adding(seconds: -hours * 3600))
+			let search = SolarEclipseSearch(origin: start.julianDate, moon: BuiltInEphemeris.Body.moon, earthOrientation: .model, ephemeris: BuiltInEphemeris(precision: .arcsecond), radii: .nasa)
+			#expect(try search.sample(0).centerSquared < Sun.Eclipses.nearAxis * Sun.Eclipses.nearAxis, "\(hours)")
+			#expect(abs(try search.greatest(near: 0).sample.time * secondsPerDay - hours * 3600) < 0.1, "\(hours)")
+			let found = try Sun.eclipses(from: start, to: Instant<TT>(try greatest.julianDate.adding(seconds: 2)), precision: .arcsecond)
+			#expect(try found.count == 1 && Self.same(found[0], eclipse), "\(hours)")
+			#expect(try Self.same(try Sun.nextEclipse(after: start, precision: .arcsecond), eclipse), "\(hours)")
+		}
+	}
+
+	@Test func fullMoons() throws {
+		// At a total eclipse of the Moon, the axis from the Moon toward the Sun passes through the
+		// Earth, but the Moon is beyond the Earth, and there is no eclipse of the Sun.
+		let lunar = try Moon.nextEclipse(after: Instant<TT>(try JulianDate(year: 2025, month: 3, day: 1)), precision: .arcsecond)
+		#expect(lunar.kind == .total)
+		let (before, after) = (Instant<TT>(try lunar.greatestEclipse.julianDate.adding(seconds: -3600)), Instant<TT>(try lunar.greatestEclipse.julianDate.adding(seconds: 3600)))
+		let search = SolarEclipseSearch(origin: before.julianDate, moon: BuiltInEphemeris.Body.moon, earthOrientation: .model, ephemeris: BuiltInEphemeris(precision: .arcsecond), radii: .nasa)
+		#expect(try search.sample(0).centerSquared < 1)
+		#expect(try Sun.eclipses(from: before, to: after, precision: .arcsecond).isEmpty)
+		#expect(try Sun.eclipses(from: Instant<TT>(try lunar.greatestEclipse.julianDate.adding(days: -2)), to: before, precision: .arcsecond).isEmpty)
+		// The next eclipse of the Sun is two weeks later, at the next new Moon.
+		let next = try Sun.nextEclipse(after: before, precision: .arcsecond)
+		#expect(next.kind == .partial && next.magnitude > 0)
+		#expect(Self.julianDate(next.greatestEclipse) - Self.julianDate(lunar.greatestEclipse) > 14)
+	}
+
 	@Test func next() throws {
 		// From an eclipse's greatest eclipse, the next; from a second before it, that one; and in
 		// UTC as in TT.
