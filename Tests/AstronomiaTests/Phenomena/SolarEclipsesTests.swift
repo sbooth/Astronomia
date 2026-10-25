@@ -38,6 +38,16 @@ import Testing
 		try a.kind == b.kind && abs(seconds(from: a.greatestEclipse, to: b.greatestEclipse)) < 0.05 && abs(a.magnitude - b.magnitude) < 1e-6
 	}
 
+	/// Returns Earth orientation with a constant ΔT, in seconds.
+	static func orientation(deltaT: Double) -> EarthOrientation {
+		EarthOrientation(ut1: UT1.Context(deltaT: DeltaTFunction.constant(deltaT)))
+	}
+
+	/// Returns the length of a phase, in seconds.
+	static func duration(_ phase: ClosedRange<Instant<TT>>?) throws -> Double? {
+		try phase.map { try seconds(from: $0.lowerBound, to: $0.upperBound) }
+	}
+
 	/// The value of a polynomial at a time.
 	static func value(_ coefficients: [Double], _ t: Double) -> Double {
 		coefficients.reversed().reduce(0) { $0 * t + $1 }
@@ -64,33 +74,50 @@ import Testing
 
 	@Test func matchesNASA() throws {
 		// Every third eclipse from 2001 to 2100, and every hybrid and every eclipse that isn't
-		// central, of NASA's Five Millennium Catalog, with the VSOP87 and ELP-2000/82 theories
-		for (index, expected) in nasaSolarEclipses.enumerated() where index % 3 == 0 || expected.kind == .hybrid || expected.qualifier == "+" || expected.qualifier == "-" {
+		// central or has a limit off the Earth, of NASA's Five Millennium Catalog, with the VSOP87
+		// and ELP-2000/82 theories and its ΔT, which it rounds to degrees, kilometers, and seconds
+		for (index, expected) in nasaSolarEclipses.enumerated() where index % 3 == 0 || expected.kind == .hybrid || expected.qualifier.map({ "+-ns".contains($0) }) == true {
 			let greatest = try Self.greatest(index)
-			let eclipse = try Sun.nextEclipse(after: Instant<TT>(try greatest.julianDate.adding(days: -2)), precision: .arcsecond)
+			let eclipse = try Sun.nextEclipse(after: Instant<TT>(try greatest.julianDate.adding(days: -2)), earthOrientation: Self.orientation(deltaT: expected.deltaT), precision: .arcsecond)
 			let date = "\(expected.year)-\(expected.month)-\(expected.day)"
 			let isCentral = !(expected.kind == .partial || expected.qualifier == "+" || expected.qualifier == "-")
 			#expect(eclipse.kind == expected.kind && eclipse.isCentral == isCentral, "\(date)")
 			#expect(abs(try Self.seconds(from: greatest, to: eclipse.greatestEclipse)) < 1.2, "\(date)")
 			#expect(abs(eclipse.gamma - expected.gamma) < 0.0002, "\(date)")
 			#expect(abs(eclipse.magnitude - expected.magnitude) < 0.0002, "\(date)")
+			let site = eclipse.greatestEclipseSite
+			let longitude = (site.longitude.degrees - expected.longitude + 540).truncatingRemainder(dividingBy: 360) - 180
+			#expect(abs(site.latitude.degrees - expected.latitude) < 0.6 && abs(longitude) * Math.cos(Angle(degrees: expected.latitude).radians) < 0.6, "\(date)")
+			#expect(abs(site.sunAltitude.degrees - expected.sunAltitude) < 0.6, "\(date)")
+			#expect((site.pathWidth == nil) == (expected.pathWidth == nil), "\(date)")
+			if let width = site.pathWidth, let expectedWidth = expected.pathWidth {
+				// The width on the tangent plane, as NASA's, by a formula of its own for a low Sun
+				#expect(abs(width.kilometers - expectedWidth) < (expected.sunAltitude >= 30 ? 0.7 : 0.01 * expectedWidth), "\(date)")
+			}
+			#expect((site.centralPhase == nil) == (expected.centralDuration == nil), "\(date)")
+			if let duration = try Self.duration(site.centralPhase), let expectedDuration = expected.centralDuration {
+				#expect(abs(duration - expectedDuration) < 0.8, "\(date)")
+			}
 		}
 	}
 
 	@Test func matchesEclipseWise() throws {
 		// The contacts of four eclipses from Espenak's EclipseWise, with DE405 and its radii of
-		// the Moon: P1, U1, C1, C2, U4, and P4, greatest eclipse, gamma, and magnitude.
+		// the Moon: P1, U1, C1, C2, U4, and P4, greatest eclipse, gamma, and magnitude, and for
+		// the central eclipses, with its ΔT, where the eclipse is greatest: the latitude and
+		// longitude, in degrees and arcminutes, the Sun's altitude and azimuth, the path's width,
+		// in km, and the central duration, in seconds.
 		let radii = try Sun.Eclipse.Radii(penumbralMoon: 0.272_507_6, umbralMoon: 0.272_281_0, sun: Angle(arcseconds: 959.63))
-		let eclipses: [(year: Int, month: Int, day: Int, kind: Sun.Eclipse.Kind, contacts: [String?], greatest: String, gamma: Double, magnitude: Double)] = [
-			(2023, 4, 20, .hybrid, ["01:35:34.3", "02:38:15.0", "02:38:18.4", "05:57:47.4", "05:57:53.5", "07:00:31.9"], "04:17:56.0", -0.395_15, 1.013_20),
-			(2023, 10, 14, .annular, ["15:04:58.2", "16:11:19.0", "16:13:35.5", "19:47:59.2", "19:50:13.1", "20:56:26.7"], "18:00:40.6", 0.375_34, 0.952_04),
-			(2024, 4, 8, .total, ["15:43:23.3", "16:40:00.7", "16:41:09.4", "19:55:38.1", "19:56:45.7", "20:53:30.4"], "18:18:29.4", 0.343_14, 1.056_56),
-			(2025, 3, 29, .partial, ["08:51:52.5", nil, nil, nil, nil, "12:44:54.0"], "10:48:36.1", 1.040_53, 0.937_60),
+		let eclipses: [(year: Int, month: Int, day: Int, kind: Sun.Eclipse.Kind, contacts: [String?], greatest: String, gamma: Double, magnitude: Double, deltaT: Double, site: (latitude: (Double, Double), longitude: (Double, Double), altitude: Double, azimuth: Double, width: Double, duration: Double)?)] = [
+			(2023, 4, 20, .hybrid, ["01:35:34.3", "02:38:15.0", "02:38:18.4", "05:57:47.4", "05:57:53.5", "07:00:31.9"], "04:17:56.0", -0.395_15, 1.013_20, 71.1, ((-9, -35.7), (125, 46.8), 66.7, 334.0, 49.0, 76.09)),
+			(2023, 10, 14, .annular, ["15:04:58.2", "16:11:19.0", "16:13:35.5", "19:47:59.2", "19:50:13.1", "20:56:26.7"], "18:00:40.6", 0.375_34, 0.952_04, 71.3, ((11, 22.1), (-83, -6.1), 67.9, 208.0, 187.4, 317.19)),
+			(2024, 4, 8, .total, ["15:43:23.3", "16:40:00.7", "16:41:09.4", "19:55:38.1", "19:56:45.7", "20:53:30.4"], "18:18:29.4", 0.343_14, 1.056_56, 71.5, ((25, 17.4), (-104, -8.3), 69.8, 149.4, 197.5, 268.13)),
+			(2025, 3, 29, .partial, ["08:51:52.5", nil, nil, nil, nil, "12:44:54.0"], "10:48:36.1", 1.040_53, 0.937_60, 71.9, nil),
 		]
 		for expected in eclipses {
 			let date = "\(expected.year)-\(expected.month)-\(expected.day)"
 			let from = Instant<TT>(try JulianDate(year: expected.year, month: expected.month, day: expected.day - 1))
-			let eclipse = try Sun.nextEclipse(after: from, precision: .tenthArcsecond, radii: radii)
+			let eclipse = try Sun.nextEclipse(after: from, earthOrientation: Self.orientation(deltaT: expected.deltaT), precision: .tenthArcsecond, radii: radii)
 			#expect(eclipse.kind == expected.kind && eclipse.radii == radii, "\(date)")
 			let contacts = [eclipse.partialPhase.lowerBound, eclipse.umbralPhase?.lowerBound, eclipse.centralPhase?.lowerBound, eclipse.centralPhase?.upperBound, eclipse.umbralPhase?.upperBound, eclipse.partialPhase.upperBound]
 			for (contact, time) in zip(contacts, expected.contacts) {
@@ -101,6 +128,40 @@ import Testing
 			}
 			#expect(abs(try Self.seconds(from: Self.instant(expected.year, expected.month, expected.day, expected.greatest), to: eclipse.greatestEclipse)) < 0.5, "\(date)")
 			#expect(abs(eclipse.gamma - expected.gamma) < 2e-5 && abs(eclipse.magnitude - expected.magnitude) < 2e-5, "\(date)")
+			let site = eclipse.greatestEclipseSite
+			if let expectedSite = expected.site {
+				let latitude = expectedSite.latitude.0 + expectedSite.latitude.1 / 60
+				let longitude = expectedSite.longitude.0 + expectedSite.longitude.1 / 60
+				#expect(abs(site.latitude.degrees - latitude) * 60 < 0.1 && abs(site.longitude.degrees - longitude) * 60 < 0.1, "\(date)")
+				#expect(abs(site.sunAltitude.degrees - expectedSite.altitude) < 0.1 && abs(site.sunAzimuth.degrees - expectedSite.azimuth) < 0.1, "\(date)")
+				#expect(abs(site.pathWidth!.kilometers - expectedSite.width) < 0.1, "\(date)")
+				#expect(abs(try Self.duration(site.centralPhase)! - expectedSite.duration) < 0.3, "\(date)")
+			} else {
+				// The Sun is on the horizon at the point of the Earth's limb nearest the axis.
+				#expect(abs(site.sunAltitude.degrees) < 1e-6 && site.pathWidth == nil && site.centralPhase == nil, "\(date)")
+			}
+		}
+	}
+
+	@Test func lowSun() throws {
+		// Where the eclipse is greatest for two eclipses with the Sun about 12° high, from
+		// EclipseWise with its radii and ΔT: the latitude and longitude, the Sun's altitude and
+		// azimuth, the path's width, in km, and the central duration, in seconds.
+		let radii = try Sun.Eclipse.Radii(penumbralMoon: 0.272_507_6, umbralMoon: 0.272_281_0, sun: Angle(arcseconds: 959.63))
+		let eclipses: [(year: Int, month: Int, day: Int, deltaT: Double, latitude: Double, longitude: Double, altitude: Double, azimuth: Double, width: Double, duration: Double)] = [
+			(2026, 2, 17, 72.2, -(64 + 43.1 / 60), 86 + 44.4 / 60, 12.3, 268.3, 616.2, 139.63),
+			(2033, 3, 30, 75.3, 71 + 18.9 / 60, -(155 + 50.1 / 60), 11.2, 111.1, 781.2, 156.99),
+		]
+		for expected in eclipses {
+			let date = "\(expected.year)-\(expected.month)-\(expected.day)"
+			let from = Instant<TT>(try JulianDate(year: expected.year, month: expected.month, day: expected.day - 1))
+			let site = try Sun.nextEclipse(after: from, earthOrientation: Self.orientation(deltaT: expected.deltaT), precision: .tenthArcsecond, radii: radii).greatestEclipseSite
+			// The longitude's difference along the parallel
+			let longitude = (site.longitude.degrees - expected.longitude) * Math.cos(Angle(degrees: expected.latitude).radians)
+			#expect(abs(site.latitude.degrees - expected.latitude) * 60 < 0.1 && abs(longitude) * 60 < 0.1, "\(date)")
+			#expect(abs(site.sunAltitude.degrees - expected.altitude) < 0.1 && abs(site.sunAzimuth.degrees - expected.azimuth) < 0.1, "\(date)")
+			#expect(abs(site.pathWidth!.kilometers - expected.width) < 0.006 * expected.width, "\(date)")
+			#expect(abs(try Self.duration(site.centralPhase)! - expected.duration) < 0.3, "\(date)")
 		}
 	}
 
@@ -117,6 +178,9 @@ import Testing
 			#expect(eclipse.radii == .nasa)
 			#expect((eclipse.umbralPhase == nil) == (eclipse.kind == .partial))
 			#expect((eclipse.centralPhase == nil) == !eclipse.isCentral)
+			#expect((eclipse.greatestEclipseSite.centralPhase == nil) == !eclipse.isCentral)
+			#expect(eclipse.greatestEclipseSite.centralPhase.map { $0.contains(eclipse.greatestEclipse) } ?? true)
+			#expect(eclipse.greatestEclipseSite.sunAzimuth.degrees >= 0 && eclipse.greatestEclipseSite.sunAzimuth.degrees < 360)
 			let contacts = [eclipse.partialPhase.lowerBound, eclipse.umbralPhase?.lowerBound, eclipse.centralPhase?.lowerBound, eclipse.greatestEclipse, eclipse.centralPhase?.upperBound, eclipse.umbralPhase?.upperBound, eclipse.partialPhase.upperBound].compactMap { $0 }
 			#expect(zip(contacts, contacts.dropFirst()).allSatisfy { $0 < $1 })
 			// At each contact the axis is the radius of its circle from the Earth's outline, to

@@ -91,6 +91,32 @@ extension Sun {
 			}
 		}
 
+		/// Where an eclipse is greatest at greatest eclipse, and its circumstances there.
+		///
+		/// For a central eclipse, the place is where the axis of the shadow meets the Earth; for
+		/// one that isn't, the point of the Earth's limb nearest the axis, where the Sun is on the
+		/// horizon. The place is on the WGS84 ellipsoid, turned with the Earth by the UT1 of the
+		/// ``EarthOrientation``, so its longitude depends on ΔT, by about 0.004° a second.
+		public struct Site: Hashable, Sendable {
+			/// The geodetic latitude.
+			public let latitude: Angle
+			/// The longitude, positive east, in the closed interval [-180, 180]°.
+			public let longitude: Angle
+			/// The altitude of the Sun, without refraction.
+			public let sunAltitude: Angle
+			/// The azimuth of the Sun, from the north through the east, in the right-open interval
+			/// [0, 360)°.
+			public let sunAzimuth: Angle
+			/// The width of the path of the umbra or the antumbra across the place, on the plane
+			/// tangent to the Earth there, as eclipse catalogs give it, or `nil` for an eclipse
+			/// that isn't central, or whose umbra or antumbra isn't wholly on the Earth at greatest
+			/// eclipse, so its path has only one limit there.
+			public let pathWidth: Distance?
+			/// From when the umbra or the antumbra reaches the place to when it leaves it: the
+			/// central duration at greatest eclipse, or `nil` for an eclipse that isn't central.
+			public let centralPhase: ClosedRange<Instant<TT>>?
+		}
+
 		/// Which part of the Moon's shadow falls on the Earth.
 		public let kind: Kind
 		/// Whether the axis of the shadow meets the Earth, so the eclipse has a central line;
@@ -109,6 +135,8 @@ extension Sun {
 		/// diameter the Moon covers at the Earth's limb nearest the axis, which for a total
 		/// eclipse, within the umbra, exceeds 1, as NASA's catalogs give it.
 		public let magnitude: Double
+		/// Where the eclipse is greatest at greatest eclipse, and its circumstances there.
+		public let greatestEclipseSite: Site
 		/// From when the penumbra first touches the Earth (P1) to when it last does (P4).
 		public let partialPhase: ClosedRange<Instant<TT>>
 		/// From when the umbra or the antumbra first touches the Earth (U1) to when it last does

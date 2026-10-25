@@ -53,6 +53,14 @@ struct SolarEclipseSample {
 	let z: Double
 	/// The declination of the axis, toward the Sun, in the true equator of date, in radians.
 	let declination: Double
+	/// The direction of the axis toward the Sun, in the axes of the true equator of date.
+	let axis: Vector3
+	/// The direction of the plane's x axis, toward the east.
+	let east: Vector3
+	/// The direction of the plane's y axis, toward the north.
+	let north: Vector3
+	/// The semiaxis of the Earth's outline on the plane toward the north, ρ₁.
+	let rho1: Double
 	/// The radius of the penumbra.
 	let l1: Double
 	/// The radius of the umbra, negative beyond its vertex, where the shadow is the antumbra
@@ -90,15 +98,27 @@ struct SolarEclipseSample {
 /// Returns the signed distance of a point from an ellipse centered at the origin, with a
 /// semiaxis of 1 along x and of `b` along y, positive outside it.
 ///
-/// The nearest point of the ellipse, at the angle θ of its parametric form (cos θ, b sin θ),
-/// is found by Newton's method from the point's own angle, which for an ellipse nearly a
-/// circle, as the Earth's outline, is close to it.
-///
 /// - Parameters:
 ///   - x: The point's x.
 ///   - y: The point's y.
 ///   - b: The semiaxis along y, near 1.
 func signedDistanceFromEllipse(x: Double, y: Double, b: Double) -> Double {
+	nearestPointOfEllipse(x: x, y: y, b: b).distance
+}
+
+/// Returns the point of an ellipse centered at the origin, with a semiaxis of 1 along x and of
+/// `b` along y, nearest a point, and the signed distance of the point from it, positive outside
+/// the ellipse.
+///
+/// The nearest point, at the angle θ of the ellipse's parametric form (cos θ, b sin θ), is
+/// found by Newton's method from the point's own angle, which for an ellipse nearly a circle,
+/// as the Earth's outline, is close to it.
+///
+/// - Parameters:
+///   - x: The point's x.
+///   - y: The point's y.
+///   - b: The semiaxis along y, near 1.
+func nearestPointOfEllipse(x: Double, y: Double, b: Double) -> (x: Double, y: Double, distance: Double) {
 	let flattening = 1 - b * b
 	var theta = Math.atan2(y, x)
 	for _ in 0 ..< 8 {
@@ -111,9 +131,10 @@ func signedDistanceFromEllipse(x: Double, y: Double, b: Double) -> Double {
 		theta -= change
 		guard abs(change) > 1e-15 else { break }
 	}
-	let (dx, dy) = (x - Math.cos(theta), y - b * Math.sin(theta))
+	let (nearestX, nearestY) = (Math.cos(theta), b * Math.sin(theta))
+	let (dx, dy) = (x - nearestX, y - nearestY)
 	let distance = (dx * dx + dy * dy).squareRoot()
-	return x * x + (y / b) * (y / b) < 1 ? -distance : distance
+	return (nearestX, nearestY, x * x + (y / b) * (y / b) < 1 ? -distance : distance)
 }
 
 /// Finds the eclipses of the Sun near new Moons, from samples at days after an origin.
@@ -204,7 +225,7 @@ struct SolarEclipseSearch<E: GeocentricEphemeris> {
 				zeta = (-b + discriminant.squareRoot()) / a
 			}
 		}
-		return SolarEclipseSample(time: days, instant: instant, x: x, y: y, z: z, declination: Math.asin(g.z), l1: l1, l2: l2, tanF1: tanF1, tanF2: tanF2, edge: edge, zeta: zeta)
+		return SolarEclipseSample(time: days, instant: instant, x: x, y: y, z: z, declination: Math.asin(g.z), axis: g, east: xAxis, north: yAxis, rho1: rho1, l1: l1, l2: l2, tanF1: tanF1, tanF2: tanF2, edge: edge, zeta: zeta)
 	}
 
 	/// Returns the new Moons from some days after the origin to others, in days after it.
@@ -336,6 +357,180 @@ struct SolarEclipseSearch<E: GeocentricEphemeris> {
 		return try RootFinder.refine(lower, upper, time: \.time, tolerance: Sun.Eclipses.tolerance, maximumIterations: 100, evaluate: sample, function: function)
 	}
 
+	/// The rotations that place a point of the Earth at an instant: from the ICRS to the true
+	/// equator of date, the axes of the samples, and to the ITRS.
+	struct EarthFrames {
+		/// The rotation from the ICRS to the true equator of date.
+		let toDate: Rotation<ICRS, TrueEquatorOfDate>
+		/// The rotation from the ICRS to the ITRS.
+		let toITRS: Rotation<ICRS, ITRS>
+
+		/// Returns a vector of the true equator of date in the ITRS.
+		func itrs(fromDate vector: Vector3) -> Vector3 {
+			toITRS.apply(to: toDate.applyInverse(to: vector))
+		}
+
+		/// Returns a vector of the ITRS in the true equator of date.
+		func date(fromITRS vector: Vector3) -> Vector3 {
+			toDate.apply(to: toITRS.applyInverse(to: vector))
+		}
+	}
+
+	/// Returns the rotations that place a point of the Earth at an instant.
+	func earthFrames(at instant: Instant<TT>) throws(Sun.EclipseError) -> EarthFrames {
+		let ut1: Instant<UT1>
+		do throws(TimescaleConversionError) {
+			ut1 = try instant.converted(to: UT1.self, targetContext: earthOrientation.ut1)
+		} catch {
+			throw .timescaleConversion(error)
+		}
+		return EarthFrames(toDate: TrueEquatorOfDate.rotationFromICRS(at: instant, earthOrientation: earthOrientation), toITRS: ITRS.rotationFromICRS(at: instant, ut1: ut1, earthOrientation: earthOrientation))
+	}
+
+	/// The position of a point of the Earth relative to the shadow at a time.
+	struct GroundSample {
+		/// The time, in days after the search's origin.
+		let time: Double
+		/// The instant of the time.
+		let instant: Instant<TT>
+		/// The point's coordinates on the fundamental plane relative to the axis, in equatorial
+		/// radii of the Earth.
+		let offset: (x: Double, y: Double)
+		/// The distance of the point from the edge of the umbra or the antumbra, at its height,
+		/// on the plane, negative within it.
+		let umbralDistance: Double
+	}
+
+	/// Returns the position of a point of the Earth, fixed in the ITRS, relative to the shadow
+	/// some days after the origin.
+	///
+	/// - Parameters:
+	///   - days: The days after the origin.
+	///   - point: The point, in the ITRS, in equatorial radii of the Earth.
+	func ground(_ days: Double, point: Vector3) throws(Sun.EclipseError) -> GroundSample {
+		let sample = try sample(days)
+		let position = try earthFrames(at: sample.instant).date(fromITRS: point)
+		let (xi, eta, zeta) = (position.dot(sample.east), position.dot(sample.north), position.dot(sample.axis))
+		let (dx, dy) = (sample.x - xi, sample.y - eta)
+		let radius = abs(sample.l2 - zeta * sample.tanF2)
+		return GroundSample(time: days, instant: sample.instant, offset: (dx, dy), umbralDistance: (dx * dx + dy * dy).squareRoot() - radius)
+	}
+
+	/// Returns where an eclipse is greatest at greatest eclipse, on the WGS84 ellipsoid.
+	///
+	/// For a central eclipse it is the point where the axis meets the Earth; otherwise the point
+	/// of the Earth's limb nearest the axis, where the line parallel to the axis through the
+	/// nearest point of the Earth's outline on the plane touches the Earth, and the Sun is on
+	/// the horizon. The Sun's altitude and azimuth there are those of the axis toward the Sun,
+	/// within the Sun's parallax of 9" of its own, without refraction.
+	///
+	/// For a central eclipse, the place is on the central line. The duration of the central
+	/// phase there is from when the edge of the umbra or the antumbra reaches the place to when
+	/// it leaves it, each found to 0.01 s, as the place turns with the Earth. The path's width
+	/// is the width across the place of the band the umbra or the antumbra sweeps over the
+	/// plane tangent to the Earth there, as eclipse catalogs give it: on the fundamental plane,
+	/// the circle of the shadow's radius moving relative to the place sweeps a band twice its
+	/// radius wide, which the width on the tangent plane, across the direction of the path,
+	/// enlarges as it slopes away from the fundamental plane. Where the Sun is low, the Earth's
+	/// surface curves away from the tangent plane under the wide path, and the distance between
+	/// the path's limits along the surface is a few percent wider. Where the shadow isn't wholly
+	/// on the Earth at greatest eclipse, its path has only one limit there, and no width.
+	///
+	/// - Parameter greatest: The sample of greatest eclipse.
+	func site(_ greatest: SolarEclipseSample) throws(Sun.EclipseError) -> Sun.Eclipse.Site {
+		let frames = try earthFrames(at: greatest.instant)
+		let flattening = Ellipsoid.wgs84.flattening
+		let polarSquared = (1 - flattening) * (1 - flattening)
+		let point: Vector3
+		if let zeta = greatest.zeta {
+			point = greatest.x * greatest.east + greatest.y * greatest.north + zeta * greatest.axis
+		} else {
+			// The line parallel to the axis through the nearest point of the outline touches the
+			// ellipsoid X² + Y² + Z²/(1 - f)² = 1 where its quadratic has a double root.
+			let nearest = nearestPointOfEllipse(x: greatest.x, y: greatest.y, b: greatest.rho1)
+			let p = nearest.x * greatest.east + nearest.y * greatest.north
+			let g = greatest.axis
+			let a = g.x * g.x + g.y * g.y + g.z * g.z / polarSquared
+			let b = p.x * g.x + p.y * g.y + p.z * g.z / polarSquared
+			point = p - (b / a) * g
+		}
+		let earthRadius = earthEquatorialRadius.astronomicalUnits
+		let fixed = frames.itrs(fromDate: point)
+		let (latitude, longitude, _) = Ellipsoid.wgs84.geodetic(fixed * earthRadius)
+		let (sinLatitude, cosLatitude) = Math.sincos(latitude)
+		let (sinLongitude, cosLongitude) = Math.sincos(longitude)
+		let up = Vector3(cosLatitude * cosLongitude, cosLatitude * sinLongitude, sinLatitude)
+		let east = Vector3(-sinLongitude, cosLongitude, 0)
+		let north = Vector3(-sinLatitude * cosLongitude, -sinLatitude * sinLongitude, cosLatitude)
+		let sun = frames.itrs(fromDate: greatest.axis)
+		let altitude = Math.asin(max(-1, min(1, up.dot(sun))))
+		var azimuth = Math.atan2(sun.dot(east), sun.dot(north))
+		if azimuth < 0 {
+			azimuth += twoPi
+		}
+		var pathWidth: Distance? = nil
+		var centralPhase: ClosedRange<Instant<TT>>? = nil
+		if greatest.zeta != nil {
+			// The place's motion relative to the shadow on the plane, over a minute about
+			// greatest eclipse
+			let step = 30.0 / secondsPerDay
+			let (before, after) = (try ground(greatest.time - step, point: fixed), try ground(greatest.time + step, point: fixed))
+			let motion = (x: (after.offset.x - before.offset.x) / (2 * step), y: (after.offset.y - before.offset.y) / (2 * step))
+			let speed = (motion.x * motion.x + motion.y * motion.y).squareRoot()
+			let radius = abs(greatest.surfaceL2)
+			// The path's direction on the surface: the motion on the plane lifted along the axis
+			// onto the plane tangent to the Earth at the place
+			let normal = frames.date(fromITRS: up)
+			let velocity = motion.x * greatest.east + motion.y * greatest.north
+			let rise = normal.dot(greatest.axis)
+			let along = velocity - (velocity.dot(normal) / rise) * greatest.axis
+			if speed > 0, along.length > 0, rise > 0 {
+				// The band's area on the plane, 2r times a length of motion, is its area on the
+				// tangent plane times the slope, so its width there is that area over the length.
+				// A path that runs off the Earth's limb at greatest eclipse has no width across.
+				if greatest.edge + abs(greatest.l2) < 0 {
+					pathWidth = .kilometers(2 * radius * speed / (rise * along.length) * earthEquatorialRadius.kilometers)
+				}
+				let half = radius / speed
+				centralPhase = try groundContact(greatest.time, point: fixed, predicted: half, before: true).instant ... groundContact(greatest.time, point: fixed, predicted: half, before: false).instant
+			}
+		}
+		return Sun.Eclipse.Site(latitude: Angle(radians: latitude), longitude: Angle(radians: longitude), sunAltitude: Angle(radians: altitude), sunAzimuth: Angle(radians: azimuth), pathWidth: pathWidth, centralPhase: centralPhase)
+	}
+
+	/// Returns the sample at which the edge of the umbra or the antumbra reaches or leaves a
+	/// point of the Earth within it at a time.
+	///
+	/// The shadow's radius over the point's speed predicts the instant, which a bracket from half
+	/// the prediction to twice it holds, or the bracket widens until it does; ``RootFinder``
+	/// finds the instant to 0.01 s.
+	///
+	/// - Parameters:
+	///   - time: The time, at which the point is within the shadow.
+	///   - point: The point, in the ITRS, in equatorial radii of the Earth.
+	///   - predicted: The days from the time to the contact, about.
+	///   - before: Whether the contact is before the time.
+	func groundContact(_ time: Double, point: Vector3, predicted: Double, before: Bool) throws(Sun.EclipseError) -> GroundSample {
+		let sign = before ? -1.0 : 1.0
+		let evaluate = { (days: Double) throws(Sun.EclipseError) -> GroundSample in try ground(days, point: point) }
+		var near = try evaluate(time + sign * predicted / 2)
+		if near.umbralDistance >= 0 {
+			near = try evaluate(time)
+		}
+		var span = 2 * predicted
+		var far = try evaluate(time + sign * span)
+		while far.umbralDistance < 0 {
+			guard span < Sun.Eclipses.contactSpan else {
+				throw .eclipseNotFound
+			}
+			near = far
+			span *= 2
+			far = try evaluate(time + sign * span)
+		}
+		let (lower, upper) = before ? (far, near) : (near, far)
+		return try RootFinder.refine(lower, upper, time: \.time, tolerance: 0.01 / secondsPerDay, maximumIterations: 100, evaluate: evaluate, function: \.umbralDistance)
+	}
+
 	/// Returns the eclipse near a time, or `nil` if there is none.
 	///
 	/// - Parameters:
@@ -391,7 +586,7 @@ struct SolarEclipseSearch<E: GeocentricEphemeris> {
 			magnitude = (greatest.l1 - greatest.edge) / (greatest.l1 + greatest.l2)
 		}
 		let gamma = greatest.centerSquared.squareRoot() * (greatest.y < 0 ? -1 : 1)
-		return Sun.Eclipse(kind: kind, isCentral: greatest.zeta != nil, greatestEclipse: greatest.instant, gamma: gamma, magnitude: magnitude, partialPhase: partialPhase, umbralPhase: umbralPhase, centralPhase: centralPhase, radii: radii)
+		return Sun.Eclipse(kind: kind, isCentral: greatest.zeta != nil, greatestEclipse: greatest.instant, gamma: gamma, magnitude: magnitude, greatestEclipseSite: try site(greatest), partialPhase: partialPhase, umbralPhase: umbralPhase, centralPhase: centralPhase, radii: radii)
 	}
 
 	/// Returns the eclipses greatest from some days after the origin to others, in order.
@@ -443,13 +638,18 @@ extension Sun {
 	///
 	/// The eclipses from 2001 to 2100 match NASA's Five Millennium Catalog of Solar Eclipses,
 	/// computed with the VSOP87 and ELP-2000/82 theories, within its rounding: every kind and
-	/// whether the eclipse is central, greatest eclipse within 0.52 s, and gamma and the
-	/// magnitude within 0.00007. With EclipseWise's radii, the contacts of eclipses of each kind
-	/// match Espenak's EclipseWise, computed with DE405, within 0.1 s. Each eclipse samples the
-	/// shadow about 70 times, each placing the Sun and the Moon, so at the built-in ephemeris's
-	/// full precision it takes about 0.4 s in a release build, at ``Precision/tenthArcsecond``,
-	/// which matches as closely, about 70 ms, and at ``Precision/arcsecond``, which moves greatest
-	/// eclipse by under 1 s and gamma and the magnitude by under 0.00015, about 20 ms.
+	/// whether the eclipse is central, greatest eclipse within 0.52 s, gamma and the magnitude
+	/// within 0.00007, and with its ΔT, where the eclipse is greatest, the Sun's altitude, and the
+	/// central duration there to the degree and the second, and the path's width within 0.7 km
+	/// where the Sun is over 30° high, and within 1% where it is lower. With EclipseWise's radii
+	/// and ΔT, eclipses of each kind match Espenak's EclipseWise, computed with DE405: the contacts
+	/// within 0.1 s, where the eclipse is greatest within 0.05', the Sun's altitude and azimuth
+	/// there within 0.05°, the path's width within 0.1 km, or within 0.6% for a Sun 12° high, and
+	/// the central duration within 0.2 s. Each eclipse samples the shadow about 85 times, each
+	/// placing the Sun and the Moon, so at the built-in ephemeris's full precision it takes about
+	/// 0.5 s in a release build, at ``Precision/tenthArcsecond``, which matches as closely, about
+	/// 70 ms, and at ``Precision/arcsecond``, which moves greatest eclipse by under 1 s, gamma and
+	/// the magnitude by under 0.00015, and where it is greatest by under 0.3', about 25 ms.
 	///
 	/// The ephemeris is evaluated up to about six hours outside the interval for an eclipse
 	/// near its start or end, whose contacts may fall outside it.
