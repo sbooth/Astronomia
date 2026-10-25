@@ -48,7 +48,7 @@ import Testing
 		// From Greenwich the Moon sets in the morning twilight, after the total phase begins.
 		let eclipse = try Self.march2025.get()
 		let local = try Self.greenwich.localCircumstances(of: eclipse)
-		#expect(local.moonrisesAndMoonsets.map(\.kind) == [.setting])
+		#expect(local.moonrisesAndMoonsets.map(\.kind) == [.set])
 		let moonset = try #require(local.moonrisesAndMoonsets.first).instant
 		#expect(local.visibleIntervals == [eclipse.penumbralPhase.lowerBound ... moonset])
 		#expect(eclipse.penumbralPhase.contains(moonset))
@@ -57,9 +57,9 @@ import Testing
 			#expect(circumstance.isMoonUp == (circumstance.instant < moonset), "\(circumstance.contact)")
 			#expect(circumstance.isMoonUp == (circumstance.place.altitude.degrees > -1), "\(circumstance.contact)")
 		}
-		// The setting matches the rise and set search over the eclipse.
+		// The set matches the rise and set search over the eclipse.
 		let events = try Self.greenwich.riseTransitSetEvents(of: .moon, from: eclipse.penumbralPhase.lowerBound, to: eclipse.penumbralPhase.upperBound)
-		#expect(events.filter { $0.kind == .setting }.map(\.instant) == [moonset])
+		#expect(events.filter { $0.kind == .set }.map(\.instant) == [moonset])
 		#expect(local.isVisible)
 	}
 
@@ -68,7 +68,7 @@ import Testing
 		// penumbra, and is up for the rest of the eclipse.
 		let eclipse = try Self.march2025.get()
 		let local = try Self.maunaKea.localCircumstances(of: eclipse)
-		#expect(local.moonrisesAndMoonsets.map(\.kind) == [.rising])
+		#expect(local.moonrisesAndMoonsets.map(\.kind) == [.rise])
 		let moonrise = try #require(local.moonrisesAndMoonsets.first).instant
 		#expect(moonrise > eclipse.penumbralPhase.lowerBound && moonrise < eclipse.partialPhase!.lowerBound)
 		#expect(local.visibleIntervals == [moonrise ... eclipse.penumbralPhase.upperBound])

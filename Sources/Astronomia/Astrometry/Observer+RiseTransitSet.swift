@@ -6,10 +6,10 @@
 //
 
 extension Observer {
-	/// Returns the risings, settings, and transits of a body in an interval, in order.
+	/// Returns the rises, sets, and transits of a body in an interval, in order.
 	///
 	/// Each event's instant is found to 0.1 s from the body's apparent place seen from the site:
-	/// rising and setting when it crosses the event altitude, upper and lower transit when its
+	/// rise and set when it crosses the event altitude, upper and lower transit when its
 	/// hour angle is 0° and 180°. A body that never rises or never sets in the interval has only
 	/// transits.
 	///
@@ -31,7 +31,7 @@ extension Observer {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``,
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``,
 	///     which takes the upper limb of a body with a radius in the ephemeris.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - ephemeris: The ephemeris of the body, the Earth, and the light-deflecting bodies.
@@ -57,7 +57,7 @@ extension Observer {
 		}
 	}
 
-	/// Returns the risings, settings, and transits of a body of the built-in ephemeris in an
+	/// Returns the rises, sets, and transits of a body of the built-in ephemeris in an
 	/// interval, in order.
 	///
 	/// - Parameters:
@@ -65,7 +65,7 @@ extension Observer {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
 	/// - Returns: The events, in order of their instants.
@@ -74,7 +74,7 @@ extension Observer {
 		try riseTransitSetEvents(of: body, from: start, to: end, context: context, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
-	/// Returns the risings, settings, and transits of a star in an interval, in order.
+	/// Returns the rises, sets, and transits of a star in an interval, in order.
 	///
 	/// The star is a point: ``EventAltitude/standard`` takes it at -34'.
 	///
@@ -83,7 +83,7 @@ extension Observer {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - ephemeris: The ephemeris of the Earth and the light-deflecting bodies.
 	/// - Returns: The events, in order of their instants.
@@ -104,7 +104,7 @@ extension Observer {
 		}
 	}
 
-	/// Returns the risings, settings, and transits of a star in an interval, in order, with the
+	/// Returns the rises, sets, and transits of a star in an interval, in order, with the
 	/// built-in ephemeris.
 	///
 	/// - Parameters:
@@ -112,7 +112,7 @@ extension Observer {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - altitude: The altitude of rising and setting, by default ``EventAltitude/standard``.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
 	/// - Returns: The events, in order of their instants.
@@ -129,13 +129,15 @@ extension Observer {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - altitude: The altitude of rising and setting.
+	///   - altitude: The altitude of rise and set.
 	///   - radius: The radius of the target whose upper limb rises and sets, or `nil` for its
 	///     center.
 	///   - earthOrientation: Observed Earth orientation.
 	///   - ephemeris: The ephemeris.
 	///   - place: Returns the target's apparent place from an observation.
-	func riseTransitSetEvents<E: GeocentricEphemeris, Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, altitude: EventAltitude, radius: Distance?, earthOrientation: EarthOrientation, ephemeris: E, place: @escaping (Observation<E>) throws(RiseTransitSetError) -> ApparentPlace<ICRS>) throws(RiseTransitSetError) -> [RiseTransitSetEvent] {
+	///   - accept: Whether an event ends the search, for the first event it accepts, or `nil`
+	///     for every event.
+	func riseTransitSetEvents<E: GeocentricEphemeris, Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context, altitude: EventAltitude, radius: Distance?, earthOrientation: EarthOrientation, ephemeris: E, place: @escaping (Observation<E>) throws(RiseTransitSetError) -> ApparentPlace<ICRS>, stoppingAt accept: ((RiseTransitSetEvent) -> Bool)? = nil) throws(RiseTransitSetError) -> [RiseTransitSetEvent] {
 		guard case .site = location else {
 			throw .noHorizon
 		}
@@ -188,6 +190,169 @@ extension Observer {
 			}
 			return RiseTransitSetSearch.Sample(time: days, instant: tt, hourAngle: observed.hourAngle.radians, height: reference - altitude.altitude.radians, place: observed)
 		})
-		return try search.events()
+		return try search.events(stoppingAt: accept)
+	}
+}
+
+extension Observer {
+	/// Returns the first rise, set, or transit of a body after an instant.
+	///
+	/// ```swift
+	/// let sunrise = try site.nextRiseTransitSetEvent(.rise, of: .sun, after: instant)
+	/// ```
+	///
+	/// The search samples the body's place as `riseTransitSetEvents(of:from:to:)` does, in order,
+	/// and stops at the first event of the kind, so it evaluates the ephemeris no further than
+	/// the hour after it, and finds an event before the end of the ephemeris's coverage. An event
+	/// within 0.5 s of the instant, as when the instant is an event found earlier, is taken as at
+	/// it, not after it.
+	///
+	/// - Parameters:
+	///   - kind: The kind of event.
+	///   - body: The body.
+	///   - instant: The instant to search from.
+	///   - limit: How far after `instant` to search, by default 2 days, which holds the next
+	///     event of each kind at an ordinary latitude. Near the poles, where a body can stay up
+	///     or down for months, a longer limit finds it.
+	///   - context: Observational data for converting `instant` to TT.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``,
+	///     which takes the upper limb of a body with a radius in the ephemeris.
+	///   - earthOrientation: Observed Earth orientation, which places the site.
+	///   - ephemeris: The ephemeris of the body, the Earth, and the light-deflecting bodies.
+	/// - Returns: The event.
+	/// - Throws:
+	///   - ``RiseTransitSetError/noHorizon`` if the observer is at the center of the Earth.
+	///   - ``RiseTransitSetError/invalidInterval`` if `limit` is negative, or the end of the
+	///     search can't be represented.
+	///   - ``RiseTransitSetError/timescaleConversion(_:)`` if `instant` can't be converted to
+	///     TT.
+	///   - ``RiseTransitSetError/ephemeris(_:)`` if a place fails, as the places of an
+	///     ``Observation`` do.
+	///   - ``RiseTransitSetError/eventNotFound`` if there is no event of the kind within
+	///     `limit` after `instant`.
+	public func nextRiseTransitSetEvent<E: GeocentricEphemeris, Scale: Timescale>(_ kind: RiseTransitSetEvent.Kind, of body: E.Body, after instant: Instant<Scale>, within limit: DayInterval = .days(2), context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(RiseTransitSetError) -> RiseTransitSetEvent {
+		let radius: Distance? = switch altitude.reference {
+		case let .upperLimb(radius): radius ?? E.radius(of: body)
+		case .center: nil
+		}
+		return try nextRiseTransitSetEvent(kind, after: instant, within: limit, context: context, altitude: altitude, radius: radius, earthOrientation: earthOrientation, ephemeris: ephemeris) { observation throws(RiseTransitSetError) in
+			do throws(EphemerisError) {
+				return try observation.apparentPlace(of: body)
+			} catch {
+				throw .ephemeris(error)
+			}
+		}
+	}
+
+	/// Returns the first rise, set, or transit of a body of the built-in ephemeris after
+	/// an instant.
+	///
+	/// - Parameters:
+	///   - kind: The kind of event.
+	///   - body: The body.
+	///   - instant: The instant to search from.
+	///   - limit: How far after `instant` to search, by default 2 days.
+	///   - context: Observational data for converting `instant` to TT.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
+	///   - earthOrientation: Observed Earth orientation, which places the site.
+	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
+	/// - Returns: The event.
+	/// - Throws: A ``RiseTransitSetError``, as the method taking an ephemeris does.
+	public func nextRiseTransitSetEvent<Scale: Timescale>(_ kind: RiseTransitSetEvent.Kind, of body: BuiltInEphemeris.Body, after instant: Instant<Scale>, within limit: DayInterval = .days(2), context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .arcsecond) throws(RiseTransitSetError) -> RiseTransitSetEvent {
+		try nextRiseTransitSetEvent(kind, of: body, after: instant, within: limit, context: context, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
+	}
+
+	/// Returns the first rise, set, or transit of a star after an instant.
+	///
+	/// The star is a point: ``EventAltitude/standard`` takes it at -34'.
+	///
+	/// - Parameters:
+	///   - kind: The kind of event.
+	///   - star: The star.
+	///   - instant: The instant to search from.
+	///   - limit: How far after `instant` to search, by default 2 days. A star that never rises
+	///     or sets at the site still transits each day.
+	///   - context: Observational data for converting `instant` to TT.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
+	///   - earthOrientation: Observed Earth orientation, which places the site.
+	///   - ephemeris: The ephemeris of the Earth and the light-deflecting bodies.
+	/// - Returns: The event.
+	/// - Throws: A ``RiseTransitSetError``, as for a body, or
+	///   ``RiseTransitSetError/star(_:)`` if the star can't be observed at an instant searched.
+	public func nextRiseTransitSetEvent<E: GeocentricEphemeris, Scale: Timescale>(_ kind: RiseTransitSetEvent.Kind, of star: Star, after instant: Instant<Scale>, within limit: DayInterval = .days(2), context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(RiseTransitSetError) -> RiseTransitSetEvent {
+		let radius: Distance? = switch altitude.reference {
+		case let .upperLimb(radius): radius
+		case .center: nil
+		}
+		return try nextRiseTransitSetEvent(kind, after: instant, within: limit, context: context, altitude: altitude, radius: radius, earthOrientation: earthOrientation, ephemeris: ephemeris) { observation throws(RiseTransitSetError) in
+			do throws(StarError) {
+				return try observation.apparentPlace(of: star)
+			} catch {
+				throw .star(error)
+			}
+		}
+	}
+
+	/// Returns the first rise, set, or transit of a star after an instant, with the
+	/// built-in ephemeris.
+	///
+	/// - Parameters:
+	///   - kind: The kind of event.
+	///   - star: The star.
+	///   - instant: The instant to search from.
+	///   - limit: How far after `instant` to search, by default 2 days.
+	///   - context: Observational data for converting `instant` to TT.
+	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
+	///   - earthOrientation: Observed Earth orientation, which places the site.
+	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
+	/// - Returns: The event.
+	/// - Throws: A ``RiseTransitSetError``, as the method taking an ephemeris does.
+	public func nextRiseTransitSetEvent<Scale: Timescale>(_ kind: RiseTransitSetEvent.Kind, of star: Star, after instant: Instant<Scale>, within limit: DayInterval = .days(2), context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .arcsecond) throws(RiseTransitSetError) -> RiseTransitSetEvent {
+		try nextRiseTransitSetEvent(kind, of: star, after: instant, within: limit, context: context, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
+	}
+}
+
+extension Observer {
+	/// Returns the first event of a kind of a target after an instant.
+	///
+	/// - Parameters:
+	///   - kind: The kind of event.
+	///   - instant: The instant to search from.
+	///   - limit: How far after `instant` to search.
+	///   - context: Observational data for converting `instant` to TT.
+	///   - altitude: The altitude of rise and set.
+	///   - radius: The radius of the target whose upper limb rises and sets, or `nil` for its
+	///     center.
+	///   - earthOrientation: Observed Earth orientation.
+	///   - ephemeris: The ephemeris.
+	///   - place: Returns the target's apparent place from an observation.
+	func nextRiseTransitSetEvent<E: GeocentricEphemeris, Scale: Timescale>(_ kind: RiseTransitSetEvent.Kind, after instant: Instant<Scale>, within limit: DayInterval, context: Scale.Context, altitude: EventAltitude, radius: Distance?, earthOrientation: EarthOrientation, ephemeris: E, place: @escaping (Observation<E>) throws(RiseTransitSetError) -> ApparentPlace<ICRS>) throws(RiseTransitSetError) -> RiseTransitSetEvent {
+		guard case .site = location else {
+			throw .noHorizon
+		}
+		guard limit.inDays >= 0 else {
+			throw .invalidInterval
+		}
+		let start: Instant<TT>
+		do throws(TimescaleConversionError) {
+			start = try instant.converted(to: TT.self, sourceContext: context)
+		} catch {
+			throw .timescaleConversion(error)
+		}
+		let end: Instant<TT>
+		do throws(JulianDateError) {
+			end = Instant(try start.julianDate.adding(limit))
+		} catch {
+			throw .invalidInterval
+		}
+		// An event within 0.5 s of the instant, as when the instant is an event found earlier
+		// and found again a little after it, is taken as at it.
+		let found = try riseTransitSetEvents(from: start, to: end, context: TT.defaultContext, altitude: altitude, radius: radius, earthOrientation: earthOrientation, ephemeris: ephemeris, place: place) { event in
+			event.kind == kind && (event.instant.julianDate.daysSinceJ2000 - start.julianDate.daysSinceJ2000) * secondsPerDay > 0.5
+		}
+		if let event = found.first {
+			return event
+		}
+		throw .eventNotFound
 	}
 }

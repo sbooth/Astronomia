@@ -6,7 +6,7 @@
 # Part of https://github.com/sbooth/Astronomia
 #
 
-"""Writes risings, settings, and transits from Skyfield's almanac as a Swift test fixture.
+"""Writes rises, sets, and transits from Skyfield's almanac as a Swift test fixture.
 
 The fixture holds the events of the Sun, the Moon, Mars, Jupiter, and two stars seen from five
 sites, from a low latitude to beyond the Arctic and Antarctic circles, over a few days at an
@@ -75,7 +75,7 @@ for site_index, (_, lat, lon, h) in enumerate(sites):
 		t0, t1 = ts.tt_jd(start), ts.tt_jd(start + 3)
 		for name, target, horizon, altitude in targets:
 			events = []
-			for kind, function in (("rising", almanac.find_risings), ("setting", almanac.find_settings)):
+			for kind, function in (("rise", almanac.find_risings), ("set", almanac.find_settings)):
 				t, crossed = function(observer, target, t0, t1, horizon_degrees=horizon)
 				events += [(float(tt), kind) for tt, real in zip(t.tt, crossed) if real]
 			if horizon is None:

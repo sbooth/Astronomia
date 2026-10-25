@@ -5,7 +5,7 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// Errors that can occur when finding the risings, settings, and transits of a target.
+/// Errors that can occur when finding the rises, sets, and transits of a target.
 public enum RiseTransitSetError: Error, Hashable, Sendable {
 	/// The observer is at the center of the Earth, which has no horizon.
 	case noHorizon
@@ -17,4 +17,7 @@ public enum RiseTransitSetError: Error, Hashable, Sendable {
 	case ephemeris(EphemerisError)
 	/// The star can't be observed at an instant in the interval.
 	case star(StarError)
+	/// The event wasn't found within the limit of the search, as for a target that doesn't
+	/// rise or set at the site in that time.
+	case eventNotFound
 }

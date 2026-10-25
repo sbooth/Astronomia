@@ -8,7 +8,7 @@
 /// The altitude at which a target is taken to rise and set.
 ///
 /// The altitude is geometric, without refraction, of the target's center or of its upper limb.
-/// ``standard`` is the conventional rising and setting: the upper limb at -34', the refraction
+/// ``standard`` is the conventional rise and set: the upper limb at -34', the refraction
 /// at the horizon in average conditions, with the semidiameter from the target's radius and
 /// distance. The twilights are the Sun's center at -6°, -12°, and -18°.
 ///
@@ -21,7 +21,7 @@
 /// ```
 ///
 /// - Note: Refraction at the horizon varies with the weather by several arcminutes, which moves
-///   rising and setting by about a minute of time at middle latitudes, and more near the
+///   rises and sets by about a minute of time at middle latitudes, and more near the
 ///   poles.
 public struct EventAltitude: Hashable, Sendable {
 	/// The part of the target whose altitude is taken.
@@ -50,7 +50,7 @@ public struct EventAltitude: Hashable, Sendable {
 }
 
 extension EventAltitude {
-	/// Conventional rising and setting: the upper limb at -34', with the radius of the body from
+	/// Conventional rise and set: the upper limb at -34', with the radius of the body from
 	/// the ephemeris, or a point for a star or a body without one.
 	public static let standard = EventAltitude(uncheckedAltitude: -horizonRefraction, reference: .upperLimb(radius: nil))
 
@@ -63,7 +63,7 @@ extension EventAltitude {
 	/// Astronomical twilight: the Sun's center at -18°.
 	public static let astronomicalTwilight = EventAltitude(uncheckedAltitude: .degrees(-18), reference: .center)
 
-	/// Returns conventional rising and setting of a target of a given radius: its upper limb at
+	/// Returns the conventional rise and set of a target of a given radius: its upper limb at
 	/// -34'.
 	///
 	/// - Parameter radius: The target's radius, which replaces the ephemeris's.

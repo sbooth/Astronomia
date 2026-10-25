@@ -11,8 +11,8 @@
 /// An eclipse of the Moon is the same for every observer who sees it: its contacts are the
 /// instants when the Moon's limb touches the edge of the Earth's shadow, seen from the Earth's
 /// center, as NASA's catalogs give them. What a site adds is whether the Moon is above its
-/// horizon, and where. The Moon is up when its upper limb is above the altitude of rising and
-/// setting, by default the standard -34', as for the Moon's rise and set times from
+/// horizon, and where. The Moon is up when its upper limb is above the altitude of rise and
+/// set, by default the standard -34', as for the Moon's rise and set times from
 /// ``Observer``'s `riseTransitSetEvents(of:from:to:)`.
 ///
 /// ```swift
@@ -49,7 +49,7 @@ public struct LocalLunarEclipse: Hashable, Sendable {
 		public let instant: Instant<TT>
 		/// The Moon's observed place, refracted if the atmosphere was given.
 		public let place: ObservedPlace
-		/// Whether the Moon's upper limb is above the altitude of rising and setting.
+		/// Whether the Moon's upper limb is above the altitude of rise and set.
 		public let isMoonUp: Bool
 	}
 
@@ -59,7 +59,7 @@ public struct LocalLunarEclipse: Hashable, Sendable {
 	public let observer: Observer
 	/// The Moon's place at each contact of the eclipse, and at greatest eclipse, in order.
 	public let contacts: [Circumstance]
-	/// The Moon's risings and settings during the eclipse, from the first contact with the
+	/// The Moon's rises and sets during the eclipse, from the first contact with the
 	/// penumbra to the last, in order.
 	public let moonrisesAndMoonsets: [RiseTransitSetEvent]
 	/// The parts of the eclipse when the Moon is up, in order.

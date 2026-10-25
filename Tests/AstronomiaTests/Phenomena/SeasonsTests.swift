@@ -63,6 +63,8 @@ struct TruncatedEphemeris<Base: GeocentricEphemeris>: GeocentricEphemeris {
 	static var solarSystemBarycenter: Body { Base.solarSystemBarycenter }
 	static var lightDeflectingBodies: [LightDeflectingBody<Body>] { Base.lightDeflectingBodies }
 
+	static func radius(of body: Body) -> Distance? { Base.radius(of: body) }
+
 	let base: Base
 	/// The end of the coverage.
 	let end: Instant<TDB>
