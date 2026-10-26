@@ -12,7 +12,7 @@ public enum TimescaleConversionError: Error, Hashable, Sendable {
 	case dateOutOfRange
 	/// The ΔT source returned `nil`.
 	case deltaTUnavailable
-	/// The time of day is invalid.
+	/// The time of day is invalid, or the system clock can't be read.
 	case invalidTimeOfDay
 	/// The limit of a ΔT extrapolation is inside the bound it extends, or a number of years that
 	/// is not finite and nonnegative.

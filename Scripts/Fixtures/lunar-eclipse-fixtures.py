@@ -23,9 +23,13 @@ Requires:
 Usage:
   Scripts/Fixtures/lunar-eclipse-fixtures.py de421.bsp \\
       Tests/AstronomiaTests/Phenomena/LunarEclipseFixtures.swift
+
+The large tables are written as text fixtures in Tests/AstronomiaTests/Fixtures, which the
+Swift fixture reads when first used; see text_fixture.py.
 """
 
 import sys
+import text_fixture
 import skyfield
 from skyfield import eclipselib
 from skyfield.api import load, load_file
@@ -35,11 +39,11 @@ if len(sys.argv) != 3:
 eph = load_file(sys.argv[1])
 ts = load.timescale(builtin=True)
 t, kinds, details = eclipselib.lunar_eclipses(ts.tt(1900, 1, 1), ts.tt(2050, 1, 1), eph)
-names = [".penumbral", ".partial", ".total"]
+names = ["penumbral", "partial", "total"]
 rows = []
 for i in range(len(t)):
 	d = {key: float(value[i]) for key, value in details.items()}
-	rows.append(f"\t({float(t.whole[i])!r}, {float(t.tt_fraction[i])!r}, {names[kinds[i]]}, {d['umbral_magnitude']!r}, {d['penumbral_magnitude']!r}, {d['closest_approach_radians']!r}, {d['penumbra_radius_radians']!r}, {d['umbra_radius_radians']!r}, {d['moon_radius_radians']!r}),")
+	rows.append((float(t.whole[i]), float(t.tt_fraction[i]), names[kinds[i]], d['umbral_magnitude'], d['penumbral_magnitude'], d['closest_approach_radians'], d['penumbra_radius_radians'], d['umbra_radius_radians'], d['moon_radius_radians']))
 
 out = [
 	"//", "// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>", "// SPDX-License-Identifier: MIT", "//",
@@ -50,6 +54,9 @@ out = [
 	"/// Julian Date of greatest eclipse, as a whole and a fraction, the kind, the umbral and penumbral",
 	"/// magnitudes, and in radians the closest approach and the radii of the penumbra, the umbra,",
 	"/// and the Moon.",
-	"let skyfieldLunarEclipses: [(whole: Double, fraction: Double, kind: LunarEclipse.Kind, umbralMagnitude: Double, penumbralMagnitude: Double, separation: Double, penumbra: Double, umbra: Double, moon: Double)] = [",
-] + rows + ["]", ""]
+	"let skyfieldLunarEclipses: [(whole: Double, fraction: Double, kind: Moon.Eclipse.Kind, umbralMagnitude: Double, penumbralMagnitude: Double, separation: Double, penumbra: Double, umbra: Double, moon: Double)] = textFixture(\"SkyfieldLunarEclipses\") { row in",
+	"\t(row.double(), row.double(), row.value(), row.double(), row.double(), row.double(), row.double(), row.double(), row.double())",
+	"}", "",
+]
 open(sys.argv[2], "w").write("\n".join(out))
+text_fixture.write(sys.argv[2], "skyfieldLunarEclipses", "Scripts/Fixtures/lunar-eclipse-fixtures.py", "whole fraction kind umbralMagnitude penumbralMagnitude separation penumbra umbra moon", rows)

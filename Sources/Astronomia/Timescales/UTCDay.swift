@@ -122,7 +122,7 @@ extension UTCDay {
 	/// Returns the clock reading, in seconds since midnight, for a UTC Julian Date on this UTC day.
 	///
 	/// The inverse of ``julianDate(secondsSinceMidnight:)``. On a day ending in a leap second,
-	/// the result is in the right-open interval [86,400, 86,401) during 23:59:60.
+	/// the result is in the right-open interval [86,400, 86,401) s during 23:59:60.
 	///
 	/// - Throws: ``TimescaleConversionError/dateOutOfRange`` if `julianDate` is not on this UTC
 	///   day.
@@ -161,7 +161,7 @@ extension UTCDay {
 	///   [0, 1].
 	func tai(fractionSinceMidnight fraction: Double) throws(TimescaleConversionError) -> JulianDate {
 		assert(fraction.isFinite, "Fraction since midnight must be finite")
-		assert(fraction >= 0 && fraction <= 1, "Fraction since midnight is outside the closed interval [0, 1]")
+		assert(fraction >= 0 && fraction <= 1, "Fraction since midnight must be in the closed interval [0, 1]")
 		let correction = (offsetAtStart + fraction * offsetChange) / secondsPerDay
 		do throws(JulianDateError) {
 			return try start.adding(days1: fraction, days2: correction)

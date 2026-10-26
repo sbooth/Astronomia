@@ -74,7 +74,7 @@ public struct Star: Hashable, Sendable {
 	/// - Throws:
 	///   - ``StarError/nonFiniteValue`` if any value is NaN or infinite.
 	///   - ``StarError/invalidDeclination`` if the declination is outside the
-	///     closed interval [-90°, 90°].
+	///     closed interval [-90, 90]°.
 	///   - ``StarError/invalidParallax`` if the parallax is negative, or greater than 10",
 	///     which would put the source within about 20,600 au of the Sun. The nearest star's is
 	///     0.77".
@@ -110,9 +110,9 @@ public struct Star: Hashable, Sendable {
 		epoch: Instant<TDB>
 	) {
 		assert([rightAscension.radians, declination.radians, properMotionInRightAscension.radians, properMotionInDeclination.radians, parallax?.radians ?? 0, radialVelocity.astronomicalUnitsPerDay].allSatisfy(\.isFinite), "Non-finite value")
-		assert(abs(declination.radians) <= halfPi, "Invalid declination")
-		assert((parallax?.radians ?? 0) >= 0 && (parallax?.radians ?? 0) <= Self.maximumParallax.radians, "Invalid parallax")
-		assert(abs(radialVelocity.astronomicalUnitsPerDay) < Self.maximumSpeed, "Excessive radial velocity")
+		assert(abs(declination.radians) <= halfPi, "Declination must be in the closed interval [-π/2, π/2]")
+		assert((parallax?.radians ?? 0) >= 0 && (parallax?.radians ?? 0) <= Self.maximumParallax.radians, "Parallax must be in the closed interval [0, 10]″")
+		assert(abs(radialVelocity.astronomicalUnitsPerDay) < Self.maximumSpeed, "Radial velocity must be in the open interval (-c/2, c/2)")
 		self.rightAscension = rightAscension
 		self.declination = declination
 		self.properMotionInRightAscension = properMotionInRightAscension

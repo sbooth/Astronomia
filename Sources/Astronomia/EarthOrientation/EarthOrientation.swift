@@ -34,7 +34,7 @@ public struct EarthOrientation: Sendable {
 	/// The source of UT1 for the Earth's rotation.
 	public let ut1: UT1.Context
 	/// The precision level of the nutation series.
-	public let precision: Precision
+	public let precision: SeriesPrecision
 
 	/// Creates a description of the Earth's orientation.
 	///
@@ -45,8 +45,8 @@ public struct EarthOrientation: Sendable {
 	///     built-in ΔT table and model, as
 	///     ``UT1/Context/init(earthOrientationTable:deltaTTable:model:)`` does.
 	///   - precision: The precision level of the nutation series, by default
-	///     ``Precision/full``.
-	public init(table: EarthOrientationTable? = nil, ut1: UT1.Context? = nil, precision: Precision = .full) {
+	///     ``SeriesPrecision/full``.
+	public init(table: EarthOrientationTable? = nil, ut1: UT1.Context? = nil, precision: SeriesPrecision = .full) {
 		self.table = table
 		self.ut1 = ut1 ?? UT1.Context(earthOrientationTable: table)
 		self.precision = precision

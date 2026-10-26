@@ -127,7 +127,8 @@ extension Angle {
 
 	/// Returns an angle from arcminutes.
 	///
-	/// Equivalent to ``init(arcminutes:)``, for use where the type is known, as in `.arcminutes(1_800)`.
+	/// Equivalent to ``init(arcminutes:)``, for use where the type is known, as in
+	/// `.arcminutes(1_800)`.
 	///
 	/// - Parameter arcminutes: The angle in arcminutes.
 	/// - Returns: The angle.
@@ -135,7 +136,8 @@ extension Angle {
 
 	/// Returns an angle from arcseconds.
 	///
-	/// Equivalent to ``init(arcseconds:)``, for use where the type is known, as in `.arcseconds(1.08e5)`.
+	/// Equivalent to ``init(arcseconds:)``, for use where the type is known, as in
+	/// `.arcseconds(1.08e5)`.
 	///
 	/// - Parameter arcseconds: The angle in arcseconds.
 	/// - Returns: The angle.
@@ -143,7 +145,8 @@ extension Angle {
 
 	/// Returns an angle from milliarcseconds.
 	///
-	/// Equivalent to ``init(milliarcseconds:)``, for use where the type is known, as in `.milliarcseconds(1.08e8)`.
+	/// Equivalent to ``init(milliarcseconds:)``, for use where the type is known, as in
+	/// `.milliarcseconds(1.08e8)`.
 	///
 	/// - Parameter milliarcseconds: The angle in milliarcseconds.
 	/// - Returns: The angle.

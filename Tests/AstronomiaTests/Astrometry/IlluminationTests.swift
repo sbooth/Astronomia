@@ -49,9 +49,9 @@ import Testing
 		// Full near a full Moon and dark near a new Moon, waxing with the bright limb to the
 		// west, near 270°, and waning to the east, near 90°
 		let start = Instant<TT>(try JulianDate(julianDate: 2_461_041.5))
-		for kind in MoonPhaseEvent.Kind.allCases {
-			let instant = try MoonPhases.next(kind, after: start, precision: .arcsecond)
-			let illumination = try MoonPhases.illumination(at: instant, precision: .arcsecond)
+		for kind in Moon.PhaseEvent.Kind.allCases {
+			let instant = try Moon.nextPhase(kind, after: start, precision: .arcsecond).instant
+			let illumination = try Moon.illumination(at: instant, precision: .arcsecond)
 			let limb = illumination.brightLimbPositionAngle.degrees
 			switch kind {
 			case .newMoon:
@@ -75,11 +75,11 @@ import Testing
 		let instant = Instant<TT>(try JulianDate(julianDate: 2_461_050.3))
 		let sky = try Self.sites[1].observation(at: instant, earthOrientation: Self.earthOrientation, ephemeris: BuiltInEphemeris(precision: .arcsecond))
 		let expected = try sky.illumination(of: .moon)
-		#expect(try MoonPhases.illumination(at: instant, observer: Self.sites[1], earthOrientation: Self.earthOrientation, precision: .arcsecond) == expected)
+		#expect(try Moon.illumination(at: instant, observer: Self.sites[1], earthOrientation: Self.earthOrientation, precision: .arcsecond) == expected)
 		// From UTC
 		let utc = try instant.converted(to: UTC.self)
-		let fromUTC = try MoonPhases.illumination(at: utc, precision: .arcsecond)
-		#expect(abs(fromUTC.phaseAngle.degrees - (try MoonPhases.illumination(at: instant, precision: .arcsecond)).phaseAngle.degrees) < 1e-9)
+		let fromUTC = try Moon.illumination(at: utc, precision: .arcsecond)
+		#expect(abs(fromUTC.phaseAngle.degrees - (try Moon.illumination(at: instant, precision: .arcsecond)).phaseAngle.degrees) < 1e-9)
 	}
 
 	@Test func notIlluminated() throws {
@@ -92,18 +92,18 @@ import Testing
 		}
 		// Outside the coverage
 		let far = Instant<TT>(try JulianDate(julianDate: 3_000_000.5))
-		#expect(throws: IlluminationError.ephemeris(.outsideCoverage)) { try MoonPhases.illumination(at: far, precision: .tenArcseconds) }
+		#expect(throws: IlluminationError.ephemeris(.outsideCoverage)) { try Moon.illumination(at: far, precision: .tenArcseconds) }
 	}
 
 	@Test func eastAndWestOfTheSun() throws {
 		// The Moon is east of the Sun from new Moon to full Moon, waxing, and west of it from full
 		// Moon to new Moon; the side changes at the instants of the phases.
 		let start = Instant<TT>(try JulianDate(julianDate: 2_461_041.5))
-		let full = try MoonPhases.next(.fullMoon, after: start, precision: .arcsecond)
-		let new = try MoonPhases.next(.newMoon, after: full, precision: .arcsecond)
+		let full = try Moon.nextPhase(.fullMoon, after: start, precision: .arcsecond).instant
+		let new = try Moon.nextPhase(.newMoon, after: full, precision: .arcsecond).instant
 		for (instant, east) in [(full, true), (new, false)] {
-			let before = try MoonPhases.illumination(at: Instant<TT>(try instant.julianDate.adding(seconds: -60)), precision: .arcsecond)
-			let after = try MoonPhases.illumination(at: Instant<TT>(try instant.julianDate.adding(seconds: 60)), precision: .arcsecond)
+			let before = try Moon.illumination(at: Instant<TT>(try instant.julianDate.adding(seconds: -60)), precision: .arcsecond)
+			let after = try Moon.illumination(at: Instant<TT>(try instant.julianDate.adding(seconds: 60)), precision: .arcsecond)
 			#expect(before.isEastOfSun == east && after.isEastOfSun == !east)
 		}
 		// Venus as an evening star, east of the Sun, on March 1, 2026, after its superior

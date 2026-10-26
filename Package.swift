@@ -22,27 +22,30 @@ let package = Package(
 			name: "Astronomia",
 			dependencies: [
 				"CAstronomiaData",
-				"CAstronomiaMath",
+				"CAstronomiaPlatform",
 			]
 		),
 		.target(
 			name: "CAstronomiaData",
 			dependencies: [
-				"CAstronomiaMath",
-			],
+				"CAstronomiaPlatform",
+			]
+		),
+		.target(
+			name: "CAstronomiaPlatform",
 			linkerSettings: [
 				.linkedFramework(
 					"Accelerate", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])
 				)
 			]
 		),
-		.target(
-			name: "CAstronomiaMath"
-		),
 		.testTarget(
 			name: "AstronomiaTests",
 			dependencies: [
 				"Astronomia",
+			],
+			resources: [
+				.copy("Fixtures"),
 			]
 		),
 	]

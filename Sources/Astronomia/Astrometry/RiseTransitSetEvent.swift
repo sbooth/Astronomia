@@ -5,12 +5,12 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// An event of a target's daily path across the sky of a site: its rising or setting through an
+/// An event of a target's daily path across the sky of a site: its rise or set through an
 /// ``EventAltitude``, or its transit of the meridian.
 ///
 /// ```swift
 /// let events = try site.riseTransitSetEvents(of: .sun, from: start, to: end)
-/// for event in events where event.kind == .rising {
+/// for event in events where event.kind == .rise {
 /// 	print(event.instant, event.place.azimuth.degrees)
 /// }
 /// ```
@@ -18,9 +18,9 @@ public struct RiseTransitSetEvent: Hashable, Sendable {
 	/// A kind of event.
 	public enum Kind: Hashable, Sendable, CaseIterable {
 		/// The target rises through the event altitude.
-		case rising
+		case rise
 		/// The target sets through the event altitude.
-		case setting
+		case set
 		/// The target crosses the meridian above the pole, at hour angle 0°, near its highest.
 		case upperTransit
 		/// The target crosses the meridian below the pole, at hour angle 180°, near its lowest.
@@ -31,7 +31,7 @@ public struct RiseTransitSetEvent: Hashable, Sendable {
 	public let kind: Kind
 	/// The instant of the event.
 	public let instant: Instant<TT>
-	/// The target's place at the instant, without refraction: its azimuth at rising or setting,
+	/// The target's place at the instant, without refraction: its azimuth at rise or set,
 	/// or its altitude at transit.
 	public let place: ObservedPlace
 

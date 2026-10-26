@@ -82,7 +82,7 @@ enum JulianAndGregorianArithmetic {
 	/// - Precondition: `N` is in the closed interval [1, 365] in a common year or
 	///   [1, 366] in a leap year.
 	static func monthAndDay(dayOfYear N: Int, isLeap: Bool) -> (month: Int, day: Int) {
-		assert(N >= 1 && N <= numberOfDays(isLeap: isLeap), "Day of year is outside the closed interval [1, \(numberOfDays(isLeap: isLeap))]")
+		assert(N >= 1 && N <= numberOfDays(isLeap: isLeap), "Day of year must be in the closed interval [1, \(numberOfDays(isLeap: isLeap))]")
 		// Days in January and February
 		let janFeb = isLeap ? 60 : 59
 		// March-based day of year in [0, 366) with March 1 = 0: [0, 306) for March through

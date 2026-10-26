@@ -65,7 +65,7 @@ extension CalendarDate {
 	/// - Precondition: `fractionSinceMidnight` is finite and in the right-open interval [0, 1).
 	init(calendarDay: CalendarDay, uncheckedFractionSinceMidnight fractionSinceMidnight: Double) {
 		assert(fractionSinceMidnight.isFinite, "Fraction since midnight must be finite")
-		assert(fractionSinceMidnight >= 0 && fractionSinceMidnight < 1, "Fraction since midnight is outside the right-open interval [0, 1)")
+		assert(fractionSinceMidnight >= 0 && fractionSinceMidnight < 1, "Fraction since midnight must be in the right-open interval [0, 1)")
 		self.calendarDay = calendarDay
 		self.fractionSinceMidnight = fractionSinceMidnight
 	}
@@ -403,7 +403,7 @@ extension CalendarDate: Codable {
 		} catch .nonFiniteValue {
 			throw DecodingError.dataCorruptedError(forKey: .fractionSinceMidnight, in: container, debugDescription: "Fraction since midnight must be finite")
 		} catch .invalidDayFraction {
-			throw DecodingError.dataCorruptedError(forKey: .fractionSinceMidnight, in: container, debugDescription: "Fraction since midnight is outside the right-open interval [0, 1)")
+			throw DecodingError.dataCorruptedError(forKey: .fractionSinceMidnight, in: container, debugDescription: "Fraction since midnight must be in the right-open interval [0, 1)")
 		} catch .invalidDate {
 			throw DecodingError.dataCorruptedError(forKey: .day, in: container, debugDescription: "year: \(year), month: \(month), day: \(day) do not form a valid \(calendar.name) date")
 		} catch .julianDayNumberNotRepresentable {

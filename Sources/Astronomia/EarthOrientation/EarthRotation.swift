@@ -170,7 +170,7 @@ extension EarthRotation {
 	/// - Parameters:
 	///   - tt: An instant in TT.
 	///   - earthOrientation: Observed Earth orientation to apply.
-	/// - Returns: The equation of the origins, in the interval (-π, π].
+	/// - Returns: The equation of the origins, in the left-open interval (-π, π].
 	public static func equationOfTheOrigins(at tt: Instant<TT>, earthOrientation: EarthOrientation = .model) -> Angle {
 		Angle(radians: IAU2006.Orientation(at: tt, earthOrientation: earthOrientation).equationOfOrigins)
 	}
@@ -216,7 +216,7 @@ extension EarthRotation {
 	///   - instant: An instant, which is converted to TT.
 	///   - context: Observational data for converting `instant` to TT.
 	///   - earthOrientation: Observed Earth orientation to apply.
-	/// - Returns: The equation of the origins, in the interval (-π, π].
+	/// - Returns: The equation of the origins, in the left-open interval (-π, π].
 	/// - Throws: A ``TimescaleConversionError`` if `instant` can't be converted to TT.
 	public static func equationOfTheOrigins<Scale: Timescale>(at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model) throws(TimescaleConversionError) -> Angle {
 		equationOfTheOrigins(at: try instant.converted(to: TT.self, sourceContext: context), earthOrientation: earthOrientation)

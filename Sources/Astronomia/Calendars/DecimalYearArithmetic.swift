@@ -43,9 +43,9 @@ enum DecimalYearArithmetic {
 	/// - Precondition: `N` is in the closed interval [1, `d`] and `fractionSinceMidnight` is
 	///   in the right-open interval [0, 1).
 	static func decimalYear(year Y: Int, dayOfYear N: Int, fractionSinceMidnight: Double = 0, daysInYear d: Int) -> Double {
-		assert(N >= 1 && N <= d, "Day of year is outside the closed interval [1, \(d)]")
+		assert(N >= 1 && N <= d, "Day of year must be in the closed interval [1, \(d)]")
 		assert(fractionSinceMidnight.isFinite, "Fraction since midnight must be finite")
-		assert(fractionSinceMidnight >= 0 && fractionSinceMidnight < 1, "Fraction since midnight is outside the right-open interval [0, 1)")
+		assert(fractionSinceMidnight >= 0 && fractionSinceMidnight < 1, "Fraction since midnight must be in the right-open interval [0, 1)")
 		assert(d >= 1 && (d == 365 || d == 366 || d == 355), "Invalid number of days in year")
 		let days = Double(d)
 		// Days elapsed since midnight on January 1 as the unevaluated sum sum + error.
@@ -75,7 +75,7 @@ enum DecimalYearArithmetic {
 		assert(decimalYear.isFinite, "Decimal year must be finite")
 		assert(decimalYear >= Double(Y), "Decimal year is before the start of year Y")
 		assert(yearFraction.isFinite, "Year fraction must be finite")
-		assert(yearFraction >= 0 && yearFraction < 1, "Year fraction is outside the right-open interval [0, 1)")
+		assert(yearFraction >= 0 && yearFraction < 1, "Year fraction must be in the right-open interval [0, 1)")
 		assert(d >= 1 && (d == 365 || d == 366 || d == 355), "Invalid number of days in year")
 		var N = Int((yearFraction * Double(d)).rounded(.down)) &+ 1
 		// Correct the estimate for rounding in the decimal year

@@ -54,7 +54,7 @@ extension VSOP2013.SeriesData {
 	///   - variables: The number of variables, numbered from 1 in the data.
 	///   - precision: The precision level, whose leading terms of each series are summed.
 	/// - Returns: The sums, indexed from 0.
-	func evaluate(at t: Double, variables: Int, precision: Precision) -> [Double] {
+	func evaluate(at t: Double, variables: Int, precision: SeriesPrecision) -> [Double] {
 		let level = precision.level
 		var powers = [Double](repeating: 1, count: maximumPower + 1)
 		if maximumPower > 0 {

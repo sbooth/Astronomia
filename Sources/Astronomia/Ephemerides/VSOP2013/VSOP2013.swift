@@ -13,7 +13,7 @@ internal import CAstronomiaData
 /// barycenter as series in TDB, in its own realization of the dynamical ecliptic and equinox
 /// of J2000.0, ``Ecliptic``. ``Solution`` gives their states. The built-in series are
 /// truncated for J1000.0 to J3000.0 so that the geocentric error from truncation is near
-/// 0.5 mas, or below the solution's own error, and coarser ``Precision`` levels sum fewer of
+/// 0.5 mas, or below the solution's own error, and coarser ``SeriesPrecision`` levels sum fewer of
 /// their terms.
 ///
 /// - Note: Simon, J.-L., Francou, G., Fienga, A., Manche, H. (2013). New analytical planetary
@@ -166,7 +166,7 @@ extension VSOP2013 {
 	///   - t: TDB in thousands of Julian years from J2000.0.
 	///   - precision: The precision level.
 	/// - Returns: The elements, with the mean longitude in the right-open interval [0, 2π).
-	static func elements(of body: Body, at t: Double, precision: Precision = .full) -> EllipticElements {
+	static func elements(of body: Body, at t: Double, precision: SeriesPrecision = .full) -> EllipticElements {
 		guard let seriesData = body.seriesData, let meanMotion = body.meanMotion else {
 			preconditionFailure("\(body) has no series")
 		}
@@ -184,7 +184,7 @@ extension VSOP2013 {
 	///   - body: A body with series.
 	///   - t: TDB in thousands of Julian years from J2000.0.
 	///   - precision: The precision level.
-	private static func orbitalState(of body: Body, at t: Double, precision: Precision) -> (position: Vector3, velocity: Vector3) {
+	private static func orbitalState(of body: Body, at t: Double, precision: SeriesPrecision) -> (position: Vector3, velocity: Vector3) {
 		guard let gm = body.gravitationalParameter else { preconditionFailure("\(body) has no series") }
 		return elements(of: body, at: t, precision: precision).state(gm: sunGravitationalParameter + gm)
 	}
@@ -197,7 +197,7 @@ extension VSOP2013 {
 	///   - precision: The precision level.
 	/// - Returns: The position, in astronomical units, and velocity, in astronomical units per
 	///   day, or `nil` if `tdb` is outside the coverage.
-	static func heliocentricState(of body: Body, at tdb: JulianDate, precision: Precision = .full) -> (position: Vector3, velocity: Vector3)? {
+	static func heliocentricState(of body: Body, at tdb: JulianDate, precision: SeriesPrecision = .full) -> (position: Vector3, velocity: Vector3)? {
 		guard builtInEphemerisCoverage.contains(tdb) else { return nil }
 		switch body {
 		case .sun:
@@ -215,7 +215,7 @@ extension VSOP2013 {
 	/// - Parameters:
 	///   - t: TDB in thousands of Julian years from J2000.0.
 	///   - precision: The precision level.
-	private static func barycenter(at t: Double, precision: Precision) -> (position: Vector3, velocity: Vector3) {
+	private static func barycenter(at t: Double, precision: SeriesPrecision) -> (position: Vector3, velocity: Vector3) {
 		var position = Vector3.zero
 		var velocity = Vector3.zero
 		var total = sunGravitationalParameter

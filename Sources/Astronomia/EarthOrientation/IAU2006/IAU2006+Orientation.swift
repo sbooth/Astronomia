@@ -36,7 +36,7 @@ extension IAU2006 {
 		///   - t: TT in Julian centuries from J2000.0.
 		///   - poleOffsets: dX and dY, in radians, or `nil` for the model alone.
 		///   - precision: The precision level of the nutation series.
-		init(at t: Double, poleOffsets: (dX: Double, dY: Double)?, precision: Precision = .full) {
+		init(at t: Double, poleOffsets: (dX: Double, dY: Double)?, precision: SeriesPrecision = .full) {
 			let arguments = FundamentalArguments(at: t)
 			angles = precessionAngles(at: t)
 			let modelNutation = IAU2006.nutation(at: t, arguments: arguments, precision: precision)

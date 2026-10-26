@@ -29,9 +29,13 @@ Requires:
 Usage:
   Scripts/Fixtures/star-fixtures.py de421.bsp \\
       Tests/AstronomiaTests/Astrometry/StarFixtures.swift
+
+The large tables are written as text fixtures in Tests/AstronomiaTests/Fixtures, which the
+Swift fixture reads when first used; see text_fixture.py.
 """
 
 import math, sys
+import text_fixture
 import numpy as np
 import erfa
 import skyfield
@@ -89,15 +93,12 @@ def unit(v):
 def s2c(ra, dec):
 	return np.array([math.cos(dec) * math.cos(ra), math.cos(dec) * math.sin(ra), math.sin(dec)])
 
-def f(v):
-	return "[" + ", ".join(repr(float(x)) for x in v) + "]"
-
 # Motion between epochs
 motion = []
 for i, star in enumerate(stars):
 	for year in (1900.0, 2000.0, 2026.8, 2100.0):
 		ra2, dec2, pma, pmd, px2, rv2 = propagate(star, epoch_jd(year))
-		motion.append(f"\t({i}, {year!r}, {ra2!r}, {dec2!r}, {pma!r}, {pmd!r}, {px2!r}, {rv2!r}),")
+		motion.append((i, year, ra2, dec2, pma, pmd, px2, rv2))
 
 # Places, from ERFA with the Earth and bodies of DE421
 gm = {"sun": 1.0, "jupiter barycenter": 1 / 1047.348644, "saturn barycenter": 1 / 3497.9018}
@@ -131,7 +132,7 @@ for jd in dates:
 		astrometric = erfa.pmpx(ra2, dec2, pmr, pmd, pxo, rv2, 0.0, ebp)
 		ri, di = erfa.atciqn(ra2, dec2, pmr, pmd, pxo, rv2, astrom, bodies)
 		apparent = bpn.T @ s2c(float(ri), float(di))
-		erfa_places.append(f"\t({i}, {jd!r}, {f(astrometric)}, {f(apparent)}),")
+		erfa_places.append((i, jd, astrometric, apparent))
 
 		# Skyfield, with no radial velocity, where its model and ERFA's agree
 		_, ra, dec, pmra, pmdec, px, _, epoch = star
@@ -140,7 +141,7 @@ for jd in dates:
 		observed = e.observe(sky)
 		a = observed.position.au
 		p = observed.apparent().position.au
-		sky_places.append(f"\t({i}, {jd!r}, {f(a)}, {float(observed.light_time)!r}, {f(p)}),")
+		sky_places.append((i, jd, a, float(observed.light_time), p))
 
 names = "\n".join(f"\t({n!r}".replace("'", '"') + f", {ra!r}, {dec!r}, {pmra!r}, {pmdec!r}, {('nil' if px is None else repr(px))}, {rv!r}, {ep!r})," for n, ra, dec, pmra, pmdec, px, rv, ep in stars)
 out = [
@@ -157,16 +158,23 @@ out = [
 	f"/// Stars carried to other Julian epochs by ERFA {erfa.version.erfa_version}'s starpm, with the parallax of",
 	"/// Star.effectiveParallax: the right ascension and declination, the proper motions, in",
 	"/// radians, per Julian year, the parallax, in arcseconds, and the radial velocity, in km/s.",
-	"let erfaStarMotion: [(star: Int, julianEpoch: Double, rightAscension: Double, declination: Double, properMotionInRightAscension: Double, properMotionInDeclination: Double, parallax: Double, radialVelocity: Double)] = [",
-] + motion + ["]", "",
+	"let erfaStarMotion: [(star: Int, julianEpoch: Double, rightAscension: Double, declination: Double, properMotionInRightAscension: Double, properMotionInDeclination: Double, parallax: Double, radialVelocity: Double)] = textFixture(\"ErfaStarMotion\") { row in",
+	"\t(row.int(), row.double(), row.double(), row.double(), row.double(), row.double(), row.double(), row.double())",
+	"}", "",
 	"/// Geocentric places of stars from ERFA, with the Earth, Sun, Jupiter, and Saturn of DE421, at",
 	"/// TDB Julian Dates: the astrometric direction from pmpx, and the apparent direction from",
 	"/// atciqn rotated back to the GCRS, after starpm to the date.",
-	"let erfaStarPlaces: [(star: Int, julianDate: Double, astrometric: [Double], apparent: [Double])] = [",
-] + erfa_places + ["]", "",
+	"let erfaStarPlaces: [(star: Int, julianDate: Double, astrometric: [Double], apparent: [Double])] = textFixture(\"ErfaStarPlaces\") { row in",
+	"\t(row.int(), row.double(), row.vector(), row.vector())",
+	"}", "",
 	f"/// Geocentric places of stars without radial velocity from Skyfield {skyfield.__version__} and DE421 at TDB",
 	"/// Julian Dates: the astrometric position, in au, its light time, in days, and the apparent",
 	"/// position.",
-	"let skyfieldStarPlaces: [(star: Int, julianDate: Double, astrometric: [Double], lightTime: Double, apparent: [Double])] = [",
-] + sky_places + ["]", ""]
+	"let skyfieldStarPlaces: [(star: Int, julianDate: Double, astrometric: [Double], lightTime: Double, apparent: [Double])] = textFixture(\"SkyfieldStarPlaces\") { row in",
+	"\t(row.int(), row.double(), row.vector(), row.double(), row.vector())",
+	"}", ""
+]
 open(sys.argv[2], "w").write("\n".join(out))
+text_fixture.write(sys.argv[2], "erfaStarMotion", "Scripts/Fixtures/star-fixtures.py", "star julianEpoch rightAscension declination properMotionInRightAscension properMotionInDeclination parallax radialVelocity", motion)
+text_fixture.write(sys.argv[2], "erfaStarPlaces", "Scripts/Fixtures/star-fixtures.py", "star julianDate astrometric.x astrometric.y astrometric.z apparent.x apparent.y apparent.z", erfa_places)
+text_fixture.write(sys.argv[2], "skyfieldStarPlaces", "Scripts/Fixtures/star-fixtures.py", "star julianDate astrometric.x astrometric.y astrometric.z lightTime apparent.x apparent.y apparent.z", sky_places)

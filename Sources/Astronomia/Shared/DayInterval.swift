@@ -26,7 +26,7 @@ public struct DayInterval: Hashable, Sendable {
 	/// - Precondition: `fractionalDay` is finite and in the right-open interval [-0.5, 0.5).
 	init(uncheckedDays days: Int, fractionalDay: Double) {
 		assert(fractionalDay.isFinite, "Fractional day must be finite")
-		assert(fractionalDay >= -0.5 && fractionalDay < 0.5, "Fractional day is outside the right-open interval [-0.5, 0.5)")
+		assert(fractionalDay >= -0.5 && fractionalDay < 0.5, "Fractional day must be in the right-open interval [-0.5, 0.5)")
 		self.days = days
 		self.fractionalDay = fractionalDay
 	}
@@ -150,7 +150,7 @@ extension DayInterval {
 	/// - Parameter seconds: The signed number of seconds.
 	/// - Returns: The interval.
 	public static func seconds(_ seconds: Int) -> DayInterval {
-		// Rounds to the nearest day, with halves up, leaving a remainder in [-43,200, 43,200).
+		// Rounds to the nearest day, with halves up, leaving a remainder in [-43,200, 43,200) s.
 		var (days, remainder) = seconds.quotientAndRemainder(dividingBy: integerSecondsPerDay)
 		let halfDay = integerSecondsPerDay / 2
 		if remainder >= halfDay {
@@ -265,7 +265,7 @@ extension DayInterval {
 
 		let (daySeconds, productOverflow) = days.multipliedReportingOverflow(by: integerSecondsPerDay)
 		if !productOverflow {
-			// `w` is in [-43,200, 43,200]
+			// `w` is in [-43,200, 43,200] s
 			let (seconds, sumOverflow) = daySeconds.addingReportingOverflow(Int(w))
 			if !sumOverflow {
 				return (Double(seconds), f)

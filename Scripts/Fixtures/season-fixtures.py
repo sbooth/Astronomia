@@ -19,9 +19,13 @@ Requires:
 Usage:
   Scripts/Fixtures/season-fixtures.py de421.bsp \\
       Tests/AstronomiaTests/Phenomena/SeasonFixtures.swift
+
+The large tables are written as text fixtures in Tests/AstronomiaTests/Fixtures, which the
+Swift fixture reads when first used; see text_fixture.py.
 """
 
 import sys
+import text_fixture
 import skyfield
 from skyfield import almanac
 from skyfield.api import load, load_file
@@ -33,8 +37,8 @@ ts = load.timescale(builtin=True)
 t0 = ts.tt(1900, 1, 1)
 t1 = ts.tt(2050, 1, 1)
 t, kinds = almanac.find_discrete(t0, t1, almanac.seasons(eph), epsilon=0.001 / 86400)
-names = [".marchEquinox", ".juneSolstice", ".septemberEquinox", ".decemberSolstice"]
-rows = [f"\t({float(whole)!r}, {float(fraction)!r}, {names[kind]})," for whole, fraction, kind in zip(t.whole, t.tt_fraction, kinds)]
+names = ["marchEquinox", "juneSolstice", "septemberEquinox", "decemberSolstice"]
+rows = [(float(whole), float(fraction), names[kind]) for whole, fraction, kind in zip(t.whole, t.tt_fraction, kinds)]
 
 out = [
 	"//", "// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>", "// SPDX-License-Identifier: MIT", "//",
@@ -43,6 +47,9 @@ out = [
 	"@testable import Astronomia", "",
 	f"/// The equinoxes and solstices from 1900 to 2049 from Skyfield {skyfield.__version__}'s almanac with DE421: the TT",
 	"/// Julian Date, as a whole and a fraction, and the kind.",
-	"let skyfieldSeasons: [(whole: Double, fraction: Double, kind: SeasonEvent.Kind)] = [",
-] + rows + ["]", ""]
+	"let skyfieldSeasons: [(whole: Double, fraction: Double, kind: SeasonEvent.Kind)] = textFixture(\"SkyfieldSeasons\") { row in",
+	"\t(row.double(), row.double(), row.value())",
+	"}", "",
+]
 open(sys.argv[2], "w").write("\n".join(out))
+text_fixture.write(sys.argv[2], "skyfieldSeasons", "Scripts/Fixtures/season-fixtures.py", "whole fraction kind", rows)

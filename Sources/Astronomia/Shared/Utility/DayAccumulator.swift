@@ -147,7 +147,7 @@ struct DayAccumulator {
 			d = carried
 			f = -0.5
 		}
-		assert(f >= -0.5 && f < 0.5, "Fraction is outside the right-open interval [-0.5, 0.5)")
+		assert(f >= -0.5 && f < 0.5, "Fraction must be in the right-open interval [-0.5, 0.5)")
 		guard let wholeDays = d.intValue else { throw .overflow }
 		return (wholeDays, f == 0 ? 0 : f)
 	}
@@ -252,7 +252,7 @@ extension DayAccumulator {
 	/// Adds `x`, which must be finite and in the closed interval [-0.5, 0.5], to the fractional
 	/// day.
 	private func addingFraction(_ x: Double) throws(Failure) -> DayAccumulator {
-		assert(x.isFinite && x >= -0.5 && x <= 0.5, "Fraction to add is outside [-0.5, 0.5]")
+		assert(x.isFinite && x >= -0.5 && x <= 0.5, "Fraction to add must be in the closed interval [-0.5, 0.5]")
 		// All operands are bounded by 1, so these twoSum calls cannot fail.
 		let v: Double
 		let w: Double

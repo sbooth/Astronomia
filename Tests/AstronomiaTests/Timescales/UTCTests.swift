@@ -343,3 +343,80 @@ let stepDays: [StepDay] = [
 		#expect(try abs(clockReading(utc.julianDate, table: table) - 86_400.5) <= timescaleTolerance)
 	}
 }
+
+@Suite struct UTCElapsedTests {
+	@Test func countsLeapSeconds() throws {
+		// 23:59:59 on 2016-12-31 to 00:00:01 the next day is three seconds, through 23:59:60,
+		// and the same readings a day earlier two.
+		let lastDay = try civilDay(2016, 12, 31)
+		let before = try Instant<UTC>(utcDate(lastDay, seconds: 86_399))
+		let after = try Instant<UTC>(utcDate(lastDay + 1, seconds: 1))
+		#expect(try abs(before.elapsed(to: after).inSeconds - 3) <= timescaleTolerance)
+		#expect(try abs(after.elapsed(to: before).inSeconds + 3) <= timescaleTolerance)
+		let earlier = try Instant<UTC>(utcDate(lastDay - 1, seconds: 86_399))
+		let earlierAfter = try Instant<UTC>(utcDate(lastDay, seconds: 1))
+		#expect(try abs(earlier.elapsed(to: earlierAfter).inSeconds - 2) <= timescaleTolerance)
+
+		// The day ending in the leap second lasts 86,401 s, and 2016 and 2017 together
+		// 731 days and a second.
+		let midnight = try Instant<UTC>(utcDate(lastDay))
+		let nextMidnight = try Instant<UTC>(utcDate(lastDay + 1))
+		#expect(try abs(midnight.elapsed(to: nextMidnight).inSeconds - 86_401) <= timescaleTolerance)
+		let start2016 = try Instant<UTC>(utcDate(civilDay(2016, 1, 1)))
+		let start2018 = try Instant<UTC>(utcDate(civilDay(2018, 1, 1)))
+		let twoYears = try start2016.elapsed(to: start2018)
+		#expect(twoYears.days == 731)
+		#expect(abs(twoYears.fractionalDay * secondsPerDay - 1) <= timescaleTolerance)
+
+		#expect(try midnight.elapsed(to: midnight) == .zero)
+	}
+
+	@Test func matchesTAI() throws {
+		for (year, month, day, seconds) in [(1972, 6, 30, 86_400.5), (1999, 1, 1, 0.0), (2024, 2, 29, 43_210.25)] {
+			let start = try Instant<UTC>(utcDate(civilDay(year, month, day), seconds: seconds))
+			let end = try Instant<UTC>(utcDate(civilDay(2026, 10, 25), seconds: 12_345.678))
+			let expected = try start.converted(to: TAI.self).interval(to: end.converted(to: TAI.self))
+			#expect(try start.elapsed(to: end) == expected)
+		}
+	}
+
+	@Test func before1972() throws {
+		// In 1965 TAI - UTC grew by 0.001296 s a day, so a UTC day lasted that much longer.
+		let day = try civilDay(1965, 5, 10)
+		let start = try Instant<UTC>(utcDate(day))
+		let end = try Instant<UTC>(utcDate(day + 1))
+		#expect(try abs(start.elapsed(to: end).inSeconds - 86_400.001_296) <= 1e-8)
+	}
+
+	@Test func usesContext() throws {
+		// With a leap second at the end of 2027-06-30, the day lasts 86,401 s.
+		var leapSeconds = LeapSecondTable.builtIn.leapSeconds
+		leapSeconds.append(try .init(effectiveDay: civilDay(2027, 7, 1), taiMinusUTC: 38))
+		let table = try #require(LeapSecondTable(leapSeconds: leapSeconds, horizon: civilDay(2028, 1, 1)))
+		let context = UTC.Context(leapSecondTable: table)
+		let day = try civilDay(2027, 6, 30)
+		let start = try Instant<UTC>(utcDate(day, table: table))
+		let end = try Instant<UTC>(utcDate(day + 1, table: table))
+		#expect(try abs(start.elapsed(to: end, context: context).inSeconds - 86_401) <= timescaleTolerance)
+		#expect(try abs(start.elapsed(to: end).inSeconds - 86_400) <= timescaleTolerance)
+	}
+
+	@Test func errors() throws {
+		let valid = try Instant<UTC>(utcDate(civilDay(2000, 1, 1)))
+		let before1961 = Instant<UTC>(try JulianDate(year: 1960, month: 12, day: 31))
+		#expect(throws: TimescaleConversionError.unsupported) { try before1961.elapsed(to: valid) }
+		#expect(throws: TimescaleConversionError.unsupported) { try valid.elapsed(to: before1961) }
+		// Past the horizon of the built-in table, when the context rejects extrapolation
+		let pastHorizon = try Instant<UTC>(utcDate(LeapSecondTable.builtIn.horizon))
+		#expect(throws: TimescaleConversionError.leapSecondTableExpired) {
+			try valid.elapsed(to: pastHorizon, context: rejectContext)
+		}
+		#expect(try valid.elapsed(to: pastHorizon).days > 0)
+	}
+
+	@Test func now() throws {
+		let start = try Instant<UTC>(utcDate(civilDay(2026, 1, 1)))
+		let elapsed = try start.elapsed(to: .now)
+		#expect(elapsed.days > 0)
+	}
+}
