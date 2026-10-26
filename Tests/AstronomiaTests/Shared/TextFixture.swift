@@ -134,6 +134,13 @@ struct TextFixtureRow {
 		[double(), double(), double()]
 	}
 
+	/// Returns the next fields as numbers.
+	///
+	/// - Parameter count: The number of fields.
+	mutating func doubles(_ count: Int) -> [Double] {
+		(0 ..< count).map { _ in double() }
+	}
+
 	/// Returns the case of an enumeration named by the next field, as `newMoon` for
 	/// `Moon.PhaseEvent.Kind.newMoon`.
 	mutating func value<T: CaseIterable>(_ type: T.Type = T.self) -> T {

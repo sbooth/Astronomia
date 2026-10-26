@@ -28,7 +28,7 @@ extension Observer {
 			throw .noHorizon
 		}
 		let radius: Distance? = switch altitude.reference {
-		case let .upperLimb(radius): radius ?? E.radius(of: moon)
+		case let .upperLimb(radius): radius ?? moon.radius
 		case .center: nil
 		}
 		/// Returns whether the Moon is up in an unrefracted place.

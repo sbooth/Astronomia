@@ -26,8 +26,7 @@
 public struct EventAltitude: Hashable, Sendable {
 	/// The part of the target whose altitude is taken.
 	enum Reference: Hashable, Sendable {
-		/// The upper limb, of a target with the radius, or with the ephemeris's radius for the
-		/// body if `nil`.
+		/// The upper limb, of a target with the radius, or with the body's own radius if `nil`.
 		case upperLimb(radius: Distance?)
 		/// The center.
 		case center
@@ -50,8 +49,8 @@ public struct EventAltitude: Hashable, Sendable {
 }
 
 extension EventAltitude {
-	/// Conventional rise and set: the upper limb at -34', with the radius of the body from
-	/// the ephemeris, or a point for a star or a body without one.
+	/// Conventional rise and set: the upper limb at -34', with the body's
+	/// ``EphemerisBody/radius``, or a point for a star or a body without one.
 	public static let standard = EventAltitude(uncheckedAltitude: -horizonRefraction, reference: .upperLimb(radius: nil))
 
 	/// Civil twilight: the Sun's center at -6°.
@@ -66,7 +65,7 @@ extension EventAltitude {
 	/// Returns the conventional rise and set of a target of a given radius: its upper limb at
 	/// -34'.
 	///
-	/// - Parameter radius: The target's radius, which replaces the ephemeris's.
+	/// - Parameter radius: The target's radius, which replaces the body's own.
 	/// - Returns: The event altitude.
 	/// - Throws:
 	///   - ``EventAltitudeError/nonFiniteValue`` if the radius is NaN or infinite.
