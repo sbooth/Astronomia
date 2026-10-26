@@ -56,3 +56,35 @@ public struct LightDeflectingBody<Body: Hashable & Sendable>: Hashable, Sendable
 		self.radius = radius
 	}
 }
+
+extension LightDeflectingBody where Body: EphemerisBody {
+	/// Creates a light-deflecting body with the body's own radius, its ``EphemerisBody/radius``.
+	///
+	/// - Parameters:
+	///   - body: The body.
+	///   - gravitationalParameter: The gravitational parameter GM of the body, in au³/day².
+	/// - Throws:
+	///   - ``LightDeflectingBodyError/invalidGravitationalParameter`` if the gravitational
+	///     parameter is negative, NaN, or infinite.
+	///   - ``LightDeflectingBodyError/invalidRadius`` if the body has no radius, as a
+	///     barycenter, or its radius is zero, negative, NaN, or infinite.
+	public init(body: Body, gravitationalParameter: Double) throws(LightDeflectingBodyError) {
+		guard let radius = body.radius else {
+			throw .invalidRadius
+		}
+		try self.init(body: body, gravitationalParameter: gravitationalParameter, radius: radius)
+	}
+
+	/// Creates a light-deflecting body with the body's own radius, without validation.
+	///
+	/// - Parameters:
+	///   - body: The body, which has a finite, positive radius.
+	///   - gravitationalParameter: The gravitational parameter GM of the body, in au³/day²,
+	///     finite and not negative.
+	init(uncheckedBody body: Body, gravitationalParameter: Double) {
+		guard let radius = body.radius else {
+			preconditionFailure("A light-deflecting body must have a radius")
+		}
+		self.init(uncheckedBody: body, gravitationalParameter: gravitationalParameter, radius: radius)
+	}
+}

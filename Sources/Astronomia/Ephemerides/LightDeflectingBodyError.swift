@@ -9,6 +9,6 @@
 public enum LightDeflectingBodyError: Error, Hashable, Sendable {
 	/// The gravitational parameter is negative, NaN, or infinite.
 	case invalidGravitationalParameter
-	/// The radius is zero, negative, NaN, or infinite.
+	/// The radius is zero, negative, NaN, or infinite, or the body has none.
 	case invalidRadius
 }

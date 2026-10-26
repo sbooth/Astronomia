@@ -144,10 +144,21 @@ import Testing
 				try LightDeflectingBody(body: 1, gravitationalParameter: 0, radius: .astronomicalUnits(radius))
 			}
 		}
-		// The built-in bodies are valid.
+		// The built-in bodies are valid, with their own radii.
 		for deflector in BuiltInEphemeris.lightDeflectingBodies {
 			let checked = try LightDeflectingBody(body: deflector.body, gravitationalParameter: deflector.gravitationalParameter, radius: deflector.radius)
 			#expect(checked == deflector && deflector.gravitationalParameter > 0)
+			#expect(deflector.radius == deflector.body.radius)
+		}
+		#expect(BuiltInEphemeris.lightDeflectingBodies.map { $0.radius } == [.kilometers(695_700), .kilometers(71_492), .kilometers(60_268), .meters(6_378_137)])
+		// A body of an ephemeris has its own radius, and a barycenter has none.
+		let jupiter = try LightDeflectingBody(body: BuiltInEphemeris.Body.jupiterBarycenter, gravitationalParameter: 2.8e-7)
+		#expect(jupiter.radius == .kilometers(71_492))
+		#expect(throws: LightDeflectingBodyError.invalidRadius) {
+			try LightDeflectingBody(body: BuiltInEphemeris.Body.solarSystemBarycenter, gravitationalParameter: 0)
+		}
+		#expect(throws: LightDeflectingBodyError.invalidGravitationalParameter) {
+			try LightDeflectingBody(body: BuiltInEphemeris.Body.sun, gravitationalParameter: .nan)
 		}
 	}
 
