@@ -177,7 +177,7 @@ import Testing
 		#expect(local.circumstance(at: .maximum)?.isSunUp == false && local.magnitude > 0.8)
 		// While the Sun is up the eclipse is deepest at sunrise, as NASA gives it for the city,
 		// whose coordinates it doesn't give, when the magnitude falls by 0.004 a minute.
-		#expect(abs(try #require(local.visibleMagnitude) - 0.537) < 0.01 && abs(try #require(local.visibleObscuration) - 0.437) < 0.01)
+		try #expect(abs(#require(local.visibleMagnitude) - 0.537) < 0.01 && abs(#require(local.visibleObscuration) - 0.437) < 0.01)
 		#expect(abs(try site.magnitude(of: local.eclipse, at: rise.instant, precision: .tenthArcsecond) - local.visibleMagnitude!) < 1e-6)
 	}
 
