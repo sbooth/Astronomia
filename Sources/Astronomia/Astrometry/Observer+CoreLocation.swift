@@ -19,7 +19,7 @@ extension Observer {
 	/// - Returns: The observer.
 	/// - Throws:
 	///   - ``ObserverError/nonFiniteValue`` if a coordinate is NaN or infinite.
-	///   - ``ObserverError/invalidLatitude`` if the latitude is outside [-90°, 90°].
+	///   - ``ObserverError/invalidLatitude`` if the latitude is outside the closed interval [-90, 90]°.
 	///   - ``ObserverError/invalidHeight`` if the height is more than 100 km above or below
 	///     the ellipsoid.
 	public static func site(coordinate: CLLocationCoordinate2D, height: Distance = .zero) throws(ObserverError) -> Observer {
@@ -33,12 +33,13 @@ extension Observer {
 	/// - Returns: The observer.
 	/// - Throws:
 	///   - ``ObserverError/nonFiniteValue`` if a coordinate is NaN or infinite.
-	///   - ``ObserverError/invalidLatitude`` if the latitude is outside [-90°, 90°].
+	///   - ``ObserverError/invalidLatitude`` if the latitude is outside the closed interval [-90, 90]°.
 	///   - ``ObserverError/invalidHeight`` if the height is more than 100 km above or below
 	///     the ellipsoid.
+	@available(macOS 12, *)
 	public static func site(_ location: CLLocation) throws(ObserverError) -> Observer {
 		guard location.verticalAccuracy > 0 else { throw .invalidHeight }
-		return try site(coordinate: location.coordinate, height: .meters(location.altitude))
+		return try site(coordinate: location.coordinate, height: .meters(location.ellipsoidalAltitude))
 	}
 }
 
