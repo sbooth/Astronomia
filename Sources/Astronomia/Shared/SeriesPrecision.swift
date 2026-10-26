@@ -36,7 +36,7 @@
 /// let ephemeris = BuiltInEphemeris(precision: .arcsecond)
 /// let earthOrientation = EarthOrientation(precision: .arcsecond)
 /// ```
-public enum Precision: Hashable, Sendable, CaseIterable {
+public enum SeriesPrecision: Hashable, Sendable, CaseIterable {
 	/// Every term of the built-in series.
 	case full
 	/// Within 10 milliarcseconds of the full series.
@@ -49,7 +49,7 @@ public enum Precision: Hashable, Sendable, CaseIterable {
 	case tenArcseconds
 }
 
-extension Precision {
+extension SeriesPrecision {
 	/// The level's index in the generated data, from 0 for ``full``.
 	var level: Int {
 		switch self {

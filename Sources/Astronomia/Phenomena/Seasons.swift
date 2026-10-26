@@ -21,8 +21,8 @@
 /// an event by about 24 s. The methods taking the built-in ephemeris default to its full
 /// precision, which places the Sun about a dozen times for each event, about 0.2 s in a
 /// release build. The events from 1900 to 2049 are within 0.1 s of Skyfield's with DE421. The
-/// Sun's own error is far smaller than the bound of a coarser ``Precision``: at
-/// ``Precision/tenthArcsecond`` the same events are within 0.13 s, at about 40 ms each.
+/// Sun's own error is far smaller than the bound of a coarser ``SeriesPrecision``: at
+/// ``SeriesPrecision/tenthArcsecond`` the same events are within 0.13 s, at about 40 ms each.
 public enum Seasons {
 	/// The Sun's mean motion in longitude, in radians per day, which predicts the next event.
 	static let meanMotion: Double = twoPi / 365.242_19
@@ -114,10 +114,10 @@ extension Seasons {
 	///   - context: Observational data for converting the interval to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The events, in order of their instants.
 	/// - Throws: A ``SeasonError``, as the method taking an ephemeris does.
-	public static func events<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(SeasonError) -> [SeasonEvent] {
+	public static func events<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(SeasonError) -> [SeasonEvent] {
 		try events(from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -173,10 +173,10 @@ extension Seasons {
 	///   - calendar: The calendar of the year, by default ``CalendarIdentifier/julianGregorian``.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The instant of the event.
 	/// - Throws: A ``SeasonError``, as the method taking an ephemeris does.
-	public static func instant(of kind: SeasonEvent.Kind, year: Int, calendar: CalendarIdentifier = .julianGregorian, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(SeasonError) -> Instant<TT> {
+	public static func instant(of kind: SeasonEvent.Kind, year: Int, calendar: CalendarIdentifier = .julianGregorian, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(SeasonError) -> Instant<TT> {
 		try instant(of: kind, year: year, calendar: calendar, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 }

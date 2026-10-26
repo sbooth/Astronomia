@@ -22,7 +22,7 @@ internal import CAstronomiaData
 ///
 /// The built-in series are truncated for J1000.0 to J3000.0 so that the error from truncation
 /// is near 0.2 mas in direction and 10 m in distance, well below the solution's own error, and
-/// coarser ``Precision`` levels sum fewer of their terms.
+/// coarser ``SeriesPrecision`` levels sum fewer of their terms.
 ///
 /// - Note: Chapront, J., Francou, G. (2003). The lunar theory ELP revisited. Introduction of new
 ///   planetary perturbations. Astronomy & Astrophysics 404, 735.
@@ -56,7 +56,7 @@ extension ELPMPP02 {
 		static var fittedSeries: FittedSeries { get }
 
 		/// The precision level of the series.
-		var precision: Precision { get }
+		var precision: SeriesPrecision { get }
 	}
 
 	/// The corrections of a fit to the solution's nominal constants, in arcseconds and
@@ -83,7 +83,7 @@ extension ELPMPP02 {
 
 extension ELPMPP02.Fit {
 	/// Returns the state of the Earth or the Moon relative to the other, in the fit's ecliptic.
-	static func fitState(of body: ELPMPP02.Body, relativeTo origin: ELPMPP02.Body, at tdb: Instant<TDB>, precision: Precision) throws(EphemerisError) -> StateVector<Ecliptic> {
+	static func fitState(of body: ELPMPP02.Body, relativeTo origin: ELPMPP02.Body, at tdb: Instant<TDB>, precision: SeriesPrecision) throws(EphemerisError) -> StateVector<Ecliptic> {
 		guard builtInEphemerisInstants.contains(tdb) else { throw .outsideCoverage }
 		if body == origin {
 			return .zero
@@ -102,7 +102,7 @@ extension ELPMPP02.Fit {
 	///   - precision: The precision level.
 	/// - Returns: The position, in astronomical units, and velocity, in astronomical units per
 	///   day, or `nil` if `tdb` is outside the coverage.
-	static func eclipticState(at tdb: JulianDate, precision: Precision = .full) -> (position: Vector3, velocity: Vector3)? {
+	static func eclipticState(at tdb: JulianDate, precision: SeriesPrecision = .full) -> (position: Vector3, velocity: Vector3)? {
 		guard builtInEphemerisCoverage.contains(tdb) else { return nil }
 		let state = fittedSeries.state(at: tdb.julianCenturiesSinceJ2000, precision: precision)
 		let scale = 1 / kilometersPerAstronomicalUnit

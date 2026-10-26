@@ -21,10 +21,10 @@ extension Observer {
 	/// ```
 	///
 	/// The search places the body at hourly samples and at each step toward an event, about 40
-	/// places for a day: about 40 ms at ``Precision/arcsecond``, the default of the method with
-	/// the built-in ephemeris, whose 1" error moves an event by under 0.1 s at middle latitudes.
-	/// A body that rises and sets again within an hour, grazing the event altitude near its
-	/// transit, as can happen near the poles, may be missed.
+	/// places for a day: about 40 ms at ``SeriesPrecision/arcsecond``, the default of the method
+	/// with the built-in ephemeris, whose 1" error moves an event by under 0.1 s at middle
+	/// latitudes. A body that rises and sets again within an hour, grazing the event altitude near
+	/// its transit, as can happen near the poles, may be missed.
 	///
 	/// - Parameters:
 	///   - body: The body.
@@ -67,10 +67,10 @@ extension Observer {
 	///   - context: Observational data for converting the interval to TT.
 	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
-	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/arcsecond``.
 	/// - Returns: The events, in order of their instants.
 	/// - Throws: A ``RiseTransitSetError``, as the method taking an ephemeris does.
-	public func riseTransitSetEvents<Scale: Timescale>(of body: BuiltInEphemeris.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .arcsecond) throws(RiseTransitSetError) -> [RiseTransitSetEvent] {
+	public func riseTransitSetEvents<Scale: Timescale>(of body: BuiltInEphemeris.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .arcsecond) throws(RiseTransitSetError) -> [RiseTransitSetEvent] {
 		try riseTransitSetEvents(of: body, from: start, to: end, context: context, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -114,10 +114,10 @@ extension Observer {
 	///   - context: Observational data for converting the interval to TT.
 	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
-	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/arcsecond``.
 	/// - Returns: The events, in order of their instants.
 	/// - Throws: A ``RiseTransitSetError``, as the method taking an ephemeris does.
-	public func riseTransitSetEvents<Scale: Timescale>(of star: Star, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .arcsecond) throws(RiseTransitSetError) -> [RiseTransitSetEvent] {
+	public func riseTransitSetEvents<Scale: Timescale>(of star: Star, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .arcsecond) throws(RiseTransitSetError) -> [RiseTransitSetEvent] {
 		try riseTransitSetEvents(of: star, from: start, to: end, context: context, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 }
@@ -255,10 +255,10 @@ extension Observer {
 	///   - context: Observational data for converting `instant` to TT.
 	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
-	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/arcsecond``.
 	/// - Returns: The event.
 	/// - Throws: A ``RiseTransitSetError``, as the method taking an ephemeris does.
-	public func nextRiseTransitSetEvent<Scale: Timescale>(_ kind: RiseTransitSetEvent.Kind, of body: BuiltInEphemeris.Body, after instant: Instant<Scale>, within limit: DayInterval = .days(2), context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .arcsecond) throws(RiseTransitSetError) -> RiseTransitSetEvent {
+	public func nextRiseTransitSetEvent<Scale: Timescale>(_ kind: RiseTransitSetEvent.Kind, of body: BuiltInEphemeris.Body, after instant: Instant<Scale>, within limit: DayInterval = .days(2), context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .arcsecond) throws(RiseTransitSetError) -> RiseTransitSetEvent {
 		try nextRiseTransitSetEvent(kind, of: body, after: instant, within: limit, context: context, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -304,10 +304,10 @@ extension Observer {
 	///   - context: Observational data for converting `instant` to TT.
 	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
-	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/arcsecond``.
 	/// - Returns: The event.
 	/// - Throws: A ``RiseTransitSetError``, as the method taking an ephemeris does.
-	public func nextRiseTransitSetEvent<Scale: Timescale>(_ kind: RiseTransitSetEvent.Kind, of star: Star, after instant: Instant<Scale>, within limit: DayInterval = .days(2), context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .arcsecond) throws(RiseTransitSetError) -> RiseTransitSetEvent {
+	public func nextRiseTransitSetEvent<Scale: Timescale>(_ kind: RiseTransitSetEvent.Kind, of star: Star, after instant: Instant<Scale>, within limit: DayInterval = .days(2), context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .arcsecond) throws(RiseTransitSetError) -> RiseTransitSetEvent {
 		try nextRiseTransitSetEvent(kind, of: star, after: instant, within: limit, context: context, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 }

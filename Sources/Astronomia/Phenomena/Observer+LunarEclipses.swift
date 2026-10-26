@@ -124,11 +124,11 @@ extension Observer {
 	///   - altitude: The altitude of rise and set, by default the standard -34' of the
 	///     upper limb.
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site.
-	///   - precision: The precision of the ephemeris, by default ``Precision/arcsecond``, which
-	///     places the Moon within about 1".
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/arcsecond``,
+	///     which places the Moon within about 1".
 	/// - Returns: The local circumstances.
 	/// - Throws: A ``Moon/EclipseError``, as the method taking an ephemeris does.
-	public func localCircumstances(of eclipse: Moon.Eclipse, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .arcsecond) throws(Moon.EclipseError) -> Moon.LocalEclipse {
+	public func localCircumstances(of eclipse: Moon.Eclipse, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .arcsecond) throws(Moon.EclipseError) -> Moon.LocalEclipse {
 		try localCircumstances(of: eclipse, moon: BuiltInEphemeris.Body.moon, conditions: conditions, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -183,12 +183,12 @@ extension Observer {
 	///     upper limb.
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site, and whose
 	///     celestial pole offsets and precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``, as for
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``, as for
 	///     `Moon.eclipses(from:to:)`.
 	///   - shadowModel: The model of the Earth's shadow, by default Danjon's.
 	/// - Returns: The visible eclipses' local circumstances, in order of greatest eclipse.
 	/// - Throws: A ``Moon/EclipseError``, as the method taking an ephemeris does.
-	public func visibleLunarEclipses<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .full, shadowModel: Moon.Eclipse.ShadowModel = .danjon) throws(Moon.EclipseError) -> [Moon.LocalEclipse] {
+	public func visibleLunarEclipses<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full, shadowModel: Moon.Eclipse.ShadowModel = .danjon) throws(Moon.EclipseError) -> [Moon.LocalEclipse] {
 		try visibleLunarEclipses(of: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, conditions: conditions, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision), shadowModel: shadowModel)
 	}
 }

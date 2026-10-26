@@ -385,10 +385,10 @@ extension Observer {
 	///   - instant: The instant.
 	///   - context: Observational data for converting `instant` to TT.
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The magnitude.
 	/// - Throws: A ``Sun/EclipseError``, as the method taking an ephemeris does.
-	public func magnitude<Scale: Timescale>(of eclipse: Sun.Eclipse, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Sun.EclipseError) -> Double {
+	public func magnitude<Scale: Timescale>(of eclipse: Sun.Eclipse, at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(Sun.EclipseError) -> Double {
 		try magnitude(of: eclipse, moon: BuiltInEphemeris.Body.moon, at: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -408,12 +408,12 @@ extension Observer {
 	///   - altitude: The altitude of rise and set, by default the standard -34' of the
 	///     upper limb.
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``: the
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``: the
 	///     Moon's place is relative to the Sun's 0.5" a second, so an error of 1" in it moves a
 	///     contact by about 2 s.
 	/// - Returns: The local circumstances, or `nil` if the eclipse isn't seen from the site.
 	/// - Throws: A ``Sun/EclipseError``, as the method taking an ephemeris does.
-	public func localCircumstances(of eclipse: Sun.Eclipse, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Sun.EclipseError) -> Sun.LocalEclipse? {
+	public func localCircumstances(of eclipse: Sun.Eclipse, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(Sun.EclipseError) -> Sun.LocalEclipse? {
 		try localCircumstances(of: eclipse, moon: BuiltInEphemeris.Body.moon, conditions: conditions, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -467,11 +467,11 @@ extension Observer {
 	///     upper limb.
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places the site, and whose
 	///     celestial pole offsets and precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	///   - radii: The radii of the Moon and the Sun, by default NASA's.
 	/// - Returns: The visible eclipses' local circumstances, in order of greatest eclipse.
 	/// - Throws: A ``Sun/EclipseError``, as the method taking an ephemeris does.
-	public func visibleSolarEclipses<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: Precision = .full, radii: Sun.Eclipse.Radii = .nasa) throws(Sun.EclipseError) -> [Sun.LocalEclipse] {
+	public func visibleSolarEclipses<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, conditions: AtmosphericConditions? = nil, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full, radii: Sun.Eclipse.Radii = .nasa) throws(Sun.EclipseError) -> [Sun.LocalEclipse] {
 		try visibleSolarEclipses(by: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, conditions: conditions, altitude: altitude, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision), radii: radii)
 	}
 }

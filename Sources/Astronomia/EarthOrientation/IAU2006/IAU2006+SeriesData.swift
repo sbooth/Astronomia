@@ -65,7 +65,7 @@ extension IAU2006.SeriesData {
 	///   - arguments: The fourteen fundamental arguments at `t`, in radians.
 	///   - precision: The precision level.
 	/// - Returns: The sum, in microarcseconds.
-	func seriesValue(at t: Double, arguments: IAU2006.FundamentalArguments, precision: Precision) -> Double {
+	func seriesValue(at t: Double, arguments: IAU2006.FundamentalArguments, precision: SeriesPrecision) -> Double {
 		withUnsafeBytes(of: arguments.values) { argumentBytes in
 			let argumentPointer = argumentBytes.bindMemory(to: Double.self).baseAddress!
 			return astronomia_iau_evaluate_series(series.baseAddress!, series.count, terms.baseAddress!, terms.count, argumentPointer, t, Int32(precision.level))
@@ -79,7 +79,7 @@ extension IAU2006.SeriesData {
 	///   - arguments: The fourteen fundamental arguments at `t`, in radians.
 	///   - precision: The precision level of the series.
 	/// - Returns: The value, in microarcseconds.
-	func value(at t: Double, arguments: IAU2006.FundamentalArguments, precision: Precision = .full) -> Double {
+	func value(at t: Double, arguments: IAU2006.FundamentalArguments, precision: SeriesPrecision = .full) -> Double {
 		polynomialValue(at: t) + seriesValue(at: t, arguments: arguments, precision: precision)
 	}
 }

@@ -40,9 +40,9 @@ extension Moon {
 	/// 1" in either
 	/// place moves a phase by about 2 s. The methods taking the built-in ephemeris default to its
 	/// full precision, at about 0.3 s for each phase in a release build. The phases from 2000 to
-	/// 2049 are within 0.03 s of Skyfield's with DE421; at ``Precision/tenthArcsecond`` they are
-	/// within 0.11 s, at about 45 ms each, and at ``Precision/arcsecond`` within 1 s, at about
-	/// 12 ms each.
+	/// 2049 are within 0.03 s of Skyfield's with DE421; at ``SeriesPrecision/tenthArcsecond`` they
+	/// are within 0.11 s, at about 45 ms each, and at ``SeriesPrecision/arcsecond`` within 1 s, at
+	/// about 12 ms each.
 	///
 	/// - Parameters:
 	///   - moon: The Moon.
@@ -121,10 +121,10 @@ extension Moon {
 	///   - context: Observational data for converting the interval to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The phases, in order of their instants.
 	/// - Throws: A ``Moon/PhaseError``, as the method taking an ephemeris does.
-	public static func phases<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Moon.PhaseError) -> [Moon.PhaseEvent] {
+	public static func phases<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(Moon.PhaseError) -> [Moon.PhaseEvent] {
 		try phases(of: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -195,10 +195,10 @@ extension Moon {
 	///   - context: Observational data for converting `instant` to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The phase.
 	/// - Throws: A ``Moon/PhaseError``, as the method taking an ephemeris does.
-	public static func nextPhase<Scale: Timescale>(_ kind: Moon.PhaseEvent.Kind, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Moon.PhaseError) -> Moon.PhaseEvent {
+	public static func nextPhase<Scale: Timescale>(_ kind: Moon.PhaseEvent.Kind, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(Moon.PhaseError) -> Moon.PhaseEvent {
 		try nextPhase(kind, of: BuiltInEphemeris.Body.moon, after: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 }
@@ -215,12 +215,12 @@ extension Moon {
 	///   - observer: The observer, by default the center of the Earth.
 	///   - earthOrientation: Observed Earth orientation, whose UT1 places a site, and whose
 	///     celestial pole offsets and precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The Moon's phase angle, illuminated fraction, elongation and its side of the
 	///   Sun, and bright limb.
 	/// - Throws: ``IlluminationError/ephemeris(_:)`` if the observation or a place fails, as
 	///   for ``Observation``, such as outside the ephemeris's coverage.
-	public static func illumination<Scale: Timescale>(at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, observer: Observer = .geocenter, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(IlluminationError) -> Illumination {
+	public static func illumination<Scale: Timescale>(at instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, observer: Observer = .geocenter, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(IlluminationError) -> Illumination {
 		let observation: Observation<BuiltInEphemeris>
 		do throws(EphemerisError) {
 			observation = try observer.observation(at: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
