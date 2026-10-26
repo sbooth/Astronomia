@@ -20,4 +20,7 @@ public enum SPKError: Error, Hashable, Sendable {
 	/// The file was damaged in transfer, as by FTP in text mode, which changes its line
 	/// endings.
 	case damagedInTransfer
+	/// The files don't give a body the ephemeris needs, relative to the solar system
+	/// barycenter, with the body's NAIF ID.
+	case missingBody(naifID: Int)
 }
