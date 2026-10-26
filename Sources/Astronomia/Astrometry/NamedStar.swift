@@ -138,10 +138,9 @@ public struct NamedStar: Hashable, Sendable {
 		constellation = String(cString: entry.constellation)
 		hipparcosNumber = entry.hip > 0 ? Int(entry.hip) : nil
 		brightStarNumber = entry.hr > 0 ? Int(entry.hr) : nil
-		switch Int32(entry.astrometry_source) {
-		case ASTRONOMIA_ASTROMETRY_HIPPARCOS2: astrometrySource = .hipparcos2
-		case ASTRONOMIA_ASTROMETRY_GAIA_DR3: astrometrySource = .gaiaDR3
-		default: preconditionFailure("Unknown astrometry source \(entry.astrometry_source) of \(name)")
+		switch entry.astrometry_source {
+		case .hipparcos2: astrometrySource = .hipparcos2
+		case .gaiaDR3: astrometrySource = .gaiaDR3
 		}
 		hipparcosMagnitude = astrometrySource == .hipparcos2 ? entry.magnitude : nil
 		star = Star(

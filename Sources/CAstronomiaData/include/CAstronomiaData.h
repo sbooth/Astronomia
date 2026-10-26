@@ -290,10 +290,16 @@ double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series
 // catalog such as Hipparcos, the New Reduction (van Leeuwen 2007), and the radial velocities
 // of the Bright Star Catalogue, 5th Revised Ed.
 
-/// Hipparcos, the New Reduction (van Leeuwen 2007), at epoch J1991.25 TDB.
-#define ASTRONOMIA_ASTROMETRY_HIPPARCOS2 0
-/// Gaia DR3, at epoch J2016.0 TCB.
-#define ASTRONOMIA_ASTROMETRY_GAIA_DR3 1
+/// The catalog of a named star's astrometry, which gives its epoch.
+///
+/// The enumeration is one byte, by its fixed underlying type, a Clang extension before C23,
+/// and closed, so Swift imports it as an enumeration it can switch over exhaustively.
+enum __attribute__((enum_extensibility(closed))) astronomia_astrometry_source : uint8_t {
+	/// Hipparcos, the New Reduction (van Leeuwen 2007), at epoch J1991.25 TDB.
+	astronomia_astrometry_source_hipparcos_2 __attribute__((swift_name("hipparcos2"))) = 0,
+	/// Gaia DR3, at epoch J2016.0 TCB.
+	astronomia_astrometry_source_gaia_dr3 __attribute__((swift_name("gaiaDR3"))) = 1,
+};
 
 /// A named star.
 struct astronomia_named_star {
@@ -311,8 +317,8 @@ struct astronomia_named_star {
 	int32_t hip;
 	/// The Bright Star Catalogue (HR) number, or 0.
 	int16_t hr;
-	/// The catalog of the astrometry, which gives its epoch, an ASTRONOMIA_ASTROMETRY_ value.
-	uint8_t astrometry_source;
+	/// The catalog of the astrometry, which gives its epoch.
+	enum astronomia_astrometry_source astrometry_source;
 	/// The right ascension in the ICRS at the epoch of the astrometry, in radians.
 	double right_ascension;
 	/// The declination in the ICRS at the epoch of the astrometry, in radians.
