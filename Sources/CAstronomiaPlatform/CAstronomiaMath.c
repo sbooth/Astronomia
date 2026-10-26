@@ -15,6 +15,10 @@
 #include <immintrin.h>
 #endif
 
+#if defined(__aarch64__) && defined(__ARM_NEON) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 38))
+#include <arm_neon.h>
+#endif
+
 #if defined(__x86_64__) && defined(__GLIBC__)
 __attribute__((target("avx2"))) __m256d _ZGVdN4v_sin(__m256d);
 __attribute__((target("avx2"))) __m256d _ZGVdN4v_cos(__m256d);
@@ -57,6 +61,27 @@ static void astronomia_sincos_batch_avx512(const double *angles, double *sines, 
 }
 #endif
 
+#if defined(__aarch64__) && defined(__ARM_NEON) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 38))
+// Advanced SIMD (NEON), 2 lanes
+__attribute__((aarch64_vector_pcs)) float64x2_t _ZGVnN2v_sin(float64x2_t);
+__attribute__((aarch64_vector_pcs)) float64x2_t _ZGVnN2v_cos(float64x2_t);
+
+static void astronomia_sincos_batch_neon(const double *angles, double *sines, double *cosines, size_t count) {
+	size_t j = 0;
+	for (; j + 2 <= count; j += 2) {
+		float64x2_t x = vld1q_f64(angles + j);
+		vst1q_f64(sines + j, _ZGVnN2v_sin(x));
+		vst1q_f64(cosines + j, _ZGVnN2v_cos(x));
+	}
+	if (j < count) {
+		// Odd count: one element left. Put it in lane 0, zero lane 1, keep only lane 0.
+		const float64x2_t x = vsetq_lane_f64(angles[j], vdupq_n_f64(0.0), 0);
+		vst1q_lane_f64(sines + j, _ZGVnN2v_sin(x), 0);
+		vst1q_lane_f64(cosines + j, _ZGVnN2v_cos(x), 0);
+	}
+}
+#endif
+
 // Portable scalar fallback
 static void astronomia_sincos_batch_scalar(const double *angles, double *sines, double *cosines, size_t count) {
 	for (size_t j = 0; j < count; ++j) {
@@ -79,6 +104,8 @@ void astronomia_sincos_batch(const double *angles, double *sines, double *cosine
 	} else {
 		astronomia_sincos_batch_scalar(angles, sines, cosines, count);
 	}
+#elif defined(__aarch64__) && defined(__ARM_NEON) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 38))
+	astronomia_sincos_batch_neon(angles, sines, cosines, count);
 #else
 	astronomia_sincos_batch_scalar(angles, sines, cosines, count);
 #endif
