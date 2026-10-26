@@ -26,7 +26,8 @@ Commands:
 
       A name is kept when it has a Hipparcos number that is in hip2.dat. Its star is given by
       the right ascension, declination, parallax, and proper motions of hip2.dat, in the ICRS
-      at epoch J1991.25, as written there; a parallax that isn't positive is written as 0,
+      at epoch J1991.25, as written there, with its Hipparcos magnitude and its astrometry
+      source ASTRONOMIA_ASTROMETRY_HIPPARCOS2; a parallax that isn't positive is written as 0,
       for none. Hipparcos's accelerations of the 7- and 9-parameter solutions are left out.
 
       The star's Bright Star number is that of its designation, if the designation is an HR
@@ -286,6 +287,8 @@ def named_stars(args: argparse.Namespace) -> None:
 			hr, ambiguous = bright_star_match(ra, dec, star["hp"], bsc, args)
 			if ambiguous:
 				unmatched.append(entry)
+		if hr is not None and hr > 32767:
+			fail(f"{entry['name']}: HR {hr} doesn't fit in 16 bits")
 		rv = bsc[hr]["rv"] if hr is not None else None
 		stars.append({
 			"name": entry["name"],
@@ -295,6 +298,7 @@ def named_stars(args: argparse.Namespace) -> None:
 			"constellation": entry["constellation"],
 			"hip": hip,
 			"hr": hr or 0,
+			"source": "ASTRONOMIA_ASTROMETRY_HIPPARCOS2",
 			"ra": star["ra"],
 			"dec": star["dec"],
 			"plx": star["plx"] if star["plx"] > 0 else 0.0,
@@ -332,14 +336,14 @@ def named_stars(args: argparse.Namespace) -> None:
 	lines.append('#include "CAstronomiaData.h"')
 	lines.append("")
 	lines.append("// Name, ASCII name, designation, Bayer or Flamsteed designation, constellation, HIP, HR,")
-	lines.append("// right ascension and declination (radians), parallax (mas), proper motions in right")
-	lines.append("// ascension times the cosine of the declination and in declination (mas/yr), radial")
-	lines.append("// velocity (km/s), Hipparcos magnitude")
+	lines.append("// astrometry source, right ascension and declination (radians), parallax (mas), proper")
+	lines.append("// motions in right ascension times the cosine of the declination and in declination")
+	lines.append("// (mas/yr), radial velocity (km/s), magnitude in the source's band")
 	lines.append("static const struct astronomia_named_star stars[] = {")
 	for star in stars:
 		strings = ", ".join(c_string(star[key]) for key in ("name", "ascii", "designation", "bayer", "constellation"))
 		values = ", ".join(c_double(star[key]) for key in ("ra", "dec", "plx", "pmra", "pmdec", "rv", "hp"))
-		lines.append(f"\t{{{strings}, {star['hip']}, {star['hr']}, {values}}},")
+		lines.append(f"\t{{{strings}, {star['hip']}, {star['hr']}, {star['source']}, {values}}},")
 	lines.append("};")
 	lines.append("")
 	lines.append("const struct astronomia_named_star_data astronomia_named_stars = {")
