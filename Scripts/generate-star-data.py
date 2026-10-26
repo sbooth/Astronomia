@@ -27,8 +27,9 @@ Commands:
       A name is kept when it has a Hipparcos number that is in hip2.dat. Its star is given by
       the right ascension, declination, parallax, and proper motions of hip2.dat, in the ICRS
       at epoch J1991.25, as written there, with its Hipparcos magnitude and its astrometry
-      source ASTRONOMIA_ASTROMETRY_HIPPARCOS2; a parallax that isn't positive is written as 0,
-      for none. Hipparcos's accelerations of the 7- and 9-parameter solutions are left out.
+      source astronomia_astrometry_source_hipparcos_2; a parallax that isn't positive is
+      written as 0, for none. Hipparcos's accelerations of the 7- and 9-parameter solutions
+      are left out.
 
       The star's Bright Star number is that of its designation, if the designation is an HR
       number, or else that of the Bright Star Catalogue star within the match radius of the
@@ -298,7 +299,7 @@ def named_stars(args: argparse.Namespace) -> None:
 			"constellation": entry["constellation"],
 			"hip": hip,
 			"hr": hr or 0,
-			"source": "ASTRONOMIA_ASTROMETRY_HIPPARCOS2",
+			"source": "astronomia_astrometry_source_hipparcos_2",
 			"ra": star["ra"],
 			"dec": star["dec"],
 			"plx": star["plx"] if star["plx"] > 0 else 0.0,
