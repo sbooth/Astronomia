@@ -31,7 +31,7 @@ import Testing
 	}
 
 	/// Returns the events of a fixture's target from a site.
-	static func events(_ site: Observer, _ target: RiseTransitSetTarget, from start: Instant<TT>, to end: Instant<TT>, altitude: EventAltitude, precision: Precision = .arcsecond) throws -> [RiseTransitSetEvent] {
+	static func events(_ site: Observer, _ target: RiseTransitSetTarget, from start: Instant<TT>, to end: Instant<TT>, altitude: EventAltitude, precision: SeriesPrecision = .arcsecond) throws -> [RiseTransitSetEvent] {
 		switch target {
 		case let .body(body):
 			try site.riseTransitSetEvents(of: body, from: start, to: end, altitude: altitude, earthOrientation: earthOrientation, precision: precision)
@@ -42,7 +42,7 @@ import Testing
 
 	/// Expects the events of the first day of each fixture from a site to match Skyfield's:
 	/// every event in either is in the other, within a tolerance, away from the ends of the day.
-	static func expectMatchesSkyfield(site index: Int, precision: Precision, tolerance: Double) throws {
+	static func expectMatchesSkyfield(site index: Int, precision: SeriesPrecision, tolerance: Double) throws {
 		let site = try Self.site(index)
 		for row in skyfieldRiseTransitSetEvents where row.site == index {
 			let altitude = try row.centerAltitude.map { try EventAltitude.center(altitude: .arcminutes($0)) } ?? .standard

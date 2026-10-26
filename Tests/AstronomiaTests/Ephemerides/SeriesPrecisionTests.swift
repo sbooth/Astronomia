@@ -8,12 +8,12 @@
 import Testing
 @testable import Astronomia
 
-@Suite struct PrecisionTests {
+@Suite struct SeriesPrecisionTests {
 	/// Microarcseconds per radian.
 	static let uas = microarcsecondsPerRadian
 
 	/// The bound of each level, in microarcseconds.
-	static func bound(_ precision: Precision) -> Double {
+	static func bound(_ precision: SeriesPrecision) -> Double {
 		switch precision {
 		case .full: 0
 		case .tenMilliarcseconds: 10_000
@@ -62,7 +62,7 @@ import Testing
 
 	/// Returns the counts of a series at each level.
 	static func counts(_ counts: (Int32, Int32, Int32, Int32, Int32)) -> [Int] {
-		Precision.allCases.map { Int(levelValue(counts, $0.level)) }
+		SeriesPrecision.allCases.map { Int(levelValue(counts, $0.level)) }
 	}
 
 	@Test func levelsArePrefixes() {
@@ -124,13 +124,13 @@ import Testing
 		// dates across the coverage
 		let full = BuiltInEphemeris()
 		let bodies: [BuiltInEphemeris.Body] = [.sun, .mercury, .venus, .moon, .mars, .jupiterBarycenter, .saturnBarycenter, .uranusBarycenter, .neptuneBarycenter]
-		var largest: [Precision: Double] = [:]
+		var largest: [SeriesPrecision: Double] = [:]
 		for epoch in stride(from: 1000.0, through: 3000, by: 97.3) {
 			let tdb = Instant<TDB>(try JulianDate(julianEpoch: epoch))
 			let directions = try bodies.map { try full.state(of: $0, relativeTo: .earth, at: tdb).position.vector }
 			let t = (epoch - 2000) / 100
 			let trueEquator = IAU2006.Orientation(at: t, poleOffsets: nil).trueEquator
-			for precision in Precision.allCases.dropFirst() {
+			for precision in SeriesPrecision.allCases.dropFirst() {
 				let ephemeris = BuiltInEphemeris(precision: precision)
 				var ephemerisError = 0.0
 				for (body, direction) in zip(bodies, directions) {
@@ -142,7 +142,7 @@ import Testing
 			}
 		}
 		// Each level uses much of its allowance.
-		for precision in Precision.allCases.dropFirst() {
+		for precision in SeriesPrecision.allCases.dropFirst() {
 			#expect((largest[precision] ?? 0) > Self.bound(precision) / 10, "\(precision)")
 		}
 	}
@@ -150,7 +150,7 @@ import Testing
 	@Test func precisionReachesTheSeries() throws {
 		let tdb = Instant<TDB>(try JulianDate(julianDate: 2_461_335.5))
 		let tt = Instant<TT>(try JulianDate(julianDate: 2_461_335.5))
-		for precision in Precision.allCases {
+		for precision in SeriesPrecision.allCases {
 			#expect(BuiltInEphemeris(precision: precision).precision == precision)
 			#expect(BuiltInEphemeris(lunarFit: .laserRanging, precision: precision).lunarFit == .laserRanging)
 			#expect(EarthOrientation(precision: precision).precision == precision)
@@ -180,7 +180,7 @@ import Testing
 		let site = try Observer.site(latitude: .degrees(51.4769), longitude: .degrees(-0.0005), height: .meters(46))
 		let fullSky = try site.observation(at: tdb)
 		let full = try fullSky.observedPlace(of: fullSky.apparentPlace(of: .moon))
-		for precision in Precision.allCases.dropFirst() {
+		for precision in SeriesPrecision.allCases.dropFirst() {
 			let sky = try site.observation(at: tdb, earthOrientation: EarthOrientation(precision: precision), ephemeris: BuiltInEphemeris(precision: precision))
 			let place = try sky.observedPlace(of: sky.apparentPlace(of: .moon))
 			#expect(Self.angle(Self.horizontal(place), Self.horizontal(full)) <= Self.bound(precision), "\(precision)")

@@ -44,9 +44,9 @@ extension Moon {
 	/// far more sensitive to errors in the Moon's place than the declination reached. Each places
 	/// the Moon about 20 times; the methods taking the built-in ephemeris default to its full
 	/// precision, at about 0.45 s each in a release build. The greatest declinations from 2000 to
-	/// 2049 are within 0.21 s and 7 mas of Skyfield's with DE421; at ``Precision/tenthArcsecond``
-	/// they are within 0.41 s and 47 mas, at about 75 ms each, and at ``Precision/arcsecond``
-	/// within 5 s and 0.37", at about 20 ms each.
+	/// 2049 are within 0.21 s and 7 mas of Skyfield's with DE421; at
+	/// ``SeriesPrecision/tenthArcsecond`` they are within 0.41 s and 47 mas, at about 75 ms each,
+	/// and at ``SeriesPrecision/arcsecond`` within 5 s and 0.37", at about 20 ms each.
 	///
 	/// The ephemeris is evaluated up to 10 s outside the interval, so a greatest declination
 	/// at either end is found.
@@ -130,10 +130,10 @@ extension Moon {
 	///   - context: Observational data for converting the interval to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The greatest declinations, in order of their instants.
 	/// - Throws: A ``Moon/GreatestDeclinationError``, as the method taking an ephemeris does.
-	public static func greatestDeclinations<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Moon.GreatestDeclinationError) -> [Moon.GreatestDeclinationEvent] {
+	public static func greatestDeclinations<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(Moon.GreatestDeclinationError) -> [Moon.GreatestDeclinationEvent] {
 		try greatestDeclinations(of: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -204,10 +204,10 @@ extension Moon {
 	///   - context: Observational data for converting `instant` to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The greatest declination.
 	/// - Throws: A ``Moon/GreatestDeclinationError``, as the method taking an ephemeris does.
-	public static func nextGreatestDeclination<Scale: Timescale>(_ kind: Moon.GreatestDeclinationEvent.Kind, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Moon.GreatestDeclinationError) -> Moon.GreatestDeclinationEvent {
+	public static func nextGreatestDeclination<Scale: Timescale>(_ kind: Moon.GreatestDeclinationEvent.Kind, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(Moon.GreatestDeclinationError) -> Moon.GreatestDeclinationEvent {
 		try nextGreatestDeclination(kind, of: BuiltInEphemeris.Body.moon, after: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 }

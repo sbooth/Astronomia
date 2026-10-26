@@ -647,9 +647,10 @@ extension Sun {
 	/// there within 0.05°, the path's width within 0.1 km, or within 0.6% for a Sun 12° high, and
 	/// the central duration within 0.2 s. Each eclipse samples the shadow about 85 times, each
 	/// placing the Sun and the Moon, so at the built-in ephemeris's full precision it takes about
-	/// 0.5 s in a release build, at ``Precision/tenthArcsecond``, which matches as closely, about
-	/// 70 ms, and at ``Precision/arcsecond``, which moves greatest eclipse by under 1 s, gamma and
-	/// the magnitude by under 0.00015, and where it is greatest by under 0.3', about 25 ms.
+	/// 0.5 s in a release build, at ``SeriesPrecision/tenthArcsecond``, which matches as closely,
+	/// about 70 ms, and at ``SeriesPrecision/arcsecond``, which moves greatest eclipse by under 1
+	/// s, gamma and the magnitude by under 0.00015, and where it is greatest by under 0.3', about
+	/// 25 ms.
 	///
 	/// The ephemeris is evaluated up to about six hours outside the interval for an eclipse
 	/// near its start or end, whose contacts may fall outside it.
@@ -693,11 +694,11 @@ extension Sun {
 	///   - context: Observational data for converting the interval to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	///   - radii: The radii of the Moon and the Sun, by default NASA's.
 	/// - Returns: The eclipses, in order of their greatest eclipse.
 	/// - Throws: A ``Sun/EclipseError``, as the method taking an ephemeris does.
-	public static func eclipses<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full, radii: Eclipse.Radii = .nasa) throws(Sun.EclipseError) -> [Sun.Eclipse] {
+	public static func eclipses<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full, radii: Eclipse.Radii = .nasa) throws(Sun.EclipseError) -> [Sun.Eclipse] {
 		try eclipses(by: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision), radii: radii)
 	}
 
@@ -760,11 +761,11 @@ extension Sun {
 	///   - context: Observational data for converting `instant` to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	///   - radii: The radii of the Moon and the Sun, by default NASA's.
 	/// - Returns: The eclipse.
 	/// - Throws: A ``Sun/EclipseError``, as the method taking an ephemeris does.
-	public static func nextEclipse<Scale: Timescale>(after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full, radii: Eclipse.Radii = .nasa) throws(Sun.EclipseError) -> Sun.Eclipse {
+	public static func nextEclipse<Scale: Timescale>(after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full, radii: Eclipse.Radii = .nasa) throws(Sun.EclipseError) -> Sun.Eclipse {
 		try nextEclipse(by: BuiltInEphemeris.Body.moon, after: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision), radii: radii)
 	}
 }

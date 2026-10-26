@@ -363,7 +363,7 @@ extension Moon {
 	/// for a Moon grazing the edge of the penumbra or the umbra, whose phases change quickly with
 	/// its path. Each eclipse places the Sun and the Moon about 70 times, so at the built-in
 	/// ephemeris's full precision it takes about 1.5 s in a release build, and at
-	/// ``Precision/arcsecond``, which changes the magnitudes by under 0.001, about 60 ms.
+	/// ``SeriesPrecision/arcsecond``, which changes the magnitudes by under 0.001, about 60 ms.
 	///
 	/// The ephemeris is evaluated up to about six hours outside the interval for an eclipse
 	/// near its start or end, whose contacts may fall outside it.
@@ -407,11 +407,11 @@ extension Moon {
 	///   - context: Observational data for converting the interval to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	///   - shadowModel: The model of the Earth's shadow, by default Danjon's.
 	/// - Returns: The eclipses, in order of their greatest eclipse.
 	/// - Throws: A ``Moon/EclipseError``, as the method taking an ephemeris does.
-	public static func eclipses<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full, shadowModel: Moon.Eclipse.ShadowModel = .danjon) throws(Moon.EclipseError) -> [Moon.Eclipse] {
+	public static func eclipses<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full, shadowModel: Moon.Eclipse.ShadowModel = .danjon) throws(Moon.EclipseError) -> [Moon.Eclipse] {
 		try eclipses(of: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision), shadowModel: shadowModel)
 	}
 
@@ -474,11 +474,11 @@ extension Moon {
 	///   - context: Observational data for converting `instant` to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	///   - shadowModel: The model of the Earth's shadow, by default Danjon's.
 	/// - Returns: The eclipse.
 	/// - Throws: A ``Moon/EclipseError``, as the method taking an ephemeris does.
-	public static func nextEclipse<Scale: Timescale>(after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full, shadowModel: Moon.Eclipse.ShadowModel = .danjon) throws(Moon.EclipseError) -> Moon.Eclipse {
+	public static func nextEclipse<Scale: Timescale>(after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full, shadowModel: Moon.Eclipse.ShadowModel = .danjon) throws(Moon.EclipseError) -> Moon.Eclipse {
 		try nextEclipse(of: BuiltInEphemeris.Body.moon, after: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision), shadowModel: shadowModel)
 	}
 }

@@ -26,13 +26,13 @@ extension VSOP2013 {
 		public static let defaultOrigin = Body.sun
 
 		/// The precision level of the series.
-		public let precision: Precision
+		public let precision: SeriesPrecision
 
 		/// Creates the solution.
 		///
 		/// - Parameter precision: The precision level of the series, by default
-		///   ``Precision/full``.
-		public init(precision: Precision = .full) {
+		///   ``SeriesPrecision/full``.
+		public init(precision: SeriesPrecision = .full) {
 			self.precision = precision
 		}
 

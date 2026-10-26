@@ -44,13 +44,13 @@ extension ELPMPP02 {
 		))
 
 		/// The precision level of the series.
-		public let precision: Precision
+		public let precision: SeriesPrecision
 
 		/// Creates the solution. ``ELPMPP02/laserRanging`` is an instance at full precision.
 		///
 		/// - Parameter precision: The precision level of the series, by default
-		///   ``Precision/full``.
-		public init(precision: Precision = .full) {
+		///   ``SeriesPrecision/full``.
+		public init(precision: SeriesPrecision = .full) {
 			self.precision = precision
 		}
 

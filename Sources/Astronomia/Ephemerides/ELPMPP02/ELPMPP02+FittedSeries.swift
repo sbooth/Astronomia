@@ -176,7 +176,7 @@ extension ELPMPP02.FittedSeries {
 	///   - precision: The precision level.
 	/// - Returns: The position, in kilometers, and velocity, in kilometers per day, in the fit's
 	///   inertial mean ecliptic and equinox of J2000.0.
-	func state(at t: Double, precision: Precision = .full) -> (position: Vector3, velocity: Vector3) {
+	func state(at t: Double, precision: SeriesPrecision = .full) -> (position: Vector3, velocity: Vector3) {
 		let level = precision.level
 		// The fundamental arguments, reduced to (-π, π], and their rates
 		var x = [Double](repeating: 0, count: 13)

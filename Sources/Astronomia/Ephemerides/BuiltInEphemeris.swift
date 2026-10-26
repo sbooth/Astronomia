@@ -30,10 +30,10 @@
 /// ```
 ///
 /// The truncated series keep the error from truncation near 0.5 mas for the planets and
-/// 0.2 mas for the Moon, seen from the Earth. A coarser ``Precision`` sums fewer terms, for an
-/// error within its bound in a fraction of the time. The solutions' own errors are larger far
-/// from the present: Chapront and Francou (2003) find ELP/MPP02 within about 1" in longitude
-/// of DE406 from 500 to 2500.
+/// 0.2 mas for the Moon, seen from the Earth. A coarser ``SeriesPrecision`` sums fewer terms, for
+/// an error within its bound in a fraction of the time. The solutions' own errors are larger far
+/// from the present: Chapront and Francou (2003) find ELP/MPP02 within about 1" in longitude of
+/// DE406 from 500 to 2500.
 ///
 /// - Note: VSOP2013 gives the outer planets as the barycenters of their systems, which differ
 ///   from the planets by up to a few hundred kilometers. Pluto's solution is less accurate
@@ -97,14 +97,14 @@ public struct BuiltInEphemeris: GeocentricEphemeris, Hashable {
 	/// The fit of the lunar solution.
 	public let lunarFit: LunarFit
 	/// The precision level of the series.
-	public let precision: Precision
+	public let precision: SeriesPrecision
 
 	/// Creates the ephemeris.
 	///
 	/// - Parameters:
 	///   - lunarFit: The fit of the lunar solution, by default ``LunarFit/de405``.
-	///   - precision: The precision level of the series, by default ``Precision/full``.
-	public init(lunarFit: LunarFit = .de405, precision: Precision = .full) {
+	///   - precision: The precision level of the series, by default ``SeriesPrecision/full``.
+	public init(lunarFit: LunarFit = .de405, precision: SeriesPrecision = .full) {
 		self.lunarFit = lunarFit
 		self.precision = precision
 	}

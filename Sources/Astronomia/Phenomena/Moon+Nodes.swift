@@ -41,9 +41,9 @@ extension Moon {
 	/// its place moves a passage by about 2 s. Each passage places the Moon about 17 times; the
 	/// methods taking the built-in ephemeris default to its full precision, at about 0.35 s each in
 	/// a release build. The passages from 2000 to 2049 are within 0.16 s, and their longitudes
-	/// within 0.09", of Skyfield's with DE421; at ``Precision/tenthArcsecond`` they are within 0.9
-	/// s and 0.6", at about 60 ms each, and at ``Precision/arcsecond`` within 9 s and 6", at about
-	/// 18 ms each.
+	/// within 0.09", of Skyfield's with DE421; at ``SeriesPrecision/tenthArcsecond`` they are
+	/// within 0.9 s and 0.6", at about 60 ms each, and at ``SeriesPrecision/arcsecond`` within 9 s
+	/// and 6", at about 18 ms each.
 	///
 	/// - Parameters:
 	///   - moon: The Moon.
@@ -127,10 +127,10 @@ extension Moon {
 	///   - context: Observational data for converting the interval to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The passages, in order of their instants.
 	/// - Throws: A ``Moon/NodeError``, as the method taking an ephemeris does.
-	public static func nodes<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Moon.NodeError) -> [Moon.NodeEvent] {
+	public static func nodes<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(Moon.NodeError) -> [Moon.NodeEvent] {
 		try nodes(of: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -198,10 +198,10 @@ extension Moon {
 	///   - context: Observational data for converting `instant` to TT.
 	///   - earthOrientation: Observed Earth orientation, whose celestial pole offsets and
 	///     precision apply to the nutation.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The passage.
 	/// - Throws: A ``Moon/NodeError``, as the method taking an ephemeris does.
-	public static func nextNode<Scale: Timescale>(_ kind: Moon.NodeEvent.Kind, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: Precision = .full) throws(Moon.NodeError) -> Moon.NodeEvent {
+	public static func nextNode<Scale: Timescale>(_ kind: Moon.NodeEvent.Kind, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, earthOrientation: EarthOrientation = .model, precision: SeriesPrecision = .full) throws(Moon.NodeError) -> Moon.NodeEvent {
 		try nextNode(kind, of: BuiltInEphemeris.Body.moon, after: instant, context: context, earthOrientation: earthOrientation, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 }

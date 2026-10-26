@@ -46,8 +46,8 @@ extension Moon {
 	/// seconds. Each apsis takes the Moon's state about 26 times, without apparent places; the
 	/// methods taking the built-in ephemeris default to its full precision, at about 22 ms each in
 	/// a release build. The apsides from 2000 to 2049 are within 0.36 s and 8 m of Skyfield's with
-	/// DE421; at ``Precision/tenthArcsecond`` they are within 12 s and 0.2 km, at about 3 ms each,
-	/// and at ``Precision/arcsecond`` within 100 s and 2.3 km.
+	/// DE421; at ``SeriesPrecision/tenthArcsecond`` they are within 12 s and 0.2 km, at about 3 ms
+	/// each, and at ``SeriesPrecision/arcsecond`` within 100 s and 2.3 km.
 	///
 	/// The Moon's semidiameter, which an apsis makes largest or smallest, is
 	/// ``Observation/semidiameter(of:)``.
@@ -131,10 +131,10 @@ extension Moon {
 	///   - start: The start of the interval.
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The perigees and apogees, in order of their instants.
 	/// - Throws: A ``Moon/ApsisError``, as the method taking an ephemeris does.
-	public static func apsides<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, precision: Precision = .full) throws(Moon.ApsisError) -> [Moon.ApsisEvent] {
+	public static func apsides<Scale: Timescale>(from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, precision: SeriesPrecision = .full) throws(Moon.ApsisError) -> [Moon.ApsisEvent] {
 		try apsides(of: BuiltInEphemeris.Body.moon, from: start, to: end, context: context, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 
@@ -198,10 +198,10 @@ extension Moon {
 	///   - kind: The apsis.
 	///   - instant: The instant to search from.
 	///   - context: Observational data for converting `instant` to TT.
-	///   - precision: The precision of the ephemeris, by default ``Precision/full``.
+	///   - precision: The precision of the ephemeris, by default ``SeriesPrecision/full``.
 	/// - Returns: The apsis.
 	/// - Throws: A ``Moon/ApsisError``, as the method taking an ephemeris does.
-	public static func nextApsis<Scale: Timescale>(_ kind: Moon.ApsisEvent.Kind, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, precision: Precision = .full) throws(Moon.ApsisError) -> Moon.ApsisEvent {
+	public static func nextApsis<Scale: Timescale>(_ kind: Moon.ApsisEvent.Kind, after instant: Instant<Scale>, context: Scale.Context = Scale.defaultContext, precision: SeriesPrecision = .full) throws(Moon.ApsisError) -> Moon.ApsisEvent {
 		try nextApsis(kind, of: BuiltInEphemeris.Body.moon, after: instant, context: context, ephemeris: BuiltInEphemeris(precision: precision))
 	}
 }
