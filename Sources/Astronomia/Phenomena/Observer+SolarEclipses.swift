@@ -246,7 +246,7 @@ extension Observer {
 		}
 
 		let radius: Distance? = switch altitude.reference {
-		case let .upperLimb(radius): radius ?? E.radius(of: E.sun)
+		case let .upperLimb(radius): radius ?? E.sun.radius
 		case .center: nil
 		}
 		let (sinLatitude, cosLatitude) = Math.sincos(latitude)
