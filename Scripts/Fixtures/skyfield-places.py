@@ -18,9 +18,13 @@ Requires:
 Usage:
   Scripts/Fixtures/skyfield-places.py de421.bsp \\
       Tests/AstronomiaTests/Astrometry/SkyfieldPlaces.swift
+
+The table is written as a text fixture in Tests/AstronomiaTests/Fixtures, which the Swift
+fixture reads when first used; see text_fixture.py.
 """
 
 import sys
+import text_fixture
 from skyfield.api import load_file, load
 import skyfield
 if len(sys.argv) != 3:
@@ -41,7 +45,7 @@ for jd in dates:
 		apparent = astrometric.apparent()
 		a = astrometric.position.au
 		p = apparent.position.au
-		rows.append(f"\t({jd!r}, .{name}, [{float(a[0])!r}, {float(a[1])!r}, {float(a[2])!r}], {float(astrometric.light_time)!r}, [{float(p[0])!r}, {float(p[1])!r}, {float(p[2])!r}]),")
+		rows.append((jd, name, a, astrometric.light_time, p))
 out = [
 	"//",
 	"// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>",
@@ -57,6 +61,10 @@ out = [
 	f"/// Geocentric places from Skyfield {skyfield.__version__} and DE421 at TDB Julian Dates: the astrometric",
 	"/// position, in au in the ICRS, its light time, in days, and the apparent position, with",
 	"/// deflection by the Sun, Jupiter, and Saturn and aberration.",
-	"let skyfieldPlaces: [(julianDate: Double, body: BuiltInEphemeris.Body, astrometric: [Double], lightTime: Double, apparent: [Double])] = [",
-] + rows + ["]", ""]
+	"let skyfieldPlaces: [(julianDate: Double, body: BuiltInEphemeris.Body, astrometric: [Double], lightTime: Double, apparent: [Double])] = textFixture(\"SkyfieldPlaces\") { row in",
+	"\t(row.double(), row.value(), row.vector(), row.double(), row.vector())",
+	"}",
+	"",
+]
 open(sys.argv[2], "w").write("\n".join(out))
+text_fixture.write(sys.argv[2], "skyfieldPlaces", "Scripts/Fixtures/skyfield-places.py", "julianDate body astrometric.x astrometric.y astrometric.z lightTime apparent.x apparent.y apparent.z", rows)
