@@ -18,9 +18,13 @@ Requires:
 
 Usage:
   Scripts/Fixtures/erfa-iau2006.py Tests/AstronomiaTests/EarthOrientation/ERFAIAU2006.swift
+
+The large table is written as a text fixture in Tests/AstronomiaTests/Fixtures, which the
+Swift fixture reads when first used; see text_fixture.py.
 """
 
 import erfa, sys
+import text_fixture
 if len(sys.argv) != 2:
 	sys.exit("usage: Scripts/Fixtures/erfa-iau2006.py OUTPUT")
 
@@ -42,15 +46,12 @@ for jd in dates:
 	# UT1 = TT, so the ERA and the precession share the date
 	gst = float(erfa.gst06a(d1, d2, d1, d2))
 	eo = float(erfa.eo06a(d1, d2))
-	m = ", ".join(repr(float(v)) for v in rnpb.flatten())
-	def flat(r):
-		return "[" + ", ".join(repr(float(v)) for v in r.flatten()) + "]"
 	rb, rp, rbp = erfa.bp06(d1, d2)
 	ecm = erfa.ecm06(d1, d2)
 	c2i = erfa.c2i06a(d1, d2)
 	true_ecliptic = erfa.rx(epsa + deps, rnpb)
-	frames = f"[{flat(rbp)}, {flat(ecm)}, {flat(c2i)}, {flat(true_ecliptic)}]"
-	rows.append(f"\t({jd!r}, [{dpsi!r}, {deps!r}], [{gamb!r}, {phib!r}, {psib!r}, {epsa!r}], [{m}], [{x!r}, {y!r}, {s!r}], [{eect!r}, {ee!r}, {gst!r}, {eo!r}], {frames}),")
+	frames = [rbp.flatten(), ecm.flatten(), c2i.flatten(), true_ecliptic.flatten()]
+	rows.append((jd, (dpsi, deps), (gamb, phib, psib, epsa), rnpb.flatten(), (x, y, s), (eect, ee, gst, eo), frames))
 out = [
 	"//",
 	"// SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>",
@@ -66,8 +67,18 @@ out = [
 	"/// rows), bpn2xy and s06 (X, Y, s), eect00, ee06a, gst06a with UT1 = TT, and eo06a, and the",
 	"/// matrices, by rows, of the frames of date: bp06 (the mean equator), ecm06 (the mean",
 	"/// ecliptic), c2i06a (the CIRS), and R1(ε_A + Δε) times pnm06a (the true ecliptic).",
-	"let erfaIAU2006: [(julianDate: Double, nutation: [Double], angles: [Double], matrix: [Double], cip: [Double], siderealTime: [Double], frames: [[Double]])] = [",
-] + rows + ["]", ""]
+	"let erfaIAU2006: [(julianDate: Double, nutation: [Double], angles: [Double], matrix: [Double], cip: [Double], siderealTime: [Double], frames: [[Double]])] = textFixture(\"ErfaIAU2006\") { row in",
+	"\t(row.double(), row.doubles(2), row.doubles(4), row.doubles(9), row.vector(), row.doubles(4), [row.doubles(9), row.doubles(9), row.doubles(9), row.doubles(9)])",
+	"}",
+	"",
+]
+matrix = lambda name: " ".join(f"{name}.{i}{j}" for i in range(1, 4) for j in range(1, 4))
+columns = " ".join([
+	"julianDate nutation.dpsi nutation.deps angles.gamma angles.phi angles.psi angles.epsA",
+	matrix("matrix"), "cip.x cip.y cip.s siderealTime.eect siderealTime.ee siderealTime.gst siderealTime.eo",
+	matrix("meanEquator"), matrix("meanEcliptic"), matrix("cirs"), matrix("trueEcliptic"),
+])
+text_fixture.write(sys.argv[1], "erfaIAU2006", "Scripts/Fixtures/erfa-iau2006.py", columns, rows)
 # The CIRS with celestial pole offsets of 0.3 mas in X and -0.2 mas in Y
 dx, dy = 0.3e-3 * erfa.DAS2R, -0.2e-3 * erfa.DAS2R
 offsets = []

@@ -40,7 +40,7 @@
 ///   than the planets'.
 public struct BuiltInEphemeris: GeocentricEphemeris, Hashable {
 	/// A body of the ephemeris.
-	public enum Body: Hashable, Sendable, CaseIterable {
+	public enum Body: EphemerisBody, CaseIterable {
 		/// The barycenter of the solar system.
 		case solarSystemBarycenter
 		/// The Sun.
@@ -85,32 +85,6 @@ public struct BuiltInEphemeris: GeocentricEphemeris, Hashable {
 		LightDeflectingBody(uncheckedBody: Body.earth, gravitationalParameter: (VSOP2013.Body.earthMoonBarycenter.gravitationalParameter ?? 0) * earthMoonMassRatio / (1 + earthMoonMassRatio), radius: earthEquatorialRadius),
 	]
 	public static let solarSystemBarycenter = Body.solarSystemBarycenter
-
-	/// Returns the radius of a body: the Sun's nominal radius of IAU 2015 Resolution B3, the
-	/// Moon's mean radius, the Earth's WGS84 equatorial radius, and the other planets'
-	/// equatorial radii from the IAU Working Group on Cartographic Coordinates and Rotational
-	/// Elements, 2015 (Archinal et al. 2018), for the gas giants at the 1 bar level. The
-	/// barycenters of the outer planets' systems take their planets' radii, and the solar
-	/// system and Earth-Moon barycenters are points.
-	///
-	/// - Parameter body: The body.
-	/// - Returns: The body's radius, or `nil` for the solar system and Earth-Moon barycenters.
-	public static func radius(of body: Body) -> Distance? {
-		switch body {
-		case .solarSystemBarycenter, .earthMoonBarycenter: nil
-		case .sun: nominalSolarRadius
-		case .mercury: .kilometers(2_440.53)
-		case .venus: .kilometers(6_051.8)
-		case .earth: earthEquatorialRadius
-		case .moon: lunarMeanRadius
-		case .mars: .kilometers(3_396.19)
-		case .jupiterBarycenter: jupiterEquatorialRadius
-		case .saturnBarycenter: saturnEquatorialRadius
-		case .uranusBarycenter: .kilometers(25_559)
-		case .neptuneBarycenter: .kilometers(24_764)
-		case .plutoBarycenter: .kilometers(1_188.3)
-		}
-	}
 
 	/// A fit of the lunar solution ELP/MPP02.
 	public enum LunarFit: Hashable, Sendable, CaseIterable {
@@ -188,6 +162,29 @@ extension BuiltInEphemeris {
 }
 
 extension BuiltInEphemeris.Body {
+	/// The body's radius: the Sun's nominal radius of IAU 2015 Resolution B3, the Moon's mean
+	/// radius, the Earth's WGS84 equatorial radius, and the other planets' equatorial radii from
+	/// the IAU Working Group on Cartographic Coordinates and Rotational Elements, 2015 (Archinal
+	/// et al. 2018), for the gas giants at the 1 bar level. The barycenters of the outer
+	/// planets' systems take their planets' radii, and the solar system and Earth-Moon
+	/// barycenters are points.
+	public var radius: Distance? {
+		switch self {
+		case .solarSystemBarycenter, .earthMoonBarycenter: nil
+		case .sun: nominalSolarRadius
+		case .mercury: .kilometers(2_440.53)
+		case .venus: .kilometers(6_051.8)
+		case .earth: earthEquatorialRadius
+		case .moon: lunarMeanRadius
+		case .mars: .kilometers(3_396.19)
+		case .jupiterBarycenter: jupiterEquatorialRadius
+		case .saturnBarycenter: saturnEquatorialRadius
+		case .uranusBarycenter: .kilometers(25_559)
+		case .neptuneBarycenter: .kilometers(24_764)
+		case .plutoBarycenter: .kilometers(1_188.3)
+		}
+	}
+
 	/// The body as a body of VSOP2013 plus a fraction of the geocentric Moon.
 	///
 	/// The Earth and the Moon are on either side of their barycenter, at distances inversely

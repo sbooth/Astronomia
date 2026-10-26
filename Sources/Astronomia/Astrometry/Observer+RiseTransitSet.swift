@@ -32,7 +32,7 @@ extension Observer {
 	///   - end: The end of the interval.
 	///   - context: Observational data for converting the interval to TT.
 	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``,
-	///     which takes the upper limb of a body with a radius in the ephemeris.
+	///     which takes the upper limb of a body with a radius.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - ephemeris: The ephemeris of the body, the Earth, and the light-deflecting bodies.
 	/// - Returns: The events, in order of their instants.
@@ -45,7 +45,7 @@ extension Observer {
 	///     an ``Observation`` do.
 	public func riseTransitSetEvents<E: GeocentricEphemeris, Scale: Timescale>(of body: E.Body, from start: Instant<Scale>, to end: Instant<Scale>, context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(RiseTransitSetError) -> [RiseTransitSetEvent] {
 		let radius: Distance? = switch altitude.reference {
-		case let .upperLimb(radius): radius ?? E.radius(of: body)
+		case let .upperLimb(radius): radius ?? body.radius
 		case .center: nil
 		}
 		return try riseTransitSetEvents(from: start, to: end, context: context, altitude: altitude, radius: radius, earthOrientation: earthOrientation, ephemeris: ephemeris) { observation throws(RiseTransitSetError) in
@@ -216,7 +216,7 @@ extension Observer {
 	///     or down for months, a longer limit finds it.
 	///   - context: Observational data for converting `instant` to TT.
 	///   - altitude: The altitude of rise and set, by default ``EventAltitude/standard``,
-	///     which takes the upper limb of a body with a radius in the ephemeris.
+	///     which takes the upper limb of a body with a radius.
 	///   - earthOrientation: Observed Earth orientation, which places the site.
 	///   - ephemeris: The ephemeris of the body, the Earth, and the light-deflecting bodies.
 	/// - Returns: The event.
@@ -232,7 +232,7 @@ extension Observer {
 	///     `limit` after `instant`.
 	public func nextRiseTransitSetEvent<E: GeocentricEphemeris, Scale: Timescale>(_ kind: RiseTransitSetEvent.Kind, of body: E.Body, after instant: Instant<Scale>, within limit: DayInterval = .days(2), context: Scale.Context = Scale.defaultContext, altitude: EventAltitude = .standard, earthOrientation: EarthOrientation = .model, ephemeris: E) throws(RiseTransitSetError) -> RiseTransitSetEvent {
 		let radius: Distance? = switch altitude.reference {
-		case let .upperLimb(radius): radius ?? E.radius(of: body)
+		case let .upperLimb(radius): radius ?? body.radius
 		case .center: nil
 		}
 		return try nextRiseTransitSetEvent(kind, after: instant, within: limit, context: context, altitude: altitude, radius: radius, earthOrientation: earthOrientation, ephemeris: ephemeris) { observation throws(RiseTransitSetError) in

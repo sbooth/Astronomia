@@ -32,5 +32,10 @@ import Testing
 		#expect(skyfieldMoonPhases.count == 2_474)
 		#expect(nasaLunarEclipses.count == 112)
 		#expect(skyfieldRiseTransitSetEvents.count == 135)
+		#expect(vsop2013CheckValues.count == 99)
+		#expect(elpmpp02CheckValues.count == 36 && elpmpp02Reference.count == 24)
+		#expect(de421States.count == 96)
+		#expect(skyfieldPlaces.count == 100)
+		#expect(erfaIAU2006.count == 26)
 	}
 }

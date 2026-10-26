@@ -162,16 +162,19 @@ import Testing
 		// A radius of zero is the center at -34'.
 		let point = try site.riseTransitSetEvents(of: .sun, from: start, to: end, altitude: .standard(radius: .zero), earthOrientation: Self.earthOrientation).filter { $0.kind == .rise }
 		#expect(abs(Self.julianDate(point[0].instant) - Self.julianDate(center[0].instant)) * secondsPerDay < 0.2)
-		// The built-in radii, and none by default for another ephemeris
-		#expect(BuiltInEphemeris.radius(of: .sun) == .kilometers(695_700))
-		#expect(BuiltInEphemeris.radius(of: .moon) == .kilometers(1_737.4))
-		#expect(BuiltInEphemeris.radius(of: .earth) == .meters(6_378_137))
-		#expect(BuiltInEphemeris.radius(of: .solarSystemBarycenter) == nil && BuiltInEphemeris.radius(of: .earthMoonBarycenter) == nil)
-		#expect(BuiltInEphemeris.Body.allCases.filter { BuiltInEphemeris.radius(of: $0) != nil }.count == 11)
-		#expect(AlteredEphemeris.radius(of: .sun) == nil)
-		// With no radius, the Sun is a point.
+		// The built-in radii
+		#expect(BuiltInEphemeris.Body.sun.radius == .kilometers(695_700))
+		#expect(BuiltInEphemeris.Body.moon.radius == .kilometers(1_737.4))
+		#expect(BuiltInEphemeris.Body.earth.radius == .meters(6_378_137))
+		#expect(BuiltInEphemeris.Body.solarSystemBarycenter.radius == nil && BuiltInEphemeris.Body.earthMoonBarycenter.radius == nil)
+		#expect(BuiltInEphemeris.Body.allCases.filter { $0.radius != nil }.count == 11)
+		// Another ephemeris of the built-in bodies has their radii.
 		let altered = try site.riseTransitSetEvents(of: .sun, from: start, to: end, earthOrientation: Self.earthOrientation, ephemeris: AlteredEphemeris()).filter { $0.kind == .rise }
-		#expect(abs(Self.julianDate(altered[0].instant) - Self.julianDate(center[0].instant)) * secondsPerDay < 0.2)
+		#expect(abs(Self.julianDate(altered[0].instant) - Self.julianDate(standard[0].instant)) * secondsPerDay < 0.2)
+		// With no radius, the Sun is a point: the center at -34'.
+		let circular = try site.riseTransitSetEvents(of: .sun, from: start, to: end, earthOrientation: Self.earthOrientation, ephemeris: CircularEphemeris()).filter { $0.kind == .rise }
+		let circularCenter = try site.riseTransitSetEvents(of: .sun, from: start, to: end, altitude: .center(altitude: .arcminutes(-34)), earthOrientation: Self.earthOrientation, ephemeris: CircularEphemeris()).filter { $0.kind == .rise }
+		#expect(abs(Self.julianDate(circular[0].instant) - Self.julianDate(circularCenter[0].instant)) * secondsPerDay < 0.2)
 	}
 
 	@Test func eventAltitudes() throws {

@@ -32,20 +32,11 @@ static void astronomia_sincos_batch_avx2(const double *angles, double *sines, do
 		_mm256_storeu_pd(cosines + j, _ZGVdN4v_cos(x));
 	}
 	if (j < count) {
-		// Process the remaining 1-3 angles using the same functions
-		double padded[4] = { 0, 0, 0, 0 };
-		double paddedSines[4];
-		double paddedCosines[4];
-		for (size_t k = 0; k < count - j; ++k) {
-			padded[k] = angles[j + k];
-		}
-		__m256d x = _mm256_loadu_pd(padded);
-		_mm256_storeu_pd(paddedSines, _ZGVdN4v_sin(x));
-		_mm256_storeu_pd(paddedCosines, _ZGVdN4v_cos(x));
-		for (size_t k = 0; k < count - j; ++k) {
-			sines[j + k] = paddedSines[k];
-			cosines[j + k] = paddedCosines[k];
-		}
+		// Process the remaining 1-3 angles using masked loads and stores
+		const __m256i mask = _mm256_cmpgt_epi64(_mm256_set1_epi64x((long long)(count - j)), _mm256_setr_epi64x(0, 1, 2, 3));
+		__m256d x = _mm256_maskload_pd(angles + j, mask);
+		_mm256_maskstore_pd(sines + j, mask, _ZGVdN4v_sin(x));
+		_mm256_maskstore_pd(cosines + j, mask, _ZGVdN4v_cos(x));
 	}
 }
 

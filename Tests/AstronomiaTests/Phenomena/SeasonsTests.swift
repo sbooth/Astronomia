@@ -12,8 +12,11 @@ import Testing
 /// ICRS's equator, covering 10,000 years either side of J2000.0, wider than the built-in one,
 /// with a Moon that keeps 45° from the Sun, so it never reaches a phase.
 struct CircularEphemeris: GeocentricEphemeris {
-	enum Body: Hashable, Sendable {
+	/// The bodies, all points.
+	enum Body: EphemerisBody {
 		case solarSystemBarycenter, sun, earth, moon
+
+		var radius: Distance? { nil }
 	}
 
 	typealias Frame = ICRS
@@ -62,8 +65,6 @@ struct TruncatedEphemeris<Base: GeocentricEphemeris>: GeocentricEphemeris {
 	static var sun: Body { Base.sun }
 	static var solarSystemBarycenter: Body { Base.solarSystemBarycenter }
 	static var lightDeflectingBodies: [LightDeflectingBody<Body>] { Base.lightDeflectingBodies }
-
-	static func radius(of body: Body) -> Distance? { Base.radius(of: body) }
 
 	let base: Base
 	/// The end of the coverage.
