@@ -12,7 +12,9 @@
 /// after an instant, `nextEclipse(after:)`, with the built-in ephemeris by default or with one
 /// given. Each finds an ``Eclipse``: its kind, its greatest eclipse, gamma, and magnitude, the
 /// instants when the Moon's shadow touches the Earth, and where the eclipse is greatest, with
-/// the path's width and the central duration there.
+/// the path's width and the central duration there. How an eclipse is seen from a site is a
+/// ``LocalEclipse``, from ``Observer``'s `localCircumstances(of:)`, and the eclipses visible from
+/// a site are from its `visibleSolarEclipses(from:to:)`.
 ///
 /// ```swift
 /// for eclipse in try Sun.eclipses(from: start, to: end) where eclipse.kind == .total {
