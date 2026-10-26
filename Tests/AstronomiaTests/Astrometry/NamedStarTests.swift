@@ -9,9 +9,11 @@ import Testing
 @testable import Astronomia
 
 @Suite struct NamedStarTests {
-	@Test func epochIsJ1991_25() throws {
-		let epoch = try JulianDate(julianEpoch: 1991.25)
-		#expect(NamedStar.hipparcosEpoch == Instant(epoch))
+	@Test func epochsOfTheAstrometrySources() throws {
+		let hipparcos = try JulianDate(julianEpoch: 1991.25)
+		let gaia = try JulianDate(julianEpoch: 2016)
+		#expect(NamedStar.AstrometrySource.hipparcos2.epoch == Instant(hipparcos))
+		#expect(NamedStar.AstrometrySource.gaiaDR3.epoch == Instant(gaia))
 	}
 
 	@Test func starsAreInOrderOfTheirNamesAndUnique() {
@@ -35,8 +37,12 @@ import Testing
 				epoch: star.epoch)
 			#expect(checked == star, "\(named.name)")
 			#expect(star.rightAscension.radians >= 0 && star.rightAscension.radians < 2 * .pi, "\(named.name)")
-			#expect(star.epoch == NamedStar.hipparcosEpoch)
-			#expect(named.hipparcosNumber > 0 && named.hipparcosNumber <= 120_404, "\(named.name)")
+			#expect(star.epoch == named.astrometrySource.epoch, "\(named.name)")
+			// Every built-in star's astrometry is now from Hipparcos.
+			#expect(named.astrometrySource == .hipparcos2, "\(named.name)")
+			#expect(named.hipparcosMagnitude != nil, "\(named.name)")
+			let hip = try #require(named.hipparcosNumber, "\(named.name)")
+			#expect(hip > 0 && hip <= 120_404, "\(named.name)")
 			#expect(named.constellation.count == 3, "\(named.name)")
 			#expect(!named.designation.isEmpty, "\(named.name)")
 			#expect(named.asciiName.allSatisfy { $0.isASCII }, "\(named.name)")
