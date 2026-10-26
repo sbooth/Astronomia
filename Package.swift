@@ -23,11 +23,6 @@ let package = Package(
 			dependencies: [
 				"CAstronomiaData",
 				"CAstronomiaPlatform",
-			],
-			linkerSettings: [
-				.linkedFramework(
-					"CoreLocation", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])
-				),
 			]
 		),
 		.target(
