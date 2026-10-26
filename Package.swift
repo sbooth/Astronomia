@@ -36,7 +36,7 @@ let package = Package(
 			linkerSettings: [
 				.linkedFramework(
 					"Accelerate", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])
-				),
+				)
 			]
 		),
 		.testTarget(
