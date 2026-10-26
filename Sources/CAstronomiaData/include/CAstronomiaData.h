@@ -286,9 +286,20 @@ extern const struct astronomia_iau_series_data astronomia_iau2006_s_plus_half_xy
 /// - Returns: The sum, in microarcseconds.
 double astronomia_iau_evaluate_series(const struct astronomia_iau_series *series, size_t series_count, const struct astronomia_iau_term *terms, size_t term_count, const double arguments[14], double t, int32_t level);
 
-// Stars with names approved by the IAU Working Group on Star Names that are in Hipparcos, with
-// the astrometry of Hipparcos, the New Reduction (van Leeuwen 2007), and the radial velocities
+// Stars with names approved by the IAU Working Group on Star Names, with the astrometry of a
+// catalog such as Hipparcos, the New Reduction (van Leeuwen 2007), and the radial velocities
 // of the Bright Star Catalogue, 5th Revised Ed.
+
+/// The catalog of a named star's astrometry, which gives its epoch.
+///
+/// The enumeration is one byte, by its fixed underlying type, a Clang extension before C23,
+/// and closed, so Swift imports it as an enumeration it can switch over exhaustively.
+enum __attribute__((enum_extensibility(closed))) astronomia_astrometry_source : uint8_t {
+	/// Hipparcos, the New Reduction (van Leeuwen 2007), at epoch J1991.25 TDB.
+	astronomia_astrometry_source_hipparcos_2 __attribute__((swift_name("hipparcos2"))) = 0,
+	/// Gaia DR3, at epoch J2016.0 TCB.
+	astronomia_astrometry_source_gaia_dr3 __attribute__((swift_name("gaiaDR3"))) = 1,
+};
 
 /// A named star.
 struct astronomia_named_star {
@@ -302,13 +313,15 @@ struct astronomia_named_star {
 	const char *bayer_designation;
 	/// The IAU abbreviation of the constellation.
 	const char *constellation;
-	/// The Hipparcos number.
+	/// The Hipparcos number, or 0 if none.
 	int32_t hip;
 	/// The Bright Star Catalogue (HR) number, or 0.
-	int32_t hr;
-	/// The right ascension in the ICRS at epoch J1991.25, in radians.
+	int16_t hr;
+	/// The catalog of the astrometry, which gives its epoch.
+	enum astronomia_astrometry_source astrometry_source;
+	/// The right ascension in the ICRS at the epoch of the astrometry, in radians.
 	double right_ascension;
-	/// The declination in the ICRS at epoch J1991.25, in radians.
+	/// The declination in the ICRS at the epoch of the astrometry, in radians.
 	double declination;
 	/// The parallax, in milliarcseconds, or 0 if none.
 	double parallax;
@@ -319,8 +332,8 @@ struct astronomia_named_star {
 	double proper_motion_dec;
 	/// The radial velocity, in kilometers per second, or 0 if unknown.
 	double radial_velocity;
-	/// The Hipparcos magnitude Hp.
-	double hipparcos_magnitude;
+	/// The magnitude in the band of the astrometry's catalog: Hp for Hipparcos, G for Gaia.
+	double magnitude;
 };
 
 /// The named stars.
@@ -331,7 +344,7 @@ struct astronomia_named_star_data {
 	const struct astronomia_named_star *stars;
 };
 
-// The named stars of the IAU Catalog of Star Names that are in Hipparcos
+// The named stars of the IAU Catalog of Star Names
 extern const struct astronomia_named_star_data astronomia_named_stars;
 
 #endif

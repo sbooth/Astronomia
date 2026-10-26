@@ -15,12 +15,13 @@ internal import CAstronomiaData
 /// of exoplanets. A named star without a Hipparcos number, as many faint hosts of exoplanets,
 /// or not in the new reduction, as Alula Australis, isn't included.
 ///
-/// Each star's ``star`` has the astrometry of the new reduction: its place in the ICRS at epoch
-/// J1991.25, its proper motion, and its parallax, or none if the parallax isn't positive. Its
-/// radial velocity is that of the Bright Star Catalogue, 5th Revised Ed. (Hoffleit and Warren
-/// 1991), in whole kilometers per second, or 0 if the star isn't in that catalog or has no
-/// radial velocity there. The accelerations of the new reduction's 7- and 9-parameter
-/// solutions, for some double stars, are left out.
+/// Each star's ``star`` has the astrometry of the catalog its ``astrometrySource`` names, at that
+/// catalog's epoch; every built-in star's is now that of the new reduction: its place in the
+/// ICRS at epoch J1991.25, its proper motion, and its parallax, or none if the parallax isn't
+/// positive. Its radial velocity is that of the Bright Star Catalogue, 5th Revised Ed. (Hoffleit
+/// and Warren 1991), in whole kilometers per second, or 0 if the star isn't in that catalog or has
+/// no radial velocity there. The accelerations of the new reduction's 7- and 9-parameter solutions,
+/// for some double stars, are left out.
 ///
 /// ```swift
 /// if let vega = NamedStar.named("Vega") {
@@ -30,6 +31,17 @@ internal import CAstronomiaData
 /// let orion = NamedStar.all.filter { $0.constellation == "Ori" }
 /// ```
 public struct NamedStar: Hashable, Sendable {
+	/// The catalog of a star's astrometry, which gives its epoch.
+	public enum AstrometrySource: Hashable, Sendable, CaseIterable {
+		/// Hipparcos, the New Reduction (van Leeuwen 2007), at epoch J1991.25.
+		case hipparcos2
+		/// Gaia Data Release 3 (Gaia Collaboration 2023), at epoch J2016.0.
+		///
+		/// Gaia's epoch is in TCB, which differs from TDB by about 20 s in 2016, as ``Star``
+		/// notes, too little to move a star.
+		case gaiaDR3
+	}
+
 	/// The name, as the IAU spells it, with its diacritics.
 	public let name: String
 	/// The designation of the IAU Catalog of Star Names, as `HR 7001`, `HD 130322`, or
@@ -40,16 +52,19 @@ public struct NamedStar: Hashable, Sendable {
 	public let bayerDesignation: String?
 	/// The IAU's three-letter abbreviation of the constellation, as `Lyr`.
 	public let constellation: String
-	/// The number in the Hipparcos catalog.
+	/// The number in the Hipparcos catalog, or `nil` if the star isn't in it.
 	///
 	/// The components of a double star unresolved by Hipparcos, as Izar and Pulcherrima, have
 	/// the same number and astrometry.
-	public let hipparcosNumber: Int
+	public let hipparcosNumber: Int?
 	/// The number in the Bright Star Catalogue (the HR number), or `nil` if the star isn't in
 	/// that catalog or can't be told from another component of a double star there.
 	public let brightStarNumber: Int?
-	/// The Hipparcos magnitude, Hp, of the new reduction.
-	public let hipparcosMagnitude: Double
+	/// The Hipparcos magnitude, Hp, of the new reduction, or `nil` if the star's astrometry is
+	/// from another catalog.
+	public let hipparcosMagnitude: Double?
+	/// The catalog of the star's astrometry, which gives its epoch.
+	public let astrometrySource: AstrometrySource
 	/// The star's catalog astrometry.
 	public let star: Star
 
@@ -113,9 +128,6 @@ public struct NamedStar: Hashable, Sendable {
 		indexes[name.lowercased()].map { all[$0] }
 	}
 
-	/// The epoch of Hipparcos, J1991.25, JD 2448349.0625 TDB.
-	static let hipparcosEpoch = Instant<TDB>(JulianDate(uncheckedJulianDayNumber: 2_448_349, fractionFromNoon: 0.0625))
-
 	/// Creates a named star from its entry in the built-in data.
 	init(_ entry: astronomia_named_star) {
 		name = String(cString: entry.name)
@@ -124,9 +136,13 @@ public struct NamedStar: Hashable, Sendable {
 		let bayer = String(cString: entry.bayer_designation)
 		bayerDesignation = bayer.isEmpty ? nil : bayer
 		constellation = String(cString: entry.constellation)
-		hipparcosNumber = Int(entry.hip)
+		hipparcosNumber = entry.hip > 0 ? Int(entry.hip) : nil
 		brightStarNumber = entry.hr > 0 ? Int(entry.hr) : nil
-		hipparcosMagnitude = entry.hipparcos_magnitude
+		switch entry.astrometry_source {
+		case .hipparcos2: astrometrySource = .hipparcos2
+		case .gaiaDR3: astrometrySource = .gaiaDR3
+		}
+		hipparcosMagnitude = astrometrySource == .hipparcos2 ? entry.magnitude : nil
 		star = Star(
 			uncheckedRightAscension: Angle(radians: entry.right_ascension),
 			declination: Angle(radians: entry.declination),
@@ -134,6 +150,17 @@ public struct NamedStar: Hashable, Sendable {
 			properMotionInDeclination: Angle(milliarcseconds: entry.proper_motion_dec),
 			parallax: entry.parallax > 0 ? Angle(milliarcseconds: entry.parallax) : nil,
 			radialVelocity: Speed(kilometersPerSecond: entry.radial_velocity),
-			epoch: Self.hipparcosEpoch)
+			epoch: astrometrySource.epoch)
+	}
+}
+
+extension NamedStar.AstrometrySource {
+	/// The catalog's epoch: J1991.25, JD 2448349.0625, for Hipparcos, and J2016.0,
+	/// JD 2457389.0, for Gaia DR3, in TDB.
+	var epoch: Instant<TDB> {
+		switch self {
+		case .hipparcos2: Instant(JulianDate(uncheckedJulianDayNumber: 2_448_349, fractionFromNoon: 0.0625))
+		case .gaiaDR3: Instant(JulianDate(uncheckedJulianDayNumber: 2_457_389, fractionFromNoon: 0))
+		}
 	}
 }
