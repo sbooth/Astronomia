@@ -75,16 +75,16 @@ static void astronomia_sincos_batch_avx512(const double *angles, double *sines, 
 __attribute__((aarch64_vector_pcs)) float64x2_t _ZGVnN2v_sin(float64x2_t);
 __attribute__((aarch64_vector_pcs)) float64x2_t _ZGVnN2v_cos(float64x2_t);
 
-static void sincos_batch_neon(const double *phases, double *sines, double *cosines, size_t count) {
+static void astronomia_sincos_batch_neon(const double *angles, double *sines, double *cosines, size_t count) {
 	size_t j = 0;
 	for (; j + 2 <= count; j += 2) {
-		float64x2_t x = vld1q_f64(phases + j);
+		float64x2_t x = vld1q_f64(angles + j);
 		vst1q_f64(sines + j, _ZGVnN2v_sin(x));
 		vst1q_f64(cosines + j, _ZGVnN2v_cos(x));
 	}
 	if (j < count) {
 		// Odd count: one element left. Put it in lane 0, zero lane 1, keep only lane 0.
-		const float64x2_t x = vsetq_lane_f64(phases[j], vdupq_n_f64(0.0), 0);
+		const float64x2_t x = vsetq_lane_f64(angles[j], vdupq_n_f64(0.0), 0);
 		vst1q_lane_f64(sines + j, _ZGVnN2v_sin(x), 0);
 		vst1q_lane_f64(cosines + j, _ZGVnN2v_cos(x), 0);
 	}
