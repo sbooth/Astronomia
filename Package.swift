@@ -35,8 +35,8 @@ let package = Package(
 			name: "CAstronomiaPlatform",
 			linkerSettings: [
 				.linkedFramework(
-					"Accelerate", .when(platforms: [.macOS, .iOS, .tvOS, .watchOS, .visionOS])
-				)
+					"Accelerate", .when(platforms: [.macOS, .macCatalyst, .iOS, .tvOS, .watchOS, .visionOS])
+				),
 			]
 		),
 		.testTarget(
