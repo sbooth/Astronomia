@@ -12,9 +12,12 @@
 /// words, addressed from 1. The first record names the format and the byte order and points to
 /// a linked list of summary records, each holding the summaries of segments: the interval, in
 /// TDB seconds from J2000.0, and the target, center, frame, type, and first and last address of
-/// the segment's data. Types 2 and 3 are read: Chebyshev polynomials of position, or of
-/// position and velocity, in kilometers and kilometers per second, over equal intervals of
-/// time, as JPL's planetary ephemerides are written.
+/// the segment's data. The states are in kilometers and kilometers per second. Types 2 and 3,
+/// Chebyshev polynomials over equal intervals of time, as JPL's planetary ephemerides are
+/// written; types 8, 9, 12, and 13, discrete states interpolated by Lagrange or Hermite
+/// polynomials, as spacecraft are written; and types 1 and 21, modified difference arrays, as
+/// JPL's small-body integrator writes asteroids and comets, are read, in the J2000 and
+/// ECLIPJ2000 frames.
 ///
 /// See NAIF's DAF and SPK Required Reading.
 struct SPKKernel: Sendable {
@@ -106,17 +109,37 @@ struct SPKKernel: Sendable {
 	}
 
 	/// Returns a segment's state at a time, in kilometers and kilometers per second, in the
-	/// segment's frame.
+	/// J2000 frame.
 	///
 	/// - Parameters:
-	///   - segment: The segment, one of ``segments``, of type 2 or 3.
+	///   - segment: The segment, one of ``segments``, that ``SPKSegment/isEvaluable``.
 	///   - seconds: TDB seconds from J2000.0, within the segment's interval.
-	/// - Returns: The position and velocity of the segment's target relative to its center.
+	/// - Returns: The position and velocity of the segment's target relative to its center, not
+	///   finite if the segment's data is damaged.
 	func state(of segment: SPKSegment, at seconds: Double) -> (position: Vector3, velocity: Vector3) {
-		guard let chebyshev = segment.chebyshev else {
-			preconditionFailure("Segment of type \(segment.type) can't be evaluated")
+		let state: (position: Vector3, velocity: Vector3)
+		switch segment.data {
+		case .chebyshev(let data): state = data.state(at: seconds, reader: reader)
+		case .discreteStates(let data): state = data.state(at: seconds, reader: reader)
+		case .differenceLines(let data): state = data.state(at: seconds, reader: reader)
+		case nil: preconditionFailure("Segment of type \(segment.type) can't be evaluated")
 		}
-		return chebyshev.state(at: seconds, reader: reader)
+		switch segment.frame {
+		case SPKSegment.j2000: return state
+		case SPKSegment.eclipticJ2000: return (Self.fromEcliptic(state.position), Self.fromEcliptic(state.velocity))
+		default: preconditionFailure("Segment in frame \(segment.frame) can't be evaluated")
+		}
+	}
+
+	/// The cosine and sine of the obliquity of the ECLIPJ2000 frame, 84,381.448″, the IAU 1976
+	/// value at J2000.0, as SPICE defines the frame.
+	static let eclipticObliquity = (cos: Math.cos(84_381.448 / 3_600 * .pi / 180), sin: Math.sin(84_381.448 / 3_600 * .pi / 180))
+
+	/// Rotates a vector from the ECLIPJ2000 frame to the J2000 frame, about the x-axis by the
+	/// obliquity.
+	static func fromEcliptic(_ v: Vector3) -> Vector3 {
+		let (c, s) = eclipticObliquity
+		return Vector3(v.x, c * v.y - s * v.z, s * v.y + c * v.z)
 	}
 }
 
@@ -126,7 +149,8 @@ struct SPKSegment: Hashable, Sendable {
 	let target: Int
 	/// The NAIF ID of the body to which the state is relative.
 	let center: Int
-	/// The NAIF ID of the frame of the state, 1 for J2000, the ICRF for JPL's ephemerides.
+	/// The NAIF ID of the frame of the state, 1 for J2000, the ICRF for JPL's ephemerides, or
+	/// 17 for ECLIPJ2000.
 	let frame: Int
 	/// The SPK data type.
 	let type: Int
@@ -134,10 +158,21 @@ struct SPKSegment: Hashable, Sendable {
 	let start: Double
 	/// The last instant the segment covers, in TDB seconds from J2000.0.
 	let end: Double
-	/// The Chebyshev polynomials of a segment of type 2 or 3, or `nil` for another type.
-	let chebyshev: SPKChebyshevSegment?
+	/// The data's directory, or `nil` for a type that isn't read.
+	let data: SPKSegmentData?
 
-	/// Reads a segment's summary and, for type 2 or 3, the directory of its data.
+	/// The NAIF ID of the J2000 frame.
+	static let j2000 = 1
+	/// The NAIF ID of the ECLIPJ2000 frame, the mean ecliptic and equinox of J2000.0.
+	static let eclipticJ2000 = 17
+
+	/// Whether the segment's states can be evaluated: of a type that is read, in the J2000 or
+	/// ECLIPJ2000 frame.
+	var isEvaluable: Bool {
+		data != nil && (frame == Self.j2000 || frame == Self.eclipticJ2000)
+	}
+
+	/// Reads a segment's summary and, for a type that is read, the directory of its data.
 	///
 	/// - Throws: ``SPKError/invalidFile`` if the summary or the data is damaged.
 	init(reader: KernelReader, start: Double, end: Double, target: Int, center: Int, frame: Int, type: Int, addresses: ClosedRange<Int>, wordCount: Int, isEmpty: Bool) throws(SPKError) {
@@ -151,8 +186,10 @@ struct SPKSegment: Hashable, Sendable {
 		self.start = start
 		self.end = end
 		switch type {
-		case 2, 3: chebyshev = try SPKChebyshevSegment(reader: reader, addresses: addresses, hasVelocity: type == 3)
-		default: chebyshev = nil
+		case 2, 3: data = try .chebyshev(SPKChebyshevSegment(reader: reader, addresses: addresses, hasVelocity: type == 3))
+		case 8, 9, 12, 13: data = try .discreteStates(SPKDiscreteStatesSegment(reader: reader, addresses: addresses, type: type))
+		case 1, 21: data = try .differenceLines(SPKDifferenceLinesSegment(reader: reader, addresses: addresses, type: type))
+		default: data = nil
 		}
 	}
 
@@ -160,6 +197,16 @@ struct SPKSegment: Hashable, Sendable {
 	func covers(_ seconds: Double) -> Bool {
 		seconds >= start && seconds <= end
 	}
+}
+
+/// The data of an SPK segment, by the family of its type.
+enum SPKSegmentData: Hashable, Sendable {
+	/// Chebyshev polynomials, types 2 and 3.
+	case chebyshev(SPKChebyshevSegment)
+	/// Discrete states, types 8, 9, 12, and 13.
+	case discreteStates(SPKDiscreteStatesSegment)
+	/// Modified difference arrays, types 1 and 21.
+	case differenceLines(SPKDifferenceLinesSegment)
 }
 
 /// The data of an SPK segment of type 2 or 3: Chebyshev polynomials over equal intervals of
