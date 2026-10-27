@@ -80,13 +80,13 @@ import Testing
 			#expect(kernel.segments.map { $0.target } == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 301, 399, 199, 299, 499])
 			#expect(kernel.segments.map { $0.center } == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 1, 2, 4])
 			#expect(kernel.segments.allSatisfy { $0.frame == 1 && $0.type == 2 && $0.chebyshev != nil })
-			#expect(kernel.segments.allSatisfy { $0.start == 820_497_600 && $0.end == 823_176_000 })
+			#expect(kernel.segments.allSatisfy { $0.start == 813_758_400 && $0.end == 816_436_800 })
 		}
 	}
 
 	@Test func statesMatchJplephem() throws {
 		let kernel = try SPKKernel(data: KernelData(mapping: Self.excerptPath))
-		#expect(jplephemSPKStates.count == 84)
+		#expect(jplephemSPKStates.count == 93)
 		for row in jplephemSPKStates {
 			let segment = try #require(kernel.segments.first { $0.target == row.target && $0.center == row.center })
 			#expect(segment.covers(row.seconds))
