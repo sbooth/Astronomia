@@ -1,8 +1,10 @@
+#
 # SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
 # SPDX-License-Identifier: MIT
 #
 # Part of https://github.com/sbooth/Astronomia
 #
+
 # The rows of `vsop2013CheckValues` in VSOP2013CheckValues.swift, which describes them:
 # body julianDayNumber elements.a elements.l elements.k elements.h elements.q elements.p position.x position.y position.z velocity.x velocity.y velocity.z checkElements.a checkElements.l checkElements.k checkElements.h checkElements.q checkElements.p checkEcliptic.x checkEcliptic.y checkEcliptic.z checkEcliptic.vx checkEcliptic.vy checkEcliptic.vz checkICRS.x checkICRS.y checkICRS.z checkICRS.vx checkICRS.vy checkICRS.vz
 mercury 2411545 0.3870979636196259 6.260516341086181 0.045261414192774865 0.2005681843208473 0.040543431999416506 0.04577509364111764 0.3493879042725776 -0.16157704031593895 -0.04534301590304075 0.006318716163799555 0.026831785018121144 0.0016062486837022782 0.3870979635 6.2605163414 0.0452614144 0.2005681842 0.0405434321 0.0457750937 0.3493879042 -0.1615770401 -0.0453430160 0.0063187162 0.0268317850 0.0016062487 0.3493878714 -0.1302077267 -0.1058730361 0.0063187222 0.0239787530 0.0121467712
