@@ -1,8 +1,10 @@
+#
 # SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
 # SPDX-License-Identifier: MIT
 #
 # Part of https://github.com/sbooth/Astronomia
 #
+
 # Transcribed from NASA's Five Millennium Catalog of Solar Eclipses: the rows of
 # `nasaSolarEclipses` in NASASolarEclipseFixtures.swift, which describes them:
 # year month day hour minute second deltaT lunation saros kind qualifier gamma magnitude latitude longitude sunAltitude pathWidth centralDuration

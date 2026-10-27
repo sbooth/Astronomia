@@ -1,8 +1,10 @@
+#
 # SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
 # SPDX-License-Identifier: MIT
 #
 # Part of https://github.com/sbooth/Astronomia
 #
+
 # The rows of `elpmpp02CheckValues` in ELPMPP02CheckValues.swift, which describes them:
 # fit julianDate position.x position.y position.z velocity.x velocity.y velocity.z
 laserRanging 2444239.5 43890.2824005 381188.7274523 -31633.3816524 -87516.1974842 13707.6644351 2754.2212424

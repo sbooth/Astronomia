@@ -1,8 +1,10 @@
+#
 # SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
 # SPDX-License-Identifier: MIT
 #
 # Part of https://github.com/sbooth/Astronomia
 #
+
 # Transcribed from NASA's Five Millennium Catalog of Lunar Eclipses: the rows of
 # `nasaLunarEclipses` in NASALunarEclipseFixtures.swift, which describes them:
 # year month day hour minute second kind gamma penumbralMagnitude umbralMagnitude penumbral partial total
