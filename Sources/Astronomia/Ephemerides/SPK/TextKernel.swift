@@ -69,23 +69,18 @@ public struct TextKernel: Hashable, Sendable {
 		var parser = Parser()
 		var isData = false
 		var number = 0
-		// The line where the assignment being read starts
-		var start = 0
 		// Lines end with LF or CR LF, which is one character.
 		for line in text.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
 			number += 1
 			let trimmed = line.trimmingWhitespace
 			if trimmed == "\\begindata" || trimmed == "\\begintext" {
-				guard parser.isIdle else { throw .invalidSyntax(line: start) }
+				guard parser.isIdle else { throw .invalidSyntax(line: parser.start) }
 				isData = trimmed == "\\begindata"
 			} else if isData {
-				if parser.isIdle {
-					start = number
-				}
-				guard parser.read(line) else { throw .invalidSyntax(line: number) }
+				guard parser.read(line, number: number) else { throw .invalidSyntax(line: number) }
 			}
 		}
-		guard parser.isIdle else { throw .invalidSyntax(line: start) }
+		guard parser.isIdle else { throw .invalidSyntax(line: parser.start) }
 		variables = parser.variables
 	}
 
@@ -137,6 +132,8 @@ public struct TextKernel: Hashable, Sendable {
 		var state = State.name
 		/// The values of the list being read.
 		var values: [Value] = []
+		/// The number of the line where the last assignment starts, at its name.
+		var start = 0
 
 		/// Whether the parser is between assignments.
 		var isIdle: Bool {
@@ -154,8 +151,11 @@ public struct TextKernel: Hashable, Sendable {
 
 		/// Reads a line of data.
 		///
+		/// - Parameters:
+		///   - line: The line.
+		///   - number: The line's number, from 1.
 		/// - Returns: Whether the line can be read.
-		mutating func read(_ line: Substring) -> Bool {
+		mutating func read(_ line: Substring, number: Int) -> Bool {
 			var rest = line[...]
 			while true {
 				rest = rest.drop { $0.isWhitespace }
@@ -166,6 +166,7 @@ public struct TextKernel: Hashable, Sendable {
 					guard !name.isEmpty else { return false }
 					rest = rest.dropFirst(name.count)
 					state = .assignment(String(name))
+					start = number
 				case let .assignment(name):
 					if rest.hasPrefix("+=") {
 						rest = rest.dropFirst(2)

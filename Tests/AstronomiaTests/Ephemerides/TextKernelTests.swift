@@ -81,6 +81,9 @@ import Testing
 			("\\begindata\nA = ( 1\n", 2),
 			("\\begindata\n= 1\n", 2),
 			("\\begindata\nA = nan\n", 2),
+			// An assignment that doesn't end starts on the line of an assignment that does
+			("\\begindata\nA = (\n1 ) B = (\n", 3),
+			("\\begindata\nA = (\n1 ) B =\n\\begintext\n", 3),
 		]
 		for (text, line) in cases {
 			#expect(throws: TextKernelError.invalidSyntax(line: line), "\(text)") { try TextKernel(text: text) }
