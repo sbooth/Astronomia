@@ -21,13 +21,13 @@
 /// let place = try Observer.geocenter.apparentPlace(of: ceres, at: instant, ephemeris: ephemeris)
 /// ```
 ///
-/// The files must give the Earth and the Sun relative to the solar system barycenter, as a
-/// planetary ephemeris does, for the places of bodies seen from the Earth; their light is
-/// deflected by the Sun, the Jupiter and Saturn systems, and the Earth, with the
-/// gravitational parameters of DE440. A body the files don't give, or don't give at an
-/// instant, throws ``EphemerisError/outsideCoverage``. For a planetary ephemeris alone,
-/// ``JPLEphemeris`` names its bodies with an enumeration instead, so that asking for a body it
-/// doesn't give doesn't compile.
+/// The files must give the Earth, the Sun, and the barycenters of the Jupiter and Saturn
+/// systems relative to the solar system barycenter, as a planetary ephemeris does, for the
+/// places of bodies seen from the Earth, whose light the Sun, the Jupiter and Saturn systems,
+/// and the Earth deflect, with the gravitational parameters of DE440. A body the files don't
+/// give, or don't give at an instant, throws ``EphemerisError/outsideCoverage``. For a
+/// planetary ephemeris alone, ``JPLEphemeris`` names its bodies with an enumeration instead, so
+/// that asking for a body it doesn't give doesn't compile.
 ///
 /// States are in kilometers and kilometers per second in the files, and are converted to
 /// astronomical units of 149,597,870.7 km. The J2000 frame of the files is taken as the ICRS,
@@ -108,13 +108,19 @@ public struct SPKEphemeris: GeocentricEphemeris, Sendable {
 		LightDeflectingBody(uncheckedBody: Body.earth, gravitationalParameter: DE440GravitationalParameters.earth),
 	]
 
+	/// The bodies the files must give relative to the solar system barycenter: the Earth and
+	/// the light-deflecting bodies, whose states every observation needs.
+	static let requiredBodies = [Body.earth.id] + lightDeflectingBodies.map(\.body.id).filter { $0 != Body.earth.id }
+
 	/// The files, in increasing precedence.
 	public let files: [SPKFile]
-	/// The instants over which the files give both the Earth and the Sun relative to the solar
-	/// system barycenter.
+	/// The instants over which the files give the Earth, the Sun, and the barycenters of the
+	/// Jupiter and Saturn systems relative to the solar system barycenter, from the first such
+	/// instant to the last.
 	///
-	/// Other bodies may be given over shorter spans, and a gap between segments within the span
-	/// throws ``EphemerisError/outsideCoverage`` for the instants in it.
+	/// Other bodies may be given over shorter spans, and an instant within the span at which a
+	/// body isn't given, as in a gap between segments, throws
+	/// ``EphemerisError/outsideCoverage``.
 	public let coverage: ClosedRange<Instant<TDB>>
 	/// The segments of the files by target.
 	let index: SPKSegmentIndex
@@ -123,18 +129,14 @@ public struct SPKEphemeris: GeocentricEphemeris, Sendable {
 	///
 	/// - Parameter files: The files, in increasing precedence: where their segments overlap, a
 	///   later file's are used.
-	/// - Throws: ``SPKError/missingBody(naifID:)`` if the files don't give the Earth or the
-	///   Sun relative to the solar system barycenter over a common span.
+	/// - Throws: ``SPKError/missingBody(naifID:)`` if the files don't give the Earth, the Sun,
+	///   or the barycenter of the Jupiter or Saturn system relative to the solar system
+	///   barycenter at any instant at which they give the others.
 	public init(files: [SPKFile]) throws(SPKError) {
 		let index = SPKSegmentIndex(files: files)
-		guard let earth = index.coverage(of: 399) else { throw .missingBody(naifID: 399) }
-		guard let sun = index.coverage(of: 10), sun.overlaps(earth) else { throw .missingBody(naifID: 10) }
-		guard let start = max(earth.lowerBound, sun.lowerBound).tdbInstant, let end = min(earth.upperBound, sun.upperBound).tdbInstant else {
-			throw .invalidFile
-		}
+		coverage = try index.coverage(ofEvery: Self.requiredBodies)
 		self.files = files
 		self.index = index
-		coverage = start ... end
 	}
 
 	/// Creates an ephemeris from an SPK file, mapped into memory.

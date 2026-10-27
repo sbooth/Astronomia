@@ -118,7 +118,13 @@ public struct JPLEphemeris: GeocentricEphemeris, Sendable {
 
 	/// The files, in increasing precedence.
 	public let files: [SPKFile]
-	/// The instants over which the files give every body.
+	/// The instants over which the files give every body relative to the solar system
+	/// barycenter, from the first such instant to the last.
+	///
+	/// Where segments of different files overlap, a body's state may be given by segments to
+	/// different centers at different instants; the span covers them all. An instant within it
+	/// at which a body isn't given, as in a gap between segments, throws
+	/// ``EphemerisError/outsideCoverage``.
 	public let coverage: ClosedRange<Instant<TDB>>
 	/// The segments of the file by target.
 	let index: SPKSegmentIndex
@@ -128,29 +134,19 @@ public struct JPLEphemeris: GeocentricEphemeris, Sendable {
 	/// - Parameter files: The files, in increasing precedence: where their segments overlap, a
 	///   later file's are used.
 	/// - Throws: ``SPKError/missingBody(naifID:)`` if the files don't give a body of ``Body``
-	///   relative to the solar system barycenter, over a span common to all of them.
+	///   relative to the solar system barycenter at any instant at which they give the others.
 	public init(files: [SPKFile]) throws(SPKError) {
 		let index = SPKSegmentIndex(files: files)
-		var span = -Double.infinity ... Double.infinity
-		for body in Body.allCases {
-			guard let covered = index.coverage(of: body.id), covered.overlaps(span) else {
-				throw .missingBody(naifID: body.id)
-			}
-			span = max(covered.lowerBound, span.lowerBound) ... min(covered.upperBound, span.upperBound)
-		}
-		guard let start = span.lowerBound.tdbInstant, let end = span.upperBound.tdbInstant else {
-			throw .invalidFile
-		}
+		coverage = try index.coverage(ofEvery: Body.allCases.map(\.id))
 		self.files = files
 		self.index = index
-		coverage = start ... end
 	}
 
 	/// Creates an ephemeris from a planetary ephemeris's SPK file.
 	///
 	/// - Parameter file: The file.
 	/// - Throws: ``SPKError/missingBody(naifID:)`` if the file doesn't give a body of ``Body``
-	///   relative to the solar system barycenter, over a span common to all of them.
+	///   relative to the solar system barycenter at any instant at which it gives the others.
 	public init(file: SPKFile) throws(SPKError) {
 		try self.init(files: [file])
 	}
@@ -180,7 +176,8 @@ public struct JPLEphemeris: GeocentricEphemeris, Sendable {
 	///   - tdb: An instant in TDB.
 	/// - Returns: The state, in the ICRS.
 	/// - Throws:
-	///   - ``EphemerisError/outsideCoverage`` if the instant is outside ``coverage``.
+	///   - ``EphemerisError/outsideCoverage`` if the instant is outside ``coverage``, or the
+	///     files don't give one of the bodies at it.
 	///   - ``EphemerisError/invalidState`` if a segment gives a state that isn't finite.
 	public func state(of body: Body, relativeTo origin: Body, at tdb: Instant<TDB>) throws(EphemerisError) -> StateVector<ICRS> {
 		guard coverage.contains(tdb) else { throw .outsideCoverage }

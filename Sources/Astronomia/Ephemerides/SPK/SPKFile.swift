@@ -91,8 +91,11 @@ extension Double {
 
 extension Instant where Scale == TDB {
 	/// The TDB seconds from J2000.0, as an SPK file gives time.
+	///
+	/// The days are found without overflow for any Julian Date, so an instant far outside
+	/// every segment gives a number of seconds that no segment covers.
 	var secondsSinceJ2000: Double {
-		(Double(julianDate.julianDayNumber - JulianDate.j2000.julianDayNumber) + julianDate.fractionFromNoon) * secondsPerDay
+		julianDate.daysSinceJ2000 * secondsPerDay
 	}
 }
 
@@ -180,26 +183,111 @@ struct SPKSegmentIndex: Sendable {
 		return (position, velocity)
 	}
 
-	/// Returns the TDB seconds over which a body is given relative to the solar system
-	/// barycenter, along the chain of its segments of highest precedence, or `nil` if it isn't.
+	/// Returns the TDB seconds at which a body is given relative to the solar system
+	/// barycenter, as disjoint closed intervals in increasing order.
 	///
-	/// Each link's span is that of all the body's segments to the same center, so a gap
-	/// between them is within the span.
-	func coverage(of body: Int) -> ClosedRange<Double>? {
-		var current = body
-		var span = -Double.infinity ... Double.infinity
-		var visited: Set<Int> = [body]
-		while current != 0 {
-			guard let first = links[current]?.first else { return nil }
-			let center = first.segment.center
-			let segments = links[current, default: []].filter { $0.segment.center == center }
-			let start = segments.map(\.segment.start).min() ?? first.segment.start
-			let end = segments.map(\.segment.end).max() ?? first.segment.end
-			guard start <= span.upperBound, end >= span.lowerBound, visited.insert(center).inserted else { return nil }
-			span = max(start, span.lowerBound) ... min(end, span.upperBound)
-			current = center
+	/// At each instant a body's segment is the one of highest precedence that covers it, as
+	/// ``link(for:at:)`` finds it, and the body is given if that segment's center is. So a
+	/// segment covers the instants of its interval that no segment of higher precedence covers,
+	/// where its center is given, whatever the centers of the body's other segments.
+	///
+	/// - Parameter body: The body's NAIF ID.
+	/// - Returns: The intervals, empty if the body is never given.
+	func coverage(of body: Int) -> [ClosedRange<Double>] {
+		var memo: [Int: [ClosedRange<Double>]] = [:]
+		return coverage(of: body, visiting: [], memo: &memo)
+	}
+
+	/// Returns the TDB seconds at which a body is given relative to the solar system
+	/// barycenter, skipping a body whose chain returns to one being followed.
+	private func coverage(of body: Int, visiting: Set<Int>, memo: inout [Int: [ClosedRange<Double>]]) -> [ClosedRange<Double>] {
+		if body == 0 {
+			return [-Double.infinity ... Double.infinity]
 		}
-		return span
+		if let known = memo[body] {
+			return known
+		}
+		guard !visiting.contains(body), visiting.count < Self.longestChain else {
+			return []
+		}
+		var covered: [ClosedRange<Double>] = []
+		var taken: [ClosedRange<Double>] = []
+		for link in links[body] ?? [] {
+			let interval = link.segment.start ... link.segment.end
+			let own = Intervals.subtracting(taken, from: [interval])
+			let center = coverage(of: link.segment.center, visiting: visiting.union([body]), memo: &memo)
+			covered = Intervals.union(covered, Intervals.intersection(own, center))
+			taken = Intervals.union(taken, [interval])
+		}
+		memo[body] = covered
+		return covered
+	}
+
+	/// Returns the instants at which every one of some bodies is given relative to the solar
+	/// system barycenter, from the first to the last; instants between may not be.
+	///
+	/// - Parameter bodies: The bodies' NAIF IDs.
+	/// - Returns: The instants.
+	/// - Throws:
+	///   - ``SPKError/missingBody(naifID:)`` for the first body that is never given, or that is
+	///     never given while the bodies before it are.
+	///   - ``SPKError/invalidFile`` if an instant can't be represented.
+	func coverage(ofEvery bodies: [Int]) throws(SPKError) -> ClosedRange<Instant<TDB>> {
+		var common = [-Double.infinity ... Double.infinity]
+		for body in bodies {
+			common = Intervals.intersection(common, coverage(of: body))
+			guard !common.isEmpty else { throw .missingBody(naifID: body) }
+		}
+		guard let first = common.first, let last = common.last, let start = first.lowerBound.tdbInstant, let end = last.upperBound.tdbInstant else {
+			throw .invalidFile
+		}
+		return start ... end
+	}
+}
+
+/// Sets of instants as disjoint closed intervals in increasing order.
+enum Intervals {
+	/// Returns the union of two sets, joining intervals that touch.
+	static func union(_ a: [ClosedRange<Double>], _ b: [ClosedRange<Double>]) -> [ClosedRange<Double>] {
+		var result: [ClosedRange<Double>] = []
+		for interval in (a + b).sorted(by: { $0.lowerBound < $1.lowerBound }) {
+			if let last = result.last, interval.lowerBound <= last.upperBound {
+				result[result.count - 1] = last.lowerBound ... max(last.upperBound, interval.upperBound)
+			} else {
+				result.append(interval)
+			}
+		}
+		return result
+	}
+
+	/// Returns the intersection of two sets.
+	static func intersection(_ a: [ClosedRange<Double>], _ b: [ClosedRange<Double>]) -> [ClosedRange<Double>] {
+		var result: [ClosedRange<Double>] = []
+		for x in a {
+			for y in b where x.overlaps(y) {
+				result.append(max(x.lowerBound, y.lowerBound) ... min(x.upperBound, y.upperBound))
+			}
+		}
+		return union(result, [])
+	}
+
+	/// Returns a set less the instants of another, keeping the ends of the intervals removed.
+	static func subtracting(_ removed: [ClosedRange<Double>], from set: [ClosedRange<Double>]) -> [ClosedRange<Double>] {
+		var result = set
+		for cut in removed {
+			result = result.flatMap { interval -> [ClosedRange<Double>] in
+				guard interval.overlaps(cut) else { return [interval] }
+				var pieces: [ClosedRange<Double>] = []
+				if interval.lowerBound < cut.lowerBound {
+					pieces.append(interval.lowerBound ... cut.lowerBound)
+				}
+				if interval.upperBound > cut.upperBound {
+					pieces.append(cut.upperBound ... interval.upperBound)
+				}
+				return pieces
+			}
+		}
+		return result
 	}
 }
 

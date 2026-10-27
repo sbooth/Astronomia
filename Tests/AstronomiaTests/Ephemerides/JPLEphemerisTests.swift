@@ -172,6 +172,73 @@ import Testing
 		#expect(try reversed.state(of: .sun, relativeTo: .solarSystemBarycenter, at: Self.instant(seconds)).position.vector.length > 1e-4)
 	}
 
+	/// A segment of a body at a fixed position, x km along the x axis from its center.
+	static func fixed(_ target: Int32, _ center: Int32, _ start: Double, _ end: Double, x: Double = 0) -> SPKKernelTests.Segment {
+		SPKKernelTests.Segment(target: target, center: center, start: start, end: end, words: [(start + end) / 2, (end - start) / 2, x, 0, 0, 0, 0, 0, start, end - start, 8, 1])
+	}
+
+	/// Returns a file of segments.
+	static func file(_ segments: SPKKernelTests.Segment...) throws -> SPKFile {
+		try SPKFile(bytes: SPKKernelTests.spk(segments: segments))
+	}
+
+	@Test func coverageFollowsTheCentersOfEachInstant() throws {
+		let base = try Self.file(Self.fixed(399, 3, 0, 100), Self.fixed(3, 0, 0, 100))
+		// A later segment to another center over part of the interval leaves the rest to the
+		// earlier chain.
+		let direct = try Self.file(Self.fixed(399, 0, 40, 60, x: 7))
+		let joined = SPKSegmentIndex(files: [base, direct])
+		#expect(joined.coverage(of: 399) == [0 ... 100])
+		#expect(joined.state(of: 399, relativeTo: 0, at: 50)?.position == Vector3(7, 0, 0))
+		#expect(joined.state(of: 399, relativeTo: 0, at: 20)?.position == .zero)
+		// A later segment to a center that isn't given hides the earlier chain over its interval.
+		let lost = SPKSegmentIndex(files: [base, try Self.file(Self.fixed(399, 500, 40, 60))])
+		#expect(lost.coverage(of: 399) == [0 ... 40, 60 ... 100])
+		#expect(lost.state(of: 399, relativeTo: 0, at: 50) == nil)
+		// A chain that returns to a body it has passed is never given.
+		let cycle = SPKSegmentIndex(files: [try Self.file(Self.fixed(399, 3, 0, 100), Self.fixed(3, 399, 0, 100))])
+		#expect(cycle.coverage(of: 399).isEmpty)
+		// The order of precedence, and touching intervals joined
+		#expect(Intervals.union([0 ... 1, 3 ... 4], [1 ... 2]) == [0 ... 2, 3 ... 4])
+		#expect(Intervals.subtracting([2 ... 3], from: [0 ... 10]) == [0 ... 2, 3 ... 10])
+		#expect(Intervals.intersection([0 ... 2, 3 ... 10], [1 ... 5]) == [1 ... 2, 3 ... 5])
+	}
+
+	@Test func aLaterFileToAnotherCenterKeepsTheCoverage() throws {
+		// The Earth relative to the barycenter directly for 2,000 s within the excerpt
+		let seconds = 815_000_000.0
+		let override = try Self.file(Self.fixed(399, 0, seconds - 1_000, seconds + 1_000, x: 1))
+		let ephemeris = try JPLEphemeris(files: [Self.excerpt, override])
+		let excerpt = try JPLEphemeris(file: Self.excerpt)
+		#expect(ephemeris.coverage == excerpt.coverage)
+		let earlier = try Self.instant(814_000_000)
+		#expect(try ephemeris.state(of: .earth, relativeTo: .solarSystemBarycenter, at: earlier) == excerpt.state(of: .earth, relativeTo: .solarSystemBarycenter, at: earlier))
+		let state = try ephemeris.state(of: .earth, relativeTo: .solarSystemBarycenter, at: Self.instant(seconds))
+		#expect(abs(state.position.vector.x * kilometersPerAstronomicalUnit - 1) < 1e-9)
+	}
+
+	@Test func observationsNeedTheLightDeflectingBodies() throws {
+		// The Earth and the Sun, without the barycenters of Jupiter and Saturn
+		let partial = try Self.file(Self.fixed(399, 0, 0, 100, x: 1.5e8), Self.fixed(10, 0, 0, 100))
+		#expect(throws: SPKError.missingBody(naifID: 5)) { try SPKEphemeris(files: [partial]) }
+		#expect(SPKEphemeris.requiredBodies == [399, 10, 5, 6])
+		// Observations can be made across the coverage.
+		let ephemeris = try SPKEphemeris(files: [Self.excerpt])
+		for tdb in [ephemeris.coverage.lowerBound, ephemeris.coverage.upperBound] {
+			_ = try Observer.geocenter.observation(at: tdb, ephemeris: ephemeris)
+		}
+	}
+
+	@Test func instantsFarOutsideEveryFileThrow() throws {
+		let spk = try SPKEphemeris(files: [Self.excerpt])
+		let jpl = try JPLEphemeris(file: Self.excerpt)
+		for tdb in [Instant<TDB>(JulianDate.min), Instant<TDB>(JulianDate.max)] {
+			#expect(tdb.secondsSinceJ2000.isFinite)
+			#expect(throws: EphemerisError.outsideCoverage) { try spk.state(of: .moon, relativeTo: .earth, at: tdb) }
+			#expect(throws: EphemerisError.outsideCoverage) { try jpl.state(of: .moon, relativeTo: .earth, at: tdb) }
+		}
+	}
+
 	@Test func filesMissingABodyThrow() throws {
 		let sun = SPKKernelTests.Segment(target: 10, center: 0, start: -1_000, end: 1_000, words: [0, 1_000, 1, 0, 2, 0, 3, 0, -1_000, 2_000, 8, 1])
 		let file = try SPKFile(bytes: SPKKernelTests.spk(segments: [sun]))
