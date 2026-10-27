@@ -16,6 +16,7 @@ struct CircularEphemeris: GeocentricEphemeris {
 	enum Body: EphemerisBody {
 		case solarSystemBarycenter, sun, earth, moon
 
+		var naifID: Int? { nil }
 		var radius: Distance? { nil }
 	}
 

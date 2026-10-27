@@ -33,7 +33,10 @@
 /// 0.2 mas for the Moon, seen from the Earth. A coarser ``SeriesPrecision`` sums fewer terms, for
 /// an error within its bound in a fraction of the time. The solutions' own errors are larger far
 /// from the present: Chapront and Francou (2003) find ELP/MPP02 within about 1" in longitude of
-/// DE406 from 500 to 2500.
+/// DE406 from 500 to 2500. Near the present, the built-in ephemeris is within a few
+/// milliarcseconds of DE421 for the Sun, the Moon, and the inner planets, and within tens of
+/// milliarcseconds for Jupiter. For JPL's ephemerides themselves, such as DE440, read from
+/// their files, see ``JPLEphemeris``.
 ///
 /// - Note: VSOP2013 gives the outer planets as the barycenters of their systems, which differ
 ///   from the planets by up to a few hundred kilometers. Pluto's solution is less accurate
@@ -162,6 +165,27 @@ extension BuiltInEphemeris {
 }
 
 extension BuiltInEphemeris.Body {
+	/// The body's NAIF ID: 0 for the solar system barycenter, 10 for the Sun, 199, 299, 399,
+	/// and 499 for Mercury, Venus, the Earth, and Mars, 301 for the Moon, and 3 and 5 to 9 for
+	/// the barycenters of the Earth and the Moon and of the outer planets' systems.
+	public var naifID: Int? {
+		switch self {
+		case .solarSystemBarycenter: 0
+		case .sun: 10
+		case .mercury: 199
+		case .venus: 299
+		case .earthMoonBarycenter: 3
+		case .earth: 399
+		case .moon: 301
+		case .mars: 499
+		case .jupiterBarycenter: 5
+		case .saturnBarycenter: 6
+		case .uranusBarycenter: 7
+		case .neptuneBarycenter: 8
+		case .plutoBarycenter: 9
+		}
+	}
+
 	/// The body's radius: the Sun's nominal radius of IAU 2015 Resolution B3, the Moon's mean
 	/// radius, the Earth's WGS84 equatorial radius, and the other planets' equatorial radii from
 	/// the IAU Working Group on Cartographic Coordinates and Rotational Elements, 2015 (Archinal
@@ -169,20 +193,7 @@ extension BuiltInEphemeris.Body {
 	/// planets' systems take their planets' radii, and the solar system and Earth-Moon
 	/// barycenters are points.
 	public var radius: Distance? {
-		switch self {
-		case .solarSystemBarycenter, .earthMoonBarycenter: nil
-		case .sun: nominalSolarRadius
-		case .mercury: .kilometers(2_440.53)
-		case .venus: .kilometers(6_051.8)
-		case .earth: earthEquatorialRadius
-		case .moon: lunarMeanRadius
-		case .mars: .kilometers(3_396.19)
-		case .jupiterBarycenter: jupiterEquatorialRadius
-		case .saturnBarycenter: saturnEquatorialRadius
-		case .uranusBarycenter: .kilometers(25_559)
-		case .neptuneBarycenter: .kilometers(24_764)
-		case .plutoBarycenter: .kilometers(1_188.3)
-		}
+		naifID.flatMap(NAIF.radius(of:))
 	}
 
 	/// The body as a body of VSOP2013 plus a fraction of the geocentric Moon.
