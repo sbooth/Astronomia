@@ -33,7 +33,10 @@
 /// 0.2 mas for the Moon, seen from the Earth. A coarser ``SeriesPrecision`` sums fewer terms, for
 /// an error within its bound in a fraction of the time. The solutions' own errors are larger far
 /// from the present: Chapront and Francou (2003) find ELP/MPP02 within about 1" in longitude of
-/// DE406 from 500 to 2500.
+/// DE406 from 500 to 2500. Near the present, the built-in ephemeris is within a few
+/// milliarcseconds of DE421 for the Sun, the Moon, and the inner planets, and within tens of
+/// milliarcseconds for Jupiter. For JPL's ephemerides themselves, such as DE440, read from
+/// their files, see ``JPLEphemeris``.
 ///
 /// - Note: VSOP2013 gives the outer planets as the barycenters of their systems, which differ
 ///   from the planets by up to a few hundred kilometers. Pluto's solution is less accurate

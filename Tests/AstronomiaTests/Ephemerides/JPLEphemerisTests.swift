@@ -117,6 +117,31 @@ import Testing
 		}
 	}
 
+	@Test func theBuiltInEphemerisIsNearDE421() throws {
+		// The largest angle, in mas, between the geocentric astrometric directions of the
+		// built-in ephemeris and DE421 over the excerpt, found as 0.55 for the Sun, 3.5 for
+		// Mercury, 0.66 for Venus, 9.6 for the Moon, 1.3 for Mars, 16 for Jupiter, 0.59 for
+		// Saturn, 254 for Uranus, 104 for Neptune, and 855 for Pluto. DE421 (2008) predates
+		// much of the data of VSOP2013's fit to INPOP10a, and its outer planets are less
+		// accurate than DE440's, so the differences are as much DE421's as VSOP2013's.
+		let tolerances: [BuiltInEphemeris.Body: Double] = [
+			.sun: 1, .mercury: 5, .venus: 1, .moon: 15, .mars: 2, .jupiterBarycenter: 25,
+			.saturnBarycenter: 1, .uranusBarycenter: 350, .neptuneBarycenter: 150, .plutoBarycenter: 1_200,
+		]
+		let jpl = try SPKEphemeris(files: [Self.excerpt])
+		let builtIn = BuiltInEphemeris()
+		let mas = microarcsecondsPerRadian / 1000
+		for day in stride(from: 1.0, through: 30, by: 1) {
+			let tdb = try Self.instant(813_758_400 + day * secondsPerDay)
+			for (body, tolerance) in tolerances {
+				let a = try Observer.geocenter.astrometricPlace(of: body, at: tdb, ephemeris: builtIn).position.vector
+				let b = try Observer.geocenter.astrometricPlace(of: SPKEphemeris.Body(naifID: try #require(body.naifID)), at: tdb, ephemeris: jpl).position.vector
+				let angle = (PlaceTests.unit(a) - PlaceTests.unit(b)).length * mas
+				#expect(angle <= tolerance, "\(body) on day \(day): \(angle) mas")
+			}
+		}
+	}
+
 	@Test func instantsOutsideTheCoverageThrow() throws {
 		let ephemeris = try JPLEphemeris(file: Self.excerpt)
 		for seconds in [813_000_000.0, 817_000_000] {
