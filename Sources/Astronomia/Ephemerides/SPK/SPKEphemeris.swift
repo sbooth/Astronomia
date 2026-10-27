@@ -33,17 +33,45 @@
 /// astronomical units of 149,597,870.7 km. The J2000 frame of the files is taken as the ICRS,
 /// as JPL's ephemerides are aligned with the ICRF.
 public struct SPKEphemeris: GeocentricEphemeris, Sendable {
-	/// A body, by its NAIF ID.
+	/// A body, by its NAIF ID, with its radius.
+	///
+	/// The Sun, the Moon, and the planets and their barycenters have the radii of the bodies
+	/// of the ``BuiltInEphemeris``; give another body its radius, as from a PCK, a
+	/// ``TextKernel``:
+	///
+	/// ```swift
+	/// let pck = try TextKernel(contentsOf: "/path/to/pck00011.tpc")
+	/// let ceres = SPKEphemeris.Body(naifID: 2_000_001, radius: pck.radius(of: 2_000_001))
+	/// ```
+	///
+	/// Bodies are equal if their NAIF IDs are, whatever their radii, so that the Sun or the
+	/// Earth given its radius is still the ephemeris's Sun or Earth.
 	public struct Body: EphemerisBody {
 		/// The NAIF ID.
 		let id: Int
+		/// The body's radius, as for the bodies of the ``BuiltInEphemeris`` or as given, or
+		/// `nil` for a point or a body whose radius isn't known.
+		public let radius: Distance?
 
-		/// Creates a body from its NAIF ID.
+		/// Creates a body from its NAIF ID, with the radius of a body of the
+		/// ``BuiltInEphemeris``, or `nil` for another, as an asteroid.
 		///
 		/// - Parameter naifID: The NAIF ID, as 10 for the Sun, 399 for the Earth, or 2,000,001
 		///   for Ceres.
 		public init(naifID: Int) {
 			id = naifID
+			radius = NAIF.radius(of: naifID)
+		}
+
+		/// Creates a body from its NAIF ID and its radius.
+		///
+		/// - Parameters:
+		///   - naifID: The NAIF ID, as 2,000,001 for Ceres.
+		///   - radius: The equatorial radius, or `nil` for a point or a body whose radius isn't
+		///     known.
+		public init(naifID: Int, radius: Distance?) {
+			id = naifID
+			self.radius = radius
 		}
 
 		/// The body's NAIF ID.
@@ -51,10 +79,12 @@ public struct SPKEphemeris: GeocentricEphemeris, Sendable {
 			id
 		}
 
-		/// The body's radius, as for the bodies of the ``BuiltInEphemeris``, or `nil` for a
-		/// point or a body whose radius isn't known, as an asteroid.
-		public var radius: Distance? {
-			NAIF.radius(of: id)
+		public static func == (lhs: Body, rhs: Body) -> Bool {
+			lhs.id == rhs.id
+		}
+
+		public func hash(into hasher: inout Hasher) {
+			hasher.combine(id)
 		}
 
 		/// The solar system barycenter, 0.
