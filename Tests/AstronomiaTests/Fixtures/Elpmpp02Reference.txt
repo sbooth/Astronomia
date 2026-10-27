@@ -1,8 +1,10 @@
+#
 # SPDX-FileCopyrightText: 2026 Stephen F. Booth <contact@sbooth.dev>
 # SPDX-License-Identifier: MIT
 #
 # Part of https://github.com/sbooth/Astronomia
 #
+
 # The rows of `elpmpp02Reference` in ELPMPP02CheckValues.swift, which describes them:
 # fit days position.x position.y position.z velocity.x velocity.y velocity.z
 laserRanging -365250.0 336958.19503173657 166664.71781895676 -8412.98331112502 -44424.245410419746 77844.36211512481 7966.668308455832
