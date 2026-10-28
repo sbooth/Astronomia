@@ -198,10 +198,61 @@ import Testing
 		// A chain that returns to a body it has passed is never given.
 		let cycle = SPKSegmentIndex(files: [try Self.file(Self.fixed(399, 3, 0, 100), Self.fixed(3, 399, 0, 100))])
 		#expect(cycle.coverage(of: 399).isEmpty)
+		#expect(cycle.depth(of: 399, at: 50) == nil)
+		#expect(cycle.state(of: 399, relativeTo: 0, at: 50) == nil)
 		// The order of precedence, and touching intervals joined
 		#expect(Intervals.union([0 ... 1, 3 ... 4], [1 ... 2]) == [0 ... 2, 3 ... 4])
 		#expect(Intervals.subtracting([2 ... 3], from: [0 ... 10]) == [0 ... 2, 3 ... 10])
 		#expect(Intervals.intersection([0 ... 2, 3 ... 10], [1 ... 5]) == [1 ... 2, 3 ... 5])
+	}
+
+	/// Returns an index of a chain of bodies 1, 2, and so on, each relative to the next, the last
+	/// relative to the solar system barycenter, with each body at x = its ID from its center.
+	static func chain(of links: Int) throws -> SPKSegmentIndex {
+		let segments = (1 ... links).map { (body: Int) -> SPKKernelTests.Segment in
+			let center: Int32 = body == links ? 0 : Int32(body + 1)
+			return Self.fixed(Int32(body), center, 0, 100, x: Double(body))
+		}
+		// Files of 16 segments, within a summary record
+		var files: [SPKFile] = []
+		for first in stride(from: 0, to: links, by: 16) {
+			let part = Array(segments[first ..< min(first + 16, links)])
+			files.append(try SPKFile(bytes: SPKKernelTests.spk(segments: part)))
+		}
+		return SPKSegmentIndex(files: files)
+	}
+
+	@Test func theLongestChainIsFollowed() throws {
+		// A chain of the longest length is given and joined, as the coverage finds it.
+		let longest = try Self.chain(of: SPKSegmentIndex.longestChain)
+		#expect(longest.coverage(of: 1) == [0 ... 100])
+		#expect(longest.depth(of: 1, at: 50) == SPKSegmentIndex.longestChain)
+		#expect(longest.state(of: 1, relativeTo: 2, at: 50)?.position == Vector3(1, 0, 0))
+		let n = SPKSegmentIndex.longestChain
+		let sum = Double(n * (n + 1) / 2)
+		#expect(longest.state(of: 1, relativeTo: 0, at: 50)?.position == Vector3(sum, 0, 0))
+		// One link longer is neither.
+		let longer = try Self.chain(of: SPKSegmentIndex.longestChain + 1)
+		#expect(longer.coverage(of: 1).isEmpty)
+		#expect(longer.depth(of: 1, at: 50) == nil)
+		#expect(longer.state(of: 1, relativeTo: 2, at: 50) == nil)
+		#expect(longer.coverage(of: 2) == [0 ... 100])
+	}
+
+	@Test func chainsAreJoinedWhereTheyMeet() throws {
+		let index = SPKSegmentIndex(files: [Self.excerpt])
+		let seconds = 815_000_000.0
+		#expect(index.depth(of: 301, at: seconds) == 2 && index.depth(of: 5, at: seconds) == 1 && index.depth(of: 0, at: seconds) == 0)
+		// A body not given ends its own chain, apart from the others.
+		#expect(index.depth(of: 2_000_001, at: seconds) == 0)
+		#expect(index.state(of: 2_000_001, relativeTo: 301, at: seconds) == nil)
+		#expect(index.state(of: 301, relativeTo: 2_000_001, at: seconds) == nil)
+		// A body relative to itself, and either way along one chain
+		let moon = try #require(index.state(of: 301, relativeTo: 301, at: seconds))
+		#expect(moon.position == .zero && moon.velocity == .zero)
+		let down = try #require(index.state(of: 301, relativeTo: 0, at: seconds))
+		let up = try #require(index.state(of: 0, relativeTo: 301, at: seconds))
+		#expect(up.position == Vector3.zero - down.position && up.velocity == Vector3.zero - down.velocity)
 	}
 
 	@Test func aLaterFileToAnotherCenterKeepsTheCoverage() throws {

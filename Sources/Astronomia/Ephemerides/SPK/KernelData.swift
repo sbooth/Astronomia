@@ -65,22 +65,35 @@ final class KernelData: @unchecked Sendable {
 
 /// A reader of the numbers in a kernel's bytes, in the kernel's byte order.
 ///
+/// The reader doesn't keep the bytes: whatever holds the reader must also hold the
+/// ``KernelData``, as an ``SPKKernel`` does. So a reader is copied without reference counting.
+///
 /// The reads aren't checked: the offsets must be within the bytes.
-struct KernelReader: Sendable {
-	/// The bytes.
-	let data: KernelData
+struct KernelReader: @unchecked Sendable {
+	/// The bytes, which are never changed.
+	let bytes: UnsafeRawBufferPointer
 	/// Whether the numbers are big-endian.
 	let isBigEndian: Bool
 
+	/// Creates a reader of a kernel's bytes.
+	///
+	/// - Parameters:
+	///   - data: The bytes, which must be kept while the reader is used.
+	///   - isBigEndian: Whether the numbers are big-endian.
+	init(data: KernelData, isBigEndian: Bool) {
+		bytes = data.bytes
+		self.isBigEndian = isBigEndian
+	}
+
 	/// Returns the double at a byte offset.
 	@inline(__always) func double(atByte offset: Int) -> Double {
-		let raw = data.bytes.loadUnaligned(fromByteOffset: offset, as: UInt64.self)
+		let raw = bytes.loadUnaligned(fromByteOffset: offset, as: UInt64.self)
 		return Double(bitPattern: isBigEndian ? UInt64(bigEndian: raw) : UInt64(littleEndian: raw))
 	}
 
 	/// Returns the 32-bit integer at a byte offset.
 	@inline(__always) func int32(atByte offset: Int) -> Int32 {
-		let raw = data.bytes.loadUnaligned(fromByteOffset: offset, as: Int32.self)
+		let raw = bytes.loadUnaligned(fromByteOffset: offset, as: Int32.self)
 		return isBigEndian ? Int32(bigEndian: raw) : Int32(littleEndian: raw)
 	}
 
