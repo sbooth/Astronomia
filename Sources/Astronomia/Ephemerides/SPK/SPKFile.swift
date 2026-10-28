@@ -184,15 +184,16 @@ struct SPKSegmentIndex: Sendable {
 	}
 
 	/// Returns the number of links from a body to the end of its chain toward the solar system
-	/// barycenter at an instant, or `nil` if the chain doesn't end, as for segments that form a
-	/// cycle.
+	/// barycenter at an instant, or `nil` if the chain is longer than ``longestChain`` links, as
+	/// for segments that form a cycle. As for ``coverage(of:)``, a chain of ``longestChain``
+	/// links is followed.
 	func depth(of body: Int, at seconds: Double) -> Int? {
 		var current = body
 		var depth = 0
 		while current != 0, let link = link(for: current, at: seconds) {
+			guard depth < Self.longestChain else { return nil }
 			current = link.segment.center
 			depth += 1
-			guard depth < Self.longestChain else { return nil }
 		}
 		return depth
 	}
