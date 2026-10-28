@@ -115,16 +115,27 @@ extension Instant where Scale == TDB {
 /// as SPICE does, a later file takes precedence over an earlier one, and a later segment in a
 /// file over an earlier one.
 struct SPKSegmentIndex: Sendable {
-	/// A segment and the file it is in.
+	/// A segment and the reader of its file, plain values that are copied without reference
+	/// counting.
 	struct Link: Sendable {
-		/// The file.
-		let kernel: SPKKernel
+		/// The reader of the file, whose data the index keeps.
+		let reader: KernelReader
 		/// The segment.
 		let segment: SPKSegment
+
+		/// Returns the segment's state at a time, in kilometers and kilometers per second.
+		@inline(__always) func state(at seconds: Double) -> (position: Vector3, velocity: Vector3) {
+			SPKKernel.state(of: segment, at: seconds, reader: reader)
+		}
 	}
 
-	/// The segments that can be evaluated by target, in the order of precedence.
-	let links: [Int: [Link]]
+	/// The files' kernels, which keep the data the links read.
+	let kernels: [SPKKernel]
+	/// The segments that can be evaluated, by target and within a target in the order of
+	/// precedence.
+	let links: [Link]
+	/// The range of each target's segments in ``links``.
+	let ranges: [Int: Range<Int>]
 
 	/// The allowance, in seconds, at the ends of a segment's interval, for the rounding of an
 	/// instant to and from TDB seconds; the polynomials extend smoothly over it.
@@ -137,54 +148,85 @@ struct SPKSegmentIndex: Sendable {
 	///
 	/// - Parameter files: The files, in increasing precedence.
 	init(files: [SPKFile]) {
-		var links: [Int: [Link]] = [:]
+		var byTarget: [Int: [Link]] = [:]
 		for file in files.reversed() {
 			for segment in file.kernel.segments.reversed() where segment.isEvaluable {
-				links[segment.target, default: []].append(Link(kernel: file.kernel, segment: segment))
+				byTarget[segment.target, default: []].append(Link(reader: file.kernel.reader, segment: segment))
 			}
 		}
+		var links: [Link] = []
+		var ranges: [Int: Range<Int>] = [:]
+		for (target, targetLinks) in byTarget {
+			ranges[target] = links.count ..< links.count + targetLinks.count
+			links += targetLinks
+		}
+		kernels = files.map(\.kernel)
 		self.links = links
+		self.ranges = ranges
+	}
+
+	/// Returns the segments of a body, in the order of precedence.
+	func links(for body: Int) -> ArraySlice<Link> {
+		guard let range = ranges[body] else { return [] }
+		return links[range]
 	}
 
 	/// Returns the segment that gives a body at an instant, or `nil` if none does.
-	func link(for body: Int, at seconds: Double) -> Link? {
-		links[body]?.first { $0.segment.start - Self.allowance <= seconds && seconds <= $0.segment.end + Self.allowance }
+	@inline(__always) func link(for body: Int, at seconds: Double) -> Link? {
+		guard let range = ranges[body] else { return nil }
+		for index in range {
+			let segment = links[index].segment
+			if segment.start - Self.allowance <= seconds && seconds <= segment.end + Self.allowance {
+				return links[index]
+			}
+		}
+		return nil
 	}
 
-	/// Returns the chain from a body toward the solar system barycenter at an instant: the
-	/// bodies, from the body itself, and the segment giving each relative to the next.
-	func chain(from body: Int, at seconds: Double) -> (bodies: [Int], links: [Link]) {
-		var bodies = [body]
-		var links: [Link] = []
+	/// Returns the number of links from a body to the end of its chain toward the solar system
+	/// barycenter at an instant, or `nil` if the chain doesn't end, as for segments that form a
+	/// cycle.
+	func depth(of body: Int, at seconds: Double) -> Int? {
 		var current = body
-		while current != 0, bodies.count < Self.longestChain, let link = link(for: current, at: seconds) {
+		var depth = 0
+		while current != 0, let link = link(for: current, at: seconds) {
 			current = link.segment.center
-			guard !bodies.contains(current) else { break }
-			links.append(link)
-			bodies.append(current)
+			depth += 1
+			guard depth < Self.longestChain else { return nil }
 		}
-		return (bodies, links)
+		return depth
 	}
 
 	/// Returns a body's state relative to another, in kilometers and kilometers per second, or
 	/// `nil` if the segments don't join the two at the instant.
+	///
+	/// The chains are climbed as linked lists are joined, without storing them: the deeper is
+	/// climbed until both are as far from their ends, then both together until they meet, each
+	/// segment of the body's chain added and each of the origin's subtracted.
 	func state(of body: Int, relativeTo origin: Int, at seconds: Double) -> (position: Vector3, velocity: Vector3)? {
-		let target = chain(from: body, at: seconds)
-		let center = chain(from: origin, at: seconds)
-		guard let i = target.bodies.firstIndex(where: center.bodies.contains), let j = center.bodies.firstIndex(of: target.bodies[i]) else {
+		guard var targetDepth = depth(of: body, at: seconds), var originDepth = depth(of: origin, at: seconds) else {
 			return nil
 		}
+		var (target, center) = (body, origin)
 		var position = Vector3.zero
 		var velocity = Vector3.zero
-		for link in target.links.prefix(i) {
-			let state = link.kernel.state(of: link.segment, at: seconds)
-			position = position + state.position
-			velocity = velocity + state.velocity
-		}
-		for link in center.links.prefix(j) {
-			let state = link.kernel.state(of: link.segment, at: seconds)
-			position = position - state.position
-			velocity = velocity - state.velocity
+		while target != center {
+			if targetDepth >= originDepth, targetDepth > 0, let link = link(for: target, at: seconds) {
+				let state = link.state(at: seconds)
+				position = position + state.position
+				velocity = velocity + state.velocity
+				target = link.segment.center
+				targetDepth -= 1
+			} else if originDepth > 0, let link = link(for: center, at: seconds) {
+				let state = link.state(at: seconds)
+				position = position - state.position
+				velocity = velocity - state.velocity
+				center = link.segment.center
+				originDepth -= 1
+			} else {
+				// The chains end apart.
+				return nil
+			}
 		}
 		return (position, velocity)
 	}
@@ -218,7 +260,7 @@ struct SPKSegmentIndex: Sendable {
 		}
 		var covered: [ClosedRange<Double>] = []
 		var taken: [ClosedRange<Double>] = []
-		for link in links[body] ?? [] {
+		for link in links(for: body) {
 			let interval = link.segment.start ... link.segment.end
 			let own = Intervals.subtracting(taken, from: [interval])
 			let center = coverage(of: link.segment.center, visiting: visiting.union([body]), memo: &memo)

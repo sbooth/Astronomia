@@ -21,6 +21,8 @@
 ///
 /// See NAIF's DAF and SPK Required Reading.
 struct SPKKernel: Sendable {
+	/// The file's bytes, kept for the reader.
+	let data: KernelData
 	/// The reader of the file's bytes.
 	let reader: KernelReader
 	/// The segments, in the order of the file.
@@ -104,6 +106,7 @@ struct SPKKernel: Sendable {
 			}
 			record = Int(next)
 		}
+		self.data = data
 		self.reader = reader
 		self.segments = segments
 	}
@@ -117,6 +120,19 @@ struct SPKKernel: Sendable {
 	/// - Returns: The position and velocity of the segment's target relative to its center, not
 	///   finite if the segment's data is damaged.
 	func state(of segment: SPKSegment, at seconds: Double) -> (position: Vector3, velocity: Vector3) {
+		Self.state(of: segment, at: seconds, reader: reader)
+	}
+
+	/// Returns a segment's state at a time, in kilometers and kilometers per second, in the
+	/// J2000 frame, from the reader of the segment's file.
+	///
+	/// - Parameters:
+	///   - segment: The segment, one that ``SPKSegment/isEvaluable``.
+	///   - seconds: TDB seconds from J2000.0, within the segment's interval.
+	///   - reader: The reader of the segment's file, whose data must be kept.
+	/// - Returns: The position and velocity of the segment's target relative to its center, not
+	///   finite if the segment's data is damaged.
+	static func state(of segment: SPKSegment, at seconds: Double, reader: KernelReader) -> (position: Vector3, velocity: Vector3) {
 		let state: (position: Vector3, velocity: Vector3)
 		switch segment.data {
 		case .chebyshev(let data): state = data.state(at: seconds, reader: reader)
@@ -126,7 +142,7 @@ struct SPKKernel: Sendable {
 		}
 		switch segment.frame {
 		case SPKSegment.j2000: return state
-		case SPKSegment.eclipticJ2000: return (Self.fromEcliptic(state.position), Self.fromEcliptic(state.velocity))
+		case SPKSegment.eclipticJ2000: return (fromEcliptic(state.position), fromEcliptic(state.velocity))
 		default: preconditionFailure("Segment in frame \(segment.frame) can't be evaluated")
 		}
 	}

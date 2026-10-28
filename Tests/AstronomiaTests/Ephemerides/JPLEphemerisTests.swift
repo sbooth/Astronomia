@@ -198,10 +198,28 @@ import Testing
 		// A chain that returns to a body it has passed is never given.
 		let cycle = SPKSegmentIndex(files: [try Self.file(Self.fixed(399, 3, 0, 100), Self.fixed(3, 399, 0, 100))])
 		#expect(cycle.coverage(of: 399).isEmpty)
+		#expect(cycle.depth(of: 399, at: 50) == nil)
+		#expect(cycle.state(of: 399, relativeTo: 0, at: 50) == nil)
 		// The order of precedence, and touching intervals joined
 		#expect(Intervals.union([0 ... 1, 3 ... 4], [1 ... 2]) == [0 ... 2, 3 ... 4])
 		#expect(Intervals.subtracting([2 ... 3], from: [0 ... 10]) == [0 ... 2, 3 ... 10])
 		#expect(Intervals.intersection([0 ... 2, 3 ... 10], [1 ... 5]) == [1 ... 2, 3 ... 5])
+	}
+
+	@Test func chainsAreJoinedWhereTheyMeet() throws {
+		let index = SPKSegmentIndex(files: [Self.excerpt])
+		let seconds = 815_000_000.0
+		#expect(index.depth(of: 301, at: seconds) == 2 && index.depth(of: 5, at: seconds) == 1 && index.depth(of: 0, at: seconds) == 0)
+		// A body not given ends its own chain, apart from the others.
+		#expect(index.depth(of: 2_000_001, at: seconds) == 0)
+		#expect(index.state(of: 2_000_001, relativeTo: 301, at: seconds) == nil)
+		#expect(index.state(of: 301, relativeTo: 2_000_001, at: seconds) == nil)
+		// A body relative to itself, and either way along one chain
+		let moon = try #require(index.state(of: 301, relativeTo: 301, at: seconds))
+		#expect(moon.position == .zero && moon.velocity == .zero)
+		let down = try #require(index.state(of: 301, relativeTo: 0, at: seconds))
+		let up = try #require(index.state(of: 0, relativeTo: 301, at: seconds))
+		#expect(up.position == Vector3.zero - down.position && up.velocity == Vector3.zero - down.velocity)
 	}
 
 	@Test func aLaterFileToAnotherCenterKeepsTheCoverage() throws {
