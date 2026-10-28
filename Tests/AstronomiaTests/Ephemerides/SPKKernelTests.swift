@@ -132,11 +132,12 @@ import Testing
 		#expect(velocity == Vector3(11, 14, 17))
 	}
 
-	@Test func otherTypesAreReadWithoutPolynomials() throws {
-		let segment = Segment(type: 13, start: 0, end: 1, words: [1, 2, 3])
+	@Test func otherTypesAreReadWithoutData() throws {
+		let segment = Segment(type: 5, start: 0, end: 1, words: [1, 2, 3])
 		let kernel = try SPKKernel(data: KernelData(copying: Self.spk(segments: [segment, Self.twoRecords])))
-		#expect(kernel.segments.map { $0.type } == [13, 2])
-		#expect(kernel.segments.first?.chebyshev == nil)
+		#expect(kernel.segments.map { $0.type } == [5, 2])
+		#expect(kernel.segments.first?.data == nil)
+		#expect(kernel.segments.map { $0.isEvaluable } == [false, true])
 	}
 
 	@Test func theByteOrderIsFoundWithoutTheFormatName() throws {
@@ -196,5 +197,13 @@ import Testing
 		var looped = valid
 		looped.replaceSubrange(1_024 ..< 1_032, with: withUnsafeBytes(of: Double(2).bitPattern.littleEndian, Array.init))
 		#expect(throws: SPKError.invalidFile) { try kernel(looped) }
+	}
+}
+
+extension SPKSegment {
+	/// The Chebyshev polynomials of a segment of type 2 or 3, or `nil` for another type.
+	var chebyshev: SPKChebyshevSegment? {
+		guard case let .chebyshev(chebyshev) = data else { return nil }
+		return chebyshev
 	}
 }

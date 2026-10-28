@@ -23,8 +23,13 @@
 /// }
 /// ```
 ///
-/// Segments of types 2 and 3, the Chebyshev polynomials of JPL's planetary ephemerides, in the
-/// J2000 frame, the ICRF, can be evaluated; others are listed but not used.
+/// Segments of these types, in the J2000 frame, taken as the ICRF, or the ECLIPJ2000 frame, can
+/// be evaluated; others are listed but not used:
+///
+/// - Types 2 and 3, Chebyshev polynomials, as JPL's planetary ephemerides.
+/// - Types 1 and 21, modified difference arrays, as asteroids and comets from JPL's Horizons.
+/// - Types 8, 9, 12, and 13, discrete states interpolated by Lagrange or Hermite polynomials,
+///   as spacecraft.
 public struct SPKFile: Sendable {
 	/// A segment of an SPK file: one body's state relative to another over an interval of time.
 	public struct Segment: Hashable, Sendable {
@@ -32,16 +37,17 @@ public struct SPKFile: Sendable {
 		public let target: Int
 		/// The NAIF ID of the body to which the state is relative.
 		public let center: Int
-		/// The NAIF ID of the frame of the state: 1 for J2000, taken as the ICRF.
+		/// The NAIF ID of the frame of the state: 1 for J2000, taken as the ICRF, or 17 for
+		/// ECLIPJ2000, the mean ecliptic and equinox of J2000.0.
 		public let frame: Int
-		/// The SPK data type: 2 or 3 for Chebyshev polynomials.
+		/// The SPK data type: 2 or 3 for Chebyshev polynomials, 1 or 21 for modified difference
+		/// arrays, or 8, 9, 12, or 13 for discrete states.
 		public let type: Int
 		/// The instants the segment covers.
 		public let coverage: ClosedRange<Instant<TDB>>
-		/// Whether the segment can be evaluated: of type 2 or 3, in the J2000 frame.
-		public var isSupported: Bool {
-			(type == 2 || type == 3) && frame == 1
-		}
+		/// Whether the segment can be evaluated: of type 1, 2, 3, 8, 9, 12, 13, or 21, in the
+		/// J2000 or ECLIPJ2000 frame.
+		public let isSupported: Bool
 	}
 
 	/// The file's contents.
@@ -74,7 +80,7 @@ public struct SPKFile: Sendable {
 			guard let start = segment.start.tdbInstant, let end = segment.end.tdbInstant else {
 				throw .invalidFile
 			}
-			segments.append(Segment(target: segment.target, center: segment.center, frame: segment.frame, type: segment.type, coverage: start ... end))
+			segments.append(Segment(target: segment.target, center: segment.center, frame: segment.frame, type: segment.type, coverage: start ... end, isSupported: segment.isEvaluable))
 		}
 		self.segments = segments
 	}
@@ -133,7 +139,7 @@ struct SPKSegmentIndex: Sendable {
 	init(files: [SPKFile]) {
 		var links: [Int: [Link]] = [:]
 		for file in files.reversed() {
-			for segment in file.kernel.segments.reversed() where segment.chebyshev != nil && segment.frame == 1 {
+			for segment in file.kernel.segments.reversed() where segment.isEvaluable {
 				links[segment.target, default: []].append(Link(kernel: file.kernel, segment: segment))
 			}
 		}

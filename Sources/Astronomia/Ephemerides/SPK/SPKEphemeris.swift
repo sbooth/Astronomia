@@ -31,7 +31,8 @@
 ///
 /// States are in kilometers and kilometers per second in the files, and are converted to
 /// astronomical units of 149,597,870.7 km. The J2000 frame of the files is taken as the ICRS,
-/// as JPL's ephemerides are aligned with the ICRF.
+/// as JPL's ephemerides are aligned with the ICRF; states in the ECLIPJ2000 frame are rotated
+/// to it.
 public struct SPKEphemeris: GeocentricEphemeris, Sendable {
 	/// A body, by its NAIF ID, with its radius.
 	///

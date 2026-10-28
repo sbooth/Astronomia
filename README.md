@@ -15,7 +15,7 @@ Astronomy calculations in Swift: precise time, positions of the Sun, Moon, plane
 - **Ephemerides**
   - A built-in ephemeris of the Sun, the Moon, and the planets from J1000.0 to J3000.0, from the solutions VSOP2013 and ELP/MPP02.
   - A choice of precision, trading accuracy for speed.
-  - JPL's ephemerides such as DE440 and DE441, or any SPK file.
+  - JPL's ephemerides such as DE440 and DE441, and SPK files of asteroids, comets, and spacecraft.
   - Protocols for supplying your own ephemeris.
 - **Positions**
   - Astrometric, apparent, and observed places of bodies and stars, with light time, gravitational deflection, aberration, and refraction.
