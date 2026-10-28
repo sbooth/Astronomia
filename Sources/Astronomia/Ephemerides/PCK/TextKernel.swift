@@ -5,33 +5,25 @@
 // Part of https://github.com/sbooth/Astronomia
 //
 
-/// A SPICE text kernel, as a text planetary constants kernel (PCK) such as NAIF's
-/// pck00011.tpc, which gives the radii of the planets, their satellites, and some asteroids and
-/// comets.
+/// A SPICE text kernel: the variables it assigns, by name.
 ///
 /// A text kernel assigns values to variables in its data, between `\begindata` and `\begintext`
 /// lines; the rest of the file is comments. A variable's values are numbers, strings in single
-/// quotes, or dates after `@`, alone or in parentheses, separated by spaces or commas:
+/// quotes, or dates after `@`, alone or in parentheses, separated by spaces or commas. `=`
+/// assigns a variable's values, and `+=` appends to them. Numbers may have an exponent of `E`
+/// or `D`, as in Fortran.
 ///
-/// ```
-/// \begindata
-/// BODY399_RADII = ( 6378.1366 6378.1366 6356.7519 )
-/// BODY399_GM    = 3.98600435507D+05
-/// \begintext
-/// ```
-///
-/// `=` assigns a variable's values, and `+=` appends to them. Numbers may have an exponent of
-/// `E` or `D`, as in Fortran.
-///
-/// Give a body of an ``SPKEphemeris`` its radius from a PCK:
-///
-/// ```swift
-/// let pck = try TextKernel(contentsOf: "/path/to/pck00011.tpc")
-/// let vesta = SPKEphemeris.Body(naifID: 2_000_004, radius: pck.radius(of: 2_000_004))
-/// ```
+/// PCKs, frame kernels, and leap second kernels are text kernels; a ``PCKFile`` reads one.
 ///
 /// See NAIF's Kernel Required Reading.
-public struct TextKernel: Hashable, Sendable {
+struct TextKernel: Hashable, Sendable {
+	/// An error of a kernel's syntax.
+	struct SyntaxError: Error, Hashable {
+		/// The number of the line, from 1, where the data can't be read, or where an
+		/// assignment that doesn't end starts.
+		let line: Int
+	}
+
 	/// A variable's value.
 	enum Value: Hashable, Sendable {
 		/// A number.
@@ -45,27 +37,11 @@ public struct TextKernel: Hashable, Sendable {
 	/// The variables' values by name.
 	let variables: [String: [Value]]
 
-	/// Reads a text kernel.
-	///
-	/// - Parameter path: The file's path.
-	/// - Throws: ``TextKernelError/cannotOpenFile(errno:)`` if the file can't be opened, or
-	///   ``TextKernelError/invalidSyntax(line:)`` if its data can't be read.
-	public init(contentsOf path: String) throws(TextKernelError) {
-		let data: KernelData
-		do {
-			data = try KernelData(mapping: path)
-		} catch {
-			guard case let .cannotOpenFile(errno) = error else { throw .cannotOpenFile(errno: 0) }
-			throw .cannotOpenFile(errno: errno)
-		}
-		try self.init(text: String(decoding: data.bytes, as: UTF8.self))
-	}
-
 	/// Reads a text kernel from its text.
 	///
 	/// - Parameter text: The kernel's text.
-	/// - Throws: ``TextKernelError/invalidSyntax(line:)`` if its data can't be read.
-	public init(text: String) throws(TextKernelError) {
+	/// - Throws: A ``SyntaxError`` if its data can't be read.
+	init(text: String) throws(SyntaxError) {
 		var parser = Parser()
 		var isData = false
 		var number = 0
@@ -74,13 +50,13 @@ public struct TextKernel: Hashable, Sendable {
 			number += 1
 			let trimmed = line.trimmingWhitespace
 			if trimmed == "\\begindata" || trimmed == "\\begintext" {
-				guard parser.isIdle else { throw .invalidSyntax(line: parser.start) }
+				guard parser.isIdle else { throw SyntaxError(line: parser.start) }
 				isData = trimmed == "\\begindata"
 			} else if isData {
-				guard parser.read(line, number: number) else { throw .invalidSyntax(line: number) }
+				guard parser.read(line, number: number) else { throw SyntaxError(line: number) }
 			}
 		}
-		guard parser.isIdle else { throw .invalidSyntax(line: parser.start) }
+		guard parser.isIdle else { throw SyntaxError(line: parser.start) }
 		variables = parser.variables
 	}
 
@@ -89,7 +65,7 @@ public struct TextKernel: Hashable, Sendable {
 	/// - Parameter name: The variable's name, as `BODY399_RADII`.
 	/// - Returns: The numbers, or `nil` if the kernel doesn't assign the variable or its
 	///   values aren't all numbers; dates aren't converted to numbers, as SPICE converts them.
-	public func numbers(named name: String) -> [Double]? {
+	func numbers(named name: String) -> [Double]? {
 		guard let values = variables[name] else { return nil }
 		var numbers: [Double] = []
 		for value in values {
@@ -97,19 +73,6 @@ public struct TextKernel: Hashable, Sendable {
 			numbers.append(number)
 		}
 		return numbers
-	}
-
-	/// Returns a body's equatorial radius, the larger of the two equatorial axes of its
-	/// `BODYnnn_RADII`, which are in kilometers.
-	///
-	/// - Parameter naifID: The body's NAIF ID, as 399 for the Earth or 2,000,004 for Vesta.
-	/// - Returns: The radius, or `nil` if the kernel doesn't give the body's three radii, each
-	///   positive and finite.
-	public func radius(of naifID: Int) -> Distance? {
-		guard let radii = numbers(named: "BODY\(naifID)_RADII"), radii.count == 3, radii.allSatisfy({ $0.isFinite && $0 > 0 }) else {
-			return nil
-		}
-		return .kilometers(max(radii[0], radii[1]))
 	}
 
 	/// A reader of assignments, which may span lines.
@@ -238,18 +201,6 @@ public struct TextKernel: Hashable, Sendable {
 			return .number(number)
 		}
 	}
-}
-
-/// Errors that can occur when reading a SPICE text kernel.
-public enum TextKernelError: Error, Hashable, Sendable {
-	/// The file couldn't be opened or mapped into memory, with the system's error number, an
-	/// `errno` value such as `ENOENT` if the file doesn't exist. Files can't be mapped on
-	/// platforms other than Apple's and Linux, where the number is `ENOSYS`; read the file's
-	/// text and create the kernel from it instead.
-	case cannotOpenFile(errno: Int32)
-	/// The kernel's data can't be read, with the number of the line, from 1, where it fails,
-	/// or where an assignment that doesn't end starts.
-	case invalidSyntax(line: Int)
 }
 
 extension Substring {

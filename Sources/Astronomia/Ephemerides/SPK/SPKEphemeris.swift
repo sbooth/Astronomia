@@ -36,11 +36,10 @@ public struct SPKEphemeris: GeocentricEphemeris, Sendable {
 	/// A body, by its NAIF ID, with its radius.
 	///
 	/// The Sun, the Moon, and the planets and their barycenters have the radii of the bodies
-	/// of the ``BuiltInEphemeris``; give another body its radius, as from a PCK, a
-	/// ``TextKernel``:
+	/// of the ``BuiltInEphemeris``; give another body its radius, as from a ``PCKFile``:
 	///
 	/// ```swift
-	/// let pck = try TextKernel(contentsOf: "/path/to/pck00011.tpc")
+	/// let pck = try PCKFile(contentsOf: "/path/to/pck00011.tpc")
 	/// let ceres = SPKEphemeris.Body(naifID: 2_000_001, radius: pck.radius(of: 2_000_001))
 	/// ```
 	///
